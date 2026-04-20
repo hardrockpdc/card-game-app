@@ -23,6 +23,13 @@ export default function HomeScreen({ navigation }) {
 
       <TouchableOpacity
         style={styles.settingsLink}
+        onPress={() => navigation.navigate('Game')}
+      >
+        <Text style={styles.settingsLinkText}>🧪 Test Game Screen</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.settingsLink}
         onPress={() => navigation.navigate('Settings')}
       >
         <Text style={styles.settingsLinkText}>⚙️ Settings</Text>
