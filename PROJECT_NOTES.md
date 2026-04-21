@@ -64,21 +64,21 @@ Hidden card shown as red back with 🂠 symbol
 Commit 1: "Initial working app with navigation and 7 screens"
 Commit 2: "Phase 3: Single-player Blackjack game complete"
 
-📍 Where We Are Right Now
-Just kicked off the EAS development build: eas build --profile development --platform android — currently running on Expo servers (~25 min). When it finishes, you'll install the custom APK on your Android, run npx expo start --dev-client, and reconnect. Then we start building real multiplayer.
-🔮 Next Steps After Build Finishes
+### 📍 Where We Are Right Now
 
-Install the custom APK on your Android phone (via QR code from build page)
-Run npx expo start --dev-client in terminal
-Open the new "Card Games" app on phone, scan QR, verify Blackjack still works
-Begin Host a Game feature — host opens a room, phone starts listening for connections
-Then Join a Game, Lobby, then multiplayer Blackjack
+Custom EAS development build is installed and working on Android. Blackjack verified in the new build. GameNetwork.js networking helper created (using react-native-tcp-socket). Haven't wired networking to any UI yet — that's next.
 
-⚠️ Important Preferences / Principles
+### 🔮 Next Steps When We Resume
 
-Always use tappable checkbox questions, not typed responses
-Explain every new concept in plain English
-Warn about decisions that could hurt later
-Recommend simplest beginner path unless told otherwise
-Don't write partial code and ask user to fill in — give complete ready-to-paste blocks
-One phase per session when possible, small steps within each
+1. Phase 4 Step 2: Build Host a Game feature — HostSetupScreen starts the TCP server, displays host's IP
+2. Phase 4 Step 3: Build Join a Game feature — JoinScreen lets user enter host IP and connect
+3. Phase 4 Step 4: Build Lobby — show connected players, host "Start Game" button
+4. Phase 4 Step 5: Multiplayer Blackjack across phones
+
+### 💡 Important Reminders for Next Session
+
+- Using react-native-tcp-socket + expo-network (TCP port 7777)
+- Requires custom dev build (not Expo Go) — already installed as "Card Games" on Android
+- Start dev server with: `npx expo start --dev-client` (NOT plain `npx expo start`)
+- Both test phones must be on same WiFi (or hotspot)
+- Second test phone still needs the APK installed when we get to testing multiplayer
