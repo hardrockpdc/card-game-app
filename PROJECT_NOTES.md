@@ -66,19 +66,22 @@ Commit 2: "Phase 3: Single-player Blackjack game complete"
 
 ### 📍 Where We Are Right Now
 
-Custom EAS development build is installed and working on Android. Blackjack verified in the new build. GameNetwork.js networking helper created (using react-native-tcp-socket). Haven't wired networking to any UI yet — that's next.
+Custom EAS development build is installed and working on Android. Blackjack verified in the new build. GameNetwork.js networking helper (TCP sockets on port 7777) is created but not yet wired into any UI. Pedro has installed Claude Code (desktop + VS Code extension) and is switching to use Claude Code going forward for faster iteration.
 
 ### 🔮 Next Steps When We Resume
 
-1. Phase 4 Step 2: Build Host a Game feature — HostSetupScreen starts the TCP server, displays host's IP
-2. Phase 4 Step 3: Build Join a Game feature — JoinScreen lets user enter host IP and connect
-3. Phase 4 Step 4: Build Lobby — show connected players, host "Start Game" button
-4. Phase 4 Step 5: Multiplayer Blackjack across phones
+1. **Phase 4 Step 2 (next):** Wire HostSetupScreen to actually start the TCP server when user taps "Start Hosting." Display host's IP address and a "Waiting for players..." message.
+2. **Phase 4 Step 3:** Wire JoinScreen so user can type a host's IP and connect.
+3. **Phase 4 Step 4:** Build Lobby screen — show connected players, host "Start Game" button broadcasts to all.
+4. **Phase 4 Step 5:** Multiplayer Blackjack — host runs the game, all phones stay in sync.
 
-### 💡 Important Reminders for Next Session
+### 💡 Important Reminders
 
 - Using react-native-tcp-socket + expo-network (TCP port 7777)
 - Requires custom dev build (not Expo Go) — already installed as "Card Games" on Android
 - Start dev server with: `npx expo start --dev-client` (NOT plain `npx expo start`)
-- Both test phones must be on same WiFi (or hotspot)
-- Second test phone still needs the APK installed when we get to testing multiplayer
+- Both test phones must be on same WiFi (or hotspot) for multiplayer testing
+- Second test phone still needs the APK installed when we get to multiplayer testing
+- Home Screen has a temporary "🧪 Test Game Screen" button — remove later
+- Pedro prefers tappable checkbox questions over typing full answers
+- Pedro is still a beginner — explain new concepts clearly
