@@ -25,6 +25,7 @@ Prefers: tappable button questions (not typing), simple language, step-by-step, 
 ✅ Phase 4 Step 5: Multiplayer Blackjack working — host runs game logic, all phones sync, Play Again redeals
 ✅ Phase 4.6: Multi-game support — Lobby has game selector; Crazy 8s + War fully playable
 ✅ Phase 4.7: All remaining card games built — Go Fish, Rummy, Snap, Texas Hold'em Poker
+✅ Phase 4.8: Conquián complete — Initial Card Pass, Priority Chain, Borrowing, AI difficulty, full multiplayer
 🔜 Phase 5: Party card game (Cards Against Humanity-style — mix of original and open-source content)
 🔜 Phase 6: Polish (sounds, animations, nicer card designs, in-app "how to host offline" helper)
 🔜 Phase 7: Publish to Google Play and App Store
@@ -45,6 +46,7 @@ card-game-app/
 │   └── Card.js                    (reusable playing card visual)
 ├── game/
 │   ├── deck.js                    (createDeck, shuffleDeck, calculateHandValue)
+│   ├── conquian.js                (Conquián game logic — pure functions)
 │   └── GameNetwork.js             (TCP server/client + UDP discovery)
 ├── screens/
 │   ├── HomeScreen.js              (main menu)
@@ -59,6 +61,7 @@ card-game-app/
 │   ├── RummyGameScreen.js         (multiplayer Rummy ✅)
 │   ├── SnapGameScreen.js          (multiplayer Snap ✅)
 │   ├── PokerGameScreen.js         (Texas Hold'em Poker ✅)
+│   ├── ConquianGameScreen.js      (Conquián — single + multiplayer ✅)
 │   ├── ResultsScreen.js           (placeholder)
 │   └── SettingsScreen.js          (placeholder)
 ├── App.js                         (navigation — all screens wired)
@@ -76,13 +79,14 @@ Hidden card shown as red back with 🂠 symbol
 
 ### 📍 Where We Are Right Now
 
-**Phase 4.7 complete — all 7 multiplayer games built and confirmed working.** Full flow:
+**Phase 4.8 complete — Conquián fully implemented (single-player + multiplayer).** Full flow:
 - Host taps "Host a Game" → enters name → goes to Lobby
 - Lobby broadcasts UDP every 2s so clients can find the game automatically
-- Joining player taps "Join a Game" → game appears in list → taps Join → lands in Lobby
-- Host selects a game from the chip row (Blackjack, Crazy 8s, War, Go Fish, Rummy, Snap, Poker)
+- Joining player taps "Join a Game" → game appears in list → taps Join (or type IP manually) → lands in Lobby
+- Host selects a game from the chip row (Blackjack, Conquián, Go Fish, Poker; Crazy 8s/War/Rummy/Snap available)
+- Host can add AI Computer players to fill empty slots (Conquián only in multiplayer lobby)
 - Host taps Start Game → all phones navigate to the correct game screen
-- All 7 games are fully implemented ✅
+- All 8 games are fully implemented ✅
 
 **Multiplayer networking model:**
 - Host runs ALL game logic
@@ -103,7 +107,7 @@ Hidden card shown as red back with 🂠 symbol
 
 ### 🔮 Next Steps When We Resume
 
-1. **Phase 5: Party card game** — Cards Against Humanity-style (mix of original and open-source content)
+1. **Phase 5: Party card game** — Cards Against Humanity-style (mix of original and open-source content) — **this is the next major feature**
 2. **Phase 6: Polish** — sounds, animations, nicer card designs, in-app "how to host offline" helper
 3. **Phase 7: Publish** — Google Play and App Store
 
@@ -177,6 +181,16 @@ Hidden card shown as red back with 🂠 symbol
 - Any player taps SNAP button to win those cards (as points) — first one wins
 - 5-second timeout if nobody snaps → missed, turn advances
 - Game ends when deck is empty; most snaps wins
+
+**Conquián specifics:**
+- Private hands: host sends `PRIVATE_HAND` to each client after every state change
+- **Initial Card Pass phase**: before play begins, each player secretly selects one card from their starting hand to pass to the next player clockwise; all passes resolve simultaneously
+- **Priority Chain**: when active card is available, the player whose turn it is has first right to take it; if they pass, priority moves clockwise until someone takes it or all pass (then card goes to dead pile)
+- **Borrowing**: on your draw turn, if you have a meld on the table you can "borrow" one of its cards to extend another meld (the meld you borrow from must still be valid afterward)
+- **Win condition**: first player to reach the target hand size via melds (7 cards for 2–3 players, 7 for 4 players) wins
+- **AI difficulty**: Easy (50% pass rate), Medium (15% pass rate), Hard (3% pass rate) — affects how aggressively the AI takes the active card
+- **Multiplayer AI**: host adds Computer players in the Lobby (Conquián only); host runs AI turns even in multiplayer
+- **Action bar buttons**: Lay Meld (free action on your draw turn) / Rearrange / Take + Meld / Pass
 
 **Poker (Texas Hold'em) specifics:**
 - Private hole cards until showdown; `PRIVATE_HAND` pattern

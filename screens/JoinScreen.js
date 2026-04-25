@@ -12,20 +12,21 @@ import {
 } from 'react-native';
 import { connectToHost, disconnectFromHost, startDiscovery, stopDiscovery } from '../game/GameNetwork';
 
-const STALE_MS = 6000;       // remove a game from the list if not heard from in 6 s
+const STALE_MS = 6000;
 const CONNECT_TIMEOUT_MS = 8000;
 
 export default function JoinScreen({ navigation }) {
   const [playerName, setPlayerName] = useState('');
-  const [games, setGames] = useState([]);           // [{ name, ip, lastSeen }]
+  const [games, setGames] = useState([]);
   const [status, setStatus] = useState('idle');     // 'idle' | 'connecting' | 'error'
   const [errorMsg, setErrorMsg] = useState('');
   const [connectingIp, setConnectingIp] = useState(null);
+  const [manualIp, setManualIp] = useState('');
+  const [showManual, setShowManual] = useState(false);
   const timeoutRef = useRef(null);
   const staleRef = useRef(null);
 
   useEffect(() => {
-    // Start listening for UDP game announcements
     startDiscovery(({ name, ip }) => {
       setGames((prev) => {
         const without = prev.filter((g) => g.ip !== ip);
@@ -33,7 +34,6 @@ export default function JoinScreen({ navigation }) {
       });
     });
 
-    // Every 2 s, remove games we haven't heard from in STALE_MS
     staleRef.current = setInterval(() => {
       setGames((prev) => prev.filter((g) => Date.now() - g.lastSeen < STALE_MS));
     }, 2000);
@@ -57,9 +57,11 @@ export default function JoinScreen({ navigation }) {
 
   function handleJoin(ip) {
     if (status === 'connecting') return;
+    const trimmedIp = ip.trim();
+    if (!trimmedIp) return;
 
     setStatus('connecting');
-    setConnectingIp(ip);
+    setConnectingIp(trimmedIp);
     setErrorMsg('');
 
     timeoutRef.current = setTimeout(() => {
@@ -69,7 +71,7 @@ export default function JoinScreen({ navigation }) {
       setErrorMsg('Could not connect — make sure you\'re on the same WiFi.');
     }, CONNECT_TIMEOUT_MS);
 
-    connectToHost(ip, {
+    connectToHost(trimmedIp, {
       onConnected: () => {
         clearTimeout(timeoutRef.current);
         stopDiscovery();
@@ -154,6 +156,45 @@ export default function JoinScreen({ navigation }) {
         />
       )}
 
+      {/* Manual IP entry */}
+      <TouchableOpacity
+        style={styles.manualToggle}
+        onPress={() => { setShowManual(p => !p); setErrorMsg(''); }}
+        disabled={isConnecting}
+      >
+        <Text style={styles.manualToggleText}>
+          {showManual ? '▲ Hide manual entry' : '▼ Enter IP manually'}
+        </Text>
+      </TouchableOpacity>
+
+      {showManual && (
+        <View style={styles.manualRow}>
+          <TextInput
+            style={[styles.ipInput, isConnecting && styles.inputDisabled]}
+            value={manualIp}
+            onChangeText={setManualIp}
+            placeholder="192.168.x.x"
+            placeholderTextColor="#555570"
+            keyboardType="decimal-pad"
+            returnKeyType="go"
+            onSubmitEditing={() => handleJoin(manualIp)}
+            editable={!isConnecting}
+            autoCorrect={false}
+          />
+          <TouchableOpacity
+            style={[styles.joinBtn, (!manualIp.trim() || isConnecting) && styles.joinBtnDisabled]}
+            onPress={() => handleJoin(manualIp)}
+            disabled={!manualIp.trim() || isConnecting}
+          >
+            {isConnecting && connectingIp === manualIp.trim() ? (
+              <ActivityIndicator color="#ffffff" size="small" />
+            ) : (
+              <Text style={styles.joinBtnText}>Join</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
+
       {status === 'error' && errorMsg ? (
         <Text style={styles.errorText}>{errorMsg}</Text>
       ) : null}
@@ -223,7 +264,7 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: '#16213e',
     borderRadius: 14,
-    marginBottom: 16,
+    marginBottom: 8,
     maxHeight: 260,
   },
   gameRow: {
@@ -248,6 +289,32 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#1a1a2e',
     marginHorizontal: 16,
+  },
+  manualToggle: {
+    marginTop: 4,
+    marginBottom: 8,
+    alignSelf: 'flex-start',
+  },
+  manualToggleText: {
+    color: '#666680',
+    fontSize: 13,
+  },
+  manualRow: {
+    width: '100%',
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 8,
+  },
+  ipInput: {
+    flex: 1,
+    backgroundColor: '#16213e',
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: '#334',
+    color: '#ffffff',
+    fontSize: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
   },
   errorText: {
     color: '#e94560',

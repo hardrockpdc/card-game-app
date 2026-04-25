@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,11 +10,14 @@ import {
 } from 'react-native';
 
 const GAMES = [
-  { id: 'blackjack', label: 'Blackjack', screen: 'MultiplayerGame', available: true },
-  { id: 'goFish',    label: 'Go Fish',   screen: 'GoFishGame',      available: true },
-  { id: 'conquian',  label: 'Conquián',  screen: 'ConquianGame',    available: true },
-  { id: 'poker',     label: 'Poker',     screen: 'PokerGame',       available: true },
+  { id: 'blackjack', label: 'Blackjack', screen: 'MultiplayerGame', available: true, hasAI: false },
+  { id: 'goFish',    label: 'Go Fish',   screen: 'GoFishGame',      available: true, hasAI: false },
+  { id: 'conquian',  label: 'Conquián',  screen: 'ConquianGame',    available: true, hasAI: true  },
+  { id: 'poker',     label: 'Poker',     screen: 'PokerGame',       available: true, hasAI: false },
 ];
+
+const MAX_PLAYERS = 4;
+
 import {
   setServerListeners,
   broadcastToClients,
@@ -31,21 +34,22 @@ export default function LobbyScreen({ navigation, route }) {
   const isHost = role === 'host';
   const myName = isHost ? (hostName || 'Host') : (playerName || 'Player');
 
-  // Players list always starts with "me"
-  // Host's id is always 'host'; clients get their numeric socket id from PLAYER_LIST
   const [players, setPlayers] = useState([
     { id: isHost ? 'host' : 'me', name: myName, isMe: true, isHost },
   ]);
-  const [selectedGame, setSelectedGame] = useState('blackjack');
+  const [selectedGame, setSelectedGame] = useState('conquian');
+
+  // Ref so server-listener closures always see the latest AI list
+  const aiPlayersRef = useRef([]);
+
+  const selectedGameDef = GAMES.find(g => g.id === selectedGame);
 
   // ─── HOST setup ────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!isHost) return;
 
-    // Start advertising the game so the Join screen can find it automatically
     if (hostIp) startBroadcasting(myName, hostIp);
 
-    // Load any players who already connected while on the HostSetup screen
     const existing = getConnectedPlayers();
     if (existing.length > 0) {
       setPlayers((prev) => [
@@ -54,41 +58,33 @@ export default function LobbyScreen({ navigation, route }) {
       ]);
     }
 
-    // Take over server event handling now that we're in the Lobby
     setServerListeners({
-      onClientJoined: () => {
-        // Player connected but name not known yet — they'll send JOIN shortly
-      },
+      onClientJoined: () => {},
       onClientLeft: ({ id }) => {
         setPlayers((prev) => prev.filter((p) => p.id !== id));
-        // Broadcast updated list to remaining clients
         broadcastToClients({
           type: 'PLAYER_LIST',
-          players: buildPlayerList(myName, getConnectedPlayers()),
+          players: buildPlayerList(myName, getConnectedPlayers(), aiPlayersRef.current),
         });
       },
       onMessage: (msg, clientId) => {
         if (msg.type === 'JOIN') {
-          // Add (or update) this player in the list
           setPlayers((prev) => {
             const without = prev.filter((p) => p.id !== clientId);
             return [...without, { id: clientId, name: msg.name, isMe: false, isHost: false }];
           });
-          // Broadcast fresh player list to all clients
           broadcastToClients({
             type: 'PLAYER_LIST',
-            players: buildPlayerList(myName, getConnectedPlayers()),
+            players: buildPlayerList(myName, getConnectedPlayers(), aiPlayersRef.current),
           });
         }
       },
     });
 
-    // If clients were already connected before the host navigated here,
-    // they sent JOIN but there was no onMessage handler yet — broadcast now so they update.
     if (existing.length > 0) {
       broadcastToClients({
         type: 'PLAYER_LIST',
-        players: buildPlayerList(myName, existing),
+        players: buildPlayerList(myName, existing, aiPlayersRef.current),
       });
     }
 
@@ -99,12 +95,9 @@ export default function LobbyScreen({ navigation, route }) {
   useEffect(() => {
     if (isHost) return;
 
-    // Take over client event handling now that we're in the Lobby
     setClientListeners({
       onMessage: (msg) => {
         if (msg.type === 'PLAYER_LIST') {
-          // Replace our list with the server's authoritative list,
-          // but keep "me" tagged correctly
           setPlayers(
             msg.players.map((p) => ({
               ...p,
@@ -128,11 +121,8 @@ export default function LobbyScreen({ navigation, route }) {
       },
     });
 
-    // Announce ourselves to the host
     sendToHost({ type: 'JOIN', name: myName });
 
-    // Disconnect only when the user presses back — NOT when the app replaces
-    // this screen with the game (navigation.replace fires beforeRemove too).
     const unsubscribe = navigation.addListener('beforeRemove', (e) => {
       if (e.data?.action?.type === 'GO_BACK') {
         disconnectFromHost();
@@ -141,10 +131,43 @@ export default function LobbyScreen({ navigation, route }) {
     return unsubscribe;
   }, []);
 
-  // ─── Host starts the game ──────────────────────────────────────────────────
+  // ─── AI player management (host only) ────────────────────────────────────
+  function handleAddAI() {
+    setPlayers((prev) => {
+      const aiCount = prev.filter((p) => p.isAI).length;
+      const newAI = {
+        id: `ai_${Date.now()}`,
+        name: aiCount === 0 ? 'Computer' : `Computer ${aiCount + 1}`,
+        isAI: true,
+        isMe: false,
+        isHost: false,
+      };
+      const next = [...prev, newAI];
+      aiPlayersRef.current = next.filter((p) => p.isAI);
+      broadcastToClients({
+        type: 'PLAYER_LIST',
+        players: buildPlayerList(myName, getConnectedPlayers(), aiPlayersRef.current),
+      });
+      return next;
+    });
+  }
+
+  function handleRemoveAI(id) {
+    setPlayers((prev) => {
+      const next = prev.filter((p) => p.id !== id);
+      aiPlayersRef.current = next.filter((p) => p.isAI);
+      broadcastToClients({
+        type: 'PLAYER_LIST',
+        players: buildPlayerList(myName, getConnectedPlayers(), aiPlayersRef.current),
+      });
+      return next;
+    });
+  }
+
+  // ─── Start game ────────────────────────────────────────────────────────────
   function handleStartGame() {
     if (players.length < 2) {
-      Alert.alert('Not enough players', 'Wait for at least one other player to join.');
+      Alert.alert('Not enough players', 'Add a Computer or wait for another player to join.');
       return;
     }
     const game = GAMES.find((g) => g.id === selectedGame);
@@ -153,6 +176,8 @@ export default function LobbyScreen({ navigation, route }) {
   }
 
   // ─── Render ────────────────────────────────────────────────────────────────
+  const canAddAI = isHost && selectedGameDef?.hasAI && players.length < MAX_PLAYERS;
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Lobby</Text>
@@ -176,7 +201,7 @@ export default function LobbyScreen({ navigation, route }) {
         </View>
       )}
 
-      <Text style={styles.sectionLabel}>Players ({players.length})</Text>
+      <Text style={styles.sectionLabel}>Players ({players.length}/{MAX_PLAYERS})</Text>
 
       <FlatList
         data={players}
@@ -184,14 +209,22 @@ export default function LobbyScreen({ navigation, route }) {
         style={styles.list}
         renderItem={({ item }) => (
           <View style={styles.playerRow}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{item.name.charAt(0).toUpperCase()}</Text>
+            <View style={[styles.avatar, item.isAI && styles.avatarAI]}>
+              <Text style={styles.avatarText}>
+                {item.isAI ? '🤖' : item.name.charAt(0).toUpperCase()}
+              </Text>
             </View>
             <Text style={styles.playerName}>{item.name}</Text>
             <View style={styles.badges}>
               {item.isHost && <Text style={styles.badge}>HOST</Text>}
               {item.isMe && <Text style={[styles.badge, styles.badgeMe]}>YOU</Text>}
+              {item.isAI && <Text style={[styles.badge, styles.badgeAI]}>CPU</Text>}
             </View>
+            {isHost && item.isAI && (
+              <TouchableOpacity style={styles.removeBtn} onPress={() => handleRemoveAI(item.id)}>
+                <Text style={styles.removeBtnText}>✕</Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
@@ -199,6 +232,17 @@ export default function LobbyScreen({ navigation, route }) {
 
       {isHost ? (
         <View style={styles.bottomSection}>
+          {hostIp && (
+            <View style={styles.ipRow}>
+              <Text style={styles.ipLabel}>Your IP: </Text>
+              <Text style={styles.ipValue}>{hostIp}</Text>
+            </View>
+          )}
+          {canAddAI && (
+            <TouchableOpacity style={styles.addAIBtn} onPress={handleAddAI}>
+              <Text style={styles.addAIBtnText}>+ Add Computer</Text>
+            </TouchableOpacity>
+          )}
           <Text style={styles.waitingText}>
             {players.length === 1
               ? 'Waiting for players to join…'
@@ -220,11 +264,11 @@ export default function LobbyScreen({ navigation, route }) {
   );
 }
 
-// Helper — builds the list the host broadcasts to clients
-function buildPlayerList(hostName, connectedPlayers) {
+function buildPlayerList(hostName, connectedPlayers, aiPlayers) {
   return [
     { id: 'host', name: hostName, isHost: true },
     ...connectedPlayers.map((p) => ({ id: p.id, name: p.name, isHost: false })),
+    ...aiPlayers.map((p) => ({ id: p.id, name: p.name, isAI: true })),
   ];
 }
 
@@ -253,7 +297,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#16213e',
     borderRadius: 14,
-    marginBottom: 20,
+    marginBottom: 16,
   },
   playerRow: {
     flexDirection: 'row',
@@ -268,6 +312,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
+  },
+  avatarAI: {
+    backgroundColor: '#6a1b9a',
   },
   avatarText: {
     color: '#ffffff',
@@ -297,6 +344,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#1a3a1a',
     color: '#4caf50',
   },
+  badgeAI: {
+    backgroundColor: '#3a1a5a',
+    color: '#ce93d8',
+  },
+  removeBtn: {
+    marginLeft: 10,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#3a1a1a',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  removeBtnText: {
+    color: '#e94560',
+    fontSize: 13,
+    fontWeight: 'bold',
+  },
   separator: {
     height: 1,
     backgroundColor: '#1a1a2e',
@@ -305,12 +370,35 @@ const styles = StyleSheet.create({
   bottomSection: {
     alignItems: 'center',
     paddingBottom: 16,
+    gap: 12,
+  },
+  ipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#16213e',
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  ipLabel: { color: '#b0b0c0', fontSize: 13 },
+  ipValue: { color: '#e94560', fontSize: 15, fontWeight: 'bold', letterSpacing: 1 },
+  addAIBtn: {
+    backgroundColor: '#3a1a5a',
+    borderWidth: 1.5,
+    borderColor: '#6a1b9a',
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 10,
+  },
+  addAIBtnText: {
+    color: '#ce93d8',
+    fontSize: 15,
+    fontWeight: 'bold',
   },
   waitingText: {
     color: '#b0b0c0',
     fontSize: 14,
     textAlign: 'center',
-    marginBottom: 16,
   },
   startButton: {
     backgroundColor: '#e94560',

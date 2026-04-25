@@ -155,21 +155,31 @@ let broadcastTimer = null;
 export function startBroadcasting(hostName, hostIp) {
   if (broadcastSocket) return;
 
-  // Derive subnet broadcast address (e.g. 192.168.1.5 → 192.168.1.255)
-  const parts = hostIp.split('.');
-  const broadcastAddr = `${parts[0]}.${parts[1]}.${parts[2]}.255`;
+  const parts = (hostIp || '').split('.');
+  const subnetBroadcast = parts.length === 4
+    ? `${parts[0]}.${parts[1]}.${parts[2]}.255`
+    : null;
+
+  console.log(`[Broadcast] Starting — hostIp: ${hostIp}, subnet: ${subnetBroadcast}`);
 
   broadcastSocket = UdpSocket.createSocket({ type: 'udp4' });
 
   broadcastSocket.bind(0, () => {
     broadcastSocket.setBroadcast(true);
+    console.log('[Broadcast] Socket ready');
 
     const payload = new TextEncoder().encode(JSON.stringify({ type: 'CARD_GAME', name: hostName }));
 
-    const send = () => {
-      broadcastSocket?.send(payload, 0, payload.length, DISCOVERY_PORT, broadcastAddr, (err) => {
-        if (err) console.log('[Broadcast] send error:', err.message);
+    const sendTo = (addr) => {
+      broadcastSocket?.send(payload, 0, payload.length, DISCOVERY_PORT, addr, (err) => {
+        if (err) console.log(`[Broadcast] send error (${addr}):`, err.message);
       });
+    };
+
+    const send = () => {
+      // Always send to global broadcast; also send to subnet broadcast if we have a valid IP
+      sendTo('255.255.255.255');
+      if (subnetBroadcast) sendTo(subnetBroadcast);
     };
 
     send();

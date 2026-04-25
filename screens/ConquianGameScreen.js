@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Alert,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Card from '../components/Card';
 import {
   deal, doSelectPassCard, doDrawFromStock,
@@ -90,7 +91,7 @@ export default function ConquianGameScreen({ navigation, route }) {
   }
 
   function scheduleAI(state) {
-    if (!isSinglePlayer || state.phase !== 'playing') return;
+    if (!isHost || state.phase !== 'playing') return;
     const cp = state.players[state.currentPlayerIndex];
     if (!cp?.isAI) return;
     setTimeout(() => {
@@ -231,16 +232,15 @@ export default function ConquianGameScreen({ navigation, route }) {
     if (!passCardId) return;
     if (isHost) {
       let s = doSelectPassCard(fullRef.current, myPid, passCardId);
-      if (isSinglePlayer) {
-        for (const p of initialPlayers) {
-          if (p.isAI) {
-            const hand = s.hands[String(p.id)] ?? [];
-            const cardId = difficulty === 'easy'
-              ? hand[Math.floor(Math.random() * hand.length)]?.id
-              : aiMostIsolated(hand);
-            if (cardId) s = doSelectPassCard(s, String(p.id), cardId);
-            if (s.phase === 'playing') break;
-          }
+      // Host always resolves AI pass selections (single-player and multiplayer)
+      for (const p of initialPlayers) {
+        if (p.isAI) {
+          const hand = s.hands[String(p.id)] ?? [];
+          const cardId = difficulty === 'easy'
+            ? hand[Math.floor(Math.random() * hand.length)]?.id
+            : aiMostIsolated(hand);
+          if (cardId) s = doSelectPassCard(s, String(p.id), cardId);
+          if (s.phase === 'playing') break;
         }
       }
       setPassCardId(null);
@@ -800,6 +800,15 @@ export default function ConquianGameScreen({ navigation, route }) {
         {phase === 'playing' && isMyTurn && turnPhase === 'action' && (
           <>
             <View style={styles.actionBtnRow}>
+              {isDrawTurnFreeAction && (
+                <TouchableOpacity
+                  style={[styles.actionBtn, styles.layBtn, !canLayMeld && styles.actionBtnDisabled]}
+                  onPress={handleLayMeld}
+                  disabled={!canLayMeld}
+                >
+                  <Text style={styles.actionBtnText}>Lay Meld</Text>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity
                 style={[styles.actionBtn, styles.borrowBtn, !activeCard && styles.actionBtnDisabled]}
                 onPress={enterBorrowMode}
@@ -906,6 +915,7 @@ const styles = StyleSheet.create({
   takeBtn: { backgroundColor: '#1565c0' },
   passBtn: { backgroundColor: '#b71c1c' },
   borrowBtn: { backgroundColor: '#6a1b9a' },
+  layBtn: { backgroundColor: '#2e7d32' },
   actionBtnText: { color: '#fff', fontSize: 11, fontWeight: 'bold', textAlign: 'center' },
   hintText: { color: '#666', fontSize: 11, textAlign: 'center' },
   discardHint: { color: '#e94560', fontSize: 14, textAlign: 'center', paddingVertical: 6 },
