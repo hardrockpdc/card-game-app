@@ -90,7 +90,7 @@ export function canExtendMeld(meld, card) {
 export function getConfig(playerCount) {
   if (playerCount <= 2) return { handSize: 10, winTarget: 11 };
   if (playerCount === 3) return { handSize: 8, winTarget: 9 };
-  return { handSize: 7, winTarget: 8 };
+  return { handSize: 6, winTarget: 7 };
 }
 
 // ─── State helpers ────────────────────────────────────────────────────────────

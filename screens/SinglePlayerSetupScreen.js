@@ -5,16 +5,23 @@ import {
 } from 'react-native';
 
 const GAMES = [
-  { id: 'blackjack', label: 'Blackjack', screen: 'Game',         aiRange: [0, 0] },
-  { id: 'goFish',    label: 'Go Fish',   screen: 'GoFishGame',   aiRange: [1, 3] },
-  { id: 'conquian',  label: 'Conquián',  screen: 'ConquianGame', aiRange: [1, 3] },
-  { id: 'poker',     label: 'Poker',     screen: 'PokerGame',    aiRange: [1, 3] },
+  { id: 'blackjack', label: 'Blackjack', screen: 'Game',         aiRange: [0, 0], hasDifficulty: false },
+  { id: 'goFish',    label: 'Go Fish',   screen: 'GoFishGame',   aiRange: [1, 3], hasDifficulty: false },
+  { id: 'conquian',  label: 'Conquián',  screen: 'ConquianGame', aiRange: [1, 3], hasDifficulty: true  },
+  { id: 'poker',     label: 'Poker',     screen: 'PokerGame',    aiRange: [1, 3], hasDifficulty: false },
+];
+
+const DIFFICULTIES = [
+  { id: 'easy',   label: 'Easy',   hint: 'Random play, passes often' },
+  { id: 'medium', label: 'Medium', hint: 'Solid play, ~15% pass rate' },
+  { id: 'hard',   label: 'Hard',   hint: 'Aggressive, rarely passes' },
 ];
 
 export default function SinglePlayerSetupScreen({ navigation }) {
-  const [name, setName]   = useState('');
-  const [gameId, setGameId] = useState('goFish');
-  const [numAI, setNumAI]  = useState(1);
+  const [name, setName]         = useState('');
+  const [gameId, setGameId]     = useState('goFish');
+  const [numAI, setNumAI]       = useState(1);
+  const [difficulty, setDifficulty] = useState('medium');
 
   const game = GAMES.find(g => g.id === gameId);
   const [minAI, maxAI] = game.aiRange;
@@ -35,7 +42,9 @@ export default function SinglePlayerSetupScreen({ navigation }) {
         isAI: true,
       })),
     ];
-    navigation.navigate(game.screen, { role: 'singleplayer', myName: trimmed, players });
+    const params = { role: 'singleplayer', myName: trimmed, players };
+    if (game.hasDifficulty) params.difficulty = difficulty;
+    navigation.navigate(game.screen, params);
   }
 
   return (
@@ -100,6 +109,28 @@ export default function SinglePlayerSetupScreen({ navigation }) {
         </>
       )}
 
+      {game.hasDifficulty && (
+        <>
+          <Text style={styles.label}>AI Difficulty</Text>
+          <View style={styles.diffRow}>
+            {DIFFICULTIES.map(d => (
+              <TouchableOpacity
+                key={d.id}
+                style={[styles.diffBtn, difficulty === d.id && styles.diffBtnSelected]}
+                onPress={() => setDifficulty(d.id)}
+              >
+                <Text style={[styles.diffBtnText, difficulty === d.id && styles.diffBtnTextSelected]}>
+                  {d.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <Text style={styles.diffHint}>
+            {DIFFICULTIES.find(d => d.id === difficulty)?.hint}
+          </Text>
+        </>
+      )}
+
       <TouchableOpacity
         style={[styles.playBtn, !name.trim() && styles.playBtnDimmed]}
         onPress={handlePlay}
@@ -134,6 +165,13 @@ const styles = StyleSheet.create({
   countBtnSelected: { backgroundColor: '#4caf50', borderColor: '#4caf50' },
   countBtnText: { color: '#b0b0c0', fontSize: 26, fontWeight: 'bold' },
   countBtnTextSelected: { color: '#fff' },
+
+  diffRow: { flexDirection: 'row', gap: 10 },
+  diffBtn: { flex: 1, paddingVertical: 14, borderRadius: 10, backgroundColor: '#16213e', borderWidth: 1.5, borderColor: '#334', alignItems: 'center' },
+  diffBtnSelected: { backgroundColor: '#1565c0', borderColor: '#1565c0' },
+  diffBtnText: { color: '#b0b0c0', fontSize: 15, fontWeight: 'bold' },
+  diffBtnTextSelected: { color: '#fff' },
+  diffHint: { color: '#666', fontSize: 12, marginTop: 6, textAlign: 'center' },
 
   infoBox: { backgroundColor: '#16213e', borderRadius: 10, padding: 14 },
   infoText: { color: '#b0b0c0', fontSize: 15, textAlign: 'center' },
