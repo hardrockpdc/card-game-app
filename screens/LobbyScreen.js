@@ -10,13 +10,10 @@ import {
 } from 'react-native';
 
 const GAMES = [
-  { id: 'blackjack',   label: 'Blackjack', screen: 'MultiplayerGame', available: true },
-  { id: 'crazyEights', label: 'Crazy 8s',  screen: 'CrazyEightsGame', available: true },
-  { id: 'war',         label: 'War',        screen: 'WarGame',         available: true },
-  { id: 'goFish',      label: 'Go Fish',    screen: 'GoFishGame',      available: true },
-  { id: 'conquian',    label: 'Conquián',   screen: 'ConquianGame',    available: true },
-  { id: 'snap',        label: 'Snap',       screen: 'SnapGame',        available: true },
-  { id: 'poker',       label: 'Poker',      screen: 'PokerGame',       available: true },
+  { id: 'blackjack', label: 'Blackjack', screen: 'MultiplayerGame', available: true },
+  { id: 'goFish',    label: 'Go Fish',   screen: 'GoFishGame',      available: true },
+  { id: 'conquian',  label: 'Conquián',  screen: 'ConquianGame',    available: true },
+  { id: 'poker',     label: 'Poker',     screen: 'PokerGame',       available: true },
 ];
 import {
   setServerListeners,

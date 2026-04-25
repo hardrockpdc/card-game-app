@@ -2,13 +2,10 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 
 const GAMES = [
-  { id: 'blackjack',   label: 'Blackjack' },
-  { id: 'crazyEights', label: 'Crazy 8s'  },
-  { id: 'war',         label: 'War'        },
-  { id: 'goFish',      label: 'Go Fish'   },
-  { id: 'conquian',    label: 'Conquián'  },
-  { id: 'snap',        label: 'Snap'      },
-  { id: 'poker',       label: 'Poker'     },
+  { id: 'blackjack', label: 'Blackjack' },
+  { id: 'goFish',    label: 'Go Fish'   },
+  { id: 'conquian',  label: 'Conquián'  },
+  { id: 'poker',     label: 'Poker'     },
 ];
 
 const RULES = {
@@ -22,27 +19,6 @@ const RULES = {
       'If your total goes over 21 you "bust" and lose immediately.',
       'Once you stand, the dealer flips their hidden card. The dealer keeps hitting until they reach 17 or more.',
       'Whoever is closer to 21 wins. If you tie it is called a "push" — no one wins.',
-    ],
-  },
-  crazyEights: {
-    goal: 'Be the first player to get rid of all your cards.',
-    rules: [
-      'Each player starts with 7 cards (5 cards if there are 3 or more players).',
-      'One card is placed face-up as the starting discard pile.',
-      'On your turn, play a card that matches the top discard card by SUIT or by RANK.',
-      '8s are wild — you can play an 8 at any time, then choose what the new suit is.',
-      'If you cannot play any card, draw one card from the deck.',
-      'First player to empty their hand wins!',
-    ],
-  },
-  war: {
-    goal: 'Win the most rounds by playing the highest card each round.',
-    rules: [
-      'The deck is dealt equally between all players — no one looks at their cards.',
-      'Each round everyone flips their top card at the same time.',
-      'The player whose card has the highest value wins that round and earns 1 point.',
-      'Card ranking from lowest to highest: 2 3 4 5 6 7 8 9 10 J Q K A.',
-      'After all cards have been played the player with the most points wins the war!',
     ],
   },
   goFish: {
@@ -70,17 +46,6 @@ const RULES = {
       'If everyone passes: the card goes to the Dead Pile and the next player draws a new card.',
       'If the stock runs out with no winner, the game is a Tie.',
       'First player to reach the meld target wins!',
-    ],
-  },
-  snap: {
-    goal: 'React fastest and tap SNAP when two matching cards appear on the pile.',
-    rules: [
-      'All 52 cards are shared. Players take turns flipping the top card onto the center pile.',
-      'When the top two cards on the pile share the SAME rank, the SNAP WINDOW opens!',
-      'Everyone races to tap the big red SNAP button — first one to tap wins!',
-      'The winner earns 1 point for every card in the center pile, and the pile is cleared.',
-      'If nobody snaps within 5 seconds, the window closes and the next player flips.',
-      'When all cards have been flipped, the player with the most snap points wins!',
     ],
   },
   poker: {

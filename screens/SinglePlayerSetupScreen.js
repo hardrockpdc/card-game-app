@@ -5,18 +5,15 @@ import {
 } from 'react-native';
 
 const GAMES = [
-  { id: 'blackjack',   label: 'Blackjack',  screen: 'Game',            aiRange: [0, 0] },
-  { id: 'crazyEights', label: 'Crazy 8s',   screen: 'CrazyEightsGame', aiRange: [1, 3] },
-  { id: 'war',         label: 'War',         screen: 'WarGame',         aiRange: [1, 3] },
-  { id: 'goFish',      label: 'Go Fish',     screen: 'GoFishGame',      aiRange: [1, 3] },
-  { id: 'conquian',    label: 'Conquián',    screen: 'ConquianGame',    aiRange: [1, 3] },
-  { id: 'snap',        label: 'Snap',        screen: 'SnapGame',        aiRange: [1, 1] },
-  { id: 'poker',       label: 'Poker',       screen: 'PokerGame',       aiRange: [1, 3] },
+  { id: 'blackjack', label: 'Blackjack', screen: 'Game',         aiRange: [0, 0] },
+  { id: 'goFish',    label: 'Go Fish',   screen: 'GoFishGame',   aiRange: [1, 3] },
+  { id: 'conquian',  label: 'Conquián',  screen: 'ConquianGame', aiRange: [1, 3] },
+  { id: 'poker',     label: 'Poker',     screen: 'PokerGame',    aiRange: [1, 3] },
 ];
 
 export default function SinglePlayerSetupScreen({ navigation }) {
   const [name, setName]   = useState('');
-  const [gameId, setGameId] = useState('crazyEights');
+  const [gameId, setGameId] = useState('goFish');
   const [numAI, setNumAI]  = useState(1);
 
   const game = GAMES.find(g => g.id === gameId);
