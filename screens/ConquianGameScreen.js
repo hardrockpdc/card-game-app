@@ -325,6 +325,29 @@ export default function ConquianGameScreen({ navigation, route }) {
     }
   }
 
+  function handleSmartTake() {
+    if (isHost) {
+      const s = fullRef.current;
+      if (!s || !s.activeCard) return;
+      // Prefer extending a targeted meld; fall back to new meld with selected hand cards
+      if (selectedMeldIdx !== null) {
+        const next = doTakeActiveCard(s, myPid, { type: 'extend', meldIdx: selectedMeldIdx });
+        if (next !== s) { applyState(next); return; }
+      }
+      const next = doTakeActiveCard(s, myPid, { type: 'new', handCardIds: [...selectedHandIds] });
+      if (next !== s) { applyState(next); return; }
+      setStatusMsg('Select hand cards to meld with active card, or tap a meld to extend it');
+    } else {
+      if (selectedMeldIdx !== null) {
+        sendToHost({ type: 'ACTION', action: 'takeExtend', meldIdx: selectedMeldIdx });
+        setSelectedMeldIdx(null);
+      } else {
+        sendToHost({ type: 'ACTION', action: 'takeMeld', handCardIds: [...selectedHandIds] });
+        setSelectedHandIds(new Set());
+      }
+    }
+  }
+
   function handlePass() {
     if (isHost) {
       applyState(doPassActiveCard(fullRef.current));
@@ -434,7 +457,7 @@ export default function ConquianGameScreen({ navigation, route }) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.container}>
-          <Text style={styles.borrowTitle}>Borrow Mode</Text>
+          <Text style={styles.borrowTitle}>Rearrange Melds</Text>
           <Text style={styles.borrowSubtitle}>
             {hasActive ? '✓ Active card placed' : '⚠ Active card must be placed in a group'}
           </Text>
@@ -483,10 +506,10 @@ export default function ConquianGameScreen({ navigation, route }) {
             {borrowPool.map(card => (
               <TouchableOpacity key={card.id} onPress={() => borrowSelectCard(card.id)}>
                 <View style={[
-                  borrowSelCardId === card.id ? styles.selectedWrapper : null,
+                  borrowSelCardId === card.id ? styles.selectedWrapperSmall : null,
                   card.id === ac?.id ? styles.activeCardInPool : null,
                 ]}>
-                  <Card rank={card.rank} suit={card.suit} />
+                  <Card rank={card.rank} suit={card.suit} small />
                 </View>
               </TouchableOpacity>
             ))}
@@ -611,17 +634,15 @@ export default function ConquianGameScreen({ navigation, route }) {
                 {gameState.handSizes?.[opPid] ?? 0} cards · {meldedCount(gameState, opPid)}/{winTarget}
               </Text>
               {opMelds.length > 0 && (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.opponentMeldScroll}>
-                  <View style={styles.meldRow}>
-                    {opMelds.map((meld, idx) => (
-                      <View key={idx} style={styles.meldGroup}>
-                        {meld.map(card => (
-                          <Card key={card.id} rank={card.rank} suit={card.suit} small />
-                        ))}
-                      </View>
-                    ))}
-                  </View>
-                </ScrollView>
+                <View style={[styles.meldRow, styles.meldRowWrap]}>
+                  {opMelds.map((meld, idx) => (
+                    <View key={idx} style={styles.meldGroup}>
+                      {meld.map(card => (
+                        <Card key={card.id} rank={card.rank} suit={card.suit} small />
+                      ))}
+                    </View>
+                  ))}
+                </View>
               )}
             </View>
           );
@@ -697,8 +718,7 @@ export default function ConquianGameScreen({ navigation, route }) {
       {myMelds.length > 0 && (
         <View style={styles.meldSection}>
           <Text style={styles.sectionLabel}>Your Melds</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.meldRow}>
+          <View style={[styles.meldRow, styles.meldRowWrap]}>
               {myMelds.map((meld, idx) => (
                 <TouchableOpacity
                   key={idx}
@@ -715,7 +735,6 @@ export default function ConquianGameScreen({ navigation, route }) {
                 </TouchableOpacity>
               ))}
             </View>
-          </ScrollView>
         </View>
       )}
 
@@ -747,8 +766,8 @@ export default function ConquianGameScreen({ navigation, route }) {
                   if (turnPhase === 'action' && isMyTurn) toggleHandCard(card.id);
                 }}
               >
-                <View style={isSelected ? styles.selectedWrapper : null}>
-                  <Card rank={card.rank} suit={card.suit} />
+                <View style={isSelected ? styles.selectedWrapperSmall : null}>
+                  <Card rank={card.rank} suit={card.suit} small />
                 </View>
               </TouchableOpacity>
             );
@@ -781,37 +800,26 @@ export default function ConquianGameScreen({ navigation, route }) {
         {phase === 'playing' && isMyTurn && turnPhase === 'action' && (
           <>
             <View style={styles.actionBtnRow}>
-              {canLayMeld && (
-                <TouchableOpacity style={styles.actionBtn} onPress={handleLayMeld}>
-                  <Text style={styles.actionBtnText}>Lay Meld</Text>
-                </TouchableOpacity>
-              )}
-              {canAddToMeld && (
-                <TouchableOpacity style={styles.actionBtn} onPress={handleAddToMeld}>
-                  <Text style={styles.actionBtnText}>Add to Meld</Text>
-                </TouchableOpacity>
-              )}
-              {canTakeMeld && (
-                <TouchableOpacity style={[styles.actionBtn, styles.takeBtn]} onPress={handleTakeMeld}>
-                  <Text style={styles.actionBtnText}>Take + Meld</Text>
-                </TouchableOpacity>
-              )}
-              {canTakeExtend && (
-                <TouchableOpacity style={[styles.actionBtn, styles.takeBtn]} onPress={handleTakeExtend}>
-                  <Text style={styles.actionBtnText}>Take + Extend</Text>
-                </TouchableOpacity>
-              )}
-              {!!activeCard && (
-                <TouchableOpacity style={[styles.actionBtn, styles.borrowBtn]} onPress={enterBorrowMode}>
-                  <Text style={styles.actionBtnText}>Borrow</Text>
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity
+                style={[styles.actionBtn, styles.borrowBtn, !activeCard && styles.actionBtnDisabled]}
+                onPress={enterBorrowMode}
+                disabled={!activeCard}
+              >
+                <Text style={styles.actionBtnText}>Rearrange</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionBtn, styles.takeBtn, !activeCard && styles.actionBtnDisabled]}
+                onPress={handleSmartTake}
+                disabled={!activeCard}
+              >
+                <Text style={styles.actionBtnText}>Take + Meld</Text>
+              </TouchableOpacity>
               <TouchableOpacity style={[styles.actionBtn, styles.passBtn]} onPress={handlePass}>
                 <Text style={styles.actionBtnText}>Pass</Text>
               </TouchableOpacity>
             </View>
             <Text style={styles.hintText}>
-              Tap hand cards to select · tap a meld above to target it · Borrow to rearrange melds
+              Select hand cards · tap a meld to target it · Rearrange to reorganize melds
             </Text>
           </>
         )}
@@ -857,10 +865,10 @@ const styles = StyleSheet.create({
   homeBtn: { backgroundColor: '#16213e', paddingHorizontal: 48, paddingVertical: 14, borderRadius: 12, borderWidth: 1, borderColor: '#334' },
   homeBtnText: { color: '#b0b0c0', fontSize: 16 },
 
-  opponentsRow: { flexDirection: 'row', paddingHorizontal: 12, gap: 8, marginBottom: 6 },
-  opponentCard: { backgroundColor: '#16213e', borderRadius: 10, padding: 10, borderWidth: 1.5, borderColor: '#334', flex: 1 },
+  opponentsRow: { paddingHorizontal: 12, gap: 6, marginBottom: 6 },
+  opponentCard: { backgroundColor: '#16213e', borderRadius: 10, padding: 10, borderWidth: 1.5, borderColor: '#334' },
   opponentCardActive: { borderColor: '#e94560' },
-  opponentCardMulti: { minWidth: 0 },
+  opponentCardMulti: {},
   opponentHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 },
   opponentName: { color: '#fff', fontSize: 13, fontWeight: 'bold', flex: 1 },
   opponentTurnDot: { color: '#e94560', fontSize: 11, marginLeft: 4 },
@@ -881,22 +889,24 @@ const styles = StyleSheet.create({
 
   meldSection: { paddingHorizontal: 12, marginBottom: 6 },
   sectionLabel: { color: '#b0b0c0', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 },
-  meldRow: { flexDirection: 'row', gap: 10 },
+  meldRow: { flexDirection: 'row', gap: 6 },
+  meldRowWrap: { flexWrap: 'wrap', rowGap: 6 },
   meldGroup: { flexDirection: 'row', borderRadius: 8, borderWidth: 2, borderColor: 'transparent', padding: 2 },
   meldGroupSelected: { borderColor: '#e94560' },
 
   handSection: { paddingHorizontal: 12, marginBottom: 6 },
   handRow: { flexDirection: 'row', flexWrap: 'wrap' },
   selectedWrapper: { borderRadius: 10, borderWidth: 3, borderColor: '#4caf50', transform: [{ translateY: -10 }] },
+  selectedWrapperSmall: { borderRadius: 7, borderWidth: 3, borderColor: '#4caf50', transform: [{ translateY: -8 }] },
 
   actionBar: { backgroundColor: '#16213e', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 12, marginHorizontal: 12, marginTop: 6 },
-  actionBtnRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 6 },
-  actionBtn: { backgroundColor: '#4caf50', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 10, alignItems: 'center', flex: 1, minWidth: 100 },
+  actionBtnRow: { flexDirection: 'row', gap: 8, marginBottom: 6, justifyContent: 'center' },
+  actionBtn: { backgroundColor: '#4caf50', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, alignItems: 'center', justifyContent: 'center', minWidth: 90 },
   actionBtnDisabled: { backgroundColor: '#2d5c35' },
   takeBtn: { backgroundColor: '#1565c0' },
   passBtn: { backgroundColor: '#b71c1c' },
   borrowBtn: { backgroundColor: '#6a1b9a' },
-  actionBtnText: { color: '#fff', fontSize: 14, fontWeight: 'bold', textAlign: 'center' },
+  actionBtnText: { color: '#fff', fontSize: 11, fontWeight: 'bold', textAlign: 'center' },
   hintText: { color: '#666', fontSize: 11, textAlign: 'center' },
   discardHint: { color: '#e94560', fontSize: 14, textAlign: 'center', paddingVertical: 6 },
   waitText: { color: '#b0b0c0', fontSize: 14, textAlign: 'center', paddingVertical: 6 },
