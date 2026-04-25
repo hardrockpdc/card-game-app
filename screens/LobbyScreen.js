@@ -10,10 +10,11 @@ import {
 } from 'react-native';
 
 const GAMES = [
-  { id: 'blackjack', label: 'Blackjack', screen: 'MultiplayerGame', available: true, hasAI: false },
-  { id: 'goFish',    label: 'Go Fish',   screen: 'GoFishGame',      available: true, hasAI: false },
-  { id: 'conquian',  label: 'Conquián',  screen: 'ConquianGame',    available: true, hasAI: true  },
-  { id: 'poker',     label: 'Poker',     screen: 'PokerGame',       available: true, hasAI: false },
+  { id: 'blackjack',  label: 'Blackjack',   screen: 'MultiplayerGame', available: true, hasAI: false, minPlayers: 2 },
+  { id: 'goFish',     label: 'Go Fish',     screen: 'GoFishGame',      available: true, hasAI: false, minPlayers: 2 },
+  { id: 'conquian',   label: 'Conquián',    screen: 'ConquianGame',    available: true, hasAI: true,  minPlayers: 2 },
+  { id: 'poker',      label: 'Poker',       screen: 'PokerGame',       available: true, hasAI: false, minPlayers: 2 },
+  { id: 'wildRound',  label: 'Wild Round',  screen: 'WildRoundGame',   available: true, hasAI: false, minPlayers: 3 },
 ];
 
 const MAX_PLAYERS = 4;
@@ -38,6 +39,7 @@ export default function LobbyScreen({ navigation, route }) {
     { id: isHost ? 'host' : 'me', name: myName, isMe: true, isHost },
   ]);
   const [selectedGame, setSelectedGame] = useState('conquian');
+  const [tone, setTone] = useState('family');
 
   // Ref so server-listener closures always see the latest AI list
   const aiPlayersRef = useRef([]);
@@ -107,10 +109,12 @@ export default function LobbyScreen({ navigation, route }) {
           );
         } else if (msg.type === 'START_GAME') {
           const game = GAMES.find((g) => g.id === msg.gameType) || GAMES[0];
+          const extra = msg.tone ? { tone: msg.tone } : {};
           navigation.replace(game.screen, {
             role: 'client',
             myName,
             players: msg.players,
+            ...extra,
           });
         }
       },
@@ -166,13 +170,20 @@ export default function LobbyScreen({ navigation, route }) {
 
   // ─── Start game ────────────────────────────────────────────────────────────
   function handleStartGame() {
-    if (players.length < 2) {
-      Alert.alert('Not enough players', 'Add a Computer or wait for another player to join.');
+    const minP = selectedGameDef?.minPlayers ?? 2;
+    if (players.length < minP) {
+      Alert.alert(
+        'Not enough players',
+        minP > 2
+          ? `${selectedGameDef?.label} needs at least ${minP} players.`
+          : 'Add a Computer or wait for another player to join.'
+      );
       return;
     }
     const game = GAMES.find((g) => g.id === selectedGame);
-    broadcastToClients({ type: 'START_GAME', players, gameType: selectedGame });
-    navigation.replace(game.screen, { role: 'host', myName, players });
+    const extra = selectedGame === 'wildRound' ? { tone } : {};
+    broadcastToClients({ type: 'START_GAME', players, gameType: selectedGame, ...extra });
+    navigation.replace(game.screen, { role: 'host', myName, players, ...extra });
   }
 
   // ─── Render ────────────────────────────────────────────────────────────────
@@ -198,6 +209,19 @@ export default function LobbyScreen({ navigation, route }) {
               </TouchableOpacity>
             ))}
           </ScrollView>
+          {selectedGame === 'wildRound' && (
+            <View style={styles.toneRow}>
+              {[{ id: 'family', label: 'Family 🧒' }, { id: 'mature', label: 'Mature 🔞' }].map(t => (
+                <TouchableOpacity
+                  key={t.id}
+                  style={[styles.toneChip, tone === t.id && styles.toneChipSelected]}
+                  onPress={() => setTone(t.id)}
+                >
+                  <Text style={[styles.toneChipText, tone === t.id && styles.toneChipTextSelected]}>{t.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
       )}
 
@@ -244,12 +268,12 @@ export default function LobbyScreen({ navigation, route }) {
             </TouchableOpacity>
           )}
           <Text style={styles.waitingText}>
-            {players.length === 1
-              ? 'Waiting for players to join…'
+            {players.length < (selectedGameDef?.minPlayers ?? 2)
+              ? `${selectedGameDef?.label} needs at least ${selectedGameDef?.minPlayers} players`
               : 'Ready! Tap Start Game when everyone is here.'}
           </Text>
           <TouchableOpacity
-            style={[styles.startButton, players.length < 2 && styles.startButtonDimmed]}
+            style={[styles.startButton, players.length < (selectedGameDef?.minPlayers ?? 2) && styles.startButtonDimmed]}
             onPress={handleStartGame}
           >
             <Text style={styles.startButtonText}>Start Game</Text>
@@ -442,4 +466,12 @@ const styles = StyleSheet.create({
   gameChipTextSelected: {
     color: '#ffffff',
   },
+  toneRow: { flexDirection: 'row', gap: 10, marginTop: 10 },
+  toneChip: {
+    flex: 1, paddingVertical: 8, borderRadius: 10,
+    backgroundColor: '#16213e', borderWidth: 1.5, borderColor: '#334', alignItems: 'center',
+  },
+  toneChipSelected: { backgroundColor: '#9c27b0', borderColor: '#9c27b0' },
+  toneChipText: { color: '#b0b0c0', fontSize: 13, fontWeight: 'bold' },
+  toneChipTextSelected: { color: '#ffffff' },
 });
