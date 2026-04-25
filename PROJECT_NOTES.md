@@ -1,7 +1,7 @@
-📋 Project Summary — Card Game App
+📋 Project Summary — Card Night
 
 🎯 The Vision
-A cross-platform React Native mobile app for playing card games with friends and family. Works completely offline via local WiFi/hotspot (phones connect directly to each other — no internet needed). Each player uses their own phone (private hand). Up to 8+ players per game.
+A cross-platform React Native mobile app called **Card Night** for playing card games with friends and family. Works completely offline via local WiFi/hotspot (phones connect directly to each other — no internet needed). Each player uses their own phone (private hand). Up to 8+ players per game.
 Important principle: Offline play is core to the app, not a nice-to-have. Airplane / no-WiFi scenarios covered via phone hotspot.
 
 👤 About You (Pedro)
@@ -26,9 +26,8 @@ Prefers: tappable button questions (not typing), simple language, step-by-step, 
 ✅ Phase 4.6: Multi-game support — Lobby has game selector; Crazy 8s + War fully playable
 ✅ Phase 4.7: All remaining card games built — Go Fish, Rummy, Snap, Texas Hold'em Poker
 ✅ Phase 4.8: Conquián complete — Initial Card Pass, Priority Chain, Borrowing, AI difficulty, full multiplayer
-🔜 Phase 5: Party card game (Cards Against Humanity-style — mix of original and open-source content)
-🔜 Phase 6: Polish (sounds, animations, nicer card designs, in-app "how to host offline" helper)
-🔜 Phase 7: Publish to Google Play and App Store
+⏸️  Phase 5: Polish — visuals, animations, UX improvements, multi-language support (EN + ES) — paused until better PC
+🔜 Phase 6: Publish to Google Play and App Store
 
 🛠️ Tech Stack Decisions
 
@@ -37,6 +36,7 @@ Navigation: React Navigation (native-stack)
 Networking: react-native-tcp-socket + expo-network (TCP port 7777) + react-native-udp (UDP port 7778 for discovery)
 Build system: EAS Build (Expo's cloud build service)
 Source control: Git (local only so far, not yet pushed to GitHub)
+App name: Card Night (slug stays `card-game-app` — changing it would break EAS)
 Package ID: com.pedro.cardgameapp
 
 📂 Current Project Structure
@@ -107,9 +107,8 @@ Hidden card shown as red back with 🂠 symbol
 
 ### 🔮 Next Steps When We Resume
 
-1. **Phase 5: Party card game** — Cards Against Humanity-style (mix of original and open-source content) — **this is the next major feature**
-2. **Phase 6: Polish** — sounds, animations, nicer card designs, in-app "how to host offline" helper
-3. **Phase 7: Publish** — Google Play and App Store
+1. **Phase 5: Polish** ⏸️ paused until better PC — visuals, animations, UX, multi-language (EN + ES)
+2. **Phase 6: Publish** — Google Play and App Store
 
 ### 💡 Important Reminders
 
