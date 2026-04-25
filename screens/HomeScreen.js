@@ -8,6 +8,13 @@ export default function HomeScreen({ navigation }) {
       <Text style={styles.subtitle}>Play with friends, anywhere</Text>
 
       <TouchableOpacity
+        style={styles.singlePlayerButton}
+        onPress={() => navigation.navigate('SinglePlayerSetup')}
+      >
+        <Text style={styles.singlePlayerButtonText}>Single Player</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
         style={styles.primaryButton}
         onPress={() => navigation.navigate('HostSetup')}
       >
@@ -21,19 +28,14 @@ export default function HomeScreen({ navigation }) {
         <Text style={styles.secondaryButtonText}>Join a Game</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.settingsLink}
-        onPress={() => navigation.navigate('Game')}
-      >
-        <Text style={styles.settingsLinkText}>🧪 Test Game Screen</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.settingsLink}
-        onPress={() => navigation.navigate('Settings')}
-      >
-        <Text style={styles.settingsLinkText}>⚙️ Settings</Text>
-      </TouchableOpacity>
+      <View style={styles.bottomLinks}>
+        <TouchableOpacity onPress={() => navigation.navigate('HowToPlay')}>
+          <Text style={styles.linkText}>📖 How to Play</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
+          <Text style={styles.linkText}>⚙️ Settings</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -55,7 +57,23 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     color: '#b0b0c0',
-    marginBottom: 60,
+    marginBottom: 40,
+  },
+  singlePlayerButton: {
+    backgroundColor: 'transparent',
+    paddingVertical: 18,
+    paddingHorizontal: 60,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#4caf50',
+    marginBottom: 16,
+    width: '80%',
+    alignItems: 'center',
+  },
+  singlePlayerButtonText: {
+    color: '#4caf50',
+    fontSize: 20,
+    fontWeight: 'bold',
   },
   primaryButton: {
     backgroundColor: '#e94560',
@@ -86,11 +104,13 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
   },
-  settingsLink: {
+  bottomLinks: {
     position: 'absolute',
     bottom: 40,
+    flexDirection: 'row',
+    gap: 28,
   },
-  settingsLinkText: {
+  linkText: {
     color: '#b0b0c0',
     fontSize: 16,
   },

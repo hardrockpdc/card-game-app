@@ -9,6 +9,15 @@ import LobbyScreen from './screens/LobbyScreen';
 import GameScreen from './screens/GameScreen';
 import ResultsScreen from './screens/ResultsScreen';
 import SettingsScreen from './screens/SettingsScreen';
+import MultiplayerGameScreen from './screens/MultiplayerGameScreen';
+import CrazyEightsGameScreen from './screens/CrazyEightsGameScreen';
+import WarGameScreen from './screens/WarGameScreen';
+import GoFishGameScreen from './screens/GoFishGameScreen';
+import ConquianGameScreen from './screens/ConquianGameScreen';
+import SnapGameScreen from './screens/SnapGameScreen';
+import PokerGameScreen from './screens/PokerGameScreen';
+import SinglePlayerSetupScreen from './screens/SinglePlayerSetupScreen';
+import HowToPlayScreen from './screens/HowToPlayScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -34,6 +43,15 @@ export default function App() {
         <Stack.Screen name="Game" component={GameScreen} options={{ title: 'Blackjack' }} />
         <Stack.Screen name="Results" component={ResultsScreen} options={{ title: 'Results' }} />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
+        <Stack.Screen name="MultiplayerGame" component={MultiplayerGameScreen} options={{ title: 'Blackjack' }} />
+        <Stack.Screen name="CrazyEightsGame" component={CrazyEightsGameScreen} options={{ title: 'Crazy 8s' }} />
+        <Stack.Screen name="WarGame" component={WarGameScreen} options={{ title: 'War' }} />
+        <Stack.Screen name="GoFishGame" component={GoFishGameScreen} options={{ title: 'Go Fish' }} />
+        <Stack.Screen name="ConquianGame" component={ConquianGameScreen} options={{ title: 'Conquián' }} />
+        <Stack.Screen name="SnapGame" component={SnapGameScreen} options={{ title: 'Snap' }} />
+        <Stack.Screen name="PokerGame" component={PokerGameScreen} options={{ title: 'Poker' }} />
+        <Stack.Screen name="SinglePlayerSetup" component={SinglePlayerSetupScreen} options={{ title: 'Single Player' }} />
+        <Stack.Screen name="HowToPlay" component={HowToPlayScreen} options={{ title: 'How to Play' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
