@@ -15,6 +15,7 @@ import ConquianGameScreen from './screens/ConquianGameScreen';
 import PokerGameScreen from './screens/PokerGameScreen';
 import SinglePlayerSetupScreen from './screens/SinglePlayerSetupScreen';
 import HowToPlayScreen from './screens/HowToPlayScreen';
+import WildRoundGameScreen from './screens/WildRoundGameScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -46,6 +47,7 @@ export default function App() {
         <Stack.Screen name="PokerGame" component={PokerGameScreen} options={{ title: 'Poker' }} />
         <Stack.Screen name="SinglePlayerSetup" component={SinglePlayerSetupScreen} options={{ title: 'Single Player' }} />
         <Stack.Screen name="HowToPlay" component={HowToPlayScreen} options={{ title: 'How to Play' }} />
+        <Stack.Screen name="WildRoundGame" component={WildRoundGameScreen} options={{ title: 'Wild Round' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -50,10 +50,11 @@ export function processSubmission(state, playerId, cardId) {
   if (state.submissions.some((s) => s.playerId === pid)) throw new Error('Already submitted');
   const player = state.players.find((p) => String(p.id) === pid);
   if (!player) throw new Error('Player not found');
-  if (!player.hand.some((c) => c.id === cardId)) throw new Error('Card not in hand');
+  const card = player.hand.find((c) => c.id === cardId);
+  if (!card) throw new Error('Card not in hand');
   return {
     ...state,
-    submissions: [...state.submissions, { playerId: pid, cardId }],
+    submissions: [...state.submissions, { playerId: pid, cardId, cardText: card.text }],
   };
 }
 
@@ -82,6 +83,7 @@ export function pickWinner(state, winningCardId) {
     ...state,
     players,
     answerDeck: deckPool,
+    revealSubmissions: state.submissions, // saved for reveal phase before clearing
     submissions: [],
     currentPrompt: null,
     promptSkipped: false,

@@ -5,10 +5,11 @@ import {
 } from 'react-native';
 
 const GAMES = [
-  { id: 'blackjack', label: 'Blackjack', screen: 'Game',         aiRange: [0, 0], hasDifficulty: false },
-  { id: 'goFish',    label: 'Go Fish',   screen: 'GoFishGame',   aiRange: [1, 3], hasDifficulty: false },
-  { id: 'conquian',  label: 'Conquián',  screen: 'ConquianGame', aiRange: [1, 3], hasDifficulty: true  },
-  { id: 'poker',     label: 'Poker',     screen: 'PokerGame',    aiRange: [1, 3], hasDifficulty: false },
+  { id: 'blackjack',  label: 'Blackjack',   screen: 'Game',           aiRange: [0, 0], hasDifficulty: false, hasTone: false },
+  { id: 'goFish',     label: 'Go Fish',     screen: 'GoFishGame',     aiRange: [1, 3], hasDifficulty: false, hasTone: false },
+  { id: 'conquian',   label: 'Conquián',    screen: 'ConquianGame',   aiRange: [1, 3], hasDifficulty: true,  hasTone: false },
+  { id: 'poker',      label: 'Poker',       screen: 'PokerGame',      aiRange: [1, 3], hasDifficulty: false, hasTone: false },
+  { id: 'wildRound',  label: 'Wild Round',  screen: 'WildRoundGame',  aiRange: [2, 7], hasDifficulty: false, hasTone: true  },
 ];
 
 const DIFFICULTIES = [
@@ -18,10 +19,11 @@ const DIFFICULTIES = [
 ];
 
 export default function SinglePlayerSetupScreen({ navigation }) {
-  const [name, setName]         = useState('');
-  const [gameId, setGameId]     = useState('goFish');
-  const [numAI, setNumAI]       = useState(1);
+  const [name, setName]             = useState('');
+  const [gameId, setGameId]         = useState('goFish');
+  const [numAI, setNumAI]           = useState(1);
   const [difficulty, setDifficulty] = useState('medium');
+  const [tone, setTone]             = useState('family');
 
   const game = GAMES.find(g => g.id === gameId);
   const [minAI, maxAI] = game.aiRange;
@@ -44,6 +46,7 @@ export default function SinglePlayerSetupScreen({ navigation }) {
     ];
     const params = { role: 'singleplayer', myName: trimmed, players };
     if (game.hasDifficulty) params.difficulty = difficulty;
+    if (game.hasTone) params.tone = tone;
     navigation.navigate(game.screen, params);
   }
 
@@ -89,7 +92,25 @@ export default function SinglePlayerSetupScreen({ navigation }) {
           <Text style={styles.label}>
             {maxAI === 1 ? 'Opponent' : 'Computer Opponents'}
           </Text>
-          {maxAI > 1 ? (
+          {maxAI > 3 ? (
+            <View style={styles.stepperRow}>
+              <TouchableOpacity
+                style={styles.stepperBtn}
+                onPress={() => setNumAI(n => Math.max(n - 1, minAI))}
+                disabled={clampedAI <= minAI}
+              >
+                <Text style={[styles.stepperBtnText, clampedAI <= minAI && styles.stepperBtnDimmed]}>−</Text>
+              </TouchableOpacity>
+              <Text style={styles.stepperValue}>{clampedAI}</Text>
+              <TouchableOpacity
+                style={styles.stepperBtn}
+                onPress={() => setNumAI(n => Math.min(n + 1, maxAI))}
+                disabled={clampedAI >= maxAI}
+              >
+                <Text style={[styles.stepperBtnText, clampedAI >= maxAI && styles.stepperBtnDimmed]}>+</Text>
+              </TouchableOpacity>
+            </View>
+          ) : maxAI > 1 ? (
             <View style={styles.countRow}>
               {[1, 2, 3].filter(n => n >= minAI && n <= maxAI).map(n => (
                 <TouchableOpacity
@@ -106,6 +127,23 @@ export default function SinglePlayerSetupScreen({ navigation }) {
               <Text style={styles.infoText}>1 Computer opponent</Text>
             </View>
           )}
+        </>
+      )}
+
+      {game.hasTone && (
+        <>
+          <Text style={styles.label}>Card Tone</Text>
+          <View style={styles.chipRow}>
+            {[{ id: 'family', label: 'Family 🧒' }, { id: 'mature', label: 'Mature 🔞' }].map(t => (
+              <TouchableOpacity
+                key={t.id}
+                style={[styles.chip, tone === t.id && styles.chipSelected]}
+                onPress={() => setTone(t.id)}
+              >
+                <Text style={[styles.chipText, tone === t.id && styles.chipTextSelected]}>{t.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </>
       )}
 
@@ -165,6 +203,12 @@ const styles = StyleSheet.create({
   countBtnSelected: { backgroundColor: '#4caf50', borderColor: '#4caf50' },
   countBtnText: { color: '#b0b0c0', fontSize: 26, fontWeight: 'bold' },
   countBtnTextSelected: { color: '#fff' },
+
+  stepperRow: { flexDirection: 'row', alignItems: 'center', gap: 24 },
+  stepperBtn: { width: 52, height: 52, borderRadius: 26, backgroundColor: '#16213e', borderWidth: 2, borderColor: '#334', alignItems: 'center', justifyContent: 'center' },
+  stepperBtnText: { color: '#ffffff', fontSize: 28, fontWeight: 'bold' },
+  stepperBtnDimmed: { color: '#444' },
+  stepperValue: { color: '#ffffff', fontSize: 36, fontWeight: 'bold', minWidth: 40, textAlign: 'center' },
 
   diffRow: { flexDirection: 'row', gap: 10 },
   diffBtn: { flex: 1, paddingVertical: 14, borderRadius: 10, backgroundColor: '#16213e', borderWidth: 1.5, borderColor: '#334', alignItems: 'center' },
