@@ -1,114 +1,192 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  ScrollView,
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  useWindowDimensions,
+} from "react-native";
 
 export default function HomeScreen({ navigation }) {
+  const { width } = useWindowDimensions();
+  const isSmallScreen = width < 380;
+  const isTablet = width >= 768;
+
+  const titleSize = isSmallScreen ? 34 : isTablet ? 56 : 44;
+  const subtitleSize = isSmallScreen ? 14 : 16;
+  const buttonHorizontal = isSmallScreen ? 22 : isTablet ? 56 : 44;
+  const buttonVertical = isSmallScreen ? 14 : 18;
+  const buttonTextSize = isSmallScreen ? 18 : 20;
+  const containerPadding = isSmallScreen ? 16 : 20;
+  const contentMaxWidth = isTablet ? 520 : 440;
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>🎴 Card Games</Text>
-      <Text style={styles.subtitle}>Play with friends, anywhere</Text>
-
-      <TouchableOpacity
-        style={styles.singlePlayerButton}
-        onPress={() => navigation.navigate("SinglePlayerSetup")}
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.container,
+          { padding: containerPadding },
+        ]}
       >
-        <Text style={styles.singlePlayerButtonText}>Single Player</Text>
-      </TouchableOpacity>
+        <View style={[styles.content, { maxWidth: contentMaxWidth }]}>
+          <Text style={[styles.title, { fontSize: titleSize }]}>
+            🎴 Card Night
+          </Text>
+          <Text style={[styles.subtitle, { fontSize: subtitleSize }]}>
+            Play with friends, anywhere
+          </Text>
 
-      <TouchableOpacity
-        style={styles.primaryButton}
-        onPress={() => navigation.navigate("HostSetup")}
-      >
-        <Text style={styles.primaryButtonText}>Host a Game</Text>
-      </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.singlePlayerButton,
+              {
+                paddingVertical: buttonVertical,
+                paddingHorizontal: buttonHorizontal,
+              },
+            ]}
+            onPress={() => navigation.navigate("SinglePlayerSetup")}
+          >
+            <Text
+              style={[
+                styles.singlePlayerButtonText,
+                { fontSize: buttonTextSize },
+              ]}
+            >
+              Single Player
+            </Text>
+          </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.secondaryButton}
-        onPress={() => navigation.navigate("Join")}
-      >
-        <Text style={styles.secondaryButtonText}>Join a Game</Text>
-      </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.primaryButton,
+              {
+                paddingVertical: buttonVertical,
+                paddingHorizontal: buttonHorizontal,
+              },
+            ]}
+            onPress={() => navigation.navigate("HostSetup")}
+          >
+            <Text
+              style={[styles.primaryButtonText, { fontSize: buttonTextSize }]}
+            >
+              Host a Game
+            </Text>
+          </TouchableOpacity>
 
-      <View style={styles.bottomLinks}>
-        <TouchableOpacity onPress={() => navigation.navigate("HowToPlay")}>
-          <Text style={styles.linkText}>📖 How to Play</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate("Settings")}>
-          <Text style={styles.linkText}>⚙️ Settings</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+          <TouchableOpacity
+            style={[
+              styles.secondaryButton,
+              {
+                paddingVertical: buttonVertical,
+                paddingHorizontal: buttonHorizontal,
+              },
+            ]}
+            onPress={() => navigation.navigate("Join")}
+          >
+            <Text
+              style={[styles.secondaryButtonText, { fontSize: buttonTextSize }]}
+            >
+              Join a Game
+            </Text>
+          </TouchableOpacity>
+
+          <View style={styles.bottomLinks}>
+            <TouchableOpacity
+              style={styles.bottomLink}
+              onPress={() => navigation.navigate("HowToPlay")}
+            >
+              <Text style={styles.linkText}>📖 How to Play</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.bottomLink}
+              onPress={() => navigation.navigate("Settings")}
+            >
+              <Text style={styles.linkText}>⚙️ Settings</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
+    backgroundColor: "#1a1a2e",
+  },
+  container: {
+    flexGrow: 1,
     backgroundColor: "#1a1a2e",
     alignItems: "center",
     justifyContent: "center",
-    padding: 20,
+  },
+  content: {
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
   },
   title: {
-    fontSize: 48,
     fontWeight: "bold",
     color: "#ffffff",
+    textAlign: "center",
     marginBottom: 10,
   },
   subtitle: {
-    fontSize: 16,
     color: "#b0b0c0",
-    marginBottom: 40,
+    textAlign: "center",
+    marginBottom: 36,
   },
   singlePlayerButton: {
     backgroundColor: "transparent",
-    paddingVertical: 18,
-    paddingHorizontal: 60,
     borderRadius: 12,
     borderWidth: 2,
     borderColor: "#4caf50",
     marginBottom: 16,
-    width: "80%",
+    width: "100%",
     alignItems: "center",
+    maxWidth: 420,
   },
   singlePlayerButtonText: {
     color: "#4caf50",
-    fontSize: 20,
     fontWeight: "bold",
   },
   primaryButton: {
     backgroundColor: "#e94560",
-    paddingVertical: 18,
-    paddingHorizontal: 60,
     borderRadius: 12,
     marginBottom: 16,
-    width: "80%",
+    width: "100%",
     alignItems: "center",
+    maxWidth: 420,
   },
   primaryButtonText: {
     color: "#ffffff",
-    fontSize: 20,
     fontWeight: "bold",
   },
   secondaryButton: {
     backgroundColor: "transparent",
-    paddingVertical: 18,
-    paddingHorizontal: 60,
     borderRadius: 12,
     borderWidth: 2,
     borderColor: "#e94560",
-    width: "80%",
+    width: "100%",
     alignItems: "center",
+    maxWidth: 420,
   },
   secondaryButtonText: {
     color: "#e94560",
-    fontSize: 20,
     fontWeight: "bold",
   },
   bottomLinks: {
-    position: "absolute",
-    bottom: 40,
     flexDirection: "row",
-    gap: 28,
+    flexWrap: "wrap",
+    justifyContent: "center",
+    marginTop: 32,
+  },
+  bottomLink: {
+    paddingVertical: 8,
+    paddingHorizontal: 10,
   },
   linkText: {
     color: "#b0b0c0",

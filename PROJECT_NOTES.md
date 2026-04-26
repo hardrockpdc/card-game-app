@@ -114,7 +114,15 @@ react-native-udp: ^4.1.7
 - White cards with red hearts/diamonds, black spades/clubs
 - Hidden card shown as red back with 🂠 symbol
 
-## 📍 Where We Are Right Now
+## � Layout Conventions
+
+- Use `SafeAreaProvider` at the app root.
+- Use `SafeAreaView` from `react-native-safe-area-context`, not the deprecated React Native version.
+- Make key screens responsive with `useWindowDimensions()`.
+- Prefer `ScrollView` for screens that may overflow on smaller phones.
+- Avoid absolute positioning for important buttons or navigation links unless there is a strong reason.
+
+## �📍 Where We Are Right Now
 
 **Wild Round Phase C complete — full multiplayer working.** Project is at a clean, stable state after a recent revert (Phase D and E were built then reverted due to issues with another AI tool). Project notes and all spec files are current.
 
