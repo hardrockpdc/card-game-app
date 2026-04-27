@@ -278,10 +278,73 @@ function toPublic(state) {
   };
 }
 
+// ─── AI ───────────────────────────────────────────────────────────────────────
+
+function preflopStrength(hole) {
+  if (!hole || hole.length < 2) return 0.3;
+  const [c1, c2] = hole;
+  const v1 = RANK_VAL[c1.rank] ?? 2;
+  const v2 = RANK_VAL[c2.rank] ?? 2;
+  if (c1.rank === c2.rank) return v1 >= 10 ? 0.9 : v1 >= 7 ? 0.75 : 0.55;
+  const hi = Math.max(v1, v2);
+  const lo = Math.min(v1, v2);
+  let score = 0.1;
+  if (hi >= 14) score += 0.35;
+  else if (hi >= 13) score += 0.25;
+  else if (hi >= 12) score += 0.15;
+  if (lo >= 11) score += 0.15;
+  if (c1.suit === c2.suit) score += 0.1;
+  if (hi - lo <= 2) score += 0.1;
+  return Math.min(score, 0.85);
+}
+
+function pokerAIAction(state, pid, difficulty) {
+  const ps = state.playerStates[pid];
+  const hole = state.hands[pid] || [];
+  const community = state.communityCards || [];
+  const toCall = state.currentBet - ps.bet;
+  const handRank = community.length >= 3 ? bestHand(hole, community).rank : null;
+  const strength = handRank !== null ? Math.max(0, (handRank + 1) / 9) : preflopStrength(hole);
+
+  if (difficulty === 'easy') {
+    if (toCall <= 0) return doCheck(state);
+    if (toCall > ps.chips * 0.8) return doFold(state);
+    if (Math.random() < 0.1 && ps.chips > toCall + state.minRaise) return doRaise(state, state.minRaise);
+    return doCall(state);
+  }
+
+  if (difficulty === 'medium') {
+    if (toCall <= 0) {
+      if (strength > 0.5 && Math.random() < 0.4 && ps.chips > state.minRaise) return doRaise(state, state.minRaise * 2);
+      return doCheck(state);
+    }
+    const priceToCall = toCall / Math.max(state.pot + toCall, 1);
+    if (strength < 0.2) return doFold(state);
+    if (strength < 0.4 && priceToCall > 0.3) return doFold(state);
+    if (strength > 0.6 && Math.random() < 0.5 && ps.chips > toCall + state.minRaise) return doRaise(state, state.minRaise * 2);
+    return doCall(state);
+  }
+
+  // Hard
+  if (toCall <= 0) {
+    if (strength > 0.55 && Math.random() < 0.5 && ps.chips > state.minRaise) return doRaise(state, state.minRaise * 3);
+    const isDryBoard = community.length >= 3 && new Set(community.map(c => c.rank)).size === community.length;
+    if (isDryBoard && Math.random() < 0.08 && ps.chips > state.minRaise) return doRaise(state, state.minRaise);
+    return doCheck(state);
+  }
+  const priceToCall = toCall / Math.max(state.pot + toCall, 1);
+  if (strength < 0.25) return doFold(state);
+  if (strength < 0.45 && priceToCall > 0.25) return doFold(state);
+  if (strength > 0.65 && Math.random() < 0.6 && ps.chips > toCall + state.minRaise) {
+    return doRaise(state, Math.min(state.minRaise * 3, ps.chips - toCall));
+  }
+  return doCall(state);
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function PokerGameScreen({ navigation, route }) {
-  const { role, myName, players: initialPlayers } = route.params;
+  const { role, myName, players: initialPlayers, difficulty = 'medium' } = route.params;
   const isSinglePlayer = role === 'singleplayer';
   const isHost = role === 'host' || isSinglePlayer;
 
@@ -309,7 +372,7 @@ export default function PokerGameScreen({ navigation, route }) {
   }
 
   function scheduleAI(state) {
-    if (!isSinglePlayer || state.phase === 'showdown') return;
+    if (!isHost || state.phase === 'showdown') return;
     const currentP = state.players[state.currentPlayerIndex];
     if (!currentP?.isAI) return;
     setTimeout(() => {
@@ -318,18 +381,7 @@ export default function PokerGameScreen({ navigation, route }) {
       const cp = s.players[s.currentPlayerIndex];
       if (!cp?.isAI) return;
       const pid = String(cp.id);
-      const ps = s.playerStates[pid];
-      const toCall = s.currentBet - ps.bet;
-      let next;
-      if (toCall <= 0) {
-        next = doCheck(s);
-      } else if (toCall > ps.chips * 0.5) {
-        next = doFold(s);
-      } else if (Math.random() < 0.2 && ps.chips > toCall + s.minRaise) {
-        next = doRaise(s, s.minRaise);
-      } else {
-        next = doCall(s);
-      }
+      const next = pokerAIAction(s, pid, difficulty);
       if (next !== s) applyState(next);
     }, 1000 + Math.random() * 800);
   }
