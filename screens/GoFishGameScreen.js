@@ -134,6 +134,13 @@ function toPublic(state) {
   };
 }
 
+// ─── Hand sort ────────────────────────────────────────────────────────────────
+
+const RANK_ORDER = { A:1,'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,J:11,Q:12,K:13 };
+function sortHand(hand) {
+  return [...hand].sort((a,b) => (RANK_ORDER[a.rank]??99) - (RANK_ORDER[b.rank]??99));
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function GoFishGameScreen({ navigation, route }) {
@@ -146,28 +153,6 @@ export default function GoFishGameScreen({ navigation, route }) {
   const [selectedRank, setSelectedRank] = useState(null);
   const [selectedTarget, setSelectedTarget] = useState(null);
   const fullRef = useRef(null);
-  const [orderedHand, setOrderedHand] = useState([]);
-  const [sortMode, setSortMode] = useState(false);
-  const [moveFrom, setMoveFrom] = useState(null);
-
-  useEffect(() => {
-    setOrderedHand(prev => {
-      const stillHere = prev.filter(c => myHand.some(h => h.id === c.id));
-      const newCards = myHand.filter(c => !prev.some(p => p.id === c.id));
-      return [...stillHere, ...newCards];
-    });
-  }, [myHand]);
-
-  function handleSortTap(idx) {
-    if (moveFrom === null) { setMoveFrom(idx); return; }
-    if (moveFrom === idx) { setMoveFrom(null); return; }
-    const newOrder = [...orderedHand];
-    const [card] = newOrder.splice(moveFrom, 1);
-    newOrder.splice(moveFrom < idx ? idx - 1 : idx, 0, card);
-    setOrderedHand(newOrder);
-    setMoveFrom(null);
-  }
-
   function applyState(next) {
     fullRef.current = next;
     setMyHand(next.hands['host'] ?? []);
@@ -253,6 +238,7 @@ export default function GoFishGameScreen({ navigation, route }) {
   const myPlayer = players[myIndex];
   const isMyTurn = currentPlayerIndex === myIndex;
   const currentPlayer = players[currentPlayerIndex];
+  const displayHand = sortHand(myHand);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -319,36 +305,22 @@ export default function GoFishGameScreen({ navigation, route }) {
 
       {/* My hand */}
       <View style={styles.mySection}>
-        <View style={styles.handHeader}>
-          <Text style={styles.myLabel}>Your Hand ({orderedHand.length} cards)</Text>
-          <TouchableOpacity
-            style={[styles.sortBtn, sortMode && styles.sortBtnActive]}
-            onPress={() => { setSortMode(m => !m); setMoveFrom(null); setSelectedRank(null); }}
-          >
-            <Text style={styles.sortBtnText}>{sortMode ? 'Done ✓' : '⇄ Sort'}</Text>
-          </TouchableOpacity>
-        </View>
-        {sortMode
-          ? <Text style={styles.sortHint}>{moveFrom === null ? 'Tap a card to pick it up' : 'Tap another card to move it there'}</Text>
-          : isMyTurn && phase === 'playing' && <Text style={styles.myHint}>Tap a card to pick the rank you want to ask for</Text>
-        }
+        <Text style={styles.myLabel}>Your Hand ({displayHand.length} cards)</Text>
+        {isMyTurn && phase === 'playing' && <Text style={styles.myHint}>Tap a card to pick the rank you want to ask for</Text>}
         <View style={styles.handRow}>
-          {orderedHand.map((card, idx) => {
-            const isSelected = !sortMode && card.rank === selectedRank;
-            const isMoving = sortMode && moveFrom === idx;
+          {displayHand.map((card) => {
+            const isSelected = card.rank === selectedRank;
             return (
               <TouchableOpacity
                 key={card.id}
                 onPress={() => {
-                  if (sortMode) { handleSortTap(idx); return; }
                   if (isMyTurn && phase === 'playing')
                     setSelectedRank(selectedRank === card.rank ? null : card.rank);
                 }}
                 style={[
                   styles.cardWrap,
-                  isMoving && styles.cardMoving,
                   isSelected && styles.cardSelected,
-                  !sortMode && !isMyTurn && styles.cardDim,
+                  !isMyTurn && styles.cardDim,
                 ]}
               >
                 <Card rank={card.rank} suit={card.suit} />
@@ -434,16 +406,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 12,
     padding: 12, marginBottom: 12,
   },
-  handHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
-  myLabel: { color: '#fff', fontSize: 15, fontWeight: 'bold' },
+  myLabel: { color: '#fff', fontSize: 15, fontWeight: 'bold', marginBottom: 6 },
   myHint: { color: '#888', fontSize: 12, marginBottom: 10 },
-  sortBtn: { backgroundColor: '#16213e', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: '#334' },
-  sortBtnActive: { backgroundColor: '#e94560', borderColor: '#e94560' },
-  sortBtnText: { color: '#fff', fontSize: 13, fontWeight: 'bold' },
-  sortHint: { color: '#888', fontSize: 12, marginBottom: 8 },
   handRow: { flexDirection: 'row', flexWrap: 'wrap' },
   cardWrap: { borderRadius: 6 },
-  cardMoving: { transform: [{ translateY: -10 }], shadowColor: '#00ccff', shadowOpacity: 0.9, shadowRadius: 10, elevation: 10 },
   cardSelected: { transform: [{ translateY: -10 }], shadowColor: '#ffd700', shadowOpacity: 0.9, shadowRadius: 10, elevation: 10 },
   cardDim: { opacity: 0.55 },
 
