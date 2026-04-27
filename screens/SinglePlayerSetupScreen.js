@@ -24,7 +24,7 @@ const GAMES = [
     label: "Go Fish",
     screen: "GoFishGame",
     aiRange: [1, 3],
-    hasDifficulty: false,
+    hasDifficulty: true,
     hasTone: false,
   },
   {
@@ -40,7 +40,7 @@ const GAMES = [
     label: "Poker",
     screen: "PokerGame",
     aiRange: [1, 3],
-    hasDifficulty: false,
+    hasDifficulty: true,
     hasTone: false,
   },
   {
@@ -54,9 +54,9 @@ const GAMES = [
 ];
 
 const DIFFICULTIES = [
-  { id: "easy", label: "Easy", hint: "Random play, passes often" },
-  { id: "medium", label: "Medium", hint: "Solid play, ~15% pass rate" },
-  { id: "hard", label: "Hard", hint: "Aggressive, rarely passes" },
+  { id: "easy", label: "Easy", hint: "Random play, makes mistakes" },
+  { id: "medium", label: "Medium", hint: "Solid play, decent strategy" },
+  { id: "hard", label: "Hard", hint: "Strong play, hard to beat" },
 ];
 
 export default function SinglePlayerSetupScreen({ navigation }) {

@@ -31,6 +31,7 @@ function dealGoFish(playerList) {
     lastAction: null,
     players: playerList,
     winner: null,
+    history: [],
   };
   for (const p of playerList) state = checkBooks(state, String(p.id));
   return state;
@@ -84,6 +85,7 @@ function doAsk(state, fromId, targetId, rank) {
   const matching = targetHand.filter((c) => c.rank === rank);
   const fromName = state.players.find((p) => String(p.id) === fromPid)?.name;
   const toName = state.players.find((p) => String(p.id) === toPid)?.name;
+  const newHistory = [...(state.history || []), { fromPid, toPid, rank, gotCards: matching.length > 0 }];
 
   let s;
   let extraTurn = false;
@@ -92,6 +94,7 @@ function doAsk(state, fromId, targetId, rank) {
   if (matching.length > 0) {
     s = {
       ...state,
+      history: newHistory,
       hands: {
         ...state.hands,
         [toPid]: targetHand.filter((c) => c.rank !== rank),
@@ -102,13 +105,13 @@ function doAsk(state, fromId, targetId, rank) {
     lastAction = `${fromName} asked ${toName} for ${rank}s — got ${matching.length}! 🎉`;
   } else if (state.ocean.length > 0) {
     const [drawn, ...rest] = state.ocean;
-    s = { ...state, ocean: rest, hands: { ...state.hands, [fromPid]: [...state.hands[fromPid], drawn] } };
+    s = { ...state, history: newHistory, ocean: rest, hands: { ...state.hands, [fromPid]: [...state.hands[fromPid], drawn] } };
     extraTurn = drawn.rank === rank;
     lastAction = extraTurn
       ? `${fromName} went fishing and caught a ${rank}! Extra turn! ⭐`
       : `${fromName} asked for ${rank}s — Go Fish! 🐟`;
   } else {
-    s = { ...state };
+    s = { ...state, history: newHistory };
     lastAction = `${fromName} asked for ${rank}s — Go Fish! (Ocean empty) 🌊`;
   }
 
@@ -134,6 +137,55 @@ function toPublic(state) {
   };
 }
 
+// ─── AI ───────────────────────────────────────────────────────────────────────
+
+function pickGoFishAIMove(state, aiPid, opponents, difficulty) {
+  const hand = state.hands[aiPid] || [];
+  const history = state.history || [];
+
+  if (difficulty === 'easy') {
+    const rank = hand[Math.floor(Math.random() * hand.length)].rank;
+    const target = opponents[Math.floor(Math.random() * opponents.length)];
+    return { rank, target };
+  }
+
+  // Rank with most cards (Medium + Hard start here)
+  const counts = {};
+  for (const c of hand) counts[c.rank] = (counts[c.rank] || 0) + 1;
+  const bestRank = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+
+  if (difficulty === 'medium') {
+    // Check last 8 asks for someone who gave this rank
+    const recentGiverPid = [...history].reverse()
+      .find(h => h.rank === bestRank && h.gotCards && opponents.some(o => String(o.id) === h.toPid))
+      ?.toPid;
+    const target = recentGiverPid
+      ? (opponents.find(o => String(o.id) === recentGiverPid) ?? opponents[Math.floor(Math.random() * opponents.length)])
+      : opponents[Math.floor(Math.random() * opponents.length)];
+    return { rank: bestRank, target };
+  }
+
+  // Hard: score each opponent from full history
+  const scores = {};
+  for (const opp of opponents) {
+    const oppPid = String(opp.id);
+    scores[oppPid] = 0;
+    for (const h of history) {
+      if (h.toPid === oppPid && h.rank === bestRank) {
+        scores[oppPid] = h.gotCards ? scores[oppPid] + 2 : Math.max(scores[oppPid] - 1, 0);
+      }
+      if (h.fromPid === oppPid && h.rank === bestRank && h.gotCards) {
+        scores[oppPid] += 1;
+      }
+    }
+  }
+  const maxScore = Math.max(...opponents.map(o => scores[String(o.id)]));
+  const target = maxScore > 0
+    ? (opponents.find(o => scores[String(o.id)] === maxScore) ?? opponents[0])
+    : opponents[Math.floor(Math.random() * opponents.length)];
+  return { rank: bestRank, target };
+}
+
 // ─── Hand sort ────────────────────────────────────────────────────────────────
 
 const RANK_ORDER = { A:1,'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,J:11,Q:12,K:13 };
@@ -144,7 +196,7 @@ function sortHand(hand) {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function GoFishGameScreen({ navigation, route }) {
-  const { role, myName, players: initialPlayers } = route.params;
+  const { role, myName, players: initialPlayers, difficulty = 'medium' } = route.params;
   const isSinglePlayer = role === 'singleplayer';
   const isHost = role === 'host' || isSinglePlayer;
 
@@ -169,7 +221,7 @@ export default function GoFishGameScreen({ navigation, route }) {
   }
 
   function scheduleAI(state) {
-    if (!isSinglePlayer || state.phase !== 'playing') return;
+    if (!isHost || state.phase !== 'playing') return;
     const currentP = state.players[state.currentPlayerIndex];
     if (!currentP?.isAI) return;
     setTimeout(() => {
@@ -180,11 +232,11 @@ export default function GoFishGameScreen({ navigation, route }) {
       const aiPid = String(cp.id);
       const hand = s.hands[aiPid] || [];
       if (hand.length === 0) return;
-      const rank = hand[Math.floor(Math.random() * hand.length)].rank;
       const opponents = s.players.filter((_, i) => i !== s.currentPlayerIndex);
-      const target = opponents[Math.floor(Math.random() * opponents.length)];
+      if (opponents.length === 0) return;
+      const { rank, target } = pickGoFishAIMove(s, aiPid, opponents, difficulty);
       applyState(doAsk(s, aiPid, target.id, rank));
-    }, 900 + Math.random() * 600);
+    }, 1000 + Math.random() * 600);
   }
 
   useEffect(() => {

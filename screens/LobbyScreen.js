@@ -11,9 +11,9 @@ import {
 
 const GAMES = [
   { id: 'blackjack',  label: 'Blackjack',   screen: 'MultiplayerGame', available: true, hasAI: false, minPlayers: 2 },
-  { id: 'goFish',     label: 'Go Fish',     screen: 'GoFishGame',      available: true, hasAI: false, minPlayers: 2 },
+  { id: 'goFish',     label: 'Go Fish',     screen: 'GoFishGame',      available: true, hasAI: true,  minPlayers: 2 },
   { id: 'conquian',   label: 'Conquián',    screen: 'ConquianGame',    available: true, hasAI: true,  minPlayers: 2 },
-  { id: 'poker',      label: 'Poker',       screen: 'PokerGame',       available: true, hasAI: false, minPlayers: 2 },
+  { id: 'poker',      label: 'Poker',       screen: 'PokerGame',       available: true, hasAI: true,  minPlayers: 2 },
   { id: 'wildRound',  label: 'Wild Round',  screen: 'WildRoundGame',   available: true, hasAI: false, minPlayers: 3 },
 ];
 
