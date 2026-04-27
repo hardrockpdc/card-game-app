@@ -129,8 +129,8 @@ react-native-udp: ^4.1.7
 **Card Night currently includes 5 working games:**
 
 - Blackjack (single + multiplayer)
-- Go Fish (multiplayer)
-- Texas Hold'em Poker (multiplayer)
+- Go Fish (single + multiplayer, with AI Easy/Medium/Hard; hand auto-sorts by rank)
+- Texas Hold'em Poker (single + multiplayer, with AI Easy/Medium/Hard)
 - Conquián (single + multiplayer, with AI Easy/Medium/Hard)
 - Wild Round (single + multiplayer, 3-8 players, party-style)
 
@@ -212,9 +212,9 @@ Only when adding a NEW native package. JS-only changes don't need a rebuild.
 
 **Blackjack:** Standard rules, dealer hits to 16 stands on 17, blackjack pays normal. Multiplayer: each player vs dealer, dealer plays once after all players act.
 
-**Go Fish:** Private hands; two-step ask (tap card in hand to pick rank, tap player to pick target, then Ask button). Extra turn if target had the rank OR drawn card matches asked rank. Books (4-of-a-kind) auto-complete; 13 books = game over. 7 cards each for 2 players, 5 each for 3+.
+**Go Fish:** Private hands; two-step ask (tap card in hand to pick rank, tap player to pick target, then Ask button). Extra turn if target had the rank OR drawn card matches asked rank. Books (4-of-a-kind) auto-complete; 13 books = game over. 7 cards each for 2 players, 5 each for 3+. Hand auto-sorts by rank (A-low). AI: Easy (random), Medium (asks for rank it has most of + short memory), Hard (full-game history tracking). Works in single-player and multiplayer lobby.
 
-**Poker (Texas Hold'em):** Private hole cards; blinds 10/20; starting chips 500. Streets: preflop → flop → turn → river → showdown. Actions: Fold, Check, Call, Raise (presets +min, +2× min, pot, all-in). `playersToAct` queue rebuilt on raise. All-in auto-runout if no one can act. Hand ranking: Royal Flush down to High Card. Pot split on tie. Dealer rotates each hand.
+**Poker (Texas Hold'em):** Private hole cards; blinds 10/20; starting chips 500. Streets: preflop → flop → turn → river → showdown. Actions: Fold, Check, Call, Raise (presets +min, +2× min, pot, all-in). `playersToAct` queue rebuilt on raise. All-in auto-runout if no one can act. Hand ranking: Royal Flush down to High Card. Pot split on tie. Dealer rotates each hand. AI: Easy (loose, rarely folds), Medium (evaluates hand strength, by-the-book), Hard (tight + occasional bluffs on dry boards). Works in single-player and multiplayer lobby.
 
 **Conquián:** Mexican rummy. 40-card Mexican deck (A,2-7,J,Q,K). 7-J-Q-K is a valid run sequence. Initial Card Pass at start of every game (simultaneous blind clockwise pass). Priority Chain mechanic for discards/passes. Borrowing rule (rearrange own melds when taking a card). Win at hand_size+1 melded cards. Tie when stock empty. AI difficulty: Easy/Medium/Hard.
 
