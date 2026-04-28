@@ -32,25 +32,17 @@ A cross-platform React Native mobile app for playing card games with friends and
 - ✅ **Wild Round Phase A:** Card data + pure game logic + tests
 - ✅ **Wild Round Phase B:** Single-player UI with AI opponents
 - ✅ **Wild Round Phase C:** Full multiplayer with host/client networking ← **CURRENT**
-- 🔜 **Wild Round Phase D:** Admin Card Editor (was built, reverted — needs rebuilding)
 - 🔜 **Wild Round Phase E:** Full card content (100 prompts + 300 answers, was built, reverted)
-- 🔜 **Phase 5: Polish** ⏸️ paused until better PC available
+- 🔜 **Phase 5: Visual Theme Project (PAUSED)** ⏸️ paused until better PC available
+  - Plan: Each game gets its own distinct theme (Blackjack=casino, Poker=premium black, Wild Round=neon party, etc.)
+  - Theme switching: User can pick between themes per game
+  - Design ONE game's theme first (Blackjack)
+  - Build theme system scaffolding
+  - Redesign other 4 games
+  - Add multiple swappable themes
   - Visual polish, animations, sounds
   - Manual hand-sort with `react-native-draggable-flatlist`
-  - Themed card packs
   - Multi-language (English + Spanish)
-
-### 🎨 Visual Theme Project (PAUSED)
-
-- Plan: Each game gets its own distinct theme (Blackjack=casino, Poker=premium black, Wild Round=neon party, etc.)
-- Theme switching: User can pick between themes per game
-- Phased approach:
-  1. Design ONE game's theme first (Blackjack)
-  2. Build theme system scaffolding
-  3. Redesign other 4 games
-  4. Add multiple swappable themes
-- PAUSED until Pedro has visual references mocked up
-
 - 🔜 **Phase 6: Publish** — Google Play + App Store
 
 ## 🛠️ Tech Stack
@@ -90,7 +82,7 @@ card-game-app/
 │   ├── SinglePlayerSetupScreen.js (single-player game + AI picker)
 │   ├── HowToPlayScreen.js         (rules reference screen)
 │   ├── ResultsScreen.js           (placeholder)
-│   └── SettingsScreen.js          (placeholder — will hold hidden Phase D card editor trigger)
+│   └── SettingsScreen.js          (placeholder — card editor trigger not present yet)
 ├── App.js                         (navigation stack — all screens registered)
 ├── app.json                       (bundle ID: com.pedro.cardgameapp, EAS projectId)
 ├── eas.json                       (development/preview/production build profiles)
@@ -126,7 +118,7 @@ react-native-udp: ^4.1.7
 - White cards with red hearts/diamonds, black spades/clubs
 - Hidden card shown as red back with 🂠 symbol
 
-## � Layout Conventions
+## 📐 Layout Conventions
 
 - Use `SafeAreaProvider` at the app root.
 - Use `SafeAreaView` from `react-native-safe-area-context`, not the deprecated React Native version.
@@ -134,9 +126,9 @@ react-native-udp: ^4.1.7
 - Prefer `ScrollView` for screens that may overflow on smaller phones.
 - Avoid absolute positioning for important buttons or navigation links unless there is a strong reason.
 
-## �📍 Where We Are Right Now
+## 📍 Where We Are Right Now
 
-**Wild Round Phase C complete — full multiplayer working.** Project is at a clean, stable state after a recent revert (Phase D and E were built then reverted due to issues with another AI tool). Project notes and all spec files are current.
+**Wild Round Phase C complete — full multiplayer working.** Project is at a clean, stable state after a recent revert (Phase E was built then reverted due to issues with another AI tool). Project notes and all spec files are current.
 
 **Card Night currently includes 5 working games:**
 
@@ -154,10 +146,9 @@ react-native-udp: ^4.1.7
 
 ## 🔮 Next Steps When We Resume
 
-1. **Rebuild Wild Round Phase D** — admin card editor with AsyncStorage overlay (hidden access via tapping version number 5× in Settings). Adding `@react-native-async-storage/async-storage` will require a NEW EAS build because it's a native module.
-2. **Rebuild Wild Round Phase E** — bulk-add original CC0 + Pedro-written content to reach 100 prompts + 300 answers
-3. **Phase 5: Polish** (paused until on better PC) — animations, sounds, manual hand-sort, multi-language EN+ES
-4. **Phase 6: Publish** — Google Play + App Store submission
+1. **Rebuild Wild Round Phase E** — bulk-add original CC0 + Pedro-written content to reach 100 prompts + 300 answers
+2. **Phase 5: Visual Theme Project** (paused until on better PC) — each game gets its own theme, theme switching, visual polish, animations, sounds, manual hand-sort, multi-language EN+ES
+3. **Phase 6: Publish** — Google Play + App Store submission
 
 ## 💡 Important Reminders
 
@@ -181,7 +172,7 @@ Only when adding a NEW native package. JS-only changes don't need a rebuild.
 - `react-native-tcp-socket` (already in current build)
 - `react-native-udp` (already in current build)
 - `react-native-draggable-flatlist` (planned, NOT yet in build — will trigger rebuild when used)
-- `@react-native-async-storage/async-storage` (planned for Phase D — will trigger rebuild when added)
+- `@react-native-async-storage/async-storage` (planned for the card editor — will trigger rebuild when added)
 
 ### Coding patterns established
 
@@ -237,7 +228,7 @@ Only when adding a NEW native package. JS-only changes don't need a rebuild.
 ## 📜 Active Spec Files
 
 - `CONQUIAN_SPEC.md` — Conquián full spec (built ✅)
-- `WILDROUND_SPEC.md` — Wild Round full spec (Phases A-C built ✅, Phases D-E to redo)
+- `WILDROUND_SPEC.md` — Wild Round full spec (Phases A-C built ✅, Phase E to redo)
 
 ## 🚫 Decisions Made
 
@@ -251,7 +242,7 @@ Only when adding a NEW native package. JS-only changes don't need a rebuild.
 ## 🐛 Known Issues / Things to Watch
 
 - Wild Round has only placeholder cards (10 prompts / 36 answers). A 3-player game needs 30 cards just to deal hands, leaving only 6 for replenishment. Playable for testing but thin. Phase E fixes this.
-- No card editor at this state (Phase D reverted). Cards can only be changed by editing `game/wildroundCards.json` directly.
+- No card editor at this state. Cards can only be changed by editing `game/wildroundCards.json` directly.
 - `react-native-draggable-flatlist` is installed but not yet used — kept for planned hand-sort polish.
-- `SettingsScreen.js` is a placeholder ("Coming soon!"). The hidden card editor trigger will be added back in Phase D.
+- `SettingsScreen.js` is a placeholder ("Coming soon!"). The hidden card editor trigger is not present yet.
 - Wild Round requires 3 players minimum (enforced in Lobby with disabled Start button + explanation).
