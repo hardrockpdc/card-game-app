@@ -31,8 +31,8 @@ A cross-platform React Native mobile app for playing card games with friends and
 - ✅ **Phase 4.9:** App renamed from "Card Games" to "Card Night"
 - ✅ **Wild Round Phase A:** Card data + pure game logic + tests
 - ✅ **Wild Round Phase B:** Single-player UI with AI opponents
-- ✅ **Wild Round Phase C:** Full multiplayer with host/client networking ← **CURRENT**
-- 🔜 **Wild Round Phase E:** Full card content (100 prompts + 300 answers, was built, reverted)
+- ✅ **Wild Round Phase C:** Full multiplayer with host/client networking
+- ✅ **Wild Round Phase E:** Full card content (100 prompts + 300 answers)
 - 🔜 **Phase 5: Visual Theme Project (PAUSED)** ⏸️ paused until better PC available
   - Plan: Each game gets its own distinct theme (Blackjack=casino, Poker=premium black, Wild Round=neon party, etc.)
   - Theme switching: User can pick between themes per game
@@ -66,7 +66,7 @@ card-game-app/
 │   ├── deck.js                    (createDeck, shuffleDeck, calculateHandValue)
 │   ├── conquian.js                (Conquián game logic — pure functions)
 │   ├── wildround.js               (Wild Round game logic — pure functions)
-│   ├── wildroundCards.json        (10 prompts + 36 answers — Phase A placeholder)
+│   ├── wildroundCards.json        (100 prompts + 300 answers — Phase E complete)
 │   └── GameNetwork.js             (TCP server/client + UDP discovery)
 ├── screens/
 │   ├── HomeScreen.js              (main menu)
@@ -128,7 +128,7 @@ react-native-udp: ^4.1.7
 
 ## 📍 Where We Are Right Now
 
-**Wild Round Phase C complete — full multiplayer working.** Project is at a clean, stable state after a recent revert (Phase E was built then reverted due to issues with another AI tool). Project notes and all spec files are current.
+**Wild Round complete — full multiplayer and full card content working.** Project is at a clean, stable state. Project notes and all spec files are current.
 
 **Card Night currently includes 5 working games:**
 
@@ -146,9 +146,8 @@ react-native-udp: ^4.1.7
 
 ## 🔮 Next Steps When We Resume
 
-1. **Rebuild Wild Round Phase E** — bulk-add original CC0 + Pedro-written content to reach 100 prompts + 300 answers
-2. **Phase 5: Visual Theme Project** (paused until on better PC) — each game gets its own theme, theme switching, visual polish, animations, sounds, manual hand-sort, multi-language EN+ES
-3. **Phase 6: Publish** — Google Play + App Store submission
+1. **Phase 5: Visual Theme Project** (paused until on better PC) — each game gets its own theme, theme switching, visual polish, animations, sounds, manual hand-sort, multi-language EN+ES
+2. **Phase 6: Publish** — Google Play + App Store submission
 
 ## 💡 Important Reminders
 
@@ -223,12 +222,12 @@ Only when adding a NEW native package. JS-only changes don't need a rebuild.
 
 **Conquián:** Mexican rummy. 40-card Mexican deck (A,2-7,J,Q,K). 7-J-Q-K is a valid run sequence. Initial Card Pass at start of every game (simultaneous blind clockwise pass). Priority Chain mechanic for discards/passes. Borrowing rule (rearrange own melds when taking a card). Win at hand_size+1 melded cards. Tie when stock empty. AI difficulty: Easy/Medium/Hard.
 
-**Wild Round:** Party game (CAH-style with original/CC0 content only). 3-8 players. 10-card hand of answers. Judge rotates each round. Judge can skip Prompt 1 once per round. No timer. Submissions anonymous during judging, revealed after. Tone toggle (Family / Mature, host picks; Mature includes both). First to 10 points wins. Currently using placeholder cards (10/36) — Phase E adds full content.
+**Wild Round:** Party game (CAH-style with original/CC0 content only). 3-8 players. 10-card hand of answers. Judge rotates each round. Judge can skip Prompt 1 once per round. No timer. Submissions anonymous during judging, revealed after. Tone toggle (Family / Mature, host picks; Mature includes both). First to 10 points wins. Full card content is now complete.
 
 ## 📜 Active Spec Files
 
 - `CONQUIAN_SPEC.md` — Conquián full spec (built ✅)
-- `WILDROUND_SPEC.md` — Wild Round full spec (Phases A-C built ✅, Phase E to redo)
+- `WILDROUND_SPEC.md` — Wild Round full spec (Phases A-E built ✅)
 
 ## 🚫 Decisions Made
 
@@ -241,8 +240,6 @@ Only when adding a NEW native package. JS-only changes don't need a rebuild.
 
 ## 🐛 Known Issues / Things to Watch
 
-- Wild Round has only placeholder cards (10 prompts / 36 answers). A 3-player game needs 30 cards just to deal hands, leaving only 6 for replenishment. Playable for testing but thin. Phase E fixes this.
-- No card editor at this state. Cards can only be changed by editing `game/wildroundCards.json` directly.
 - `react-native-draggable-flatlist` is installed but not yet used — kept for planned hand-sort polish.
 - `SettingsScreen.js` is a placeholder ("Coming soon!"). The hidden card editor trigger is not present yet.
 - Wild Round requires 3 players minimum (enforced in Lobby with disabled Start button + explanation).
