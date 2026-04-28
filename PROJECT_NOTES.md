@@ -18,7 +18,7 @@ A cross-platform React Native mobile app for playing card games with friends and
 
 ## 🗺️ Full Roadmap
 
-- ✅ **Phase 1:** Setup (Node, VS Code, Git, Expo Go), project created, Hello World on phone
+- ✅ **Phase 1:** Setup (Node, VS Code, Git, Expo), project created, Hello World on phone
 - ✅ **Phase 2:** All screens built, navigation working
 - ✅ **Phase 3:** Single-player Blackjack
 - ✅ **Phase 4 Step 1:** `react-native-tcp-socket` + `expo-network` installed, GameNetwork.js created
@@ -39,6 +39,18 @@ A cross-platform React Native mobile app for playing card games with friends and
   - Manual hand-sort with `react-native-draggable-flatlist`
   - Themed card packs
   - Multi-language (English + Spanish)
+
+### 🎨 Visual Theme Project (PAUSED)
+
+- Plan: Each game gets its own distinct theme (Blackjack=casino, Poker=premium black, Wild Round=neon party, etc.)
+- Theme switching: User can pick between themes per game
+- Phased approach:
+  1. Design ONE game's theme first (Blackjack)
+  2. Build theme system scaffolding
+  3. Redesign other 4 games
+  4. Add multiple swappable themes
+- PAUSED until Pedro has visual references mocked up
+
 - 🔜 **Phase 6: Publish** — Google Play + App Store
 
 ## 🛠️ Tech Stack
@@ -133,6 +145,8 @@ react-native-udp: ^4.1.7
 - Texas Hold'em Poker (single + multiplayer, with AI Easy/Medium/Hard)
 - Conquián (single + multiplayer, with AI Easy/Medium/Hard)
 - Wild Round (single + multiplayer, 3-8 players, party-style)
+
+**Visual assets update:** Cards now use neon image assets in `assets/cards/` (replaced procedural drawing).
 
 **EAS build status:** Current build on both phones works. No new native packages have been added since last build, so `npx expo start --dev-client` is sufficient for development.
 
