@@ -115,8 +115,25 @@ react-native-udp: ^4.1.7
 - Dark navy background (`#1a1a2e`)
 - Red/pink accent (`#e94560`) for primary buttons
 - Dark green card table (`#0d5c2e`) on game screens
-- White cards with red hearts/diamonds, black spades/clubs
-- Hidden card shown as red back with 🂠 symbol
+- Cards use PNG image assets (see Card Themes below)
+- Hidden/face-down card uses each theme's `card_back.png`
+
+## 🃏 Card Themes
+
+Theme switching is live — tap a theme in Settings and all open games update instantly. No restart needed. Theme resets to Neon on app restart (no persistence yet — AsyncStorage would need a new EAS build).
+
+| Theme ID | Label    | Asset folder            |
+|----------|----------|-------------------------|
+| neon     | Neon     | assets/cards/           |
+| cowboy   | Cowboy   | assets/cards_cowboy/    |
+| girly    | Girly    | assets/card_images_girly/ |
+| hp       | Hogwarts | assets/card_images_hp/  |
+
+All folders use identical filenames: `{rank}_{suit}.png` (ranks: a 2–10 j q k, suits: spades hearts diamonds clubs) + `card_back.png`.
+
+Theme manager lives in `game/cardTheme.js` (module singleton + listener pattern). `components/Card.js` subscribes to theme changes via `useEffect`.
+
+Note: a 5th theme ("Jewel/Gold") was planned but the `cards_jewel` folder was not present at time of implementation.
 
 ## 📐 Layout Conventions
 
