@@ -120,20 +120,23 @@ react-native-udp: ^4.1.7
 
 ## 🃏 Card Themes
 
-Theme switching is live — tap a theme in Settings and all open games update instantly. No restart needed. Theme resets to Neon on app restart (no persistence yet — AsyncStorage would need a new EAS build).
+Theme switching is live — tap a theme in Settings → Card Themes and all open games update instantly. No restart needed. Theme resets to Neon on app restart (no persistence yet — AsyncStorage would need a new EAS build).
 
-| Theme ID | Label    | Asset folder            |
-|----------|----------|-------------------------|
-| neon     | Neon     | assets/cards/           |
-| cowboy   | Cowboy   | assets/cards_cowboy/    |
+| Theme ID | Label    | Asset folder              |
+|----------|----------|---------------------------|
+| neon     | Neon     | assets/cards/             |
+| cowboy   | Cowboy   | assets/cards_cowboy/      |
 | girly    | Girly    | assets/card_images_girly/ |
-| hp       | Hogwarts | assets/card_images_hp/  |
+| hp       | Hogwarts | assets/card_images_hp/    |
+| jewel    | Jewel    | assets/card_images_jewel/ |
 
 All folders use identical filenames: `{rank}_{suit}.png` (ranks: a 2–10 j q k, suits: spades hearts diamonds clubs) + `card_back.png`.
 
-Theme manager lives in `game/cardTheme.js` (module singleton + listener pattern). `components/Card.js` subscribes to theme changes via `useEffect`.
-
-Note: a 5th theme ("Jewel/Gold") was planned but the `cards_jewel` folder was not present at time of implementation.
+**Theme system files:**
+- `game/cardTheme.js` — module singleton, 265 static requires (5 themes × 53 images), `setTheme`/`getTheme`/`subscribe`/`getCardImage`/`getCardBackImage`/`getThemePreviewImage`/`THEMES_LIST` exports
+- `components/Card.js` — uses cardTheme.js, subscribes to live changes via `useEffect`
+- `screens/CardThemeScreen.js` — full-screen swiper (FlatList pagingEnabled), Ace of Spades preview, dot indicators, "Use This Theme" button
+- `screens/SettingsScreen.js` — navigation hub with "Card Themes" row → CardThemeScreen
 
 ## 📐 Layout Conventions
 

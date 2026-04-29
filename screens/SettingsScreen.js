@@ -1,46 +1,39 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
-  View, Text, Image, TouchableOpacity, StyleSheet, ScrollView,
+  View, Text, TouchableOpacity, StyleSheet, ScrollView,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { setTheme, getTheme, THEME_DEFS } from '../game/cardTheme';
 
-export default function SettingsScreen() {
-  const [activeTheme, setActiveTheme] = useState(getTheme());
-
-  function handleSelect(id) {
-    setTheme(id);
-    setActiveTheme(id);
-  }
+export default function SettingsScreen({ navigation }) {
+  const { width } = useWindowDimensions();
+  const isTablet = width >= 768;
+  const contentMaxWidth = isTablet ? 560 : 460;
 
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Settings</Text>
+        <View style={[styles.content, { maxWidth: contentMaxWidth }]}>
 
-        <Text style={styles.sectionLabel}>Card Theme</Text>
-        <Text style={styles.sectionHint}>Tap a theme — cards update live in all games</Text>
+          <Text style={styles.title}>Settings</Text>
 
-        <View style={styles.grid}>
-          {THEME_DEFS.map((theme) => {
-            const isActive = theme.id === activeTheme;
-            return (
-              <TouchableOpacity
-                key={theme.id}
-                style={[styles.themeCard, isActive && styles.themeCardActive]}
-                onPress={() => handleSelect(theme.id)}
-                activeOpacity={0.75}
-              >
-                <Image source={theme.preview} style={styles.previewImage} />
-                <View style={styles.themeFooter}>
-                  <Text style={[styles.themeLabel, isActive && styles.themeLabelActive]}>
-                    {theme.label}
-                  </Text>
-                  {isActive && <Text style={styles.checkmark}>✓</Text>}
-                </View>
-              </TouchableOpacity>
-            );
-          })}
+          <Text style={styles.sectionLabel}>Appearance</Text>
+
+          <TouchableOpacity
+            style={styles.row}
+            onPress={() => navigation.navigate('CardThemes')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.rowLeft}>
+              <Text style={styles.rowIcon}>🃏</Text>
+              <View>
+                <Text style={styles.rowTitle}>Card Themes</Text>
+                <Text style={styles.rowSubtitle}>Choose your card art style</Text>
+              </View>
+            </View>
+            <Text style={styles.rowArrow}>›</Text>
+          </TouchableOpacity>
+
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -55,68 +48,58 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     backgroundColor: '#1a1a2e',
+    alignItems: 'center',
     padding: 24,
-    paddingBottom: 40,
+  },
+  content: {
+    width: '100%',
   },
   title: {
-    color: '#fff',
+    color: '#ffffff',
     fontSize: 28,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginBottom: 28,
+    marginBottom: 32,
   },
   sectionLabel: {
     color: '#b0b0c0',
-    fontSize: 13,
+    fontSize: 12,
     textTransform: 'uppercase',
     letterSpacing: 1,
-    marginBottom: 6,
+    marginBottom: 10,
   },
-  sectionHint: {
-    color: '#666',
-    fontSize: 13,
-    marginBottom: 20,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 14,
-  },
-  themeCard: {
-    width: '47%',
-    backgroundColor: '#16213e',
-    borderRadius: 14,
-    overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: '#334',
-  },
-  themeCardActive: {
-    borderColor: '#4caf50',
-    backgroundColor: '#0d2e16',
-  },
-  previewImage: {
-    width: '100%',
-    aspectRatio: 0.7,
-    resizeMode: 'cover',
-  },
-  themeFooter: {
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    backgroundColor: '#16213e',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderWidth: 1.5,
+    borderColor: '#334',
   },
-  themeLabel: {
-    color: '#b0b0c0',
-    fontSize: 15,
-    fontWeight: 'bold',
+  rowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
   },
-  themeLabelActive: {
-    color: '#4caf50',
+  rowIcon: {
+    fontSize: 28,
   },
-  checkmark: {
-    color: '#4caf50',
+  rowTitle: {
+    color: '#ffffff',
     fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 2,
+  },
+  rowSubtitle: {
+    color: '#b0b0c0',
+    fontSize: 13,
+  },
+  rowArrow: {
+    color: '#b0b0c0',
+    fontSize: 24,
     fontWeight: 'bold',
   },
 });

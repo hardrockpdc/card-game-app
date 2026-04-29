@@ -17,6 +17,7 @@ import PokerGameScreen from "./screens/PokerGameScreen";
 import SinglePlayerSetupScreen from "./screens/SinglePlayerSetupScreen";
 import HowToPlayScreen from "./screens/HowToPlayScreen";
 import WildRoundGameScreen from "./screens/WildRoundGameScreen";
+import CardThemeScreen from "./screens/CardThemeScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -101,6 +102,11 @@ export default function App() {
             name="WildRoundGame"
             component={WildRoundGameScreen}
             options={{ title: "Wild Round" }}
+          />
+          <Stack.Screen
+            name="CardThemes"
+            component={CardThemeScreen}
+            options={{ title: "Card Themes" }}
           />
         </Stack.Navigator>
       </NavigationContainer>
