@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView, FlatList, Alert,
-  Animated, PanResponder,
+  View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert,
+  Animated, PanResponder, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -11,6 +11,7 @@ import {
   setServerListeners, broadcastToClients, getConnectedPlayers, sendToClient,
   setClientListeners, sendToHost,
 } from '../game/GameNetwork';
+import { getTheme, subscribe } from '../game/cardTheme';
 
 const WIN_SCORE = 10;
 
@@ -59,66 +60,124 @@ export default function WildRoundGameScreen({ navigation, route }) {
   const [selectedCard, setSelectedCard] = useState(null);
   const [selectedSub, setSelectedSub] = useState(null);
   const [deckIndex, setDeckIndex] = useState(0);
-  const [nextIndex, setNextIndex] = useState(null);
+  const [judgeDeckIndex, setJudgeDeckIndex] = useState(0);
+  const [viewerDeckIndex, setViewerDeckIndex] = useState(0);
+  const [themeId, setThemeId] = useState(getTheme());
+  useEffect(() => subscribe(setThemeId), []);
+  const blankImages = {
+    neon:   require('../assets/cards/blank_neon.png'),
+    cowboy: require('../assets/cards_cowboy/blank_cowboy.png'),
+    girly:  require('../assets/card_images_girly/blank_girly.png'),
+    hp:     require('../assets/card_images_hp/blank_hp.png'),
+    jewel:  require('../assets/card_images_jewel/blank_jewel.png'),
+  };
+  const blankImage = blankImages[themeId] ?? blankImages.neon;
 
   const deckIndexRef = useRef(0);
   const myHandRef = useRef(myHand);
   myHandRef.current = myHand;
-  const screenWidthRef = useRef(400);
   const dragX = useRef(new Animated.Value(0)).current;
-  const newCardX = useRef(new Animated.Value(0)).current;
-  const isAnimatingRef = useRef(false);
+  const cardEntryX = useRef(new Animated.Value(0)).current;
+  const judgeCardEntryX = useRef(new Animated.Value(0)).current;
+  const judgeCardDragX = useRef(new Animated.Value(0)).current;
+  const judgeIndexRef = useRef(0);
+  const judgeSubsRef = useRef([]);
+  const viewerCardEntryX = useRef(new Animated.Value(0)).current;
+  const viewerCardDragX = useRef(new Animated.Value(0)).current;
+  const viewerIndexRef = useRef(0);
+  const viewerSubsRef = useRef([]);
 
   const deckPanResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: (_, g) =>
-        !isAnimatingRef.current && Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy),
-      onPanResponderMove: (_, g) => {
-        if (!isAnimatingRef.current) dragX.setValue(g.dx);
-      },
+      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy),
+      onPanResponderMove: (_, g) => dragX.setValue(g.dx),
       onPanResponderRelease: (_, g) => {
-        if (isAnimatingRef.current) return;
-        const THRESHOLD = 50;
-        const handLen = myHandRef.current.length;
-        const curIdx = deckIndexRef.current;
-        if (g.dx < -THRESHOLD && curIdx < handLen - 1) {
-          const next = curIdx + 1;
-          isAnimatingRef.current = true;
-          newCardX.setValue(screenWidthRef.current);
-          setNextIndex(next);
-          Animated.parallel([
-            Animated.timing(dragX, { toValue: -screenWidthRef.current, duration: 260, useNativeDriver: true }),
-            Animated.timing(newCardX, { toValue: 0, duration: 260, useNativeDriver: true }),
-          ]).start(() => {
-            dragX.setValue(0);
+        if (g.dx < -50) {
+          const next = Math.min(deckIndexRef.current + 1, myHandRef.current.length - 1);
+          if (next !== deckIndexRef.current) {
+            cardEntryX.setValue(80);
             deckIndexRef.current = next;
-            isAnimatingRef.current = false;
             setDeckIndex(next);
-            setNextIndex(null);
-          });
-        } else if (g.dx > THRESHOLD && curIdx > 0) {
-          const prev = curIdx - 1;
-          isAnimatingRef.current = true;
-          newCardX.setValue(-screenWidthRef.current);
-          setNextIndex(prev);
-          Animated.parallel([
-            Animated.timing(dragX, { toValue: screenWidthRef.current, duration: 260, useNativeDriver: true }),
-            Animated.timing(newCardX, { toValue: 0, duration: 260, useNativeDriver: true }),
-          ]).start(() => {
-            dragX.setValue(0);
-            deckIndexRef.current = prev;
-            isAnimatingRef.current = false;
-            setDeckIndex(prev);
-            setNextIndex(null);
-          });
-        } else {
-          Animated.spring(dragX, { toValue: 0, useNativeDriver: true }).start();
+            Animated.spring(cardEntryX, { toValue: 0, useNativeDriver: true, tension: 120, friction: 10 }).start();
+          }
+        } else if (g.dx > 50) {
+          const next = Math.max(deckIndexRef.current - 1, 0);
+          if (next !== deckIndexRef.current) {
+            cardEntryX.setValue(-80);
+            deckIndexRef.current = next;
+            setDeckIndex(next);
+            Animated.spring(cardEntryX, { toValue: 0, useNativeDriver: true, tension: 120, friction: 10 }).start();
+          }
         }
+        Animated.spring(dragX, { toValue: 0, useNativeDriver: true }).start();
       },
       onPanResponderTerminate: () => {
-        isAnimatingRef.current = false;
         Animated.spring(dragX, { toValue: 0, useNativeDriver: true }).start();
+      },
+    })
+  ).current;
+
+  const judgePanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy),
+      onPanResponderMove: (_, g) => judgeCardDragX.setValue(g.dx),
+      onPanResponderRelease: (_, g) => {
+        const subs = judgeSubsRef.current;
+        if (g.dx < -50) {
+          const next = Math.min(judgeIndexRef.current + 1, subs.length - 1);
+          if (next !== judgeIndexRef.current) {
+            judgeCardEntryX.setValue(80);
+            judgeIndexRef.current = next;
+            setJudgeDeckIndex(next);
+            Animated.spring(judgeCardEntryX, { toValue: 0, useNativeDriver: true, tension: 120, friction: 10 }).start();
+          }
+        } else if (g.dx > 50) {
+          const next = Math.max(judgeIndexRef.current - 1, 0);
+          if (next !== judgeIndexRef.current) {
+            judgeCardEntryX.setValue(-80);
+            judgeIndexRef.current = next;
+            setJudgeDeckIndex(next);
+            Animated.spring(judgeCardEntryX, { toValue: 0, useNativeDriver: true, tension: 120, friction: 10 }).start();
+          }
+        }
+        Animated.spring(judgeCardDragX, { toValue: 0, useNativeDriver: true }).start();
+      },
+      onPanResponderTerminate: () => {
+        Animated.spring(judgeCardDragX, { toValue: 0, useNativeDriver: true }).start();
+      },
+    })
+  ).current;
+
+  const viewerPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy),
+      onPanResponderMove: (_, g) => viewerCardDragX.setValue(g.dx),
+      onPanResponderRelease: (_, g) => {
+        const subs = viewerSubsRef.current;
+        if (g.dx < -50) {
+          const next = Math.min(viewerIndexRef.current + 1, subs.length - 1);
+          if (next !== viewerIndexRef.current) {
+            viewerCardEntryX.setValue(80);
+            viewerIndexRef.current = next;
+            setViewerDeckIndex(next);
+            Animated.spring(viewerCardEntryX, { toValue: 0, useNativeDriver: true, tension: 120, friction: 10 }).start();
+          }
+        } else if (g.dx > 50) {
+          const next = Math.max(viewerIndexRef.current - 1, 0);
+          if (next !== viewerIndexRef.current) {
+            viewerCardEntryX.setValue(-80);
+            viewerIndexRef.current = next;
+            setViewerDeckIndex(next);
+            Animated.spring(viewerCardEntryX, { toValue: 0, useNativeDriver: true, tension: 120, friction: 10 }).start();
+          }
+        }
+        Animated.spring(viewerCardDragX, { toValue: 0, useNativeDriver: true }).start();
+      },
+      onPanResponderTerminate: () => {
+        Animated.spring(viewerCardDragX, { toValue: 0, useNativeDriver: true }).start();
       },
     })
   ).current;
@@ -255,11 +314,12 @@ export default function WildRoundGameScreen({ navigation, route }) {
   useEffect(() => {
     setSelectedCard(null);
     setSelectedSub(null);
-    setDeckIndex(0);
-    setNextIndex(null);
     deckIndexRef.current = 0;
-    isAnimatingRef.current = false;
-    dragX.setValue(0);
+    setDeckIndex(0);
+    judgeIndexRef.current = 0;
+    setJudgeDeckIndex(0);
+    viewerIndexRef.current = 0;
+    setViewerDeckIndex(0);
   }, [gameState?.phase]);
 
   // ── AI automation (singleplayer only) ──────────────────────────────────────
@@ -497,38 +557,13 @@ export default function WildRoundGameScreen({ navigation, route }) {
         <>
           <Text style={styles.sectionLabel}>YOUR HAND — SWIPE TO BROWSE, TAP TO SELECT</Text>
 
-          <View
-            style={styles.deckArea}
-            onLayout={e => { screenWidthRef.current = e.nativeEvent.layout.width; }}
-          >
+          <View style={styles.deckArea}>
             {deckIndex > 0 && <View style={styles.peekLeft} pointerEvents="none" />}
             {deckIndex < myHand.length - 1 && <View style={styles.peekRight} pointerEvents="none" />}
 
-            {/* Incoming card — slides in from off-screen during swipe animation */}
-            {nextIndex !== null && (
-              <Animated.View
-                style={[styles.deckCardWrapAbsolute, { transform: [{ translateX: newCardX }] }]}
-                pointerEvents="none"
-              >
-                <View
-                  style={[
-                    styles.deckCard,
-                    selectedCard === myHand[nextIndex]?.id && styles.deckCardSelected,
-                  ]}
-                >
-                  {selectedCard === myHand[nextIndex]?.id && (
-                    <View style={styles.selectedBadge}>
-                      <Text style={styles.selectedBadgeText}>✓ Selected</Text>
-                    </View>
-                  )}
-                  <Text style={styles.deckCardText}>{myHand[nextIndex]?.text}</Text>
-                </View>
-              </Animated.View>
-            )}
-
             {/* Current card — draggable */}
             <Animated.View
-              style={[styles.deckCardWrap, { transform: [{ translateX: dragX }] }]}
+              style={[styles.deckCardWrap, { transform: [{ translateX: Animated.add(dragX, cardEntryX) }] }]}
               {...deckPanResponder.panHandlers}
             >
               <TouchableOpacity
@@ -537,18 +572,18 @@ export default function WildRoundGameScreen({ navigation, route }) {
                   selectedCard === myHand[deckIndex]?.id && styles.deckCardSelected,
                 ]}
                 onPress={() => {
-                  if (isAnimatingRef.current) return;
                   const card = myHand[deckIndex];
                   if (card) setSelectedCard(prev => prev === card.id ? null : card.id);
                 }}
                 activeOpacity={0.9}
               >
-                {selectedCard === myHand[deckIndex]?.id && (
-                  <View style={styles.selectedBadge}>
-                    <Text style={styles.selectedBadgeText}>✓ Selected</Text>
-                  </View>
-                )}
-                <Text style={styles.deckCardText}>{myHand[deckIndex]?.text}</Text>
+                <Image source={blankImage} style={styles.deckCardBgImage} />
+                  {selectedCard === myHand[deckIndex]?.id && (
+                    <View style={styles.selectedBadge}>
+                      <Text style={styles.selectedBadgeText}>✓ Selected</Text>
+                    </View>
+                  )}
+                  <Text style={styles.deckCardText}>{myHand[deckIndex]?.text}</Text>
               </TouchableOpacity>
             </Animated.View>
           </View>
@@ -575,38 +610,90 @@ export default function WildRoundGameScreen({ navigation, route }) {
       )}
 
       {/* judging — human judge */}
-      {gs.phase === 'judging' && isJudge && (
-        <>
-          <Text style={styles.sectionLabel}>Pick the funniest answer</Text>
-          <FlatList
-            data={gs.anonymousSubmissions}
-            keyExtractor={s => s.cardId}
-            style={styles.cardList}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={[styles.answerCard, selectedSub === item.cardId && styles.answerCardSelected]}
-                onPress={() => setSelectedSub(prev => prev === item.cardId ? null : item.cardId)}
+      {gs.phase === 'judging' && isJudge && (() => {
+        judgeSubsRef.current = gs.anonymousSubmissions ?? [];
+        return (
+          <>
+            <Text style={styles.sectionLabel}>Pick the funniest answer</Text>
+
+            <View style={styles.deckArea}>
+              {judgeDeckIndex > 0 && <View style={styles.peekLeft} pointerEvents="none" />}
+              {judgeDeckIndex < (gs.anonymousSubmissions?.length ?? 0) - 1 && <View style={styles.peekRight} pointerEvents="none" />}
+
+              <Animated.View
+                style={[styles.deckCardWrap, { transform: [{ translateX: Animated.add(judgeCardDragX, judgeCardEntryX) }] }]}
+                {...judgePanResponder.panHandlers}
               >
-                <Text style={styles.answerCardText}>{item.cardText}</Text>
-              </TouchableOpacity>
-            )}
-          />
-          <TouchableOpacity
-            style={[styles.primaryBtn, !selectedSub && styles.btnDimmed]}
-            onPress={handlePickWinner}
-            disabled={!selectedSub}
-          >
-            <Text style={styles.primaryBtnText}>Pick this answer ✓</Text>
-          </TouchableOpacity>
-        </>
-      )}
+                <TouchableOpacity
+                  style={[
+                    styles.deckCard,
+                    selectedSub === gs.anonymousSubmissions?.[judgeDeckIndex]?.cardId && styles.deckCardSelected,
+                  ]}
+                  onPress={() => {
+                    const card = gs.anonymousSubmissions?.[judgeDeckIndex];
+                    if (card) setSelectedSub(prev => prev === card.cardId ? null : card.cardId);
+                  }}
+                  activeOpacity={0.9}
+                >
+                  <Image source={blankImage} style={styles.deckCardBgImage} />
+                    {selectedSub === gs.anonymousSubmissions?.[judgeDeckIndex]?.cardId && (
+                      <View style={styles.selectedBadge}>
+                        <Text style={styles.selectedBadgeText}>✓ Selected</Text>
+                      </View>
+                    )}
+                    <Text style={styles.deckCardText}>{gs.anonymousSubmissions?.[judgeDeckIndex]?.cardText}</Text>
+                </TouchableOpacity>
+              </Animated.View>
+            </View>
+
+            <Text style={styles.deckCounter}>{judgeDeckIndex + 1} / {gs.anonymousSubmissions?.length ?? 0}</Text>
+
+            <TouchableOpacity
+              style={[styles.primaryBtn, !selectedSub && styles.btnDimmed]}
+              onPress={handlePickWinner}
+              disabled={!selectedSub}
+            >
+              <Text style={styles.primaryBtnText}>Pick this answer ✓</Text>
+            </TouchableOpacity>
+          </>
+        );
+      })()}
 
       {/* judging — waiting for judge */}
-      {gs.phase === 'judging' && !isJudge && (
-        <View style={styles.centreSection}>
-          <Text style={styles.waitText}>⚖️ {judge?.name} is picking the winner…</Text>
-        </View>
-      )}
+      {gs.phase === 'judging' && !isJudge && (() => {
+        const subs = gs.anonymousSubmissions ?? [];
+        viewerSubsRef.current = subs;
+        return (
+          <>
+            <Text style={styles.sectionLabel}>⚖️ {judge?.name} is deciding…</Text>
+
+            {subs.length > 0 ? (
+              <>
+                <View style={styles.deckArea}>
+                  {viewerDeckIndex > 0 && <View style={styles.peekLeft} pointerEvents="none" />}
+                  {viewerDeckIndex < subs.length - 1 && <View style={styles.peekRight} pointerEvents="none" />}
+
+                  <Animated.View
+                    style={[styles.deckCardWrap, { transform: [{ translateX: Animated.add(viewerCardDragX, viewerCardEntryX) }] }]}
+                    {...viewerPanResponder.panHandlers}
+                  >
+                    <View style={styles.deckCard}>
+                      <Image source={blankImage} style={styles.deckCardBgImage} />
+                      <Text style={styles.deckCardText}>{subs[viewerDeckIndex]?.cardText}</Text>
+                    </View>
+                  </Animated.View>
+                </View>
+
+                <Text style={styles.deckCounter}>{viewerDeckIndex + 1} / {subs.length}</Text>
+              </>
+            ) : (
+              <View style={styles.centreSection}>
+                <Text style={styles.waitText}>Waiting for submissions…</Text>
+              </View>
+            )}
+          </>
+        );
+      })()}
 
       {/* reveal */}
       {gs.phase === 'reveal' && (() => {
@@ -617,6 +704,7 @@ export default function WildRoundGameScreen({ navigation, route }) {
           <ScrollView style={styles.revealScroll} contentContainerStyle={styles.revealContent}>
             <Text style={styles.revealWinLabel}>🏆 Winning answer</Text>
             <View style={styles.winCard}>
+              <Image source={blankImage} style={styles.deckCardBgImage} />
               <Text style={styles.winCardText}>{winSub?.cardText}</Text>
             </View>
             <Text style={styles.revealWinnerName}>
@@ -629,6 +717,7 @@ export default function WildRoundGameScreen({ navigation, route }) {
                   const player = gs.players.find(p => String(p.id) === String(sub.playerId));
                   return (
                     <View key={sub.cardId} style={styles.otherCard}>
+                      <Image source={blankImage} style={styles.deckCardBgImage} />
                       <Text style={styles.otherCardText}>{sub.cardText}</Text>
                       <Text style={styles.otherCardName}>{player?.name}</Text>
                     </View>
@@ -702,6 +791,8 @@ const styles = StyleSheet.create({
   winCard: {
     backgroundColor: '#1a3a1a', borderRadius: 14,
     borderWidth: 2, borderColor: '#4caf50', padding: 20, marginBottom: 10,
+    overflow: 'hidden', alignItems: 'center', justifyContent: 'center',
+    position: 'relative',
   },
   winCardText: { color: '#ffffff', fontSize: 18, fontWeight: 'bold', textAlign: 'center' },
   revealWinnerName: {
@@ -713,6 +804,7 @@ const styles = StyleSheet.create({
   otherCard: {
     backgroundColor: '#16213e', borderRadius: 10, padding: 12,
     marginBottom: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    overflow: 'hidden', position: 'relative',
   },
   otherCardText: { color: '#b0b0c0', fontSize: 14, flex: 1, marginRight: 8 },
   otherCardName: { color: '#555570', fontSize: 12 },
@@ -736,23 +828,24 @@ const styles = StyleSheet.create({
     marginHorizontal: 32,
     zIndex: 2,
   },
-  deckCardWrapAbsolute: {
-    position: 'absolute',
-    left: 32,
-    right: 32,
-    top: 0,
-    bottom: 0,
-    zIndex: 1,
-  },
   deckCard: {
     flex: 1,
     borderRadius: 16,
     borderWidth: 2,
     borderColor: '#2a2a4e',
-    backgroundColor: '#1a1a2e',
-    padding: 24,
+    overflow: 'hidden',
+    position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
+    padding: 24,
+  },
+  deckCardBgImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    borderRadius: 16,
   },
   deckCardSelected: {
     borderColor: '#e94560',
