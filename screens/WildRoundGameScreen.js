@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView, FlatList, Alert,
+  Animated, PanResponder,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -57,6 +58,29 @@ export default function WildRoundGameScreen({ navigation, route }) {
   const [privateJudgePrompt, setPrivateJudgePrompt] = useState(null);
   const [selectedCard, setSelectedCard] = useState(null);
   const [selectedSub, setSelectedSub] = useState(null);
+  const [deckIndex, setDeckIndex] = useState(0);
+
+  const myHandRef = useRef(myHand);
+  myHandRef.current = myHand;
+  const dragX = useRef(new Animated.Value(0)).current;
+  const deckPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy),
+      onPanResponderMove: (_, g) => dragX.setValue(g.dx),
+      onPanResponderRelease: (_, g) => {
+        if (g.dx < -50) {
+          setDeckIndex(prev => Math.min(prev + 1, myHandRef.current.length - 1));
+        } else if (g.dx > 50) {
+          setDeckIndex(prev => Math.max(prev - 1, 0));
+        }
+        Animated.spring(dragX, { toValue: 0, useNativeDriver: true }).start();
+      },
+      onPanResponderTerminate: () => {
+        Animated.spring(dragX, { toValue: 0, useNativeDriver: true }).start();
+      },
+    })
+  ).current;
 
   // ── applyState ──────────────────────────────────────────────────────────────
   function applyState(newState) {
@@ -190,6 +214,7 @@ export default function WildRoundGameScreen({ navigation, route }) {
   useEffect(() => {
     setSelectedCard(null);
     setSelectedSub(null);
+    setDeckIndex(0);
   }, [gameState?.phase]);
 
   // ── AI automation (singleplayer only) ──────────────────────────────────────
@@ -425,20 +450,39 @@ export default function WildRoundGameScreen({ navigation, route }) {
       {/* submission — human submitting */}
       {gs.phase === 'submission' && !isJudge && !hasSubmitted && (
         <>
-          <Text style={styles.sectionLabel}>Your hand — tap a card, then submit</Text>
-          <FlatList
-            data={myHand}
-            keyExtractor={c => c.id}
-            style={styles.cardList}
-            renderItem={({ item }) => (
+          <Text style={styles.sectionLabel}>YOUR HAND — SWIPE TO BROWSE, TAP TO SELECT</Text>
+
+          <View style={styles.deckArea}>
+            {deckIndex > 0 && <View style={styles.peekLeft} pointerEvents="none" />}
+            {deckIndex < myHand.length - 1 && <View style={styles.peekRight} pointerEvents="none" />}
+
+            <Animated.View
+              style={[styles.deckCardWrap, { transform: [{ translateX: dragX }] }]}
+              {...deckPanResponder.panHandlers}
+            >
               <TouchableOpacity
-                style={[styles.answerCard, selectedCard === item.id && styles.answerCardSelected]}
-                onPress={() => setSelectedCard(prev => prev === item.id ? null : item.id)}
+                style={[
+                  styles.deckCard,
+                  selectedCard === myHand[deckIndex]?.id && styles.deckCardSelected,
+                ]}
+                onPress={() => {
+                  const card = myHand[deckIndex];
+                  if (card) setSelectedCard(prev => prev === card.id ? null : card.id);
+                }}
+                activeOpacity={0.9}
               >
-                <Text style={styles.answerCardText}>{item.text}</Text>
+                {selectedCard === myHand[deckIndex]?.id && (
+                  <View style={styles.selectedBadge}>
+                    <Text style={styles.selectedBadgeText}>✓ Selected</Text>
+                  </View>
+                )}
+                <Text style={styles.deckCardText}>{myHand[deckIndex]?.text}</Text>
               </TouchableOpacity>
-            )}
-          />
+            </Animated.View>
+          </View>
+
+          <Text style={styles.deckCounter}>{deckIndex + 1} / {myHand.length}</Text>
+
           <TouchableOpacity
             style={[styles.primaryBtn, !selectedCard && styles.btnDimmed]}
             onPress={handleSubmitCard}
@@ -609,4 +653,84 @@ const styles = StyleSheet.create({
   finalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   finalName: { color: '#ffffff', fontSize: 17 },
   finalScore: { color: '#e94560', fontSize: 17, fontWeight: 'bold' },
+
+  deckArea: {
+    flex: 1,
+    position: 'relative',
+    marginBottom: 8,
+  },
+  deckCardWrap: {
+    flex: 1,
+    marginHorizontal: 32,
+    zIndex: 2,
+  },
+  deckCard: {
+    flex: 1,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#2a2a4e',
+    backgroundColor: '#1a1a2e',
+    padding: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deckCardSelected: {
+    borderColor: '#e94560',
+    shadowColor: '#e94560',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  deckCardText: {
+    color: '#ffffff',
+    fontSize: 18,
+    textAlign: 'center',
+    lineHeight: 26,
+  },
+  selectedBadge: {
+    position: 'absolute',
+    top: 12,
+    backgroundColor: '#e94560',
+    paddingHorizontal: 14,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  selectedBadgeText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  peekLeft: {
+    position: 'absolute',
+    left: 0,
+    top: 16,
+    bottom: 16,
+    width: 38,
+    borderRadius: 12,
+    backgroundColor: '#16213e',
+    borderWidth: 1,
+    borderColor: '#2a2a5e',
+    opacity: 0.7,
+    zIndex: 1,
+  },
+  peekRight: {
+    position: 'absolute',
+    right: 0,
+    top: 16,
+    bottom: 16,
+    width: 38,
+    borderRadius: 12,
+    backgroundColor: '#16213e',
+    borderWidth: 1,
+    borderColor: '#2a2a5e',
+    opacity: 0.7,
+    zIndex: 1,
+  },
+  deckCounter: {
+    color: '#555570',
+    fontSize: 13,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
 });
