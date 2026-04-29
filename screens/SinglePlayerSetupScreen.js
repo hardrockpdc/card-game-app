@@ -25,7 +25,7 @@ const CAROUSEL_GAMES = [
     id: "goFish",
     label: "Go Fish",
     players: "1–4 players",
-    tag: "vs AI",
+    tag: "Go Fish!",
     color: "#080d1f",
     accent: "#1565c0",
   },
@@ -41,7 +41,7 @@ const CAROUSEL_GAMES = [
     id: "conquian",
     label: "Conquián",
     players: "1–4 players",
-    tag: "Mexican Rummy",
+    tag: "Conquián",
     color: "#1a0d04",
     accent: "#bf360c",
   },
@@ -58,17 +58,47 @@ const CAROUSEL_GAMES = [
 // ─── Logic data (unchanged from original) ────────────────────────────────────
 
 const GAMES = [
-  { id: "blackjack", screen: "Game",          aiRange: [0, 0], hasDifficulty: false, hasTone: false },
-  { id: "goFish",    screen: "GoFishGame",     aiRange: [1, 3], hasDifficulty: true,  hasTone: false },
-  { id: "poker",     screen: "PokerGame",      aiRange: [1, 3], hasDifficulty: true,  hasTone: false },
-  { id: "conquian",  screen: "ConquianGame",   aiRange: [1, 3], hasDifficulty: true,  hasTone: false },
-  { id: "wildRound", screen: "WildRoundGame",  aiRange: [2, 7], hasDifficulty: false, hasTone: true  },
+  {
+    id: "blackjack",
+    screen: "Game",
+    aiRange: [0, 0],
+    hasDifficulty: false,
+    hasTone: false,
+  },
+  {
+    id: "goFish",
+    screen: "GoFishGame",
+    aiRange: [1, 3],
+    hasDifficulty: true,
+    hasTone: false,
+  },
+  {
+    id: "poker",
+    screen: "PokerGame",
+    aiRange: [1, 3],
+    hasDifficulty: true,
+    hasTone: false,
+  },
+  {
+    id: "conquian",
+    screen: "ConquianGame",
+    aiRange: [1, 3],
+    hasDifficulty: true,
+    hasTone: false,
+  },
+  {
+    id: "wildRound",
+    screen: "WildRoundGame",
+    aiRange: [2, 7],
+    hasDifficulty: false,
+    hasTone: true,
+  },
 ];
 
 const DIFFICULTIES = [
-  { id: "easy",   label: "Easy",   hint: "Random play, makes mistakes" },
-  { id: "medium", label: "Medium", hint: "Solid play, decent strategy" },
-  { id: "hard",   label: "Hard",   hint: "Strong play, hard to beat"   },
+  { id: "easy", label: "Easy", hint: "" },
+  { id: "medium", label: "Medium", hint: "" },
+  { id: "hard", label: "Hard", hint: "" },
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -81,9 +111,9 @@ export default function SinglePlayerSetupScreen({ navigation, route }) {
   const profileName = route.params?.profileName || "";
   const playerName = profileName.trim() || "Player";
 
-  // Start on Go Fish (index 1) — matches original default gameId
-  const [currentIndex, setCurrentIndex] = useState(1);
-  const [numAI, setNumAI] = useState(1);
+  // Start on Blackjack (index 0) — matches original default gameId
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [numAI, setNumAI] = useState(0);
   const [difficulty, setDifficulty] = useState("medium");
   const [tone, setTone] = useState("family");
 
@@ -152,11 +182,6 @@ export default function SinglePlayerSetupScreen({ navigation, route }) {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Carousel label ── */}
-        <Text style={[styles.label, { fontSize: labelSize, paddingHorizontal: padH, marginTop: 24 }]}>
-          Pick a Game
-        </Text>
-
         {/* ── Game carousel ── */}
         <FlatList
           ref={flatListRef}
@@ -195,15 +220,26 @@ export default function SinglePlayerSetupScreen({ navigation, route }) {
                   <Text style={styles.cardName}>{item.label}</Text>
 
                   {/* Placeholder visual */}
-                  <View style={[styles.cardVisual, { borderColor: item.accent + "55" }]}>
-                    <Text style={styles.cardVisualText}>visual coming soon</Text>
+                  <View
+                    style={[
+                      styles.cardVisual,
+                      { borderColor: item.accent + "55" },
+                    ]}
+                  >
+                    <Text style={styles.cardVisualText}>
+                      visual coming soon
+                    </Text>
                   </View>
 
                   {/* Footer: player count + tag */}
                   <View style={styles.cardFooter}>
                     <Text style={styles.cardPlayers}>{item.players}</Text>
-                    <View style={[styles.cardTag, { borderColor: item.accent }]}>
-                      <Text style={[styles.cardTagText, { color: item.accent }]}>
+                    <View
+                      style={[styles.cardTag, { borderColor: item.accent }]}
+                    >
+                      <Text
+                        style={[styles.cardTagText, { color: item.accent }]}
+                      >
                         {item.tag}
                       </Text>
                     </View>
@@ -217,17 +253,19 @@ export default function SinglePlayerSetupScreen({ navigation, route }) {
         {/* ── Dot indicators ── */}
         <View style={styles.dotsRow}>
           {CAROUSEL_GAMES.map((_, i) => (
-            <View key={i} style={[styles.dot, i === currentIndex && styles.dotActive]} />
+            <View
+              key={i}
+              style={[styles.dot, i === currentIndex && styles.dotActive]}
+            />
           ))}
         </View>
 
         {/* ── Settings + Play — back inside padded container ── */}
         <View style={{ paddingHorizontal: padH }}>
-
           {/* AI opponent count */}
           {game.id === "blackjack" ? (
             <View style={styles.infoBox}>
-              <Text style={styles.infoText}>You vs the Dealer — no opponents to pick</Text>
+              <Text style={styles.infoText}></Text>
             </View>
           ) : (
             <>
@@ -238,21 +276,47 @@ export default function SinglePlayerSetupScreen({ navigation, route }) {
               {maxAI > 3 ? (
                 <View style={styles.stepperRow}>
                   <TouchableOpacity
-                    style={[styles.stepperBtn, { width: stepperButtonSize, height: stepperButtonSize, borderRadius: stepperButtonSize / 2 }]}
+                    style={[
+                      styles.stepperBtn,
+                      {
+                        width: stepperButtonSize,
+                        height: stepperButtonSize,
+                        borderRadius: stepperButtonSize / 2,
+                      },
+                    ]}
                     onPress={() => setNumAI((n) => Math.max(n - 1, minAI))}
                     disabled={clampedAI <= minAI}
                   >
-                    <Text style={[styles.stepperBtnText, { fontSize: isSmallScreen ? 26 : 28 }, clampedAI <= minAI && styles.stepperBtnDimmed]}>
+                    <Text
+                      style={[
+                        styles.stepperBtnText,
+                        { fontSize: isSmallScreen ? 26 : 28 },
+                        clampedAI <= minAI && styles.stepperBtnDimmed,
+                      ]}
+                    >
                       −
                     </Text>
                   </TouchableOpacity>
                   <Text style={styles.stepperValue}>{clampedAI}</Text>
                   <TouchableOpacity
-                    style={[styles.stepperBtn, { width: stepperButtonSize, height: stepperButtonSize, borderRadius: stepperButtonSize / 2 }]}
+                    style={[
+                      styles.stepperBtn,
+                      {
+                        width: stepperButtonSize,
+                        height: stepperButtonSize,
+                        borderRadius: stepperButtonSize / 2,
+                      },
+                    ]}
                     onPress={() => setNumAI((n) => Math.min(n + 1, maxAI))}
                     disabled={clampedAI >= maxAI}
                   >
-                    <Text style={[styles.stepperBtnText, { fontSize: isSmallScreen ? 26 : 28 }, clampedAI >= maxAI && styles.stepperBtnDimmed]}>
+                    <Text
+                      style={[
+                        styles.stepperBtnText,
+                        { fontSize: isSmallScreen ? 26 : 28 },
+                        clampedAI >= maxAI && styles.stepperBtnDimmed,
+                      ]}
+                    >
                       +
                     </Text>
                   </TouchableOpacity>
@@ -266,16 +330,22 @@ export default function SinglePlayerSetupScreen({ navigation, route }) {
                         key={n}
                         style={[
                           styles.countBtn,
-                          { width: countButtonSize, height: countButtonSize, borderRadius: countButtonSize / 2 },
+                          {
+                            width: countButtonSize,
+                            height: countButtonSize,
+                            borderRadius: countButtonSize / 2,
+                          },
                           clampedAI === n && styles.countBtnSelected,
                         ]}
                         onPress={() => setNumAI(n)}
                       >
-                        <Text style={[
-                          styles.countBtnText,
-                          { fontSize: isSmallScreen ? 24 : 26 },
-                          clampedAI === n && styles.countBtnTextSelected,
-                        ]}>
+                        <Text
+                          style={[
+                            styles.countBtnText,
+                            { fontSize: isSmallScreen ? 24 : 26 },
+                            clampedAI === n && styles.countBtnTextSelected,
+                          ]}
+                        >
                           {n}
                         </Text>
                       </TouchableOpacity>
@@ -292,7 +362,9 @@ export default function SinglePlayerSetupScreen({ navigation, route }) {
           {/* Tone picker */}
           {game.hasTone && (
             <>
-              <Text style={[styles.label, { fontSize: labelSize }]}>Card Tone</Text>
+              <Text style={[styles.label, { fontSize: labelSize }]}>
+                Card Tone
+              </Text>
               <View style={styles.chipRow}>
                 {[
                   { id: "family", label: "Family 🧒" },
@@ -303,7 +375,12 @@ export default function SinglePlayerSetupScreen({ navigation, route }) {
                     style={[styles.chip, tone === t.id && styles.chipSelected]}
                     onPress={() => setTone(t.id)}
                   >
-                    <Text style={[styles.chipText, tone === t.id && styles.chipTextSelected]}>
+                    <Text
+                      style={[
+                        styles.chipText,
+                        tone === t.id && styles.chipTextSelected,
+                      ]}
+                    >
                       {t.label}
                     </Text>
                   </TouchableOpacity>
@@ -315,15 +392,25 @@ export default function SinglePlayerSetupScreen({ navigation, route }) {
           {/* Difficulty picker */}
           {game.hasDifficulty && (
             <>
-              <Text style={[styles.label, { fontSize: labelSize }]}>AI Difficulty</Text>
+              <Text style={[styles.label, { fontSize: labelSize }]}>
+                --Difficulty--
+              </Text>
               <View style={styles.diffRow}>
                 {DIFFICULTIES.map((d) => (
                   <TouchableOpacity
                     key={d.id}
-                    style={[styles.diffBtn, difficulty === d.id && styles.diffBtnSelected]}
+                    style={[
+                      styles.diffBtn,
+                      difficulty === d.id && styles.diffBtnSelected,
+                    ]}
                     onPress={() => setDifficulty(d.id)}
                   >
-                    <Text style={[styles.diffBtnText, difficulty === d.id && styles.diffBtnTextSelected]}>
+                    <Text
+                      style={[
+                        styles.diffBtnText,
+                        difficulty === d.id && styles.diffBtnTextSelected,
+                      ]}
+                    >
                       {d.label}
                     </Text>
                   </TouchableOpacity>
@@ -337,14 +424,18 @@ export default function SinglePlayerSetupScreen({ navigation, route }) {
 
           {/* Play button */}
           <TouchableOpacity
-            style={[styles.playBtn, { paddingVertical: isSmallScreen ? 16 : 18 }]}
+            style={[
+              styles.playBtn,
+              { paddingVertical: isSmallScreen ? 16 : 18 },
+            ]}
             onPress={handlePlay}
           >
-            <Text style={[styles.playBtnText, { fontSize: playButtonTextSize }]}>
+            <Text
+              style={[styles.playBtnText, { fontSize: playButtonTextSize }]}
+            >
               Play {carouselGame.label}
             </Text>
           </TouchableOpacity>
-
         </View>
       </ScrollView>
     </SafeAreaView>
