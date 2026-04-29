@@ -59,25 +59,67 @@ export default function WildRoundGameScreen({ navigation, route }) {
   const [selectedCard, setSelectedCard] = useState(null);
   const [selectedSub, setSelectedSub] = useState(null);
   const [deckIndex, setDeckIndex] = useState(0);
+  const [nextIndex, setNextIndex] = useState(null);
 
+  const deckIndexRef = useRef(0);
   const myHandRef = useRef(myHand);
   myHandRef.current = myHand;
+  const screenWidthRef = useRef(400);
   const dragX = useRef(new Animated.Value(0)).current;
+  const newCardX = useRef(new Animated.Value(0)).current;
+  const isAnimatingRef = useRef(false);
+
   const deckPanResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy),
-      onPanResponderMove: (_, g) => dragX.setValue(g.dx),
+      onStartShouldSetPanResponder: () => !isAnimatingRef.current,
+      onMoveShouldSetPanResponder: (_, g) =>
+        !isAnimatingRef.current && Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy),
+      onPanResponderMove: (_, g) => {
+        if (!isAnimatingRef.current) dragX.setValue(g.dx);
+      },
       onPanResponderRelease: (_, g) => {
-        if (g.dx < -50) {
-          setDeckIndex(prev => Math.min(prev + 1, myHandRef.current.length - 1));
-        } else if (g.dx > 50) {
-          setDeckIndex(prev => Math.max(prev - 1, 0));
+        if (isAnimatingRef.current) return;
+        const THRESHOLD = 50;
+        const handLen = myHandRef.current.length;
+        const curIdx = deckIndexRef.current;
+        if (g.dx < -THRESHOLD && curIdx < handLen - 1) {
+          const next = curIdx + 1;
+          isAnimatingRef.current = true;
+          newCardX.setValue(screenWidthRef.current);
+          setNextIndex(next);
+          Animated.parallel([
+            Animated.timing(dragX, { toValue: -screenWidthRef.current, duration: 260, useNativeDriver: true }),
+            Animated.timing(newCardX, { toValue: 0, duration: 260, useNativeDriver: true }),
+          ]).start(() => {
+            deckIndexRef.current = next;
+            setDeckIndex(next);
+            setNextIndex(null);
+            dragX.setValue(0);
+            isAnimatingRef.current = false;
+          });
+        } else if (g.dx > THRESHOLD && curIdx > 0) {
+          const prev = curIdx - 1;
+          isAnimatingRef.current = true;
+          newCardX.setValue(-screenWidthRef.current);
+          setNextIndex(prev);
+          Animated.parallel([
+            Animated.timing(dragX, { toValue: screenWidthRef.current, duration: 260, useNativeDriver: true }),
+            Animated.timing(newCardX, { toValue: 0, duration: 260, useNativeDriver: true }),
+          ]).start(() => {
+            deckIndexRef.current = prev;
+            setDeckIndex(prev);
+            setNextIndex(null);
+            dragX.setValue(0);
+            isAnimatingRef.current = false;
+          });
+        } else {
+          Animated.spring(dragX, { toValue: 0, useNativeDriver: true }).start();
         }
-        Animated.spring(dragX, { toValue: 0, useNativeDriver: true }).start();
       },
       onPanResponderTerminate: () => {
-        Animated.spring(dragX, { toValue: 0, useNativeDriver: true }).start();
+        if (!isAnimatingRef.current) {
+          Animated.spring(dragX, { toValue: 0, useNativeDriver: true }).start();
+        }
       },
     })
   ).current;
@@ -215,6 +257,10 @@ export default function WildRoundGameScreen({ navigation, route }) {
     setSelectedCard(null);
     setSelectedSub(null);
     setDeckIndex(0);
+    setNextIndex(null);
+    deckIndexRef.current = 0;
+    isAnimatingRef.current = false;
+    dragX.setValue(0);
   }, [gameState?.phase]);
 
   // ── AI automation (singleplayer only) ──────────────────────────────────────
@@ -452,10 +498,36 @@ export default function WildRoundGameScreen({ navigation, route }) {
         <>
           <Text style={styles.sectionLabel}>YOUR HAND — SWIPE TO BROWSE, TAP TO SELECT</Text>
 
-          <View style={styles.deckArea}>
+          <View
+            style={styles.deckArea}
+            onLayout={e => { screenWidthRef.current = e.nativeEvent.layout.width; }}
+          >
             {deckIndex > 0 && <View style={styles.peekLeft} pointerEvents="none" />}
             {deckIndex < myHand.length - 1 && <View style={styles.peekRight} pointerEvents="none" />}
 
+            {/* Incoming card — slides in from off-screen during swipe animation */}
+            {nextIndex !== null && (
+              <Animated.View
+                style={[styles.deckCardWrapAbsolute, { transform: [{ translateX: newCardX }] }]}
+                pointerEvents="none"
+              >
+                <View
+                  style={[
+                    styles.deckCard,
+                    selectedCard === myHand[nextIndex]?.id && styles.deckCardSelected,
+                  ]}
+                >
+                  {selectedCard === myHand[nextIndex]?.id && (
+                    <View style={styles.selectedBadge}>
+                      <Text style={styles.selectedBadgeText}>✓ Selected</Text>
+                    </View>
+                  )}
+                  <Text style={styles.deckCardText}>{myHand[nextIndex]?.text}</Text>
+                </View>
+              </Animated.View>
+            )}
+
+            {/* Current card — draggable */}
             <Animated.View
               style={[styles.deckCardWrap, { transform: [{ translateX: dragX }] }]}
               {...deckPanResponder.panHandlers}
@@ -466,6 +538,7 @@ export default function WildRoundGameScreen({ navigation, route }) {
                   selectedCard === myHand[deckIndex]?.id && styles.deckCardSelected,
                 ]}
                 onPress={() => {
+                  if (isAnimatingRef.current) return;
                   const card = myHand[deckIndex];
                   if (card) setSelectedCard(prev => prev === card.id ? null : card.id);
                 }}
@@ -663,6 +736,14 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: 32,
     zIndex: 2,
+  },
+  deckCardWrapAbsolute: {
+    position: 'absolute',
+    left: 32,
+    right: 32,
+    top: 0,
+    bottom: 0,
+    zIndex: 1,
   },
   deckCard: {
     flex: 1,
