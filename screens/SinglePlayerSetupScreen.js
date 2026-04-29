@@ -3,7 +3,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   FlatList,
   StyleSheet,
@@ -74,12 +73,14 @@ const DIFFICULTIES = [
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function SinglePlayerSetupScreen({ navigation }) {
+export default function SinglePlayerSetupScreen({ navigation, route }) {
   const { width } = useWindowDimensions();
   const isSmallScreen = width < 380;
   const isTablet = width >= 768;
 
-  const [name, setName] = useState("");
+  const profileName = route.params?.profileName || "";
+  const playerName = profileName.trim() || "Player";
+
   // Start on Go Fish (index 1) — matches original default gameId
   const [currentIndex, setCurrentIndex] = useState(1);
   const [numAI, setNumAI] = useState(1);
@@ -113,18 +114,15 @@ export default function SinglePlayerSetupScreen({ navigation }) {
 
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 }).current;
 
-  // ─── Play handler (logic unchanged) ────────────────────────────────────────
+  // ─── Play handler ───────────────────────────────────────────────────────────
   function handlePlay() {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-
     if (game.id === "blackjack") {
       navigation.navigate("Game");
       return;
     }
 
     const players = [
-      { id: "host", name: trimmed },
+      { id: "host", name: playerName },
       ...Array.from({ length: clampedAI }, (_, i) => ({
         id: `ai_${i + 1}`,
         name: clampedAI > 1 ? `Computer ${i + 1}` : "Computer",
@@ -132,7 +130,7 @@ export default function SinglePlayerSetupScreen({ navigation }) {
       })),
     ];
 
-    const params = { role: "singleplayer", myName: trimmed, players };
+    const params = { role: "singleplayer", myName: playerName, players };
     if (game.hasDifficulty) params.difficulty = difficulty;
     if (game.hasTone) params.tone = tone;
 
@@ -141,7 +139,6 @@ export default function SinglePlayerSetupScreen({ navigation }) {
 
   // ─── Size vars ──────────────────────────────────────────────────────────────
   const labelSize = isSmallScreen ? 12 : 13;
-  const inputSize = isSmallScreen ? 16 : 18;
   const titleSize = isSmallScreen ? 24 : isTablet ? 34 : 28;
   const countButtonSize = isSmallScreen ? 56 : 64;
   const stepperButtonSize = isSmallScreen ? 48 : 52;
@@ -155,20 +152,6 @@ export default function SinglePlayerSetupScreen({ navigation }) {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Name input ── */}
-        <Text style={[styles.label, { fontSize: labelSize, paddingHorizontal: padH }]}>
-          Your Name
-        </Text>
-        <TextInput
-          style={[styles.input, { fontSize: inputSize, marginHorizontal: padH }]}
-          value={name}
-          onChangeText={setName}
-          placeholder="Enter your name"
-          placeholderTextColor="#555"
-          maxLength={20}
-          returnKeyType="done"
-        />
-
         {/* ── Carousel label ── */}
         <Text style={[styles.label, { fontSize: labelSize, paddingHorizontal: padH, marginTop: 24 }]}>
           Pick a Game
@@ -354,13 +337,8 @@ export default function SinglePlayerSetupScreen({ navigation }) {
 
           {/* Play button */}
           <TouchableOpacity
-            style={[
-              styles.playBtn,
-              { paddingVertical: isSmallScreen ? 16 : 18 },
-              !name.trim() && styles.playBtnDimmed,
-            ]}
+            style={[styles.playBtn, { paddingVertical: isSmallScreen ? 16 : 18 }]}
             onPress={handlePlay}
-            disabled={!name.trim()}
           >
             <Text style={[styles.playBtnText, { fontSize: playButtonTextSize }]}>
               Play {carouselGame.label}
@@ -401,17 +379,6 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 1,
     marginBottom: 10,
-  },
-
-  // Name input
-  input: {
-    backgroundColor: "#16213e",
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    color: "#fff",
-    borderWidth: 1.5,
-    borderColor: "#334",
   },
 
   // ── Game card ──────────────────────────────────────────────────────────────
@@ -612,9 +579,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     marginTop: 36,
-  },
-  playBtnDimmed: {
-    backgroundColor: "#6b2535",
   },
   playBtnText: {
     color: "#fff",
