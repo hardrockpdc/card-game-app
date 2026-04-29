@@ -155,11 +155,6 @@ export default function SinglePlayerSetupScreen({ navigation }) {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Title ── */}
-        <Text style={[styles.title, { fontSize: titleSize, paddingHorizontal: padH }]}>
-          Single Player
-        </Text>
-
         {/* ── Name input ── */}
         <Text style={[styles.label, { fontSize: labelSize, paddingHorizontal: padH }]}>
           Your Name
