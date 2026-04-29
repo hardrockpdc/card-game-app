@@ -71,7 +71,7 @@ export default function WildRoundGameScreen({ navigation, route }) {
 
   const deckPanResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => !isAnimatingRef.current,
+      onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponder: (_, g) =>
         !isAnimatingRef.current && Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy),
       onPanResponderMove: (_, g) => {
@@ -91,11 +91,11 @@ export default function WildRoundGameScreen({ navigation, route }) {
             Animated.timing(dragX, { toValue: -screenWidthRef.current, duration: 260, useNativeDriver: true }),
             Animated.timing(newCardX, { toValue: 0, duration: 260, useNativeDriver: true }),
           ]).start(() => {
+            dragX.setValue(0);
             deckIndexRef.current = next;
+            isAnimatingRef.current = false;
             setDeckIndex(next);
             setNextIndex(null);
-            dragX.setValue(0);
-            isAnimatingRef.current = false;
           });
         } else if (g.dx > THRESHOLD && curIdx > 0) {
           const prev = curIdx - 1;
@@ -106,20 +106,19 @@ export default function WildRoundGameScreen({ navigation, route }) {
             Animated.timing(dragX, { toValue: screenWidthRef.current, duration: 260, useNativeDriver: true }),
             Animated.timing(newCardX, { toValue: 0, duration: 260, useNativeDriver: true }),
           ]).start(() => {
+            dragX.setValue(0);
             deckIndexRef.current = prev;
+            isAnimatingRef.current = false;
             setDeckIndex(prev);
             setNextIndex(null);
-            dragX.setValue(0);
-            isAnimatingRef.current = false;
           });
         } else {
           Animated.spring(dragX, { toValue: 0, useNativeDriver: true }).start();
         }
       },
       onPanResponderTerminate: () => {
-        if (!isAnimatingRef.current) {
-          Animated.spring(dragX, { toValue: 0, useNativeDriver: true }).start();
-        }
+        isAnimatingRef.current = false;
+        Animated.spring(dragX, { toValue: 0, useNativeDriver: true }).start();
       },
     })
   ).current;
