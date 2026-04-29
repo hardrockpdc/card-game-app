@@ -4,11 +4,11 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
+  FlatList,
   Alert,
   Animated,
   PanResponder,
-  Image,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -27,7 +27,6 @@ import {
   setClientListeners,
   sendToHost,
 } from "../game/GameNetwork";
-import { getTheme, subscribe } from "../game/cardTheme";
 
 const WIN_SCORE = 10;
 
@@ -84,6 +83,7 @@ export default function WildRoundGameScreen({ navigation, route }) {
     : String(initialPlayers.find((p) => p.name === myName)?.id ?? myName);
 
   const fullRef = useRef(null);
+  const lastPromptRef = useRef(null);
   const [gameState, setGameState] = useState(null);
   const [myHand, setMyHand] = useState([]);
   const [privateJudgePrompt, setPrivateJudgePrompt] = useState(null);
@@ -92,16 +92,15 @@ export default function WildRoundGameScreen({ navigation, route }) {
   const [deckIndex, setDeckIndex] = useState(0);
   const [judgeDeckIndex, setJudgeDeckIndex] = useState(0);
   const [viewerDeckIndex, setViewerDeckIndex] = useState(0);
-  const [themeId, setThemeId] = useState(getTheme());
-  useEffect(() => subscribe(setThemeId), []);
-  const blankImages = {
-    neon: require("../assets/cards/blank.png"),
-    cowboy: require("../assets/cards_cowboy/blank.png"),
-    girly: require("../assets/card_images_girly/blank.png"),
-    hp: require("../assets/card_images_hp/blank.png"),
-    jewel: require("../assets/card_images_jewel/blank.png"),
-  };
-  const blankImage = blankImages[themeId] ?? blankImages.neon;
+  const { width, height } = useWindowDimensions();
+  const [revealIndex, setRevealIndex] = useState(0);
+  useEffect(() => {
+    if (privateJudgePrompt) lastPromptRef.current = privateJudgePrompt;
+    if (gameState?.currentPrompt)
+      lastPromptRef.current = gameState.currentPrompt;
+  }, [privateJudgePrompt, gameState?.currentPrompt]);
+  const revealCardWidth = Math.max(width - 32, 0);
+  const revealCardHeight = Math.round(height * 0.38);
 
   const deckIndexRef = useRef(0);
   const myHandRef = useRef(myHand);
@@ -450,6 +449,7 @@ export default function WildRoundGameScreen({ navigation, route }) {
     setJudgeDeckIndex(0);
     viewerIndexRef.current = 0;
     setViewerDeckIndex(0);
+    setRevealIndex(0);
   }, [gameState?.phase]);
 
   // ── AI automation (singleplayer only) ──────────────────────────────────────
@@ -671,44 +671,25 @@ export default function WildRoundGameScreen({ navigation, route }) {
   // ── Main game ───────────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.container}>
-      {/* Scoreboard */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.scoreRow}
-        contentContainerStyle={styles.scoreRowContent}
-      >
-        {gs.players.map((p, i) => (
-          <View
-            key={String(p.id)}
-            style={[
-              styles.scoreChip,
-              i === gs.judgeIndex && styles.scoreChipJudge,
-            ]}
-          >
-            <Text style={styles.scoreChipName} numberOfLines={1}>
-              {i === gs.judgeIndex ? "⚖️ " : ""}
-              {p.name}
-            </Text>
-            <Text style={styles.scoreChipScore}>
-              {p.score}/{WIN_SCORE}
-            </Text>
-          </View>
-        ))}
-      </ScrollView>
-
       {/* Prompt box */}
-      <View style={styles.promptBox}>
-        {displayPrompt ? (
-          <Text style={styles.promptText}>{displayPrompt.text}</Text>
-        ) : (
-          <Text style={styles.waitText}>
-            {gs.phase === "judgeSkip"
-              ? `⚖️ ${judge?.name} is choosing a prompt…`
-              : "…"}
-          </Text>
-        )}
-      </View>
+      {gs.phase !== "reveal" && (
+        <>
+          {displayPrompt ? (
+            <View style={styles.revealPromptSection}>
+              <Text style={styles.revealPromptLabel}>THIS ROUND'S PROMPT</Text>
+              <View style={styles.promptBox}>
+                <Text style={styles.promptText}>{displayPrompt.text}</Text>
+              </View>
+            </View>
+          ) : (
+            <Text style={styles.waitText}>
+              {gs.phase === "judgeSkip"
+                ? `⚖️ ${judge?.name} is choosing a prompt…`
+                : "…"}
+            </Text>
+          )}
+        </>
+      )}
 
       {/* judgeSkip — human judge */}
       {gs.phase === "judgeSkip" && isJudge && (
@@ -760,58 +741,73 @@ export default function WildRoundGameScreen({ navigation, route }) {
       {gs.phase === "submission" && !isJudge && !hasSubmitted && (
         <>
           <View style={styles.deckArea}>
-            {deckIndex > 0 && (
-              <View style={styles.peekLeft} pointerEvents="none" />
-            )}
-            {deckIndex < myHand.length - 1 && (
-              <View style={styles.peekRight} pointerEvents="none" />
-            )}
-
-            {/* Current card — draggable */}
-            <Animated.View
-              style={[
-                styles.deckCardWrap,
-                {
-                  transform: [{ translateX: Animated.add(dragX, cardEntryX) }],
-                },
-              ]}
-              {...deckPanResponder.panHandlers}
-            >
-              <TouchableOpacity
-                style={[
-                  styles.deckCard,
-                  selectedCard === myHand[deckIndex]?.id &&
-                    styles.deckCardSelected,
-                ]}
-                onPress={() => {
-                  const card = myHand[deckIndex];
-                  if (card)
-                    setSelectedCard((prev) =>
-                      prev === card.id ? null : card.id,
-                    );
-                }}
-                activeOpacity={0.9}
-              >
-                <Image
-                  source={blankImage}
-                  style={styles.deckCardBgImage}
-                  resizeMode="stretch"
-                />
-                {selectedCard === myHand[deckIndex]?.id && (
-                  <View style={styles.selectedBadge}>
-                    <Text style={styles.selectedBadgeText}>✓ Selected</Text>
+            <FlatList
+              data={myHand}
+              keyExtractor={(item) => String(item.id)}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              snapToInterval={revealCardWidth}
+              decelerationRate="fast"
+              disableIntervalMomentum
+              onMomentumScrollEnd={(event) => {
+                const nextIndex = Math.round(
+                  event.nativeEvent.contentOffset.x /
+                    Math.max(revealCardWidth, 1),
+                );
+                setDeckIndex(
+                  Math.max(0, Math.min(nextIndex, myHand.length - 1)),
+                );
+              }}
+              style={styles.submissionCarouselList}
+              contentContainerStyle={styles.submissionCarouselContent}
+              renderItem={({ item }) => {
+                const isSelected = selectedCard === item.id;
+                return (
+                  <View
+                    style={[
+                      styles.submissionCarouselPage,
+                      {
+                        width: revealCardWidth,
+                        height: revealCardHeight,
+                      },
+                    ]}
+                  >
+                    <TouchableOpacity
+                      style={[
+                        styles.submissionCard,
+                        isSelected && styles.submissionCardSelected,
+                      ]}
+                      onPress={() => {
+                        setSelectedCard((prev) =>
+                          prev === item.id ? null : item.id,
+                        );
+                      }}
+                      activeOpacity={0.9}
+                    >
+                      <Text style={styles.submissionCardText}>{item.text}</Text>
+                    </TouchableOpacity>
                   </View>
-                )}
-                <Text style={styles.deckCardText}>
-                  {myHand[deckIndex]?.text}
-                </Text>
-              </TouchableOpacity>
-            </Animated.View>
+                );
+              }}
+            />
           </View>
 
           <Text style={styles.deckCounter}>
             {deckIndex + 1} / {myHand.length}
           </Text>
+
+          <View style={styles.submissionDotsRow}>
+            {myHand.map((card, index) => (
+              <View
+                key={String(card.id)}
+                style={[
+                  styles.submissionDot,
+                  index === deckIndex && styles.submissionDotActive,
+                ]}
+              />
+            ))}
+          </View>
 
           <TouchableOpacity
             style={[styles.primaryBtn, !selectedCard && styles.btnDimmed]}
@@ -883,17 +879,6 @@ export default function WildRoundGameScreen({ navigation, route }) {
                     }}
                     activeOpacity={0.9}
                   >
-                    <Image
-                      source={blankImage}
-                      style={styles.deckCardBgImage}
-                      resizeMode="stretch"
-                    />
-                    {selectedSub ===
-                      gs.anonymousSubmissions?.[judgeDeckIndex]?.cardId && (
-                      <View style={styles.selectedBadge}>
-                        <Text style={styles.selectedBadgeText}>✓ Selected</Text>
-                      </View>
-                    )}
                     <Text style={styles.deckCardText}>
                       {gs.anonymousSubmissions?.[judgeDeckIndex]?.cardText}
                     </Text>
@@ -955,11 +940,6 @@ export default function WildRoundGameScreen({ navigation, route }) {
                       {...viewerPanResponder.panHandlers}
                     >
                       <View style={styles.deckCard}>
-                        <Image
-                          source={blankImage}
-                          style={styles.deckCardBgImage}
-                          resizeMode="stretch"
-                        />
                         <Text style={styles.deckCardText}>
                           {subs[viewerDeckIndex]?.cardText}
                         </Text>
@@ -992,51 +972,123 @@ export default function WildRoundGameScreen({ navigation, route }) {
           const otherSubs = gs.revealSubmissions.filter(
             (s) => s.cardId !== gs.lastWinningCardId,
           );
+          const revealCards = [
+            ...(winSub
+              ? [
+                  {
+                    ...winSub,
+                    playerName: winPlayer?.name ?? "Winner",
+                    isWinner: true,
+                  },
+                ]
+              : []),
+            ...otherSubs.map((sub) => {
+              const player = gs.players.find(
+                (p) => String(p.id) === String(sub.playerId),
+              );
+              return {
+                ...sub,
+                playerName: player?.name ?? "Unknown player",
+                isWinner: false,
+              };
+            }),
+          ];
+
           return (
-            <ScrollView
-              style={styles.revealScroll}
-              contentContainerStyle={styles.revealContent}
-            >
-              <Text style={styles.revealWinLabel}>🏆 Winning answer</Text>
-              <View style={styles.winCard}>
-                <Image
-                  source={blankImage}
-                  style={styles.deckCardBgImage}
-                  resizeMode="stretch"
-                />
-                <Text style={styles.winCardText}>{winSub?.cardText}</Text>
-              </View>
-              <Text style={styles.revealWinnerName}>
-                {winPlayer?.name} +1 point → {winPlayer?.score}/{WIN_SCORE}
-              </Text>
-              {otherSubs.length > 0 && (
-                <>
-                  <Text style={styles.revealOtherLabel}>Other answers</Text>
-                  {otherSubs.map((sub) => {
-                    const player = gs.players.find(
-                      (p) => String(p.id) === String(sub.playerId),
-                    );
-                    return (
-                      <View key={sub.cardId} style={styles.otherCard}>
-                        <Image
-                          source={blankImage}
-                          style={styles.deckCardBgImage}
-                          resizeMode="stretch"
-                        />
-                        <Text style={styles.otherCardText}>{sub.cardText}</Text>
-                        <Text style={styles.otherCardName}>{player?.name}</Text>
+            <View style={styles.revealScreen}>
+              <View style={styles.revealBody}>
+                <View style={styles.revealPromptSection}>
+                  <Text style={styles.revealPromptLabel}>
+                    THIS ROUND'S PROMPT
+                  </Text>
+                  <View style={styles.revealPromptCard}>
+                    <Text style={styles.revealPromptText}>
+                      {lastPromptRef.current?.text ?? "..."}
+                    </Text>
+                  </View>
+                </View>
+
+                <Text style={styles.revealWinnerLabel}>🏆 WINNER</Text>
+                <Text style={styles.revealWinnerName}>
+                  {winPlayer?.name ?? "Winner"}
+                </Text>
+
+                <View style={styles.revealCarouselSection}>
+                  <FlatList
+                    data={revealCards}
+                    keyExtractor={(item) => String(item.cardId)}
+                    horizontal
+                    pagingEnabled
+                    showsHorizontalScrollIndicator={false}
+                    snapToInterval={revealCardWidth}
+                    decelerationRate="fast"
+                    disableIntervalMomentum
+                    onMomentumScrollEnd={(event) => {
+                      const nextIndex = Math.round(
+                        event.nativeEvent.contentOffset.x /
+                          Math.max(revealCardWidth, 1),
+                      );
+                      setRevealIndex(
+                        Math.max(
+                          0,
+                          Math.min(nextIndex, revealCards.length - 1),
+                        ),
+                      );
+                    }}
+                    style={styles.revealCarouselList}
+                    contentContainerStyle={styles.revealCarouselContent}
+                    renderItem={({ item }) => (
+                      <View
+                        style={[
+                          styles.revealCarouselPage,
+                          {
+                            width: revealCardWidth,
+                            height: revealCardHeight,
+                          },
+                        ]}
+                      >
+                        <View
+                          style={[
+                            styles.revealAnswerCard,
+                            item.isWinner
+                              ? styles.revealAnswerCardWinner
+                              : styles.revealAnswerCardLoser,
+                          ]}
+                        >
+                          <Text style={styles.revealAnswerText}>
+                            {item.cardText}
+                          </Text>
+                          <Text style={styles.revealCardPlayerName}>
+                            {item.playerName}
+                          </Text>
+                        </View>
                       </View>
-                    );
-                  })}
-                </>
-              )}
-              <TouchableOpacity
-                style={[styles.primaryBtn, { marginTop: 24 }]}
-                onPress={handleNextRound}
-              >
-                <Text style={styles.primaryBtnText}>Next Round →</Text>
-              </TouchableOpacity>
-            </ScrollView>
+                    )}
+                  />
+
+                  <View style={styles.revealDotsRow}>
+                    {revealCards.map((card, index) => (
+                      <View
+                        key={String(card.cardId)}
+                        style={[
+                          styles.revealDot,
+                          index === revealIndex && styles.revealDotActive,
+                        ]}
+                      />
+                    ))}
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.revealFooter}>
+                <TouchableOpacity
+                  style={styles.primaryBtn}
+                  onPress={handleNextRound}
+                >
+                  <Text style={styles.primaryBtnText}>Next Round →</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           );
         })()}
     </SafeAreaView>
@@ -1046,48 +1098,18 @@ export default function WildRoundGameScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#1a1a2e", padding: 16 },
 
-  scoreRow: { flexGrow: 0, marginBottom: 12 },
-  scoreRowContent: { gap: 8, paddingHorizontal: 2 },
-  scoreChip: {
-    backgroundColor: "#16213e",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    alignItems: "center",
-    minWidth: 80,
-  },
-  scoreChipJudge: {
-    backgroundColor: "#2a1a3e",
-    borderWidth: 1.5,
-    borderColor: "#9c27b0",
-  },
-  scoreChipName: {
-    color: "#b0b0c0",
-    fontSize: 12,
-    fontWeight: "bold",
-    maxWidth: 90,
-  },
-  scoreChipScore: {
-    color: "#e94560",
-    fontSize: 14,
-    fontWeight: "bold",
-    marginTop: 2,
-  },
-
   promptBox: {
-    backgroundColor: "#16213e",
-    borderRadius: 14,
+    backgroundColor: "#2d1b69",
+    borderRadius: 16,
     padding: 20,
-    marginBottom: 16,
-    minHeight: 80,
-    justifyContent: "center",
+    width: "100%",
   },
   promptText: {
     color: "#ffffff",
-    fontSize: 20,
-    fontWeight: "bold",
+    fontSize: 22,
+    fontWeight: "700",
     textAlign: "center",
-    lineHeight: 28,
+    lineHeight: 30,
   },
 
   centreSection: {
@@ -1145,60 +1167,128 @@ const styles = StyleSheet.create({
   secondaryBtnText: { color: "#b0b0c0", fontSize: 15, fontWeight: "bold" },
   btnDimmed: { opacity: 0.4 },
 
-  revealScroll: { flex: 1 },
-  revealContent: { paddingBottom: 24 },
-  revealWinLabel: {
-    color: "#b0b0c0",
-    fontSize: 12,
+  revealScreen: {
+    flex: 1,
+  },
+  revealBody: {
+    flex: 1,
+  },
+  revealPromptSection: {
+    marginBottom: 16,
+  },
+  revealPromptLabel: {
+    color: "#888",
+    fontSize: 11,
     textTransform: "uppercase",
-    letterSpacing: 1,
-    marginBottom: 10,
+    letterSpacing: 1.5,
+    marginBottom: 8,
   },
-  winCard: {
-    backgroundColor: "#1a3a1a",
-    borderRadius: 14,
+  revealPromptCard: {
+    backgroundColor: "#2d1b69",
+    borderRadius: 16,
     padding: 20,
-    marginBottom: 10,
-    overflow: "hidden",
-    alignItems: "center",
-    justifyContent: "center",
-    position: "relative",
-    minHeight: 80,
+    width: "100%",
   },
-  winCardText: {
+  revealPromptText: {
     color: "#ffffff",
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: 22,
+    lineHeight: 30,
+    fontWeight: "700",
     textAlign: "center",
+  },
+  revealWinnerLabel: {
+    color: "#FFD700",
+    fontSize: 18,
+    fontWeight: "800",
+    textAlign: "center",
+    marginBottom: 4,
   },
   revealWinnerName: {
-    color: "#4caf50",
-    fontSize: 15,
-    fontWeight: "bold",
+    color: "#ffffff",
+    fontSize: 16,
+    fontWeight: "700",
     textAlign: "center",
-    marginBottom: 20,
+    marginBottom: 16,
   },
-  revealOtherLabel: {
-    color: "#666680",
-    fontSize: 12,
-    textTransform: "uppercase",
-    letterSpacing: 1,
-    marginBottom: 8,
+  revealCarouselSection: {
+    marginBottom: 16,
   },
-  otherCard: {
-    backgroundColor: "#16213e",
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 8,
-    flexDirection: "row",
+  revealCarouselList: {
+    flexGrow: 0,
+  },
+  revealCarouselContent: {
+    alignItems: "stretch",
+  },
+  revealCarouselPage: {
+    paddingRight: 0,
+  },
+  revealAnswerCard: {
+    flex: 1,
+    borderRadius: 22,
+    paddingHorizontal: 20,
+    paddingVertical: 22,
     justifyContent: "space-between",
     alignItems: "center",
     overflow: "hidden",
-    position: "relative",
-    minHeight: 50,
+    borderWidth: 1.5,
   },
-  otherCardText: { color: "#b0b0c0", fontSize: 14, flex: 1, marginRight: 8 },
-  otherCardName: { color: "#555570", fontSize: 12 },
+  revealAnswerCardWinner: {
+    backgroundColor: "#35286d",
+    borderColor: "#FFD700",
+    shadowColor: "#FFD700",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  revealAnswerCardLoser: {
+    backgroundColor: "#171a2d",
+    borderColor: "#444444",
+    opacity: 0.85,
+  },
+  revealAnswerText: {
+    color: "#ffffff",
+    fontSize: 24,
+    lineHeight: 32,
+    fontWeight: "700",
+    textAlign: "center",
+    flex: 1,
+  },
+  revealCardPlayerName: {
+    color: "#b0b0c0",
+    fontSize: 14,
+    textAlign: "center",
+    marginTop: 16,
+  },
+  revealDotsRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 12,
+  },
+  revealDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginHorizontal: 4,
+    backgroundColor: "#666666",
+  },
+  revealDotActive: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#FFD700",
+  },
+  revealScoreLine: {
+    color: "#FFD700",
+    fontSize: 16,
+    fontWeight: "700",
+    textAlign: "center",
+    marginBottom: 12,
+  },
+  revealFooter: {
+    marginTop: "auto",
+  },
 
   gameOverTitle: {
     color: "#ffffff",
@@ -1233,8 +1323,21 @@ const styles = StyleSheet.create({
     marginHorizontal: 26,
     zIndex: 2,
   },
-  deckCard: {
+  submissionCarouselList: {
+    flexGrow: 0,
+  },
+  submissionCarouselContent: {
+    alignItems: "stretch",
+  },
+  submissionCarouselPage: {
+    flex: 0,
+    marginHorizontal: 0,
+  },
+  submissionCard: {
     flex: 1,
+    backgroundColor: "#1a1a3e",
+    borderWidth: 1,
+    borderColor: "#333",
     borderRadius: 16,
     overflow: "hidden",
     position: "relative",
@@ -1242,36 +1345,53 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 24,
   },
-  deckCardBgImage: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 14,
+  submissionCardSelected: {
+    borderColor: "#ffffff",
+  },
+  submissionCardText: {
+    color: "#ffffff",
+    fontSize: 22,
+    fontWeight: "700",
+    textAlign: "center",
+    lineHeight: 30,
+  },
+  deckCard: {
+    flex: 1,
+    backgroundColor: "#1a1a3e",
+    borderWidth: 1,
+    borderColor: "#333",
+    borderRadius: 16,
+    overflow: "hidden",
+    position: "relative",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
   },
   deckCardSelected: {
-    borderColor: "#e94560",
-    shadowColor: "#e94560",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 10,
-    elevation: 8,
+    borderColor: "#ffffff",
   },
   deckCardText: {
     color: "#ffffff",
-    fontSize: 18,
+    fontSize: 22,
+    fontWeight: "700",
     textAlign: "center",
-    lineHeight: 26,
+    lineHeight: 30,
   },
-  selectedBadge: {
-    position: "absolute",
-    top: 12,
-    backgroundColor: "#e94560",
-    paddingHorizontal: 14,
-    paddingVertical: 4,
-    borderRadius: 12,
+  submissionDotsRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 12,
   },
-  selectedBadgeText: {
-    color: "#ffffff",
-    fontSize: 12,
-    fontWeight: "bold",
+  submissionDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginHorizontal: 4,
+    backgroundColor: "#666666",
+  },
+  submissionDotActive: {
+    backgroundColor: "#ffffff",
   },
   peekLeft: {
     position: "absolute",
