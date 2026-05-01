@@ -53,6 +53,14 @@ const CAROUSEL_GAMES = [
     color: "#060620",
     accent: "#283593",
   },
+  {
+    id: "lastCard",
+    label: "Last Card",
+    players: "2–8 players",
+    tag: "UNO-style",
+    color: "#111827",
+    accent: "#e94560",
+  },
 ];
 
 // ─── Logic data (unchanged from original) ────────────────────────────────────
@@ -92,6 +100,13 @@ const GAMES = [
     aiRange: [2, 7],
     hasDifficulty: false,
     hasTone: true,
+  },
+  {
+    id: "lastCard",
+    screen: "LastCardGame",
+    aiRange: [1, 7],
+    hasDifficulty: true,
+    hasTone: false,
   },
 ];
 

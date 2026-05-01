@@ -33,6 +33,7 @@ A cross-platform React Native mobile app for playing card games with friends and
 - ✅ **Wild Round Phase B:** Single-player UI with AI opponents
 - ✅ **Wild Round Phase C:** Full multiplayer with host/client networking
 - ✅ **Wild Round Phase E:** Full card content (100 prompts + 300 answers)
+- ✅ **Last Card Phase C:** Full single-player + multiplayer networking
 - 🔜 **Phase 5: Visual Theme Project (PAUSED)** ⏸️ paused until better PC available
   - Plan: Each game gets its own distinct theme (Blackjack=casino, Poker=premium black, Wild Round=neon party, etc.)
   - Theme switching: User can pick between themes per game
@@ -66,6 +67,7 @@ card-game-app/
 │   ├── deck.js                    (createDeck, shuffleDeck, calculateHandValue)
 │   ├── conquian.js                (Conquián game logic — pure functions)
 │   ├── wildround.js               (Wild Round game logic — pure functions)
+│   ├── lastCard.js                (Last Card game logic — pure functions)
 │   ├── wildroundCards.json        (100 prompts + 300 answers — Phase E complete)
 │   └── GameNetwork.js             (TCP server/client + UDP discovery)
 ├── screens/
@@ -79,6 +81,7 @@ card-game-app/
 │   ├── PokerGameScreen.js         (Texas Hold'em Poker)
 │   ├── ConquianGameScreen.js      (Conquián — single + multiplayer)
 │   ├── WildRoundGameScreen.js     (Wild Round — single + multiplayer)
+│   ├── LastCardGameScreen.js     (Last Card — single + multiplayer)
 │   ├── SinglePlayerSetupScreen.js (single-player game + AI picker)
 │   ├── HowToPlayScreen.js         (rules reference screen)
 │   ├── ResultsScreen.js           (placeholder)
@@ -123,7 +126,7 @@ react-native-udp: ^4.1.7
 Theme switching is live — tap a theme in Settings → Card Themes and all open games update instantly. No restart needed. Theme resets to Neon on app restart (no persistence yet — AsyncStorage would need a new EAS build).
 
 | Theme ID | Label    | Asset folder              |
-|----------|----------|---------------------------|
+| -------- | -------- | ------------------------- |
 | neon     | Neon     | assets/cards/             |
 | cowboy   | Cowboy   | assets/cards_cowboy/      |
 | girly    | Girly    | assets/card_images_girly/ |
@@ -133,6 +136,7 @@ Theme switching is live — tap a theme in Settings → Card Themes and all open
 All folders use identical filenames: `{rank}_{suit}.png` (ranks: a 2–10 j q k, suits: spades hearts diamonds clubs) + `card_back.png`.
 
 **Theme system files:**
+
 - `game/cardTheme.js` — module singleton, 265 static requires (5 themes × 53 images), `setTheme`/`getTheme`/`subscribe`/`getCardImage`/`getCardBackImage`/`getThemePreviewImage`/`THEMES_LIST` exports
 - `components/Card.js` — uses cardTheme.js, subscribes to live changes via `useEffect`
 - `screens/CardThemeScreen.js` — full-screen swiper (FlatList pagingEnabled), Ace of Spades preview, dot indicators, "Use This Theme" button
@@ -150,13 +154,14 @@ All folders use identical filenames: `{rank}_{suit}.png` (ranks: a 2–10 j q k,
 
 **Wild Round complete — full multiplayer and full card content working.** Project is at a clean, stable state. Project notes and all spec files are current.
 
-**Card Night currently includes 5 working games:**
+**Card Night currently includes 6 working games:**
 
 - Blackjack (single + multiplayer)
 - Go Fish (single + multiplayer, with AI Easy/Medium/Hard; hand auto-sorts by rank)
 - Texas Hold'em Poker (single + multiplayer, with AI Easy/Medium/Hard)
 - Conquián (single + multiplayer, with AI Easy/Medium/Hard)
 - Wild Round (single + multiplayer, 3-8 players, party-style)
+- Last Card (single + multiplayer, 2-8 players, AI single difficulty)
 
 **Visual assets update:** Cards now use neon image assets in `assets/cards/` (replaced procedural drawing).
 
@@ -248,6 +253,7 @@ Only when adding a NEW native package. JS-only changes don't need a rebuild.
 
 - `CONQUIAN_SPEC.md` — Conquián full spec (built ✅)
 - `WILDROUND_SPEC.md` — Wild Round full spec (Phases A-E built ✅)
+- `LASTCARD_SPEC.md` — Last Card full spec (single + multiplayer built ✅)
 
 ## 🚫 Decisions Made
 
