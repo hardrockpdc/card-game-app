@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   View,
@@ -8,7 +8,9 @@ import {
   StyleSheet,
   useWindowDimensions,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
+import { loadProfile, getDisplayName, hasProfileName } from "../game/profile";
 
 // ─── Display data for the carousel (order + visuals) ─────────────────────────
 
@@ -118,13 +120,13 @@ const DIFFICULTIES = [
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function SinglePlayerSetupScreen({ navigation, route }) {
+export default function SinglePlayerSetupScreen({ navigation }) {
   const { width } = useWindowDimensions();
   const isSmallScreen = width < 380;
   const isTablet = width >= 768;
 
-  const profileName = route.params?.profileName || "";
-  const playerName = profileName.trim() || "Player";
+  const [playerName, setPlayerName] = useState("Player");
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
   // Start on Blackjack (index 0) — matches original default gameId
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -133,6 +135,35 @@ export default function SinglePlayerSetupScreen({ navigation, route }) {
   const [tone, setTone] = useState("family");
 
   const flatListRef = useRef(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function bootstrapProfile() {
+      const profile = await loadProfile();
+
+      if (!isMounted) {
+        return;
+      }
+
+      const name = getDisplayName(profile);
+      setPlayerName(name);
+      setIsLoadingProfile(false);
+
+      if (!hasProfileName(profile)) {
+        navigation.navigate("Profile", {
+          welcomeMessage:
+            "Welcome! Set up your profile before choosing a single-player game.",
+        });
+      }
+    }
+
+    bootstrapProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [navigation]);
 
   // ─── Carousel geometry ──────────────────────────────────────────────────────
   const CARD_WIDTH = width * 0.78;
@@ -189,6 +220,17 @@ export default function SinglePlayerSetupScreen({ navigation, route }) {
   const stepperButtonSize = isSmallScreen ? 48 : 52;
   const playButtonTextSize = isSmallScreen ? 20 : 22;
   const padH = isSmallScreen ? 16 : 24;
+
+  if (isLoadingProfile) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator color="#e94560" size="large" />
+          <Text style={styles.loadingText}>Loading your profile…</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   // ─── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -277,6 +319,10 @@ export default function SinglePlayerSetupScreen({ navigation, route }) {
 
         {/* ── Settings + Play — back inside padded container ── */}
         <View style={{ paddingHorizontal: padH }}>
+          <View style={styles.playerPill}>
+            <Text style={styles.playerPillText}>Playing as {playerName}</Text>
+          </View>
+
           {/* AI opponent count */}
           {game.id === "blackjack" ? (
             <View style={styles.infoBox}>
@@ -469,6 +515,17 @@ const styles = StyleSheet.create({
     backgroundColor: "#1a1a2e",
     paddingBottom: 40,
   },
+  loadingWrap: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#1a1a2e",
+  },
+  loadingText: {
+    color: "#b0b0c0",
+    fontSize: 15,
+    marginTop: 12,
+  },
 
   // Header
   title: {
@@ -485,6 +542,22 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 1,
     marginBottom: 10,
+  },
+
+  playerPill: {
+    backgroundColor: "#16213e",
+    borderRadius: 999,
+    borderWidth: 1.5,
+    borderColor: "#334",
+    alignSelf: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginBottom: 18,
+  },
+  playerPillText: {
+    color: "#ffffff",
+    fontSize: 13,
+    fontWeight: "bold",
   },
 
   // ── Game card ──────────────────────────────────────────────────────────────

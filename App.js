@@ -19,6 +19,8 @@ import HowToPlayScreen from "./screens/HowToPlayScreen";
 import WildRoundGameScreen from "./screens/WildRoundGameScreen";
 import LastCardGameScreen from "./screens/LastCardGameScreen";
 import CardThemeScreen from "./screens/CardThemeScreen";
+import MultiplayerMenuScreen from "./screens/MultiplayerMenuScreen";
+import ProfileScreen from "./screens/ProfileScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -113,6 +115,16 @@ export default function App() {
             name="CardThemes"
             component={CardThemeScreen}
             options={{ title: "Card Themes" }}
+          />
+          <Stack.Screen
+            name="MultiplayerMenu"
+            component={MultiplayerMenuScreen}
+            options={{ title: "Multiplayer" }}
+          />
+          <Stack.Screen
+            name="Profile"
+            component={ProfileScreen}
+            options={{ title: "Profile" }}
           />
         </Stack.Navigator>
       </NavigationContainer>

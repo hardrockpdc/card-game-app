@@ -1,15 +1,17 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   ScrollView,
   View,
   Text,
-  TextInput,
   TouchableOpacity,
-  Modal,
   StyleSheet,
   useWindowDimensions,
 } from "react-native";
+import { loadProfile, getDisplayName, hasProfileName } from "../game/profile";
+
+const PROFILE_WELCOME_MESSAGE =
+  "Welcome! Set up your profile (you can change anything later)";
 
 export default function HomeScreen({ navigation }) {
   const { width } = useWindowDimensions();
@@ -24,18 +26,56 @@ export default function HomeScreen({ navigation }) {
   const containerPadding = isSmallScreen ? 16 : 20;
   const contentMaxWidth = isTablet ? 520 : 440;
 
-  const [profileName, setProfileName] = useState("");
-  const [modalVisible, setModalVisible] = useState(false);
-  const [draftName, setDraftName] = useState("");
+  const [profileName, setProfileName] = useState("Player");
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
-  function openModal() {
-    setDraftName(profileName);
-    setModalVisible(true);
+  useEffect(() => {
+    let isMounted = true;
+
+    async function bootstrapProfile() {
+      const profile = await loadProfile();
+
+      if (!isMounted) {
+        return;
+      }
+
+      const displayName = getDisplayName(profile);
+      setProfileName(displayName);
+      setIsLoadingProfile(false);
+
+      if (!hasProfileName(profile)) {
+        navigation.navigate("Profile", {
+          welcomeMessage: PROFILE_WELCOME_MESSAGE,
+        });
+      }
+    }
+
+    bootstrapProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [navigation]);
+
+  function goToSinglePlayer() {
+    if (!profileName || profileName === "Player") {
+      navigation.navigate("Profile", {
+        welcomeMessage: PROFILE_WELCOME_MESSAGE,
+      });
+      return;
+    }
+
+    navigation.navigate("SinglePlayerSetup");
   }
 
-  function handleSave() {
-    setProfileName(draftName.trim());
-    setModalVisible(false);
+  function goToMultiplayer() {
+    navigation.navigate("MultiplayerMenu");
+  }
+
+  function goToProfile() {
+    navigation.navigate("Profile", {
+      welcomeMessage: PROFILE_WELCOME_MESSAGE,
+    });
   }
 
   return (
@@ -54,6 +94,12 @@ export default function HomeScreen({ navigation }) {
             Play with friends, anywhere
           </Text>
 
+          {!isLoadingProfile && profileName !== "Player" && (
+            <View style={styles.namePill}>
+              <Text style={styles.namePillText}>Playing as {profileName}</Text>
+            </View>
+          )}
+
           <TouchableOpacity
             style={[
               styles.singlePlayerButton,
@@ -62,7 +108,7 @@ export default function HomeScreen({ navigation }) {
                 paddingHorizontal: buttonHorizontal,
               },
             ]}
-            onPress={() => navigation.navigate("SinglePlayerSetup", { profileName })}
+            onPress={goToSinglePlayer}
           >
             <Text
               style={[
@@ -82,29 +128,29 @@ export default function HomeScreen({ navigation }) {
                 paddingHorizontal: buttonHorizontal,
               },
             ]}
-            onPress={() => navigation.navigate("HostSetup", { profileName })}
+            onPress={goToMultiplayer}
           >
             <Text
               style={[styles.primaryButtonText, { fontSize: buttonTextSize }]}
             >
-              Host a Game
+              Multiplayer
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[
-              styles.secondaryButton,
+              styles.profileButton,
               {
                 paddingVertical: buttonVertical,
                 paddingHorizontal: buttonHorizontal,
               },
             ]}
-            onPress={() => navigation.navigate("Join", { profileName })}
+            onPress={goToProfile}
           >
             <Text
-              style={[styles.secondaryButtonText, { fontSize: buttonTextSize }]}
+              style={[styles.profileButtonText, { fontSize: buttonTextSize }]}
             >
-              Join a Game
+              Profile
             </Text>
           </TouchableOpacity>
 
@@ -124,58 +170,6 @@ export default function HomeScreen({ navigation }) {
           </View>
         </View>
       </ScrollView>
-
-      {/* Floating profile avatar */}
-      <TouchableOpacity style={styles.avatarBtn} onPress={openModal}>
-        <View style={[styles.avatarCircle, profileName ? styles.avatarCircleSet : null]}>
-          <Text style={styles.avatarText}>
-            {profileName ? profileName[0].toUpperCase() : "?"}
-          </Text>
-        </View>
-      </TouchableOpacity>
-
-      {/* Profile modal */}
-      <Modal
-        visible={modalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>Your Profile</Text>
-
-            <View style={styles.photoRow}>
-              <View style={styles.photoCircle}>
-                <Text style={styles.photoEmoji}>📷</Text>
-              </View>
-              <Text style={styles.photoHint}>Photo coming soon</Text>
-            </View>
-
-            <TextInput
-              style={styles.modalInput}
-              value={draftName}
-              onChangeText={setDraftName}
-              placeholder="Enter your name"
-              placeholderTextColor="#555"
-              maxLength={20}
-              returnKeyType="done"
-              onSubmitEditing={handleSave}
-            />
-
-            <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
-              <Text style={styles.saveBtnText}>Save</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.cancelBtn}
-              onPress={() => setModalVisible(false)}
-            >
-              <Text style={styles.cancelBtnText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -205,7 +199,21 @@ const styles = StyleSheet.create({
   subtitle: {
     color: "#b0b0c0",
     textAlign: "center",
-    marginBottom: 36,
+    marginBottom: 20,
+  },
+  namePill: {
+    backgroundColor: "#16213e",
+    borderWidth: 1.5,
+    borderColor: "#334",
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginBottom: 18,
+  },
+  namePillText: {
+    color: "#ffffff",
+    fontSize: 13,
+    fontWeight: "bold",
   },
   singlePlayerButton: {
     backgroundColor: "transparent",
@@ -233,17 +241,17 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontWeight: "bold",
   },
-  secondaryButton: {
+  profileButton: {
     backgroundColor: "transparent",
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: "#e94560",
+    borderColor: "#6a5acd",
     width: "100%",
     alignItems: "center",
     maxWidth: 420,
   },
-  secondaryButtonText: {
-    color: "#e94560",
+  profileButtonText: {
+    color: "#d7d2ff",
     fontWeight: "bold",
   },
   bottomLinks: {
@@ -259,106 +267,5 @@ const styles = StyleSheet.create({
   linkText: {
     color: "#b0b0c0",
     fontSize: 16,
-  },
-
-  // ── Floating avatar ─────────────────────────────────────────────────────────
-  avatarBtn: {
-    position: "absolute",
-    top: 50,
-    right: 20,
-    zIndex: 10,
-  },
-  avatarCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#334455",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarCircleSet: {
-    backgroundColor: "#e94560",
-  },
-  avatarText: {
-    color: "#ffffff",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-
-  // ── Profile modal ───────────────────────────────────────────────────────────
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.7)",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
-  },
-  modalBox: {
-    backgroundColor: "#16213e",
-    borderRadius: 16,
-    padding: 24,
-    width: "100%",
-    maxWidth: 360,
-  },
-  modalTitle: {
-    color: "#ffffff",
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  photoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    marginBottom: 20,
-  },
-  photoCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#0d1b2a",
-    borderWidth: 1.5,
-    borderColor: "#334",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  photoEmoji: {
-    fontSize: 22,
-  },
-  photoHint: {
-    color: "#666666",
-    fontSize: 13,
-  },
-  modalInput: {
-    backgroundColor: "#0d1b2a",
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    color: "#ffffff",
-    fontSize: 17,
-    borderWidth: 1.5,
-    borderColor: "#334",
-    marginBottom: 16,
-  },
-  saveBtn: {
-    backgroundColor: "#e94560",
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  saveBtnText: {
-    color: "#ffffff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  cancelBtn: {
-    alignItems: "center",
-    paddingVertical: 10,
-  },
-  cancelBtnText: {
-    color: "#b0b0c0",
-    fontSize: 15,
   },
 });
