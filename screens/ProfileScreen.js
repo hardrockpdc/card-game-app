@@ -84,9 +84,7 @@ async function cropImageToSquareAsync(uri, width, height) {
 }
 
 export default function ProfileScreen({ navigation, route }) {
-  const welcomeMessage =
-    route?.params?.welcomeMessage ||
-    "Welcome! Set up your profile (you can change anything later)";
+  const welcomeMessage = route?.params?.welcomeMessage || null;
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -191,7 +189,7 @@ export default function ProfileScreen({ navigation, route }) {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ImagePicker.MediaType.Images,
       allowsEditing: false,
       quality: 1,
     });
@@ -301,7 +299,9 @@ export default function ProfileScreen({ navigation, route }) {
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.content}>
           <Text style={styles.title}>Profile</Text>
-          <Text style={styles.subtitle}>{welcomeMessage}</Text>
+          {welcomeMessage ? (
+            <Text style={styles.subtitle}>{welcomeMessage}</Text>
+          ) : null}
 
           {!hasName && (
             <View style={styles.banner}>

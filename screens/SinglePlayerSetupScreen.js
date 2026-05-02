@@ -10,7 +10,7 @@ import {
   ScrollView,
   ActivityIndicator,
 } from "react-native";
-import { loadProfile, getDisplayName, hasProfileName } from "../game/profile";
+import { loadProfile, getDisplayName, hasProfileName, subscribeProfile } from "../game/profile";
 
 // ─── Display data for the carousel (order + visuals) ─────────────────────────
 
@@ -160,8 +160,13 @@ export default function SinglePlayerSetupScreen({ navigation }) {
 
     bootstrapProfile();
 
+    const unsubscribeProfile = subscribeProfile((profile) => {
+      setPlayerName(getDisplayName(profile));
+    });
+
     return () => {
       isMounted = false;
+      unsubscribeProfile();
     };
   }, [navigation]);
 

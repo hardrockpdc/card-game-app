@@ -8,7 +8,7 @@ import {
   StyleSheet,
   useWindowDimensions,
 } from "react-native";
-import { loadProfile, getDisplayName, hasProfileName } from "../game/profile";
+import { loadProfile, getDisplayName, hasProfileName, subscribeProfile } from "../game/profile";
 
 const PROFILE_WELCOME_MESSAGE =
   "Welcome! Set up your profile (you can change anything later)";
@@ -27,6 +27,7 @@ export default function HomeScreen({ navigation }) {
   const contentMaxWidth = isTablet ? 520 : 440;
 
   const [profileName, setProfileName] = useState("Player");
+  const [profileHasName, setProfileHasName] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
   useEffect(() => {
@@ -39,8 +40,8 @@ export default function HomeScreen({ navigation }) {
         return;
       }
 
-      const displayName = getDisplayName(profile);
-      setProfileName(displayName);
+      setProfileName(getDisplayName(profile));
+      setProfileHasName(hasProfileName(profile));
       setIsLoadingProfile(false);
 
       if (!hasProfileName(profile)) {
@@ -52,13 +53,19 @@ export default function HomeScreen({ navigation }) {
 
     bootstrapProfile();
 
+    const unsubscribeProfile = subscribeProfile((profile) => {
+      setProfileName(getDisplayName(profile));
+      setProfileHasName(hasProfileName(profile));
+    });
+
     return () => {
       isMounted = false;
+      unsubscribeProfile();
     };
   }, [navigation]);
 
   function goToSinglePlayer() {
-    if (!profileName || profileName === "Player") {
+    if (!profileHasName) {
       navigation.navigate("Profile", {
         welcomeMessage: PROFILE_WELCOME_MESSAGE,
       });
@@ -94,7 +101,7 @@ export default function HomeScreen({ navigation }) {
             Play with friends, anywhere
           </Text>
 
-          {!isLoadingProfile && profileName !== "Player" && (
+          {!isLoadingProfile && profileHasName && (
             <View style={styles.namePill}>
               <Text style={styles.namePillText}>Playing as {profileName}</Text>
             </View>
