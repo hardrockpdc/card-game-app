@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -21,10 +21,20 @@ import LastCardGameScreen from "./screens/LastCardGameScreen";
 import CardThemeScreen from "./screens/CardThemeScreen";
 import MultiplayerMenuScreen from "./screens/MultiplayerMenuScreen";
 import ProfileScreen from "./screens/ProfileScreen";
+import { loadProfile } from "./game/profile";
+import { setTheme } from "./game/cardTheme";
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
+  useEffect(() => {
+    loadProfile().then((profile) => {
+      if (profile?.cardTheme) {
+        setTheme(profile.cardTheme);
+      }
+    });
+  }, []);
+
   return (
     <SafeAreaProvider>
       <NavigationContainer>

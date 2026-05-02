@@ -14,7 +14,7 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { THEMES_LIST } from "../game/cardTheme";
-import { loadProfile, saveProfile, hasProfileName } from "../game/profile";
+import { loadProfile, saveProfile, hasProfileName, subscribeProfile } from "../game/profile";
 
 const AVATAR_CHOICES = [
   { id: "avatar_01", emoji: "🐶", color: "#ff8a80" },
@@ -110,8 +110,13 @@ export default function ProfileScreen({ navigation, route }) {
 
     bootstrapProfile();
 
+    const unsubscribeProfile = subscribeProfile((updatedProfile) => {
+      setProfile(updatedProfile);
+    });
+
     return () => {
       isMounted = false;
+      unsubscribeProfile();
     };
   }, []);
 
