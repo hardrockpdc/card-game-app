@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { createDeck, shuffleDeck, calculateHandValue } from '../game/deck';
 import Card from '../components/Card';
+import { scale, scaleFont } from '../game/responsive';
 
 export default function GameScreen() {
   // State
@@ -195,17 +196,17 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     backgroundColor: '#0d5c2e',
     alignItems: 'center',
-    padding: 20,
+    padding: scale(20),
   },
   section: {
     alignItems: 'center',
-    marginVertical: 20,
+    marginVertical: scale(20),
   },
   label: {
     color: '#ffffff',
-    fontSize: 18,
+    fontSize: scaleFont(18),
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: scale(10),
   },
   hand: {
     flexDirection: 'row',
@@ -213,20 +214,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   status: {
-    fontSize: 24,
+    fontSize: scaleFont(24),
     fontWeight: 'bold',
     textAlign: 'center',
-    marginVertical: 15,
+    marginVertical: scale(15),
   },
   buttonRow: {
     flexDirection: 'row',
-    marginTop: 20,
+    marginTop: scale(20),
   },
   button: {
-    paddingVertical: 15,
-    paddingHorizontal: 40,
-    borderRadius: 10,
-    marginHorizontal: 10,
+    paddingVertical: scale(15),
+    paddingHorizontal: scale(40),
+    borderRadius: scale(10),
+    marginHorizontal: scale(10),
   },
   hitButton: {
     backgroundColor: '#e94560',
@@ -239,19 +240,19 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#ffffff',
-    fontSize: 18,
+    fontSize: scaleFont(18),
     fontWeight: 'bold',
   },
   playAgainButton: {
-    marginTop: 30,
+    marginTop: scale(30),
     backgroundColor: '#e94560',
-    paddingVertical: 15,
-    paddingHorizontal: 50,
-    borderRadius: 10,
+    paddingVertical: scale(15),
+    paddingHorizontal: scale(50),
+    borderRadius: scale(10),
   },
   playAgainText: {
     color: '#ffffff',
-    fontSize: 18,
+    fontSize: scaleFont(18),
     fontWeight: 'bold',
   },
 });
