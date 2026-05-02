@@ -48,14 +48,6 @@ const CAROUSEL_GAMES = [
     accent: "#bf360c",
   },
   {
-    id: "wildRound",
-    label: "Wild Round",
-    players: "3–8 players",
-    tag: "Party game",
-    color: "#060620",
-    accent: "#283593",
-  },
-  {
     id: "lastCard",
     label: "Last Card",
     players: "2–8 players",
@@ -95,13 +87,6 @@ const GAMES = [
     aiRange: [1, 3],
     hasDifficulty: true,
     hasTone: false,
-  },
-  {
-    id: "wildRound",
-    screen: "WildRoundGame",
-    aiRange: [2, 7],
-    hasDifficulty: false,
-    hasTone: true,
   },
   {
     id: "lastCard",
