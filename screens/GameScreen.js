@@ -5,16 +5,17 @@ import Card from '../components/Card';
 import { scale, scaleFont } from '../game/responsive';
 
 export default function GameScreen() {
-  // State
   const [deck, setDeck] = useState([]);
   const [playerHand, setPlayerHand] = useState([]);
+  const [splitHand, setSplitHand] = useState(null);   // null = no split active
+  const [activeHand, setActiveHand] = useState(0);    // 0 = main, 1 = split
   const [dealerHand, setDealerHand] = useState([]);
   const [gameStatus, setGameStatus] = useState('playing');
   // gameStatus: 'playing' | 'bust' | 'dealerTurn' | 'finished'
   const [result, setResult] = useState('');
-  // result: '' | 'win' | 'lose' | 'push'
+  const [splitResult, setSplitResult] = useState('');
+  // result / splitResult: '' | 'win' | 'lose' | 'push'
 
-  // Deal opening hand when screen first loads
   useEffect(() => {
     startNewGame();
   }, []);
@@ -27,100 +28,139 @@ export default function GameScreen() {
 
     setDeck(remainingDeck);
     setPlayerHand(playerCards);
+    setSplitHand(null);
+    setActiveHand(0);
     setDealerHand(dealerCards);
     setGameStatus('playing');
     setResult('');
+    setSplitResult('');
   }
 
-  // HIT: add one card from the deck to the player's hand
+  function handleSplit() {
+    const newCard0 = deck[0];
+    const newCard1 = deck[1];
+    setPlayerHand([playerHand[0], newCard0]);
+    setSplitHand([playerHand[1], newCard1]);
+    setDeck(deck.slice(2));
+    setActiveHand(0);
+  }
+
   function handleHit() {
     const newCard = deck[0];
     const remainingDeck = deck.slice(1);
-    const newHand = [...playerHand, newCard];
-
-    setPlayerHand(newHand);
     setDeck(remainingDeck);
 
-    const newTotal = calculateHandValue(newHand);
-    if (newTotal > 21) {
-      setGameStatus('bust');
-      setResult('lose');
+    if (activeHand === 0) {
+      const newHand = [...playerHand, newCard];
+      setPlayerHand(newHand);
+      if (calculateHandValue(newHand) > 21) {
+        setResult('lose');
+        if (splitHand !== null) {
+          setActiveHand(1); // bust on hand 0 → automatically move to hand 1
+        } else {
+          setGameStatus('bust');
+        }
+      }
+    } else {
+      const newSplitHand = [...splitHand, newCard];
+      setSplitHand(newSplitHand);
+      if (calculateHandValue(newSplitHand) > 21) {
+        setSplitResult('lose');
+        // Pass fresh values because we just mutated deck/splitHand in this same call
+        runDealer(remainingDeck, playerHand, newSplitHand, result, 'lose');
+      }
     }
   }
 
-  // STAND: player is done, dealer's turn begins
   function handleStand() {
-    setGameStatus('dealerTurn');
-    playDealerTurn();
+    if (splitHand !== null && activeHand === 0) {
+      setActiveHand(1); // hand 0 done → move to hand 1
+    } else {
+      setGameStatus('dealerTurn');
+      // Closure values are fresh here — nothing was mutated above
+      runDealer(deck, playerHand, splitHand, result, splitResult);
+    }
   }
 
-  // DEALER: reveal and keep hitting until 17+
-  function playDealerTurn() {
+  // Runs the dealer turn and resolves both hands.
+  // All parameters are passed explicitly to avoid stale closure issues
+  // when called from inside handleHit.
+  function runDealer(deckNow, mainHand, split, mainResult, sResult) {
     let currentDealerHand = [...dealerHand];
-    let currentDeck = [...deck];
+    let currentDeck = [...deckNow];
 
-    // Dealer keeps hitting while under 17
     while (calculateHandValue(currentDealerHand) < 17) {
-      const nextCard = currentDeck[0];
-      currentDealerHand.push(nextCard);
+      currentDealerHand.push(currentDeck[0]);
       currentDeck = currentDeck.slice(1);
     }
 
-    // Update state
     setDealerHand(currentDealerHand);
     setDeck(currentDeck);
 
-    // Decide the winner
-    const playerTotal = calculateHandValue(playerHand);
     const dealerTotal = calculateHandValue(currentDealerHand);
 
-    if (dealerTotal > 21) {
-      setResult('win'); // dealer busted
-    } else if (playerTotal > dealerTotal) {
-      setResult('win');
-    } else if (dealerTotal > playerTotal) {
-      setResult('lose');
-    } else {
-      setResult('push');
+    // Evaluate main hand (skip if already busted)
+    if (mainResult !== 'lose') {
+      const playerTotal = calculateHandValue(mainHand);
+      if (dealerTotal > 21 || playerTotal > dealerTotal) setResult('win');
+      else if (dealerTotal > playerTotal) setResult('lose');
+      else setResult('push');
+    }
+
+    // Evaluate split hand (skip if already busted)
+    if (split !== null) {
+      if (sResult !== 'lose') {
+        const splitTotal = calculateHandValue(split);
+        if (dealerTotal > 21 || splitTotal > dealerTotal) setSplitResult('win');
+        else if (dealerTotal > splitTotal) setSplitResult('lose');
+        else setSplitResult('push');
+      }
     }
 
     setGameStatus('finished');
   }
 
-  // Calculate totals for display
+  // Display calculations
   const playerTotal = calculateHandValue(playerHand);
-
-  // Show dealer's full total only after they've played; otherwise show visible card
-  const showFullDealerHand = gameStatus === 'dealerTurn' || gameStatus === 'finished' || gameStatus === 'bust';
+  const splitTotal = splitHand ? calculateHandValue(splitHand) : 0;
+  const showFullDealerHand = gameStatus !== 'playing';
   const dealerDisplayTotal = showFullDealerHand
     ? calculateHandValue(dealerHand)
-    : (dealerHand.length > 0 ? calculateHandValue([dealerHand[0]]) : 0);
-
-  // Build the status message
-  let statusMessage = '';
-  let statusColor = '#ffd700';
-  if (gameStatus === 'bust') {
-    statusMessage = '💥 Bust! You lose.';
-    statusColor = '#ff6b6b';
-  } else if (gameStatus === 'finished') {
-    if (result === 'win') {
-      statusMessage = '🎉 You win!';
-      statusColor = '#4ade80';
-    } else if (result === 'lose') {
-      statusMessage = '😞 Dealer wins.';
-      statusColor = '#ff6b6b';
-    } else if (result === 'push') {
-      statusMessage = '🤝 Push (tie).';
-      statusColor = '#ffd700';
-    }
-  }
+    : dealerHand.length > 0 ? calculateHandValue([dealerHand[0]]) : 0;
 
   const canPlay = gameStatus === 'playing';
   const gameOver = gameStatus === 'bust' || gameStatus === 'finished';
 
+  const canSplit = canPlay && splitHand === null &&
+    playerHand.length === 2 && playerHand[0]?.rank === playerHand[1]?.rank;
+
+  function resultIcon(r) {
+    if (r === 'win') return ' 🎉';
+    if (r === 'lose') return ' 💥';
+    if (r === 'push') return ' 🤝';
+    return '';
+  }
+
+  // Status message — only used when there is no split
+  let statusMessage = '';
+  let statusColor = '#ffd700';
+  if (splitHand === null) {
+    if (gameStatus === 'bust') {
+      statusMessage = '💥 Bust! You lose.';
+      statusColor = '#ff6b6b';
+    } else if (gameStatus === 'finished') {
+      if (result === 'win') { statusMessage = '🎉 You win!'; statusColor = '#4ade80'; }
+      else if (result === 'lose') { statusMessage = '😞 Dealer wins.'; statusColor = '#ff6b6b'; }
+      else if (result === 'push') { statusMessage = '🤝 Push (tie).'; statusColor = '#ffd700'; }
+    }
+  }
+
+  const isPlayingHand0 = splitHand !== null && activeHand === 0 && !gameOver;
+  const isPlayingHand1 = splitHand !== null && activeHand === 1 && !gameOver;
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {/* Dealer section */}
+      {/* Dealer */}
       <View style={styles.section}>
         <Text style={styles.label}>
           Dealer — {showFullDealerHand ? 'total:' : 'shows'} {dealerDisplayTotal}
@@ -131,33 +171,48 @@ export default function GameScreen() {
               key={card.id}
               rank={card.rank}
               suit={card.suit}
-              // Hide second card ONLY while player is still playing
               faceDown={index === 1 && !showFullDealerHand}
             />
           ))}
         </View>
       </View>
 
-      {/* Player section */}
+      {/* Main hand */}
       <View style={styles.section}>
-        <Text style={styles.label}>You — total: {playerTotal}</Text>
-        <View style={styles.hand}>
+        <Text style={styles.label}>
+          {splitHand ? (isPlayingHand0 ? '▶ Hand 1' : 'Hand 1') : 'You'}
+          {' — total: '}{playerTotal}
+          {gameOver && splitHand ? resultIcon(result) : ''}
+        </Text>
+        <View style={[styles.hand, isPlayingHand0 && styles.activeHand]}>
           {playerHand.map((card) => (
-            <Card
-              key={card.id}
-              rank={card.rank}
-              suit={card.suit}
-            />
+            <Card key={card.id} rank={card.rank} suit={card.suit} />
           ))}
         </View>
       </View>
 
-      {/* Status message */}
+      {/* Split hand (only shown after split) */}
+      {splitHand && (
+        <View style={styles.section}>
+          <Text style={styles.label}>
+            {isPlayingHand1 ? '▶ Hand 2' : 'Hand 2'}
+            {' — total: '}{splitTotal}
+            {gameOver ? resultIcon(splitResult) : ''}
+          </Text>
+          <View style={[styles.hand, isPlayingHand1 && styles.activeHand]}>
+            {splitHand.map((card) => (
+              <Card key={card.id} rank={card.rank} suit={card.suit} />
+            ))}
+          </View>
+        </View>
+      )}
+
+      {/* Status message (no-split games only) */}
       {statusMessage !== '' && (
         <Text style={[styles.status, { color: statusColor }]}>{statusMessage}</Text>
       )}
 
-      {/* Hit and Stand buttons */}
+      {/* Hit / Stand / Split buttons */}
       {!gameOver && (
         <View style={styles.buttonRow}>
           <TouchableOpacity
@@ -175,15 +230,21 @@ export default function GameScreen() {
           >
             <Text style={styles.buttonText}>Stand</Text>
           </TouchableOpacity>
+
+          {canSplit && (
+            <TouchableOpacity
+              style={[styles.button, styles.splitButton]}
+              onPress={handleSplit}
+            >
+              <Text style={styles.buttonText}>Split</Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
 
-      {/* Play Again button (only when game is over) */}
+      {/* Play Again */}
       {gameOver && (
-        <TouchableOpacity
-          style={styles.playAgainButton}
-          onPress={startNewGame}
-        >
+        <TouchableOpacity style={styles.playAgainButton} onPress={startNewGame}>
           <Text style={styles.playAgainText}>🔄 Play Again</Text>
         </TouchableOpacity>
       )}
@@ -213,6 +274,12 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'center',
   },
+  activeHand: {
+    borderWidth: 2,
+    borderColor: '#ffd700',
+    borderRadius: scale(10),
+    padding: scale(4),
+  },
   status: {
     fontSize: scaleFont(24),
     fontWeight: 'bold',
@@ -221,19 +288,24 @@ const styles = StyleSheet.create({
   },
   buttonRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
     marginTop: scale(20),
+    gap: scale(10),
   },
   button: {
     paddingVertical: scale(15),
     paddingHorizontal: scale(40),
     borderRadius: scale(10),
-    marginHorizontal: scale(10),
   },
   hitButton: {
     backgroundColor: '#e94560',
   },
   standButton: {
     backgroundColor: '#2980b9',
+  },
+  splitButton: {
+    backgroundColor: '#8e44ad',
   },
   disabled: {
     opacity: 0.4,
