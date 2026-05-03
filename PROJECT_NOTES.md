@@ -43,6 +43,7 @@ A cross-platform React Native mobile app for playing card games with friends and
 - ✅ **Update Phase 7:** Responsive sizing applied to all remaining screens (all `scale()` / `scaleFont()` calls)
 - ✅ **Update Phase 8:** Blackjack split added to GameScreen.js (single-player) and MultiplayerGameScreen.js (multiplayer)
 - ✅ **Update Phase 9:** Poker variants added — Texas Hold'em, Omaha, Five Card Draw, Seven Card Stud; tap-select picker; single-player + multiplayer support
+- ✅ **Update Phase 10:** Solitaire complete — Klondike, Spider, FreeCell, Pyramid, TriPeaks; picker/routes added; gameplay verified
 - 🔜 **Phase 5: Visual Theme Project (PAUSED)** ⏸️ paused until better PC available
   - Plan: Each game gets its own distinct theme (Blackjack=casino, Poker=premium black, Wild Round=neon party, etc.)
   - Theme switching: User can pick between themes per game
@@ -79,6 +80,7 @@ card-game-app/
 │   ├── wildround.js               (Wild Round game logic — pure functions)
 │   ├── lastCard.js                (Last Card game logic — pure functions)
 │   ├── poker.js                  (Poker variant logic — Texas Hold'em, Omaha, Five Card Draw, Seven Card Stud)
+│   ├── solitaire.js               (Solitaire game logic — Klondike, Spider, FreeCell, Pyramid, TriPeaks)
 │   ├── wildroundCards.json        (100 prompts + 300 answers — Phase E complete)
 │   ├── GameNetwork.js             (TCP server/client + UDP discovery)
 │   ├── profile.js                 (loadProfile, saveProfile, subscribeProfile, getDisplayName — AsyncStorage)
@@ -93,6 +95,9 @@ card-game-app/
 │   ├── GoFishGameScreen.js        (multiplayer Go Fish)
 │   ├── PokerGameScreen.js         (Poker variants: Texas Hold'em, Omaha, Five Card Draw, Seven Card Stud)
 │   ├── PokerVariantPickerScreen.js (tap-select poker variant picker)
+│   ├── SolitaireVariantWheel.js    (simple tap-select solitaire variant picker UI)
+│   ├── SolitaireVariantPickerScreen.js (tap-select solitaire variant picker)
+│   ├── SolitaireGameScreen.js      (Solitaire — single-player only)
 │   ├── ConquianGameScreen.js      (Conquián — single + multiplayer)
 │   ├── WildRoundGameScreen.js     (Wild Round — single + multiplayer)
 │   ├── LastCardGameScreen.js      (Last Card — single + multiplayer)
@@ -172,7 +177,7 @@ All folders use identical filenames: `{rank}_{suit}.png` (ranks: a 2–10 j q k,
 
 ## 📍 Where We Are Right Now
 
-**Update Phases 1–9 complete.** Project is at a clean, stable state.
+**Update Phases 1–10 complete.** Project is at a clean, stable state.
 
 **What was added in this update session:**
 
@@ -187,8 +192,10 @@ All folders use identical filenames: `{rank}_{suit}.png` (ranks: a 2–10 j q k,
 - Poker picker changed from a wheel to a simple tap-select list
 - Poker variant selection now saves back to the existing Lobby screen without dropping host params
 - GameNetwork has a browser-safe fallback so the app can run in web dev mode without crashing
+- Solitaire entry added to the single-player carousel and linked to the new picker screen
+- Solitaire gameplay verified
 
-**Card Night currently includes 6 working games:**
+**Card Night currently includes 7 working games:**
 
 - Blackjack (single + multiplayer)
 - Go Fish (single + multiplayer, with AI Easy/Medium/Hard; hand auto-sorts by rank)
@@ -196,6 +203,7 @@ All folders use identical filenames: `{rank}_{suit}.png` (ranks: a 2–10 j q k,
 - Conquián (single + multiplayer, with AI Easy/Medium/Hard)
 - Wild Round (single + multiplayer, 3-8 players, party-style)
 - Last Card (single + multiplayer, 2-8 players, AI single difficulty)
+- Solitaire (single-player only, Klondike / Spider / FreeCell / Pyramid / TriPeaks)
 
 **Visual assets update:** Cards now use neon image assets in `assets/cards/` (replaced procedural drawing).
 
@@ -205,12 +213,11 @@ All folders use identical filenames: `{rank}_{suit}.png` (ranks: a 2–10 j q k,
 
 ## 🔮 Next Steps When We Resume
 
-1. **Update Phase 10: Solitaire** — Klondike, Spider, FreeCell, Pyramid, TriPeaks; single-player only; simple tap-select picker
-2. **Update Phase 11: Rummy** — Gin Rummy, Rummy 500, Indian Rummy, Canasta; single + multiplayer; simple tap-select picker
-3. **Update Phase 12: Variant Pickers Polish** — shared VariantPicker component
-4. **Update Phase 13: Stats Tracking** — per-game stats in Profile
-5. **Phase 5: Visual Theme Project** (paused until on better PC)
-6. **Phase 6: Publish** — Google Play + App Store
+1. **Update Phase 11: Rummy** — Gin Rummy, Rummy 500, Indian Rummy, Canasta; single + multiplayer; simple tap-select picker
+2. **Update Phase 12: Variant Pickers Polish** — shared VariantPicker component
+3. **Update Phase 13: Stats Tracking** — per-game stats in Profile
+4. **Phase 5: Visual Theme Project** (paused until on better PC)
+5. **Phase 6: Publish** — Google Play + App Store
 
 ## 💡 Important Reminders
 
@@ -285,27 +292,4 @@ Only when adding a NEW native package. JS-only changes don't need a rebuild.
 
 **Conquián:** Mexican rummy. 40-card Mexican deck (A,2-7,J,Q,K). 7-J-Q-K is a valid run sequence. Initial Card Pass at start of every game (simultaneous blind clockwise pass). Priority Chain mechanic for discards/passes. Borrowing rule (rearrange own melds when taking a card). Win at hand_size+1 melded cards. Tie when stock empty. AI difficulty: Easy/Medium/Hard.
 
-**Wild Round:** Party game (CAH-style with original/CC0 content only). 3-8 players. 10-card hand of answers. Judge rotates each round. Judge can skip Prompt 1 once per round. No timer. Submissions anonymous during judging, revealed after. Tone toggle (Family / Mature, host picks; Mature includes both). First to 10 points wins. Full card content is now complete.
-
-## 📜 Active Spec Files
-
-- `CONQUIAN_SPEC.md` — Conquián full spec (built ✅)
-- `WILDROUND_SPEC.md` — Wild Round full spec (Phases A-E built ✅)
-- `LASTCARD_SPEC.md` — Last Card full spec (single + multiplayer built ✅)
-
-## 🚫 Decisions Made
-
-- **No Bluetooth multiplayer** — using WiFi/hotspot only (Bluetooth in Expo doesn't work reliably)
-- **No Firebase** — staying truly offline-first, no internet dependency
-- **No 5-6 player Conquián** — 2-4 players only in v1, 2-deck mode dropped from v1
-- **No CAH official cards** — their NC license blocks future monetization; using only CC0 + original content
-- **No card editor for non-admin users in v1** — admin-only (Pedro) for content control
-- **Removed games:** Crazy Eights, War, Snap, Rummy
-
-## 🐛 Known Issues / Things to Watch
-
-- `react-native-draggable-flatlist` is installed but not yet used — kept for planned hand-sort polish.
-- `SettingsScreen.js` is intentionally a placeholder ("More settings coming soon"). Card Themes moved to Profile.
-- Wild Round requires 3 players minimum (enforced in Lobby with disabled Start button + explanation).
-- Profile photo avatars (avatar_01–avatar_20) are placeholder emoji circles. Real artwork to be swapped in later.
-- Stats section in ProfileScreen is a "Coming soon" placeholder until Update Phase 13.
+**Wild Round:** Party game (CAH-style with original/CC0 content only). 3-8 players. 10-card hand of answers. Judge rotates each round. Judge can skip Prompt 1 once pe

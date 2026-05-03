@@ -14,7 +14,12 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { THEMES_LIST } from "../game/cardTheme";
-import { loadProfile, saveProfile, hasProfileName, subscribeProfile } from "../game/profile";
+import {
+  loadProfile,
+  saveProfile,
+  hasProfileName,
+  subscribeProfile,
+} from "../game/profile";
 
 const AVATAR_CHOICES = [
   { id: "avatar_01", emoji: "🐶", color: "#ff8a80" },
@@ -159,6 +164,15 @@ export default function ProfileScreen({ navigation, route }) {
       ...profile,
       name: trimmedName,
     });
+
+    if (navigation?.reset) {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "Home" }],
+      });
+    } else {
+      navigation.navigate("Home");
+    }
   }
 
   async function handleChooseAvatar(avatar) {

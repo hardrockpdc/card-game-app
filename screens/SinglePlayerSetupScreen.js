@@ -29,6 +29,14 @@ const CAROUSEL_GAMES = [
     accent: "#2e7d32",
   },
   {
+    id: "solitaire",
+    label: "Solitaire",
+    players: "1 player",
+    tag: "5 classic modes",
+    color: "#101826",
+    accent: "#7fb3ff",
+  },
+  {
     id: "goFish",
     label: "Go Fish",
     players: "1–4 players",
@@ -84,6 +92,13 @@ const GAMES = [
     screen: "PokerGame",
     aiRange: [1, 3],
     hasDifficulty: true,
+    hasTone: false,
+  },
+  {
+    id: "solitaire",
+    screen: "SolitaireGame",
+    aiRange: [0, 0],
+    hasDifficulty: false,
     hasTone: false,
   },
   {
@@ -191,6 +206,10 @@ export default function SinglePlayerSetupScreen({ navigation }) {
     });
   }
 
+  function openSolitaireVariantPicker() {
+    navigation.navigate("SolitaireVariantPicker");
+  }
+
   // ─── Carousel callbacks ─────────────────────────────────────────────────────
   const onViewableItemsChanged = useCallback(({ viewableItems }) => {
     if (viewableItems.length > 0 && viewableItems[0].index != null) {
@@ -212,6 +231,11 @@ export default function SinglePlayerSetupScreen({ navigation }) {
 
     if (game.id === "poker") {
       openPokerVariantPicker();
+      return;
+    }
+
+    if (game.id === "solitaire") {
+      openSolitaireVariantPicker();
       return;
     }
 
@@ -265,12 +289,19 @@ export default function SinglePlayerSetupScreen({ navigation }) {
           renderItem={({ item, index }) => {
             const isActive = index === currentIndex;
             const isPoker = item.id === "poker";
+            const isSolitaire = item.id === "solitaire";
 
             return (
               <TouchableOpacity
                 style={{ width: CARD_WIDTH, marginRight: GAP }}
                 activeOpacity={0.92}
-                onPress={isPoker ? openPokerVariantPicker : undefined}
+                onPress={
+                  isPoker
+                    ? openPokerVariantPicker
+                    : isSolitaire
+                      ? openSolitaireVariantPicker
+                      : undefined
+                }
               >
                 <View
                   style={[
@@ -338,6 +369,10 @@ export default function SinglePlayerSetupScreen({ navigation }) {
           {game.id === "blackjack" ? (
             <View style={styles.infoBox}>
               <Text style={styles.infoText}></Text>
+            </View>
+          ) : game.id === "solitaire" ? (
+            <View style={styles.infoBox}>
+              <Text style={styles.infoText}>Single player only</Text>
             </View>
           ) : (
             <>
@@ -505,8 +540,8 @@ export default function SinglePlayerSetupScreen({ navigation }) {
             <Text
               style={[styles.playBtnText, { fontSize: playButtonTextSize }]}
             >
-              {carouselGame.id === "poker"
-                ? "Choose Poker Variant"
+              {carouselGame.id === "poker" || carouselGame.id === "solitaire"
+                ? `Choose ${carouselGame.label} Variant`
                 : `Play ${carouselGame.label}`}
             </Text>
           </TouchableOpacity>

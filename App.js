@@ -16,6 +16,8 @@ import ConquianGameScreen from "./screens/ConquianGameScreen";
 import PokerGameScreen from "./screens/PokerGameScreen";
 import PokerVariantPickerScreen from "./screens/PokerVariantPickerScreen";
 import SinglePlayerSetupScreen from "./screens/SinglePlayerSetupScreen";
+import SolitaireVariantPickerScreen from "./screens/SolitaireVariantPickerScreen";
+import SolitaireGameScreen from "./screens/SolitaireGameScreen";
 import HowToPlayScreen from "./screens/HowToPlayScreen";
 import WildRoundGameScreen from "./screens/WildRoundGameScreen";
 import LastCardGameScreen from "./screens/LastCardGameScreen";
@@ -106,6 +108,16 @@ export default function App() {
             name="PokerVariantPicker"
             component={PokerVariantPickerScreen}
             options={{ title: "Poker Variant" }}
+          />
+          <Stack.Screen
+            name="SolitaireVariantPicker"
+            component={SolitaireVariantPickerScreen}
+            options={{ title: "Solitaire" }}
+          />
+          <Stack.Screen
+            name="SolitaireGame"
+            component={SolitaireGameScreen}
+            options={{ title: "Solitaire" }}
           />
           <Stack.Screen
             name="SinglePlayerSetup"

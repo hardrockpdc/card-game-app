@@ -225,9 +225,9 @@ Poker variants are now built.
 
 ---
 
-### Phase 10 — Solitaire (Single Player Only, 5 Versions)
+### Phase 10 ✅ COMPLETE — Solitaire (Single Player Only, 5 Versions)
 
-**Plan with me first** — Solitaire is significant new work. Tell me your plan for the 5 versions:
+**Plan with me first** — Solitaire is significant new work. The picker and routes are wired in; gameplay has been verified. Tell me your plan for the 5 versions:
 
 - Klondike (the classic Windows one)
 - Spider (1-suit easy, 2-suit medium, 4-suit hard — confirm with me which difficulties to ship)
@@ -244,7 +244,7 @@ Poker variants are now built.
 - Tapping Solitaire in the carousel goes to the variant picker, then the game.
 - Single-player only — do **not** add to LobbyScreen.
 
-**Test:** All 5 versions playable, correct rules, win/lose detected.
+**Test:** All 5 versions playable, correct rules, win/lose detected. Solitaire is verified; polish can happen later.
 
 ---
 
