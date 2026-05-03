@@ -9,6 +9,21 @@ import {
   Alert,
 } from "react-native";
 import { scale, scaleFont } from "../game/responsive";
+import {
+  setServerListeners,
+  broadcastToClients,
+  getConnectedPlayers,
+  setClientListeners,
+  sendToHost,
+  disconnectFromHost,
+  startBroadcasting,
+  stopBroadcasting,
+} from "../game/GameNetwork";
+
+const {
+  getRummyVariantLabel,
+  getRummyVariantPlayerLimits,
+} = require("../game/rummy");
 
 const GAMES = [
   {
@@ -48,6 +63,15 @@ const GAMES = [
     maxPlayers: 5,
   },
   {
+    id: "rummy",
+    label: "Rummy",
+    screen: "RummyGame",
+    available: true,
+    hasAI: true,
+    minPlayers: 2,
+    maxPlayers: 4,
+  },
+  {
     id: "wildRound",
     label: "Wild Round",
     screen: "WildRoundGame",
@@ -69,17 +93,6 @@ const GAMES = [
 
 const DEFAULT_MAX_PLAYERS = 4;
 
-import {
-  setServerListeners,
-  broadcastToClients,
-  getConnectedPlayers,
-  setClientListeners,
-  sendToHost,
-  disconnectFromHost,
-  startBroadcasting,
-  stopBroadcasting,
-} from "../game/GameNetwork";
-
 export default function LobbyScreen({ navigation, route }) {
   const { role, hostName, hostIp, playerName } = route.params || {};
   const isHost = role === "host";
@@ -92,13 +105,24 @@ export default function LobbyScreen({ navigation, route }) {
   const [selectedPokerVariant, setSelectedPokerVariant] = useState(
     route.params?.selectedPokerVariant || "texasHoldem",
   );
+  const [selectedRummyVariant, setSelectedRummyVariant] = useState(
+    route.params?.selectedRummyVariant || "ginRummy",
+  );
   const [tone, setTone] = useState("family");
 
   // Ref so server-listener closures always see the latest AI list
   const aiPlayersRef = useRef([]);
 
   const selectedGameDef = GAMES.find((g) => g.id === selectedGame);
-  const maxPlayers = selectedGameDef?.maxPlayers ?? DEFAULT_MAX_PLAYERS;
+  const rummyLimits = getRummyVariantPlayerLimits(selectedRummyVariant);
+  const minPlayers =
+    selectedGame === "rummy"
+      ? rummyLimits.minPlayers
+      : (selectedGameDef?.minPlayers ?? 2);
+  const maxPlayers =
+    selectedGame === "rummy"
+      ? rummyLimits.maxPlayers
+      : (selectedGameDef?.maxPlayers ?? DEFAULT_MAX_PLAYERS);
   const selectedPokerLabel =
     selectedPokerVariant === "texasHoldem"
       ? "Texas Hold'em"
@@ -107,6 +131,7 @@ export default function LobbyScreen({ navigation, route }) {
         : selectedPokerVariant === "fiveCardDraw"
           ? "Five Card Draw"
           : "Seven Card Stud";
+  const selectedRummyLabel = getRummyVariantLabel(selectedRummyVariant);
 
   // ─── HOST setup ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -177,6 +202,12 @@ export default function LobbyScreen({ navigation, route }) {
     }
   }, [route.params?.selectedPokerVariant]);
 
+  useEffect(() => {
+    if (route.params?.selectedRummyVariant) {
+      setSelectedRummyVariant(route.params.selectedRummyVariant);
+    }
+  }, [route.params?.selectedRummyVariant]);
+
   // ─── CLIENT setup ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (isHost) return;
@@ -200,6 +231,8 @@ export default function LobbyScreen({ navigation, route }) {
             players: msg.players,
             variant:
               msg.variant || msg.selectedPokerVariant || selectedPokerVariant,
+            variantId:
+              msg.variantId || msg.selectedRummyVariant || selectedRummyVariant,
             ...extra,
           });
         }
@@ -264,35 +297,58 @@ export default function LobbyScreen({ navigation, route }) {
 
   // ─── Start game ────────────────────────────────────────────────────────────
   function handleStartGame() {
-    const minP = selectedGameDef?.minPlayers ?? 2;
-    if (players.length < minP) {
+    if (players.length < minPlayers) {
       Alert.alert(
         "Not enough players",
-        minP > 2
-          ? `${selectedGameDef?.label} needs at least ${minP} players.`
+        minPlayers > 2
+          ? `${selectedGameDef?.label} needs at least ${minPlayers} players.`
           : "Add a Computer or wait for another player to join.",
       );
       return;
     }
+
+    if (players.length > maxPlayers) {
+      Alert.alert(
+        "Too many players",
+        `${selectedGameDef?.label} only supports up to ${maxPlayers} players.`,
+      );
+      return;
+    }
+
     const game = GAMES.find((g) => g.id === selectedGame);
     const extra = selectedGame === "wildRound" ? { tone } : {};
     const pokerExtra =
       selectedGame === "poker"
-        ? { variant: selectedPokerVariant, selectedPokerVariant }
+        ? {
+            variant: selectedPokerVariant,
+            selectedPokerVariant,
+          }
         : {};
+    const rummyExtra =
+      selectedGame === "rummy"
+        ? {
+            variant: selectedRummyVariant,
+            variantId: selectedRummyVariant,
+            selectedRummyVariant,
+          }
+        : {};
+
     broadcastToClients({
       type: "START_GAME",
       players,
       gameType: selectedGame,
       ...extra,
       ...pokerExtra,
+      ...rummyExtra,
     });
+
     navigation.replace(game.screen, {
       role: "host",
       myName,
       players,
       ...extra,
       ...pokerExtra,
+      ...rummyExtra,
     });
   }
 
@@ -332,6 +388,7 @@ export default function LobbyScreen({ navigation, route }) {
               </TouchableOpacity>
             ))}
           </ScrollView>
+
           {selectedGame === "poker" && (
             <TouchableOpacity
               style={styles.pokerVariantBtn}
@@ -347,6 +404,23 @@ export default function LobbyScreen({ navigation, route }) {
               </Text>
             </TouchableOpacity>
           )}
+
+          {selectedGame === "rummy" && (
+            <TouchableOpacity
+              style={styles.rummyVariantBtn}
+              onPress={() =>
+                navigation.navigate("RummyVariantPicker", {
+                  mode: "lobby",
+                  currentVariant: selectedRummyVariant,
+                })
+              }
+            >
+              <Text style={styles.rummyVariantBtnText}>
+                Rummy Variant: {selectedRummyLabel}
+              </Text>
+            </TouchableOpacity>
+          )}
+
           {selectedGame === "wildRound" && (
             <View style={styles.toneRow}>
               {[
@@ -428,14 +502,16 @@ export default function LobbyScreen({ navigation, route }) {
             </TouchableOpacity>
           )}
           <Text style={styles.waitingText}>
-            {players.length < (selectedGameDef?.minPlayers ?? 2)
-              ? `${selectedGameDef?.label} needs at least ${selectedGameDef?.minPlayers} players`
-              : "Ready! Tap Start Game when everyone is here."}
+            {players.length < minPlayers
+              ? `${selectedGameDef?.label} needs at least ${minPlayers} players`
+              : players.length > maxPlayers
+                ? `${selectedGameDef?.label} only supports up to ${maxPlayers} players`
+                : "Ready! Tap Start Game when everyone is here."}
           </Text>
           <TouchableOpacity
             style={[
               styles.startButton,
-              players.length < (selectedGameDef?.minPlayers ?? 2) &&
+              (players.length < minPlayers || players.length > maxPlayers) &&
                 styles.startButtonDimmed,
             ]}
             onPress={handleStartGame}
@@ -628,6 +704,21 @@ const styles = StyleSheet.create({
   },
   pokerVariantBtnText: {
     color: "#d7d2ff",
+    fontSize: scaleFont(13),
+    fontWeight: "bold",
+  },
+  rummyVariantBtn: {
+    marginTop: scale(10),
+    backgroundColor: "#16213e",
+    borderWidth: 1.5,
+    borderColor: "#e94560",
+    borderRadius: scale(10),
+    paddingHorizontal: scale(14),
+    paddingVertical: scale(10),
+    alignItems: "center",
+  },
+  rummyVariantBtnText: {
+    color: "#ffd8df",
     fontSize: scaleFont(13),
     fontWeight: "bold",
   },

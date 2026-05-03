@@ -37,6 +37,14 @@ const CAROUSEL_GAMES = [
     accent: "#7fb3ff",
   },
   {
+    id: "rummy",
+    label: "Rummy",
+    players: "2–4 players",
+    tag: "4 classic modes",
+    color: "#14131f",
+    accent: "#e94560",
+  },
+  {
     id: "goFish",
     label: "Go Fish",
     players: "1–4 players",
@@ -81,6 +89,20 @@ const GAMES = [
     hasTone: false,
   },
   {
+    id: "solitaire",
+    screen: "SolitaireGame",
+    aiRange: [0, 0],
+    hasDifficulty: false,
+    hasTone: false,
+  },
+  {
+    id: "rummy",
+    screen: "RummyGame",
+    aiRange: [1, 3],
+    hasDifficulty: true,
+    hasTone: false,
+  },
+  {
     id: "goFish",
     screen: "GoFishGame",
     aiRange: [1, 3],
@@ -92,13 +114,6 @@ const GAMES = [
     screen: "PokerGame",
     aiRange: [1, 3],
     hasDifficulty: true,
-    hasTone: false,
-  },
-  {
-    id: "solitaire",
-    screen: "SolitaireGame",
-    aiRange: [0, 0],
-    hasDifficulty: false,
     hasTone: false,
   },
   {
@@ -124,6 +139,7 @@ const DIFFICULTIES = [
 ];
 
 const DEFAULT_POKER_VARIANT = "texasHoldem";
+const DEFAULT_RUMMY_VARIANT = "ginRummy";
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -210,6 +226,14 @@ export default function SinglePlayerSetupScreen({ navigation }) {
     navigation.navigate("SolitaireVariantPicker");
   }
 
+  function openRummyVariantPicker() {
+    navigation.navigate("RummyVariantPicker", {
+      mode: "singleplayer",
+      currentVariant: DEFAULT_RUMMY_VARIANT,
+      launchParams: buildSinglePlayerLaunchParams(),
+    });
+  }
+
   // ─── Carousel callbacks ─────────────────────────────────────────────────────
   const onViewableItemsChanged = useCallback(({ viewableItems }) => {
     if (viewableItems.length > 0 && viewableItems[0].index != null) {
@@ -236,6 +260,11 @@ export default function SinglePlayerSetupScreen({ navigation }) {
 
     if (game.id === "solitaire") {
       openSolitaireVariantPicker();
+      return;
+    }
+
+    if (game.id === "rummy") {
+      openRummyVariantPicker();
       return;
     }
 
@@ -290,6 +319,7 @@ export default function SinglePlayerSetupScreen({ navigation }) {
             const isActive = index === currentIndex;
             const isPoker = item.id === "poker";
             const isSolitaire = item.id === "solitaire";
+            const isRummy = item.id === "rummy";
 
             return (
               <TouchableOpacity
@@ -300,7 +330,9 @@ export default function SinglePlayerSetupScreen({ navigation }) {
                     ? openPokerVariantPicker
                     : isSolitaire
                       ? openSolitaireVariantPicker
-                      : undefined
+                      : isRummy
+                        ? openRummyVariantPicker
+                        : undefined
                 }
               >
                 <View
@@ -540,7 +572,9 @@ export default function SinglePlayerSetupScreen({ navigation }) {
             <Text
               style={[styles.playBtnText, { fontSize: playButtonTextSize }]}
             >
-              {carouselGame.id === "poker" || carouselGame.id === "solitaire"
+              {carouselGame.id === "poker" ||
+              carouselGame.id === "solitaire" ||
+              carouselGame.id === "rummy"
                 ? `Choose ${carouselGame.label} Variant`
                 : `Play ${carouselGame.label}`}
             </Text>

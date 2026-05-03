@@ -248,23 +248,16 @@ Poker variants are now built.
 
 ---
 
-### Phase 11 — Rummy (Single + Multiplayer, 4 Versions)
+### Phase 11 ✅ COMPLETE — Rummy (Single + Multiplayer, 4 Versions)
 
-**Plan with me first.** Versions:
+Rummy is complete and wired into the app.
 
-- Gin Rummy (2 players, classic)
-- Rummy 500
-- Indian Rummy (13-card)
-- Canasta
-
-**Then build:**
-
-- New `game/rummy.js` with shared helpers and per-variant logic.
-- New `screens/RummyGameScreen.js` (single + multiplayer in one screen, following the existing pattern).
-- Add a `RummyVariantPicker` with the same simple tap-select style.
-- Add Rummy to the single-player carousel.
-- Add Rummy to `LobbyScreen.js` so it can be picked as a multiplayer game.
-- AI difficulty: Easy/Medium/Hard for single-player, matching the pattern of other games.
+- Added `game/rummy.js` with shared helpers and the four shipped modes.
+- Added `screens/RummyGameScreen.js` for single-player and multiplayer.
+- Added `RummyVariantPicker` with the same simple tap-select style.
+- Added Rummy to the single-player carousel.
+- Added Rummy to `LobbyScreen.js` so hosts can pick it in multiplayer.
+- AI difficulty: Easy/Medium/Hard for single-player, matching the pattern of the other games.
 
 **Test:** Each variant plays correctly. Single-player vs AI works. Multiplayer works between two phones.
 
@@ -318,4 +311,4 @@ Add stats tracking to the Profile.
 - Once a multiplayer room is full, it auto-locks. Host cannot kick players.
 - For online multiplayer (Host Online / Join Online buttons): not in scope. Just keep the "Coming Soon" buttons from Phase 2.
 
-**Start with Phase 10: do the audit, share findings, ask any clarifying questions, then make the next phase changes. Stop when the current phase is done and wait for me to confirm.**
+**Start with Phase 12: do the audit, share findings, ask any clarifying questions, then make the next phase changes. Stop when the current phase is done and wait for me to confirm.**

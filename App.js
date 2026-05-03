@@ -18,6 +18,8 @@ import PokerVariantPickerScreen from "./screens/PokerVariantPickerScreen";
 import SinglePlayerSetupScreen from "./screens/SinglePlayerSetupScreen";
 import SolitaireVariantPickerScreen from "./screens/SolitaireVariantPickerScreen";
 import SolitaireGameScreen from "./screens/SolitaireGameScreen";
+import RummyVariantPickerScreen from "./screens/RummyVariantPickerScreen";
+import RummyGameScreen from "./screens/RummyGameScreen";
 import HowToPlayScreen from "./screens/HowToPlayScreen";
 import WildRoundGameScreen from "./screens/WildRoundGameScreen";
 import LastCardGameScreen from "./screens/LastCardGameScreen";
@@ -118,6 +120,16 @@ export default function App() {
             name="SolitaireGame"
             component={SolitaireGameScreen}
             options={{ title: "Solitaire" }}
+          />
+          <Stack.Screen
+            name="RummyVariantPicker"
+            component={RummyVariantPickerScreen}
+            options={{ title: "Rummy Variant" }}
+          />
+          <Stack.Screen
+            name="RummyGame"
+            component={RummyGameScreen}
+            options={{ title: "Rummy" }}
           />
           <Stack.Screen
             name="SinglePlayerSetup"
