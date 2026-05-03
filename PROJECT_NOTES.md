@@ -45,6 +45,7 @@ A cross-platform React Native mobile app for playing card games with friends and
 - ✅ **Update Phase 9:** Poker variants added — Texas Hold'em, Omaha, Five Card Draw, Seven Card Stud; tap-select picker; single-player + multiplayer support
 - ✅ **Update Phase 10:** Solitaire complete — Klondike, Spider, FreeCell, Pyramid, TriPeaks; picker/routes added; gameplay verified
 - ✅ **Update Phase 11:** Rummy complete — Gin Rummy, Rummy 500, Indian Rummy, Canasta; single + multiplayer; simple tap-select picker
+- ✅ **Update Phase 12:** Variant pickers polished — Poker, Solitaire, and Rummy now share one tap-select picker component
 - 🔜 **Phase 5: Visual Theme Project (PAUSED)** ⏸️ paused until better PC available
   - Plan: Each game gets its own distinct theme (Blackjack=casino, Poker=premium black, Wild Round=neon party, etc.)
   - Theme switching: User can pick between themes per game
@@ -74,6 +75,7 @@ card-game-app/
 ├── assets/
 ├── components/
 │   ├── Card.js                    (reusable playing card visual)
+│   ├── VariantPicker.js           (shared tap-select picker UI)
 │   ├── PokerVariantWheel.js       (simple tap-select poker variant picker UI)
 │   └── RummyVariantWheel.js       (simple tap-select rummy variant picker UI)
 ├── game/
@@ -182,7 +184,7 @@ All folders use identical filenames: `{rank}_{suit}.png` (ranks: a 2–10 j q k,
 
 ## 📍 Where We Are Right Now
 
-**Update Phases 1–11 complete.** Project is at a clean, stable state.
+**Update Phases 1–12 complete.** Project is at a clean, stable state.
 
 **What was added in this update session:**
 
@@ -200,6 +202,7 @@ All folders use identical filenames: `{rank}_{suit}.png` (ranks: a 2–10 j q k,
 - Solitaire entry added to the single-player carousel and linked to the new picker screen
 - Solitaire gameplay verified
 - Rummy added back as a single + multiplayer game with Gin Rummy, Rummy 500, Indian Rummy, and Canasta
+- Variant pickers unified behind a shared `components/VariantPicker.js` component
 
 **Card Night currently includes 8 working games:**
 
@@ -220,10 +223,9 @@ All folders use identical filenames: `{rank}_{suit}.png` (ranks: a 2–10 j q k,
 
 ## 🔮 Next Steps When We Resume
 
-1. **Update Phase 12: Variant Pickers Polish** — shared VariantPicker component
-2. **Update Phase 13: Stats Tracking** — per-game stats in Profile
-3. **Phase 5: Visual Theme Project** (paused until on better PC)
-4. **Phase 6: Publish** — Google Play + App Store
+1. **Update Phase 13: Stats Tracking** — per-game stats in Profile
+2. **Phase 5: Visual Theme Project** (paused until on better PC)
+3. **Phase 6: Publish** — Google Play + App Store
 
 ## 💡 Important Reminders
 

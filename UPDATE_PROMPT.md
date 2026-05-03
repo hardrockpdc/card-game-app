@@ -263,7 +263,7 @@ Rummy is complete and wired into the app.
 
 ---
 
-### Phase 12 — Variant Pickers Polish
+### Phase 12 ✅ COMPLETE — Variant Pickers Polish
 
 By this point we have three variant pickers (Poker, Solitaire, Rummy). Make sure they all use the same simple tap-select picker component for consistency. If you built them ad-hoc earlier, refactor into a shared `components/VariantPicker.js` now.
 
@@ -311,4 +311,4 @@ Add stats tracking to the Profile.
 - Once a multiplayer room is full, it auto-locks. Host cannot kick players.
 - For online multiplayer (Host Online / Join Online buttons): not in scope. Just keep the "Coming Soon" buttons from Phase 2.
 
-**Start with Phase 12: do the audit, share findings, ask any clarifying questions, then make the next phase changes. Stop when the current phase is done and wait for me to confirm.**
+**Start with Phase 13: do the audit, share findings, ask any clarifying questions, then make the next phase changes. Stop when the current phase is done and wait for me to confirm.**
