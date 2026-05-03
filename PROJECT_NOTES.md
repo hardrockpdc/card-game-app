@@ -223,9 +223,8 @@ All folders use identical filenames: `{rank}_{suit}.png` (ranks: a 2–10 j q k,
 
 ## 🔮 Next Steps When We Resume
 
-1. **Update Phase 13: Stats Tracking** — per-game stats in Profile
-2. **Phase 5: Visual Theme Project** (paused until on better PC)
-3. **Phase 6: Publish** — Google Play + App Store
+1. **Phase 5: Visual Theme Project** (paused until on better PC)
+2. **Phase 6: Publish** — Google Play + App Store
 
 ## 💡 Important Reminders
 

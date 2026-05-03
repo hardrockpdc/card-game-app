@@ -45,7 +45,6 @@ This is a **multi-phase update**. **Do not move on to the next phase until I con
 10. Add **Solitaire** as a new single-player-only game with 5 versions: Klondike, Spider, FreeCell, Pyramid, TriPeaks. Use the same simple tap-select picker style.
 11. Add **Rummy** as a new game (single + multiplayer) with versions: Gin Rummy, Rummy 500, Indian Rummy, Canasta. Use the same simple tap-select picker style.
 12. Make the entire app **scale up properly on larger screens** (phones with bigger displays, tablets). Same layout, just bigger. Portrait only.
-13. Add **Stats tracking** to Profile (one big summary screen).
 
 ---
 
@@ -271,31 +270,6 @@ By this point we have three variant pickers (Poker, Solitaire, Rummy). Make sure
 
 ---
 
-### Phase 13 — Stats Tracking
-
-Add stats tracking to the Profile.
-
-**Track per game type:**
-
-- Games played
-- Wins / Losses
-- Win rate (calculated from games played + wins)
-- Current win streak
-- Longest win streak
-- Total winnings (poker/blackjack chips)
-- Highest single hand (where applicable)
-- Fastest solitaire win (Solitaire only)
-- Favorite game (most played, calculated)
-
-**Implementation:**
-
-- Add a `recordGameResult({ game, variant, result, ...gameSpecificData })` function in `game/profile.js`.
-- Hook it into the end-of-game logic for every game.
-- Save to AsyncStorage as part of the profile.
-- Show **one big stats summary screen** in ProfileScreen — list every game with its stats, then a "Favorite Game" line at the top calculated from the data.
-
-**Test:** Play a few hands of each game. Check stats screen — counts and win/loss are accurate. Force-close app and reopen — stats persist.
-
 ---
 
 ## Final Notes
@@ -309,6 +283,6 @@ Add stats tracking to the Profile.
   - Last Card: 2–8
   - Rummy: 2–4 (Gin Rummy 2 only)
 - Once a multiplayer room is full, it auto-locks. Host cannot kick players.
-- For online multiplayer (Host Online / Join Online buttons): not in scope. Just keep the "Coming Soon" buttons from Phase 2.
+- For online multiplayer (Host Online / Join Local buttons): not in scope. Just keep the "Coming Soon" buttons from Phase 2.
 
-**Start with Phase 13: do the audit, share findings, ask any clarifying questions, then make the next phase changes. Stop when the current phase is done and wait for me to confirm.**
+**Read the notes, share findings, ask any clarifying questions, then stop and wait for my go-ahead.**
