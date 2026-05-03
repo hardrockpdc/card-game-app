@@ -13,7 +13,7 @@ This is a **multi-phase update**. **Do not move on to the next phase until I con
 - React Native + Expo (custom dev build, NOT Expo Go)
 - Use `SafeAreaProvider` at root, `SafeAreaView` from `react-native-safe-area-context`
 - Game logic lives in `game/*.js` as **pure functions** (no React)
-- Multiplayer uses the host/client pattern documented in PROJECT_NOTES.md (`fullRef` / `applyState` / `toPublic` / `PRIVATE_HAND`)
+- Multiplayer uses the host/client pattern documented in `PROJECT_NOTES.md` (`fullRef` / `applyState` / `toPublic` / `PRIVATE_HAND`)
 - Card visuals use the existing `cardTheme.js` system — every theme image is a static `require()`. Adding new themes or assets requires editing this file.
 - Save habit: after each meaningful change, I commit with `git add . && git commit -m "..." && git push`
 - New native packages = new EAS build needed. JS-only changes don't.
@@ -23,7 +23,7 @@ This is a **multi-phase update**. **Do not move on to the next phase until I con
 ## Beginner Rules for How You Work With Me
 
 1. **Ask me clarifying questions before each phase if anything is unclear** — don't guess.
-2. **Explain what you're doing in plain language.** When you introduce a new library, pattern, or API, give a one-sentence explanation of what it is and why it's used.
+2. **Explain what you're doing in plain language.** When you introduce a new library, pattern, or API, give me a one-sentence explanation of what it is and why it's used.
 3. **Recommend the simplest beginner-friendly approach** when there are multiple options. If you pick something more complex, justify why.
 4. **Flag anything that could cause issues later** before doing it, and suggest alternatives.
 5. After each phase, tell me: what changed, what files were touched, how to test, and whether I need a new EAS build.
@@ -41,9 +41,9 @@ This is a **multi-phase update**. **Do not move on to the next phase until I con
 6. Add a Multiplayer menu screen with **four buttons**: Host Online, Join Online (both grayed out with "Coming Soon"), Host Local, Join Local (functional, wires to existing host/join flow).
 7. Remove **Wild Round** from the Single-Player carousel (keep it fully working in multiplayer Lobby).
 8. Add Blackjack **split** functionality.
-9. Add **Poker variants**: Texas Hold'em (existing), Omaha, Five Card Draw, Seven Card Stud. When the user taps Poker, show a **scroll wheel** picker.
-10. Add **Solitaire** as a new single-player-only game with 5 versions: Klondike, Spider, FreeCell, Pyramid, TriPeaks. Scroll wheel picker.
-11. Add **Rummy** as a new game (single + multiplayer) with versions: Gin Rummy, Rummy 500, Indian Rummy, Canasta. Scroll wheel picker.
+9. Add **Poker variants**: Texas Hold'em (existing), Omaha, Five Card Draw, Seven Card Stud. When the user taps Poker, show a **simple tap-select picker**.
+10. Add **Solitaire** as a new single-player-only game with 5 versions: Klondike, Spider, FreeCell, Pyramid, TriPeaks. Use the same simple tap-select picker style.
+11. Add **Rummy** as a new game (single + multiplayer) with versions: Gin Rummy, Rummy 500, Indian Rummy, Canasta. Use the same simple tap-select picker style.
 12. Make the entire app **scale up properly on larger screens** (phones with bigger displays, tablets). Same layout, just bigger. Portrait only.
 13. Add **Stats tracking** to Profile (one big summary screen).
 
@@ -96,6 +96,7 @@ This phase requires installing a new native package, which means a new EAS build
 **Install:** `@react-native-async-storage/async-storage` (briefly explain: AsyncStorage is React Native's built-in way to save small bits of data on the device that survive app restarts — like browser localStorage but for mobile).
 
 **Create a profile module** at `game/profile.js` (pure functions, no React):
+
 - `loadProfile()` — returns saved profile or default
 - `saveProfile(profile)` — persists to AsyncStorage
 - `subscribeProfile(fn)` — listener pattern, same as `cardTheme.js`
@@ -105,6 +106,7 @@ This phase requires installing a new native package, which means a new EAS build
   - `photoType: null` → no photo set yet
 
 **Create `screens/ProfileScreen.js`** with:
+
 - Name field (editable any time, persisted)
 - Photo selector showing current photo (circular, cropped)
 - Tapping the photo opens a chooser: "Choose Avatar" / "Take Photo" / "Choose from Camera Roll"
@@ -117,6 +119,7 @@ This phase requires installing a new native package, which means a new EAS build
 **First-launch flow:** On app start, if no profile exists yet, navigate to ProfileScreen with a "Welcome! Set up your profile (you can change anything later)" banner. Block the user from navigating to game screens until they've at least entered a name.
 
 **Wire profile name into existing screens:**
+
 - `HomeScreen` — pull name from profile (if set), pass nothing as route params
 - `SinglePlayerSetupScreen` — read `myName` from profile, not route params
 - `HostSetupScreen` — **remove the name input field entirely**. Read host name from profile.
@@ -152,15 +155,18 @@ This phase requires installing a new native package, which means a new EAS build
 This phase tackles the screen scaling problem. **Audit first**, then plan with me before coding.
 
 **Audit:**
+
 - `components/Card.js` has hardcoded sizes (70×100 and 42×60). This blocks scaling.
 - 5 of 16 screens use `useWindowDimensions`; 11 don't (most game screens).
 
 **Plan with me:** Before coding, propose your approach. My preference is the simplest beginner-friendly option. Likely candidates:
+
 - A `responsive.js` helper module that exports scaling functions based on screen width
 - Updating `Card.js` to accept a `size` prop or compute size from window dimensions
 - Updating each game screen to use responsive sizing
 
 Once we agree, do the foundation:
+
 - Update `Card.js` to scale card size based on screen width (with sensible min/max).
 - Lock the app to **portrait only** (`app.json` orientation setting).
 - Apply responsive sizing to the easiest game screen first (Blackjack `GameScreen.js`) so I can see the effect on my phone vs my tablet (if I have one).
@@ -172,6 +178,7 @@ Once we agree, do the foundation:
 ### Phase 7 ✅ COMPLETE — Apply Scaling to Remaining Screens
 
 Apply the same responsive sizing pattern to:
+
 - `MultiplayerGameScreen.js` (Blackjack multiplayer)
 - `GoFishGameScreen.js`
 - `PokerGameScreen.js`
@@ -199,30 +206,29 @@ Add the ability to **split** when the player is dealt two cards of the same rank
 
 ---
 
-### Phase 9 — Poker Variants
+### Phase 9 ✅ COMPLETE — Poker Variants
 
-**Plan with me first.** Each poker variant has different rules:
-- Texas Hold'em (already built) — 2 hole cards, 5 community
-- Omaha — 4 hole cards (must use exactly 2), 5 community
-- Five Card Draw — 5 cards, 1 round of swapping, no community
-- Seven Card Stud — 7 cards (3 down, 4 up), no community
+Poker variants are now built.
 
-Tell me your plan for how to structure this (one shared poker engine with variant-specific rules? Separate logic files? etc.) before coding.
+- Added a tap-to-select Poker variant picker.
+- Tapping Poker in the carousel opens the picker.
+- PokerGameScreen now supports:
+  - Texas Hold'em
+  - Omaha
+  - Five Card Draw
+  - Seven Card Stud
+- Single-player Poker and multiplayer Poker both work.
+- Lobby saves the chosen Poker variant and keeps the host params intact.
+- GameNetwork now has a browser-safe fallback so the app can run in web dev mode without crashing.
 
-**Then build:**
-- Add a `PokerVariantPicker` screen with a **scroll wheel** UI (use `@react-native-picker/picker` or a similar simple option — recommend the simplest beginner-friendly choice and explain why).
-- Tapping Poker in the carousel shows the variant picker.
-- After picking, navigate to `PokerGame` with the variant in route params.
-- `PokerGameScreen.js` reads the variant and runs the right game logic.
-- All four variants playable single-player vs AI **and** in multiplayer Lobby.
-
-**Test:** Each variant is selectable, plays correctly, single-player and multiplayer.
+**Test:** Poker variant can be chosen, saved, and used in both single-player and multiplayer.
 
 ---
 
 ### Phase 10 — Solitaire (Single Player Only, 5 Versions)
 
 **Plan with me first** — Solitaire is significant new work. Tell me your plan for the 5 versions:
+
 - Klondike (the classic Windows one)
 - Spider (1-suit easy, 2-suit medium, 4-suit hard — confirm with me which difficulties to ship)
 - FreeCell
@@ -230,9 +236,10 @@ Tell me your plan for how to structure this (one shared poker engine with varian
 - TriPeaks
 
 **Then build:**
+
 - New `game/solitaire.js` (or split per variant if it makes sense — your call, but explain why).
 - New `screens/SolitaireGameScreen.js`.
-- Add a `SolitaireVariantPicker` with the same scroll wheel UI used for Poker.
+- Add a `SolitaireVariantPicker` with the same simple tap-select style used for Poker.
 - Add Solitaire to the single-player carousel in `SinglePlayerSetupScreen.js` (both `CAROUSEL_GAMES` and `GAMES` arrays).
 - Tapping Solitaire in the carousel goes to the variant picker, then the game.
 - Single-player only — do **not** add to LobbyScreen.
@@ -244,15 +251,17 @@ Tell me your plan for how to structure this (one shared poker engine with varian
 ### Phase 11 — Rummy (Single + Multiplayer, 4 Versions)
 
 **Plan with me first.** Versions:
+
 - Gin Rummy (2 players, classic)
 - Rummy 500
 - Indian Rummy (13-card)
 - Canasta
 
 **Then build:**
+
 - New `game/rummy.js` with shared helpers and per-variant logic.
 - New `screens/RummyGameScreen.js` (single + multiplayer in one screen, following the existing pattern).
-- Add a `RummyVariantPicker` with the scroll wheel UI.
+- Add a `RummyVariantPicker` with the same simple tap-select style.
 - Add Rummy to the single-player carousel.
 - Add Rummy to `LobbyScreen.js` so it can be picked as a multiplayer game.
 - AI difficulty: Easy/Medium/Hard for single-player, matching the pattern of other games.
@@ -263,7 +272,7 @@ Tell me your plan for how to structure this (one shared poker engine with varian
 
 ### Phase 12 — Variant Pickers Polish
 
-By this point we have three variant pickers (Poker, Solitaire, Rummy). Make sure they all use the same scroll wheel component for consistency. If you built them ad-hoc earlier, refactor into a shared `components/VariantPicker.js` now.
+By this point we have three variant pickers (Poker, Solitaire, Rummy). Make sure they all use the same simple tap-select picker component for consistency. If you built them ad-hoc earlier, refactor into a shared `components/VariantPicker.js` now.
 
 **Test:** All three pickers look and feel the same. Each variant launches the correct game.
 
@@ -274,6 +283,7 @@ By this point we have three variant pickers (Poker, Solitaire, Rummy). Make sure
 Add stats tracking to the Profile.
 
 **Track per game type:**
+
 - Games played
 - Wins / Losses
 - Win rate (calculated from games played + wins)
@@ -285,6 +295,7 @@ Add stats tracking to the Profile.
 - Favorite game (most played, calculated)
 
 **Implementation:**
+
 - Add a `recordGameResult({ game, variant, result, ...gameSpecificData })` function in `game/profile.js`.
 - Hook it into the end-of-game logic for every game.
 - Save to AsyncStorage as part of the profile.
@@ -307,4 +318,4 @@ Add stats tracking to the Profile.
 - Once a multiplayer room is full, it auto-locks. Host cannot kick players.
 - For online multiplayer (Host Online / Join Online buttons): not in scope. Just keep the "Coming Soon" buttons from Phase 2.
 
-**Start with Phase 1: do the audit, share findings, ask any clarifying questions, then make the HomeScreen restructure changes. Stop when Phase 1 is done and wait for me to confirm.**
+**Start with Phase 10: do the audit, share findings, ask any clarifying questions, then make the next phase changes. Stop when the current phase is done and wait for me to confirm.**

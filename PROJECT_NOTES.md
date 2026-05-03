@@ -42,6 +42,7 @@ A cross-platform React Native mobile app for playing card games with friends and
 - ✅ **Update Phase 6:** `game/responsive.js` created; Card.js updated to scale with screen width; portrait locked in app.json
 - ✅ **Update Phase 7:** Responsive sizing applied to all remaining screens (all `scale()` / `scaleFont()` calls)
 - ✅ **Update Phase 8:** Blackjack split added to GameScreen.js (single-player) and MultiplayerGameScreen.js (multiplayer)
+- ✅ **Update Phase 9:** Poker variants added — Texas Hold'em, Omaha, Five Card Draw, Seven Card Stud; tap-select picker; single-player + multiplayer support
 - 🔜 **Phase 5: Visual Theme Project (PAUSED)** ⏸️ paused until better PC available
   - Plan: Each game gets its own distinct theme (Blackjack=casino, Poker=premium black, Wild Round=neon party, etc.)
   - Theme switching: User can pick between themes per game
@@ -71,27 +72,30 @@ card-game-app/
 ├── assets/
 ├── components/
 │   └── Card.js                    (reusable playing card visual)
+│   └── PokerVariantWheel.js       (simple tap-select poker variant picker UI)
 ├── game/
 │   ├── deck.js                    (createDeck, shuffleDeck, calculateHandValue)
 │   ├── conquian.js                (Conquián game logic — pure functions)
 │   ├── wildround.js               (Wild Round game logic — pure functions)
 │   ├── lastCard.js                (Last Card game logic — pure functions)
+│   ├── poker.js                  (Poker variant logic — Texas Hold'em, Omaha, Five Card Draw, Seven Card Stud)
 │   ├── wildroundCards.json        (100 prompts + 300 answers — Phase E complete)
 │   ├── GameNetwork.js             (TCP server/client + UDP discovery)
 │   ├── profile.js                 (loadProfile, saveProfile, subscribeProfile, getDisplayName — AsyncStorage)
 │   └── responsive.js              (scale(), scaleFont() — BASE_WIDTH 390, clamped factors)
 ├── screens/
 │   ├── HomeScreen.js              (main menu)
-│   ├── HostSetupScreen.js         (name input, starts TCP server, shows IP)
+│   ├── HostSetupScreen.js         (name from profile, starts TCP server, shows IP)
 │   ├── JoinScreen.js              (UDP auto-discovery list, tap to join)
 │   ├── LobbyScreen.js             (player list, game selector, Start Game)
 │   ├── GameScreen.js              (single-player Blackjack)
 │   ├── MultiplayerGameScreen.js   (multiplayer Blackjack)
 │   ├── GoFishGameScreen.js        (multiplayer Go Fish)
-│   ├── PokerGameScreen.js         (Texas Hold'em Poker)
+│   ├── PokerGameScreen.js         (Poker variants: Texas Hold'em, Omaha, Five Card Draw, Seven Card Stud)
+│   ├── PokerVariantPickerScreen.js (tap-select poker variant picker)
 │   ├── ConquianGameScreen.js      (Conquián — single + multiplayer)
 │   ├── WildRoundGameScreen.js     (Wild Round — single + multiplayer)
-│   ├── LastCardGameScreen.js     (Last Card — single + multiplayer)
+│   ├── LastCardGameScreen.js      (Last Card — single + multiplayer)
 │   ├── SinglePlayerSetupScreen.js (single-player game + AI picker; Wild Round removed from carousel)
 │   ├── MultiplayerMenuScreen.js   (Host Online/Join Online = Coming Soon; Host Local/Join Local = functional)
 │   ├── ProfileScreen.js           (name, avatar/photo picker, card theme link, stats placeholder)
@@ -168,9 +172,10 @@ All folders use identical filenames: `{rank}_{suit}.png` (ranks: a 2–10 j q k,
 
 ## 📍 Where We Are Right Now
 
-**Update Phases 1–8 complete.** Project is at a clean, stable state.
+**Update Phases 1–9 complete.** Project is at a clean, stable state.
 
 **What was added in this update session:**
+
 - Profile system (name, avatar, photo upload+crop, card theme link, stats placeholder) — persists via AsyncStorage
 - MultiplayerMenuScreen with Coming Soon online buttons
 - Name fields removed from HostSetupScreen and JoinScreen (reads from profile)
@@ -178,6 +183,10 @@ All folders use identical filenames: `{rank}_{suit}.png` (ranks: a 2–10 j q k,
 - Wild Round removed from Single Player carousel (still fully functional in multiplayer)
 - `game/responsive.js` with `scale()` / `scaleFont()` helpers; all screens now use responsive sizing
 - Blackjack split: two same-rank cards dealt → Split button appears; play hand 0 then hand 1; dealer plays once against both; works in single-player and multiplayer
+- Poker variants: Texas Hold'em, Omaha, Five Card Draw, Seven Card Stud
+- Poker picker changed from a wheel to a simple tap-select list
+- Poker variant selection now saves back to the existing Lobby screen without dropping host params
+- GameNetwork has a browser-safe fallback so the app can run in web dev mode without crashing
 
 **Card Night currently includes 6 working games:**
 
@@ -190,19 +199,18 @@ All folders use identical filenames: `{rank}_{suit}.png` (ranks: a 2–10 j q k,
 
 **Visual assets update:** Cards now use neon image assets in `assets/cards/` (replaced procedural drawing).
 
-**EAS build status:** A new EAS build was required for Update Phase 3 (added `@react-native-async-storage/async-storage`). `expo-image-picker` and `expo-image-manipulator` are Expo-native and didn't require a separate build. Current build includes all packages through Phase 8.
+**EAS build status:** A new EAS build was required for Update Phase 3 (added `@react-native-async-storage/async-storage`). `expo-image-picker` and `expo-image-manipulator` are Expo-native and didn't require a separate build. Current build includes all packages through Phase 9.
 
 **Removed games (cleaned up):** Crazy Eights, War, Snap, Rummy. These were intentionally cut to keep the lineup focused.
 
 ## 🔮 Next Steps When We Resume
 
-1. **Update Phase 9: Poker Variants** — Omaha, Five Card Draw, Seven Card Stud added alongside existing Texas Hold'em; scroll-wheel variant picker; single-player + multiplayer
-2. **Update Phase 10: Solitaire** — Klondike, Spider, FreeCell, Pyramid, TriPeaks; single-player only; scroll-wheel picker
-3. **Update Phase 11: Rummy** — Gin Rummy, Rummy 500, Indian Rummy, Canasta; single + multiplayer
-4. **Update Phase 12: Variant Pickers Polish** — shared VariantPicker component
-5. **Update Phase 13: Stats Tracking** — per-game stats in Profile
-6. **Phase 5: Visual Theme Project** (paused until on better PC)
-7. **Phase 6: Publish** — Google Play + App Store
+1. **Update Phase 10: Solitaire** — Klondike, Spider, FreeCell, Pyramid, TriPeaks; single-player only; simple tap-select picker
+2. **Update Phase 11: Rummy** — Gin Rummy, Rummy 500, Indian Rummy, Canasta; single + multiplayer; simple tap-select picker
+3. **Update Phase 12: Variant Pickers Polish** — shared VariantPicker component
+4. **Update Phase 13: Stats Tracking** — per-game stats in Profile
+5. **Phase 5: Visual Theme Project** (paused until on better PC)
+6. **Phase 6: Publish** — Google Play + App Store
 
 ## 💡 Important Reminders
 
