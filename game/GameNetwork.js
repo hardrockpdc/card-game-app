@@ -1,13 +1,15 @@
-import TcpSocket from 'react-native-tcp-socket';
-import UdpSocket from 'react-native-udp';
+import { Platform } from "react-native";
+import TcpSocket from "react-native-tcp-socket";
+import UdpSocket from "react-native-udp";
 
 const PORT = 7777;
 const DISCOVERY_PORT = 7778;
 const BROADCAST_MS = 2000;
+const IS_WEB = Platform.OS === "web";
 
 // ─── Server state ─────────────────────────────────────────────────────────────
 let server = null;
-const clients = new Map();     // clientId -> socket
+const clients = new Map(); // clientId -> socket
 const playerNames = new Map(); // clientId -> name (auto-populated from JOIN messages)
 let nextClientId = 1;
 
@@ -20,25 +22,28 @@ export function setServerListeners(listeners) {
 }
 
 export function startServer() {
-  if (server) return;
+  if (IS_WEB || server) return;
 
   server = TcpSocket.createServer((socket) => {
     const id = nextClientId++;
     clients.set(id, socket);
     serverListeners.onClientJoined?.({ id });
 
-    socket.on('data', (data) => {
-      data.toString().split('\n').forEach((line) => {
-        if (!line.trim()) return;
-        try {
-          const msg = JSON.parse(line);
-          // Auto-store player name whenever a JOIN message arrives
-          if (msg.type === 'JOIN' && msg.name) {
-            playerNames.set(id, msg.name);
-          }
-          serverListeners.onMessage?.(msg, id);
-        } catch (_) {}
-      });
+    socket.on("data", (data) => {
+      data
+        .toString()
+        .split("\n")
+        .forEach((line) => {
+          if (!line.trim()) return;
+          try {
+            const msg = JSON.parse(line);
+            // Auto-store player name whenever a JOIN message arrives
+            if (msg.type === "JOIN" && msg.name) {
+              playerNames.set(id, msg.name);
+            }
+            serverListeners.onMessage?.(msg, id);
+          } catch (_) {}
+        });
     });
 
     const handleClose = () => {
@@ -46,21 +51,21 @@ export function startServer() {
       playerNames.delete(id);
       serverListeners.onClientLeft?.({ id });
     };
-    socket.on('close', handleClose);
-    socket.on('error', handleClose);
+    socket.on("close", handleClose);
+    socket.on("error", handleClose);
   });
 
-  server.listen({ port: PORT, host: '0.0.0.0' }, () => {
+  server.listen({ port: PORT, host: "0.0.0.0" }, () => {
     console.log(`[GameNetwork] Server listening on port ${PORT}`);
   });
 
-  server.on('error', (err) => {
-    console.log('[GameNetwork] Server error:', err.message);
+  server.on("error", (err) => {
+    console.log("[GameNetwork] Server error:", err.message);
   });
 }
 
 export function stopServer() {
-  if (!server) return;
+  if (IS_WEB || !server) return;
   clients.forEach((socket) => socket.destroy());
   clients.clear();
   playerNames.clear();
@@ -71,13 +76,15 @@ export function stopServer() {
 }
 
 export function broadcastToClients(message) {
-  const data = JSON.stringify(message) + '\n';
+  if (IS_WEB) return;
+  const data = JSON.stringify(message) + "\n";
   clients.forEach((socket) => socket.write(data));
 }
 
 export function sendToClient(clientId, message) {
+  if (IS_WEB) return;
   const socket = clients.get(clientId);
-  if (socket) socket.write(JSON.stringify(message) + '\n');
+  if (socket) socket.write(JSON.stringify(message) + "\n");
 }
 
 export function getClientCount() {
@@ -86,6 +93,10 @@ export function getClientCount() {
 
 // Returns [{ id, name }, ...] for every currently connected client
 export function getConnectedPlayers() {
+  if (IS_WEB) {
+    return [];
+  }
+
   const result = [];
   clients.forEach((_, id) => {
     result.push({ id, name: playerNames.get(id) || `Player ${id}` });
@@ -105,6 +116,13 @@ export function setClientListeners(listeners) {
 }
 
 export function connectToHost(ip, callbacks) {
+  if (IS_WEB) {
+    callbacks?.onError?.(
+      "Local multiplayer is only available in the native app.",
+    );
+    return;
+  }
+
   if (clientSocket) return;
 
   // Store the initial callbacks so the socket closures always call the latest version
@@ -114,31 +132,40 @@ export function connectToHost(ip, callbacks) {
     clientListeners.onConnected?.();
   });
 
-  clientSocket.on('data', (data) => {
-    data.toString().split('\n').forEach((line) => {
-      if (!line.trim()) return;
-      try {
-        clientListeners.onMessage?.(JSON.parse(line));
-      } catch (_) {}
-    });
+  clientSocket.on("data", (data) => {
+    data
+      .toString()
+      .split("\n")
+      .forEach((line) => {
+        if (!line.trim()) return;
+        try {
+          clientListeners.onMessage?.(JSON.parse(line));
+        } catch (_) {}
+      });
   });
 
-  clientSocket.on('close', () => {
+  clientSocket.on("close", () => {
     clientSocket = null;
     clientListeners.onDisconnected?.();
   });
 
-  clientSocket.on('error', (err) => {
+  clientSocket.on("error", (err) => {
     clientSocket = null;
-    clientListeners.onError?.(err.message || 'Connection failed');
+    clientListeners.onError?.(err.message || "Connection failed");
   });
 }
 
 export function sendToHost(message) {
-  if (clientSocket) clientSocket.write(JSON.stringify(message) + '\n');
+  if (IS_WEB) return;
+  if (clientSocket) clientSocket.write(JSON.stringify(message) + "\n");
 }
 
 export function disconnectFromHost() {
+  if (IS_WEB) {
+    clientListeners = {};
+    return;
+  }
+
   if (clientSocket) {
     clientSocket.destroy();
     clientSocket = null;
@@ -153,32 +180,43 @@ let broadcastSocket = null;
 let broadcastTimer = null;
 
 export function startBroadcasting(hostName, hostIp) {
-  if (broadcastSocket) return;
+  if (IS_WEB || broadcastSocket) return;
 
-  const parts = (hostIp || '').split('.');
-  const subnetBroadcast = parts.length === 4
-    ? `${parts[0]}.${parts[1]}.${parts[2]}.255`
-    : null;
+  const parts = (hostIp || "").split(".");
+  const subnetBroadcast =
+    parts.length === 4 ? `${parts[0]}.${parts[1]}.${parts[2]}.255` : null;
 
-  console.log(`[Broadcast] Starting — hostIp: ${hostIp}, subnet: ${subnetBroadcast}`);
+  console.log(
+    `[Broadcast] Starting — hostIp: ${hostIp}, subnet: ${subnetBroadcast}`,
+  );
 
-  broadcastSocket = UdpSocket.createSocket({ type: 'udp4' });
+  broadcastSocket = UdpSocket.createSocket({ type: "udp4" });
 
   broadcastSocket.bind(0, () => {
     broadcastSocket.setBroadcast(true);
-    console.log('[Broadcast] Socket ready');
+    console.log("[Broadcast] Socket ready");
 
-    const payload = new TextEncoder().encode(JSON.stringify({ type: 'CARD_GAME', name: hostName }));
+    const payload = new TextEncoder().encode(
+      JSON.stringify({ type: "CARD_GAME", name: hostName }),
+    );
 
     const sendTo = (addr) => {
-      broadcastSocket?.send(payload, 0, payload.length, DISCOVERY_PORT, addr, (err) => {
-        if (err) console.log(`[Broadcast] send error (${addr}):`, err.message);
-      });
+      broadcastSocket?.send(
+        payload,
+        0,
+        payload.length,
+        DISCOVERY_PORT,
+        addr,
+        (err) => {
+          if (err)
+            console.log(`[Broadcast] send error (${addr}):`, err.message);
+        },
+      );
     };
 
     const send = () => {
       // Always send to global broadcast; also send to subnet broadcast if we have a valid IP
-      sendTo('255.255.255.255');
+      sendTo("255.255.255.255");
       if (subnetBroadcast) sendTo(subnetBroadcast);
     };
 
@@ -186,15 +224,21 @@ export function startBroadcasting(hostName, hostIp) {
     broadcastTimer = setInterval(send, BROADCAST_MS);
   });
 
-  broadcastSocket.on('error', (err) => {
-    console.log('[Broadcast] socket error:', err.message);
+  broadcastSocket.on("error", (err) => {
+    console.log("[Broadcast] socket error:", err.message);
   });
 }
 
 export function stopBroadcasting() {
-  if (broadcastTimer) { clearInterval(broadcastTimer); broadcastTimer = null; }
+  if (IS_WEB) return;
+  if (broadcastTimer) {
+    clearInterval(broadcastTimer);
+    broadcastTimer = null;
+  }
   if (broadcastSocket) {
-    try { broadcastSocket.close(); } catch (_) {}
+    try {
+      broadcastSocket.close();
+    } catch (_) {}
     broadcastSocket = null;
   }
 }
@@ -202,32 +246,35 @@ export function stopBroadcasting() {
 let discoverySocket = null;
 
 export function startDiscovery(onGameFound) {
-  if (discoverySocket) return;
+  if (IS_WEB || discoverySocket) return;
 
-  discoverySocket = UdpSocket.createSocket({ type: 'udp4' });
+  discoverySocket = UdpSocket.createSocket({ type: "udp4" });
 
   discoverySocket.bind(DISCOVERY_PORT, () => {
     discoverySocket.setBroadcast(true);
-    console.log('[Discovery] Listening on port', DISCOVERY_PORT);
+    console.log("[Discovery] Listening on port", DISCOVERY_PORT);
   });
 
-  discoverySocket.on('message', (data, rinfo) => {
+  discoverySocket.on("message", (data, rinfo) => {
     try {
       const msg = JSON.parse(data.toString());
-      if (msg.type === 'CARD_GAME') {
+      if (msg.type === "CARD_GAME") {
         onGameFound({ name: msg.name, ip: rinfo.address });
       }
     } catch (_) {}
   });
 
-  discoverySocket.on('error', (err) => {
-    console.log('[Discovery] socket error:', err.message);
+  discoverySocket.on("error", (err) => {
+    console.log("[Discovery] socket error:", err.message);
   });
 }
 
 export function stopDiscovery() {
+  if (IS_WEB) return;
   if (discoverySocket) {
-    try { discoverySocket.close(); } catch (_) {}
+    try {
+      discoverySocket.close();
+    } catch (_) {}
     discoverySocket = null;
   }
 }

@@ -14,6 +14,7 @@ import MultiplayerGameScreen from "./screens/MultiplayerGameScreen";
 import GoFishGameScreen from "./screens/GoFishGameScreen";
 import ConquianGameScreen from "./screens/ConquianGameScreen";
 import PokerGameScreen from "./screens/PokerGameScreen";
+import PokerVariantPickerScreen from "./screens/PokerVariantPickerScreen";
 import SinglePlayerSetupScreen from "./screens/SinglePlayerSetupScreen";
 import HowToPlayScreen from "./screens/HowToPlayScreen";
 import WildRoundGameScreen from "./screens/WildRoundGameScreen";
@@ -100,6 +101,11 @@ export default function App() {
             name="PokerGame"
             component={PokerGameScreen}
             options={{ title: "Poker" }}
+          />
+          <Stack.Screen
+            name="PokerVariantPicker"
+            component={PokerVariantPickerScreen}
+            options={{ title: "Poker Variant" }}
           />
           <Stack.Screen
             name="SinglePlayerSetup"

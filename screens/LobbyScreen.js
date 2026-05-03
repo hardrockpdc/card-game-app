@@ -89,6 +89,9 @@ export default function LobbyScreen({ navigation, route }) {
     { id: isHost ? "host" : "me", name: myName, isMe: true, isHost },
   ]);
   const [selectedGame, setSelectedGame] = useState("conquian");
+  const [selectedPokerVariant, setSelectedPokerVariant] = useState(
+    route.params?.selectedPokerVariant || "texasHoldem",
+  );
   const [tone, setTone] = useState("family");
 
   // Ref so server-listener closures always see the latest AI list
@@ -96,6 +99,14 @@ export default function LobbyScreen({ navigation, route }) {
 
   const selectedGameDef = GAMES.find((g) => g.id === selectedGame);
   const maxPlayers = selectedGameDef?.maxPlayers ?? DEFAULT_MAX_PLAYERS;
+  const selectedPokerLabel =
+    selectedPokerVariant === "texasHoldem"
+      ? "Texas Hold'em"
+      : selectedPokerVariant === "omaha"
+        ? "Omaha"
+        : selectedPokerVariant === "fiveCardDraw"
+          ? "Five Card Draw"
+          : "Seven Card Stud";
 
   // ─── HOST setup ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -160,6 +171,12 @@ export default function LobbyScreen({ navigation, route }) {
     return () => stopBroadcasting();
   }, []);
 
+  useEffect(() => {
+    if (route.params?.selectedPokerVariant) {
+      setSelectedPokerVariant(route.params.selectedPokerVariant);
+    }
+  }, [route.params?.selectedPokerVariant]);
+
   // ─── CLIENT setup ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (isHost) return;
@@ -181,6 +198,8 @@ export default function LobbyScreen({ navigation, route }) {
             role: "client",
             myName,
             players: msg.players,
+            variant:
+              msg.variant || msg.selectedPokerVariant || selectedPokerVariant,
             ...extra,
           });
         }
@@ -257,17 +276,23 @@ export default function LobbyScreen({ navigation, route }) {
     }
     const game = GAMES.find((g) => g.id === selectedGame);
     const extra = selectedGame === "wildRound" ? { tone } : {};
+    const pokerExtra =
+      selectedGame === "poker"
+        ? { variant: selectedPokerVariant, selectedPokerVariant }
+        : {};
     broadcastToClients({
       type: "START_GAME",
       players,
       gameType: selectedGame,
       ...extra,
+      ...pokerExtra,
     });
     navigation.replace(game.screen, {
       role: "host",
       myName,
       players,
       ...extra,
+      ...pokerExtra,
     });
   }
 
@@ -307,6 +332,21 @@ export default function LobbyScreen({ navigation, route }) {
               </TouchableOpacity>
             ))}
           </ScrollView>
+          {selectedGame === "poker" && (
+            <TouchableOpacity
+              style={styles.pokerVariantBtn}
+              onPress={() =>
+                navigation.navigate("PokerVariantPicker", {
+                  mode: "lobby",
+                  currentVariant: selectedPokerVariant,
+                })
+              }
+            >
+              <Text style={styles.pokerVariantBtnText}>
+                Poker Variant: {selectedPokerLabel}
+              </Text>
+            </TouchableOpacity>
+          )}
           {selectedGame === "wildRound" && (
             <View style={styles.toneRow}>
               {[
@@ -576,6 +616,21 @@ const styles = StyleSheet.create({
   gameScroll: {
     flexDirection: "row",
   },
+  pokerVariantBtn: {
+    marginTop: scale(10),
+    backgroundColor: "#16213e",
+    borderWidth: 1.5,
+    borderColor: "#6a1b9a",
+    borderRadius: scale(10),
+    paddingHorizontal: scale(14),
+    paddingVertical: scale(10),
+    alignItems: "center",
+  },
+  pokerVariantBtnText: {
+    color: "#d7d2ff",
+    fontSize: scaleFont(13),
+    fontWeight: "bold",
+  },
   gameChip: {
     backgroundColor: "#16213e",
     borderWidth: 1.5,
@@ -608,6 +663,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   toneChipSelected: { backgroundColor: "#9c27b0", borderColor: "#9c27b0" },
-  toneChipText: { color: "#b0b0c0", fontSize: scaleFont(13), fontWeight: "bold" },
+  toneChipText: {
+    color: "#b0b0c0",
+    fontSize: scaleFont(13),
+    fontWeight: "bold",
+  },
   toneChipTextSelected: { color: "#ffffff" },
 });

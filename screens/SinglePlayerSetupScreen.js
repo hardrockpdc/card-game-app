@@ -10,7 +10,12 @@ import {
   ScrollView,
   ActivityIndicator,
 } from "react-native";
-import { loadProfile, getDisplayName, hasProfileName, subscribeProfile } from "../game/profile";
+import {
+  getCachedProfile,
+  getDisplayName,
+  hasProfileName,
+  subscribeProfile,
+} from "../game/profile";
 
 // ─── Display data for the carousel (order + visuals) ─────────────────────────
 
@@ -103,6 +108,8 @@ const DIFFICULTIES = [
   { id: "hard", label: "Hard", hint: "" },
 ];
 
+const DEFAULT_POKER_VARIANT = "texasHoldem";
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function SinglePlayerSetupScreen({ navigation }) {
@@ -124,23 +131,15 @@ export default function SinglePlayerSetupScreen({ navigation }) {
   useEffect(() => {
     let isMounted = true;
 
-    async function bootstrapProfile() {
-      const profile = await loadProfile();
+    function bootstrapProfile() {
+      const profile = getCachedProfile();
 
       if (!isMounted) {
         return;
       }
 
-      const name = getDisplayName(profile);
-      setPlayerName(name);
+      setPlayerName(getDisplayName(profile));
       setIsLoadingProfile(false);
-
-      if (!hasProfileName(profile)) {
-        navigation.navigate("Profile", {
-          welcomeMessage:
-            "Welcome! Set up your profile before choosing a single-player game.",
-        });
-      }
     }
 
     bootstrapProfile();
@@ -153,7 +152,7 @@ export default function SinglePlayerSetupScreen({ navigation }) {
       isMounted = false;
       unsubscribeProfile();
     };
-  }, [navigation]);
+  }, []);
 
   // ─── Carousel geometry ──────────────────────────────────────────────────────
   const CARD_WIDTH = width * 0.78;
@@ -167,6 +166,30 @@ export default function SinglePlayerSetupScreen({ navigation }) {
   const game = GAMES.find((g) => g.id === carouselGame.id);
   const [minAI, maxAI] = game.aiRange;
   const clampedAI = Math.min(Math.max(numAI, minAI), maxAI);
+
+  function buildSinglePlayerLaunchParams() {
+    const players = [
+      { id: "host", name: playerName },
+      ...Array.from({ length: clampedAI }, (_, i) => ({
+        id: `ai_${i + 1}`,
+        name: clampedAI > 1 ? `Computer ${i + 1}` : "Computer",
+        isAI: true,
+      })),
+    ];
+
+    const params = { role: "singleplayer", myName: playerName, players };
+    if (game.hasDifficulty) params.difficulty = difficulty;
+    if (game.hasTone) params.tone = tone;
+    return params;
+  }
+
+  function openPokerVariantPicker() {
+    navigation.navigate("PokerVariantPicker", {
+      mode: "singleplayer",
+      currentVariant: DEFAULT_POKER_VARIANT,
+      launchParams: buildSinglePlayerLaunchParams(),
+    });
+  }
 
   // ─── Carousel callbacks ─────────────────────────────────────────────────────
   const onViewableItemsChanged = useCallback(({ viewableItems }) => {
@@ -187,20 +210,12 @@ export default function SinglePlayerSetupScreen({ navigation }) {
       return;
     }
 
-    const players = [
-      { id: "host", name: playerName },
-      ...Array.from({ length: clampedAI }, (_, i) => ({
-        id: `ai_${i + 1}`,
-        name: clampedAI > 1 ? `Computer ${i + 1}` : "Computer",
-        isAI: true,
-      })),
-    ];
+    if (game.id === "poker") {
+      openPokerVariantPicker();
+      return;
+    }
 
-    const params = { role: "singleplayer", myName: playerName, players };
-    if (game.hasDifficulty) params.difficulty = difficulty;
-    if (game.hasTone) params.tone = tone;
-
-    navigation.navigate(game.screen, params);
+    navigation.navigate(game.screen, buildSinglePlayerLaunchParams());
   }
 
   // ─── Size vars ──────────────────────────────────────────────────────────────
@@ -249,8 +264,14 @@ export default function SinglePlayerSetupScreen({ navigation }) {
           })}
           renderItem={({ item, index }) => {
             const isActive = index === currentIndex;
+            const isPoker = item.id === "poker";
+
             return (
-              <View style={{ width: CARD_WIDTH, marginRight: GAP }}>
+              <TouchableOpacity
+                style={{ width: CARD_WIDTH, marginRight: GAP }}
+                activeOpacity={0.92}
+                onPress={isPoker ? openPokerVariantPicker : undefined}
+              >
                 <View
                   style={[
                     styles.gameCard,
@@ -292,7 +313,7 @@ export default function SinglePlayerSetupScreen({ navigation }) {
                     </View>
                   </View>
                 </View>
-              </View>
+              </TouchableOpacity>
             );
           }}
         />
@@ -484,7 +505,9 @@ export default function SinglePlayerSetupScreen({ navigation }) {
             <Text
               style={[styles.playBtnText, { fontSize: playButtonTextSize }]}
             >
-              Play {carouselGame.label}
+              {carouselGame.id === "poker"
+                ? "Choose Poker Variant"
+                : `Play ${carouselGame.label}`}
             </Text>
           </TouchableOpacity>
         </View>

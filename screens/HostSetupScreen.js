@@ -36,12 +36,6 @@ export default function HostSetupScreen({ navigation }) {
       const name = getDisplayName(profile);
       setHostName(name);
       setIsLoadingProfile(false);
-
-      if (!profile?.name) {
-        navigation.navigate("Profile", {
-          welcomeMessage: "Welcome! Set up your profile before hosting a game.",
-        });
-      }
     }
 
     bootstrapProfile();
