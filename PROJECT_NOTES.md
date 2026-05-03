@@ -34,6 +34,14 @@ A cross-platform React Native mobile app for playing card games with friends and
 - ✅ **Wild Round Phase C:** Full multiplayer with host/client networking
 - ✅ **Wild Round Phase E:** Full card content (100 prompts + 300 answers)
 - ✅ **Last Card Phase C:** Full single-player + multiplayer networking
+- ✅ **Update Phase 1:** HomeScreen restructured — three primary buttons (Single Player, Multiplayer, Profile); floating avatar modal removed
+- ✅ **Update Phase 2:** MultiplayerMenuScreen added — Host Online / Join Online (Coming Soon, disabled), Host Local / Join Local (functional)
+- ✅ **Update Phase 3:** Profile system — `game/profile.js`, `screens/ProfileScreen.js`, 20 emoji placeholder avatars, photo upload + crop (expo-image-picker + expo-image-manipulator + AsyncStorage), first-launch onboarding flow
+- ✅ **Update Phase 4:** Card theme moved to Profile and persisted via AsyncStorage; SettingsScreen is now a plain placeholder
+- ✅ **Update Phase 5:** Wild Round removed from Single Player carousel only (still works in multiplayer Lobby)
+- ✅ **Update Phase 6:** `game/responsive.js` created; Card.js updated to scale with screen width; portrait locked in app.json
+- ✅ **Update Phase 7:** Responsive sizing applied to all remaining screens (all `scale()` / `scaleFont()` calls)
+- ✅ **Update Phase 8:** Blackjack split added to GameScreen.js (single-player) and MultiplayerGameScreen.js (multiplayer)
 - 🔜 **Phase 5: Visual Theme Project (PAUSED)** ⏸️ paused until better PC available
   - Plan: Each game gets its own distinct theme (Blackjack=casino, Poker=premium black, Wild Round=neon party, etc.)
   - Theme switching: User can pick between themes per game
@@ -69,7 +77,9 @@ card-game-app/
 │   ├── wildround.js               (Wild Round game logic — pure functions)
 │   ├── lastCard.js                (Last Card game logic — pure functions)
 │   ├── wildroundCards.json        (100 prompts + 300 answers — Phase E complete)
-│   └── GameNetwork.js             (TCP server/client + UDP discovery)
+│   ├── GameNetwork.js             (TCP server/client + UDP discovery)
+│   ├── profile.js                 (loadProfile, saveProfile, subscribeProfile, getDisplayName — AsyncStorage)
+│   └── responsive.js              (scale(), scaleFont() — BASE_WIDTH 390, clamped factors)
 ├── screens/
 │   ├── HomeScreen.js              (main menu)
 │   ├── HostSetupScreen.js         (name input, starts TCP server, shows IP)
@@ -82,10 +92,12 @@ card-game-app/
 │   ├── ConquianGameScreen.js      (Conquián — single + multiplayer)
 │   ├── WildRoundGameScreen.js     (Wild Round — single + multiplayer)
 │   ├── LastCardGameScreen.js     (Last Card — single + multiplayer)
-│   ├── SinglePlayerSetupScreen.js (single-player game + AI picker)
+│   ├── SinglePlayerSetupScreen.js (single-player game + AI picker; Wild Round removed from carousel)
+│   ├── MultiplayerMenuScreen.js   (Host Online/Join Online = Coming Soon; Host Local/Join Local = functional)
+│   ├── ProfileScreen.js           (name, avatar/photo picker, card theme link, stats placeholder)
 │   ├── HowToPlayScreen.js         (rules reference screen)
 │   ├── ResultsScreen.js           (placeholder)
-│   └── SettingsScreen.js          (placeholder — card editor trigger not present yet)
+│   └── SettingsScreen.js          (placeholder — "More settings coming soon")
 ├── App.js                         (navigation stack — all screens registered)
 ├── app.json                       (bundle ID: com.pedro.cardgameapp, EAS projectId)
 ├── eas.json                       (development/preview/production build profiles)
@@ -98,10 +110,13 @@ card-game-app/
 ## 📦 Dependencies
 
 ```
+@react-native-async-storage/async-storage  (profile persistence — added Phase 3, requires EAS build)
 @react-navigation/native: ^7.2.2
 @react-navigation/native-stack: ^7.14.11
 expo: ~54.0.33
 expo-dev-client: ~6.0.20
+expo-image-manipulator                     (photo crop to 1:1 — added Phase 3, Expo-native, no extra native module)
+expo-image-picker                          (camera roll + camera access — added Phase 3, Expo-native)
 expo-network: ~8.0.8
 expo-status-bar: ~3.0.9
 react: 19.1.0
@@ -123,7 +138,7 @@ react-native-udp: ^4.1.7
 
 ## 🃏 Card Themes
 
-Theme switching is live — tap a theme in Settings → Card Themes and all open games update instantly. No restart needed. Theme resets to Neon on app restart (no persistence yet — AsyncStorage would need a new EAS build).
+Theme switching is live — tap a theme in Profile → Card Theme and all open games update instantly. No restart needed. **Theme is now persisted via AsyncStorage** (saved as part of the profile) — survives app restarts. Theme picker moved from Settings to Profile in Update Phase 4.
 
 | Theme ID | Label    | Asset folder              |
 | -------- | -------- | ------------------------- |
@@ -140,7 +155,8 @@ All folders use identical filenames: `{rank}_{suit}.png` (ranks: a 2–10 j q k,
 - `game/cardTheme.js` — module singleton, 265 static requires (5 themes × 53 images), `setTheme`/`getTheme`/`subscribe`/`getCardImage`/`getCardBackImage`/`getThemePreviewImage`/`THEMES_LIST` exports
 - `components/Card.js` — uses cardTheme.js, subscribes to live changes via `useEffect`
 - `screens/CardThemeScreen.js` — full-screen swiper (FlatList pagingEnabled), Ace of Spades preview, dot indicators, "Use This Theme" button
-- `screens/SettingsScreen.js` — navigation hub with "Card Themes" row → CardThemeScreen
+- `screens/ProfileScreen.js` — "Card Theme" row links to `CardThemes` route
+- `screens/SettingsScreen.js` — now a plain placeholder ("More settings coming soon"); Card Themes row removed
 
 ## 📐 Layout Conventions
 
@@ -152,7 +168,16 @@ All folders use identical filenames: `{rank}_{suit}.png` (ranks: a 2–10 j q k,
 
 ## 📍 Where We Are Right Now
 
-**Wild Round complete — full multiplayer and full card content working.** Project is at a clean, stable state. Project notes and all spec files are current.
+**Update Phases 1–8 complete.** Project is at a clean, stable state.
+
+**What was added in this update session:**
+- Profile system (name, avatar, photo upload+crop, card theme link, stats placeholder) — persists via AsyncStorage
+- MultiplayerMenuScreen with Coming Soon online buttons
+- Name fields removed from HostSetupScreen and JoinScreen (reads from profile)
+- Card theme persisted via profile; Settings reduced to placeholder
+- Wild Round removed from Single Player carousel (still fully functional in multiplayer)
+- `game/responsive.js` with `scale()` / `scaleFont()` helpers; all screens now use responsive sizing
+- Blackjack split: two same-rank cards dealt → Split button appears; play hand 0 then hand 1; dealer plays once against both; works in single-player and multiplayer
 
 **Card Night currently includes 6 working games:**
 
@@ -165,14 +190,19 @@ All folders use identical filenames: `{rank}_{suit}.png` (ranks: a 2–10 j q k,
 
 **Visual assets update:** Cards now use neon image assets in `assets/cards/` (replaced procedural drawing).
 
-**EAS build status:** Current build on both phones works. No new native packages have been added since last build, so `npx expo start --dev-client` is sufficient for development.
+**EAS build status:** A new EAS build was required for Update Phase 3 (added `@react-native-async-storage/async-storage`). `expo-image-picker` and `expo-image-manipulator` are Expo-native and didn't require a separate build. Current build includes all packages through Phase 8.
 
 **Removed games (cleaned up):** Crazy Eights, War, Snap, Rummy. These were intentionally cut to keep the lineup focused.
 
 ## 🔮 Next Steps When We Resume
 
-1. **Phase 5: Visual Theme Project** (paused until on better PC) — each game gets its own theme, theme switching, visual polish, animations, sounds, manual hand-sort, multi-language EN+ES
-2. **Phase 6: Publish** — Google Play + App Store submission
+1. **Update Phase 9: Poker Variants** — Omaha, Five Card Draw, Seven Card Stud added alongside existing Texas Hold'em; scroll-wheel variant picker; single-player + multiplayer
+2. **Update Phase 10: Solitaire** — Klondike, Spider, FreeCell, Pyramid, TriPeaks; single-player only; scroll-wheel picker
+3. **Update Phase 11: Rummy** — Gin Rummy, Rummy 500, Indian Rummy, Canasta; single + multiplayer
+4. **Update Phase 12: Variant Pickers Polish** — shared VariantPicker component
+5. **Update Phase 13: Stats Tracking** — per-game stats in Profile
+6. **Phase 5: Visual Theme Project** (paused until on better PC)
+7. **Phase 6: Publish** — Google Play + App Store
 
 ## 💡 Important Reminders
 
@@ -239,7 +269,7 @@ Only when adding a NEW native package. JS-only changes don't need a rebuild.
 
 ### Game-specific notes
 
-**Blackjack:** Standard rules, dealer hits to 16 stands on 17, blackjack pays normal. Multiplayer: each player vs dealer, dealer plays once after all players act.
+**Blackjack:** Standard rules, dealer hits to 16 stands on 17, blackjack pays normal. **Split supported** (two same-rank cards → Split button; two hands played in sequence; dealer plays once against both; works single-player and multiplayer). Multiplayer: each player vs dealer, dealer plays once after all players act.
 
 **Go Fish:** Private hands; two-step ask (tap card in hand to pick rank, tap player to pick target, then Ask button). Extra turn if target had the rank OR drawn card matches asked rank. Books (4-of-a-kind) auto-complete; 13 books = game over. 7 cards each for 2 players, 5 each for 3+. Hand auto-sorts by rank (A-low). AI: Easy (random), Medium (asks for rank it has most of + short memory), Hard (full-game history tracking). Works in single-player and multiplayer lobby.
 
@@ -267,5 +297,7 @@ Only when adding a NEW native package. JS-only changes don't need a rebuild.
 ## 🐛 Known Issues / Things to Watch
 
 - `react-native-draggable-flatlist` is installed but not yet used — kept for planned hand-sort polish.
-- `SettingsScreen.js` is a placeholder ("Coming soon!"). The hidden card editor trigger is not present yet.
+- `SettingsScreen.js` is intentionally a placeholder ("More settings coming soon"). Card Themes moved to Profile.
 - Wild Round requires 3 players minimum (enforced in Lobby with disabled Start button + explanation).
+- Profile photo avatars (avatar_01–avatar_20) are placeholder emoji circles. Real artwork to be swapped in later.
+- Stats section in ProfileScreen is a "Coming soon" placeholder until Update Phase 13.

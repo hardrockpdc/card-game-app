@@ -51,7 +51,7 @@ This is a **multi-phase update**. **Do not move on to the next phase until I con
 
 ## Phase Breakdown
 
-### Phase 1 — Audit + HomeScreen Restructure
+### Phase 1 ✅ COMPLETE — Audit + HomeScreen Restructure
 
 **Audit first, then code.** Before making any changes:
 
@@ -74,7 +74,7 @@ b. Tell me your audit findings: what's already in place that supports these goal
 
 ---
 
-### Phase 2 — Multiplayer Menu Screen
+### Phase 2 ✅ COMPLETE — Multiplayer Menu Screen
 
 Create a new `MultiplayerMenuScreen.js` with **four buttons**:
 
@@ -89,7 +89,7 @@ Register the new screen in `App.js` as `MultiplayerMenu`. Wire the HomeScreen's 
 
 ---
 
-### Phase 3 — Profile System Foundation
+### Phase 3 ✅ COMPLETE — Profile System Foundation
 
 This phase requires installing a new native package, which means a new EAS build will be needed. **Tell me clearly when you're about to do this and stop so I can run the build.**
 
@@ -126,7 +126,7 @@ This phase requires installing a new native package, which means a new EAS build
 
 ---
 
-### Phase 4 — Move Card Theme to Profile, Keep Settings as Placeholder
+### Phase 4 ✅ COMPLETE — Move Card Theme to Profile, Keep Settings as Placeholder
 
 - The existing `CardThemes` route stays as-is (don't rebuild it).
 - In `ProfileScreen`, the "Card Theme" row navigates to `CardThemes` (already done in Phase 3).
@@ -138,7 +138,7 @@ This phase requires installing a new native package, which means a new EAS build
 
 ---
 
-### Phase 5 — Remove Wild Round from Single Player
+### Phase 5 ✅ COMPLETE — Remove Wild Round from Single Player
 
 - In `screens/SinglePlayerSetupScreen.js`, remove the `wildRound` entry from both `CAROUSEL_GAMES` and `GAMES` arrays.
 - **Do NOT touch** `WildRoundGameScreen.js`, `game/wildround.js`, `game/wildroundCards.json`, or the Wild Round entry in `LobbyScreen.js`. Multiplayer Wild Round must keep working exactly as it does today.
@@ -147,7 +147,7 @@ This phase requires installing a new native package, which means a new EAS build
 
 ---
 
-### Phase 6 — Card Component + Screen Scaling Foundation
+### Phase 6 ✅ COMPLETE — Card Component + Screen Scaling Foundation
 
 This phase tackles the screen scaling problem. **Audit first**, then plan with me before coding.
 
@@ -169,7 +169,7 @@ Once we agree, do the foundation:
 
 ---
 
-### Phase 7 — Apply Scaling to Remaining Screens
+### Phase 7 ✅ COMPLETE — Apply Scaling to Remaining Screens
 
 Apply the same responsive sizing pattern to:
 - `MultiplayerGameScreen.js` (Blackjack multiplayer)
@@ -186,7 +186,7 @@ Apply the same responsive sizing pattern to:
 
 ---
 
-### Phase 8 — Blackjack Split
+### Phase 8 ✅ COMPLETE — Blackjack Split
 
 Add the ability to **split** when the player is dealt two cards of the same rank.
 
