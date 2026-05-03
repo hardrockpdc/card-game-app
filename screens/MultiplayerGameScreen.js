@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { createDeck, shuffleDeck, calculateHandValue } from '../game/deck';
 import Card from '../components/Card';
+import { scale, scaleFont } from '../game/responsive';
 import {
   setServerListeners,
   broadcastToClients,
@@ -327,30 +328,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  loadingText: { color: '#fff', fontSize: 18 },
+  loadingText: { color: '#fff', fontSize: scaleFont(18) },
 
   container: {
     flexGrow: 1,
     backgroundColor: '#0d5c2e',
-    padding: 14,
-    paddingBottom: 40,
+    padding: scale(14),
+    paddingBottom: scale(40),
   },
 
   banner: {
     backgroundColor: '#e94560',
-    borderRadius: 10,
-    paddingVertical: 10,
+    borderRadius: scale(10),
+    paddingVertical: scale(10),
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: scale(12),
   },
   bannerResults: { backgroundColor: '#1a1a2e' },
-  bannerText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  bannerText: { color: '#fff', fontSize: scaleFont(16), fontWeight: 'bold' },
 
   section: {
     backgroundColor: 'rgba(0,0,0,0.28)',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
+    borderRadius: scale(12),
+    padding: scale(14),
+    marginBottom: scale(12),
     borderWidth: 1.5,
     borderColor: 'transparent',
   },
@@ -361,32 +362,32 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
-    gap: 8,
+    marginBottom: scale(8),
+    gap: scale(8),
   },
-  sectionName: { color: '#fff', fontSize: 16, fontWeight: 'bold', flex: 1 },
-  sectionValue: { color: '#ccc', fontSize: 14 },
+  sectionName: { color: '#fff', fontSize: scaleFont(16), fontWeight: 'bold', flex: 1 },
+  sectionValue: { color: '#ccc', fontSize: scaleFont(14) },
 
-  labelBust:   { color: '#e94560', fontWeight: 'bold', fontSize: 13 },
-  labelStand:  { color: '#999',    fontWeight: 'bold', fontSize: 13 },
-  labelResult: { fontWeight: 'bold', fontSize: 15 },
+  labelBust:   { color: '#e94560', fontWeight: 'bold', fontSize: scaleFont(13) },
+  labelStand:  { color: '#999',    fontWeight: 'bold', fontSize: scaleFont(13) },
+  labelResult: { fontWeight: 'bold', fontSize: scaleFont(15) },
 
   handRow: { flexDirection: 'row', flexWrap: 'wrap' },
 
-  actionRow: { flexDirection: 'row', marginTop: 12, gap: 10 },
-  actionBtn: { flex: 1, paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
+  actionRow: { flexDirection: 'row', marginTop: scale(12), gap: scale(10) },
+  actionBtn: { flex: 1, paddingVertical: scale(14), borderRadius: scale(8), alignItems: 'center' },
   hitBtn:   { backgroundColor: '#e94560' },
   standBtn: { backgroundColor: '#2980b9' },
-  actionBtnText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  actionBtnText: { color: '#fff', fontSize: scaleFont(16), fontWeight: 'bold' },
 
   playAgainBtn: {
     backgroundColor: '#e94560',
-    borderRadius: 10,
-    paddingVertical: 16,
+    borderRadius: scale(10),
+    paddingVertical: scale(16),
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: scale(4),
   },
-  playAgainText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+  playAgainText: { color: '#fff', fontSize: scaleFont(18), fontWeight: 'bold' },
 
-  waitText: { color: '#aaa', textAlign: 'center', fontSize: 14, marginTop: 8 },
+  waitText: { color: '#aaa', textAlign: 'center', fontSize: scaleFont(14), marginTop: scale(8) },
 });

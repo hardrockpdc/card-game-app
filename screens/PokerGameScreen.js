@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { createDeck, shuffleDeck } from '../game/deck';
 import Card from '../components/Card';
+import { scale, scaleFont } from '../game/responsive';
 import {
   setServerListeners, broadcastToClients, sendToClient,
   setClientListeners, sendToHost,
@@ -592,53 +593,53 @@ export default function PokerGameScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   loading: { flex: 1, backgroundColor: '#0a1628', alignItems: 'center', justifyContent: 'center' },
-  loadingText: { color: '#fff', fontSize: 18 },
-  container: { flexGrow: 1, backgroundColor: '#0a1628', padding: 14, paddingBottom: 40 },
+  loadingText: { color: '#fff', fontSize: scaleFont(18) },
+  container: { flexGrow: 1, backgroundColor: '#0a1628', padding: scale(14), paddingBottom: scale(40) },
 
-  banner: { backgroundColor: '#e94560', borderRadius: 10, paddingVertical: 10, alignItems: 'center', marginBottom: 8 },
+  banner: { backgroundColor: '#e94560', borderRadius: scale(10), paddingVertical: scale(10), alignItems: 'center', marginBottom: scale(8) },
   bannerShowdown: { backgroundColor: '#7b2d8b' },
-  bannerText: { color: '#fff', fontSize: 15, fontWeight: 'bold' },
+  bannerText: { color: '#fff', fontSize: scaleFont(15), fontWeight: 'bold' },
 
-  actionBox: { backgroundColor: '#16213e', borderRadius: 8, padding: 10, marginBottom: 8, borderLeftWidth: 3, borderLeftColor: '#e94560' },
-  actionText: { color: '#ccc', fontSize: 13 },
+  actionBox: { backgroundColor: '#16213e', borderRadius: scale(8), padding: scale(10), marginBottom: scale(8), borderLeftWidth: 3, borderLeftColor: '#e94560' },
+  actionText: { color: '#ccc', fontSize: scaleFont(13) },
 
-  communitySection: { backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 12, marginBottom: 10, alignItems: 'center' },
-  potText: { color: '#ffd700', fontSize: 18, fontWeight: 'bold', marginBottom: 10 },
-  communityRow: { flexDirection: 'row', gap: 6 },
-  cardPlaceholder: { width: 56, height: 80, backgroundColor: '#16213e', borderRadius: 6, borderWidth: 1, borderColor: '#334', borderStyle: 'dashed' },
+  communitySection: { backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: scale(12), padding: scale(12), marginBottom: scale(10), alignItems: 'center' },
+  potText: { color: '#ffd700', fontSize: scaleFont(18), fontWeight: 'bold', marginBottom: scale(10) },
+  communityRow: { flexDirection: 'row', gap: scale(6) },
+  cardPlaceholder: { width: scale(56), height: scale(80), backgroundColor: '#16213e', borderRadius: scale(6), borderWidth: 1, borderColor: '#334', borderStyle: 'dashed' },
 
   playerCard: {
-    backgroundColor: '#16213e', borderRadius: 10, padding: 12,
-    marginBottom: 8, borderWidth: 1.5, borderColor: 'transparent',
+    backgroundColor: '#16213e', borderRadius: scale(10), padding: scale(12),
+    marginBottom: scale(8), borderWidth: 1.5, borderColor: 'transparent',
   },
   playerCardActive: { borderColor: '#ffd700', backgroundColor: 'rgba(255,215,0,0.06)' },
   playerCardFolded: { opacity: 0.45 },
   playerCardWinner: { borderColor: '#4caf50', backgroundColor: 'rgba(76,175,80,0.08)' },
   playerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  playerName: { color: '#fff', fontSize: 15, fontWeight: 'bold' },
-  playerChips: { color: '#ffd700', fontSize: 14, fontWeight: 'bold' },
-  playerBet: { color: '#b0b0c0', fontSize: 12, marginTop: 4 },
-  foldedLabel: { color: '#e94560', fontSize: 12, fontWeight: 'bold', marginTop: 4 },
-  allInLabel: { color: '#ff9800', fontSize: 12, fontWeight: 'bold', marginTop: 4 },
-  revealRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 8 },
-  handDesc: { color: '#ffd700', fontSize: 13, fontWeight: 'bold', marginLeft: 8 },
+  playerName: { color: '#fff', fontSize: scaleFont(15), fontWeight: 'bold' },
+  playerChips: { color: '#ffd700', fontSize: scaleFont(14), fontWeight: 'bold' },
+  playerBet: { color: '#b0b0c0', fontSize: scaleFont(12), marginTop: scale(4) },
+  foldedLabel: { color: '#e94560', fontSize: scaleFont(12), fontWeight: 'bold', marginTop: scale(4) },
+  allInLabel: { color: '#ff9800', fontSize: scaleFont(12), fontWeight: 'bold', marginTop: scale(4) },
+  revealRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: scale(6), marginTop: scale(8) },
+  handDesc: { color: '#ffd700', fontSize: scaleFont(13), fontWeight: 'bold', marginLeft: scale(8) },
 
-  myHand: { backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 12, marginBottom: 10 },
-  myHandLabel: { color: '#b0b0c0', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 },
-  myHandRow: { flexDirection: 'row', gap: 8 },
+  myHand: { backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: scale(12), padding: scale(12), marginBottom: scale(10) },
+  myHandLabel: { color: '#b0b0c0', fontSize: scaleFont(12), textTransform: 'uppercase', letterSpacing: scale(1), marginBottom: scale(8) },
+  myHandRow: { flexDirection: 'row', gap: scale(8) },
 
-  actionRow: { flexDirection: 'row', gap: 10, marginBottom: 8 },
-  actionBtn: { flex: 1, paddingVertical: 14, borderRadius: 10, alignItems: 'center' },
+  actionRow: { flexDirection: 'row', gap: scale(10), marginBottom: scale(8) },
+  actionBtn: { flex: 1, paddingVertical: scale(14), borderRadius: scale(10), alignItems: 'center' },
   foldBtn: { backgroundColor: '#555' },
   callBtn: { backgroundColor: '#2980b9' },
-  actionBtnText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  actionBtnText: { color: '#fff', fontSize: scaleFont(16), fontWeight: 'bold' },
 
-  raiseRow: { flexDirection: 'row', gap: 8, marginBottom: 10, flexWrap: 'wrap' },
-  raiseBtn: { flex: 1, minWidth: 70, backgroundColor: '#e94560', borderRadius: 8, paddingVertical: 10, alignItems: 'center' },
-  raiseBtnText: { color: '#fff', fontSize: 12 },
-  raiseBtnAmt: { color: '#fff', fontSize: 14, fontWeight: 'bold' },
+  raiseRow: { flexDirection: 'row', gap: scale(8), marginBottom: scale(10), flexWrap: 'wrap' },
+  raiseBtn: { flex: 1, minWidth: scale(70), backgroundColor: '#e94560', borderRadius: scale(8), paddingVertical: scale(10), alignItems: 'center' },
+  raiseBtnText: { color: '#fff', fontSize: scaleFont(12) },
+  raiseBtnAmt: { color: '#fff', fontSize: scaleFont(14), fontWeight: 'bold' },
 
-  nextHandBtn: { backgroundColor: '#4caf50', borderRadius: 10, paddingVertical: 16, alignItems: 'center', marginTop: 4 },
-  nextHandText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-  waitText: { color: '#aaa', textAlign: 'center', fontSize: 14, marginTop: 8 },
+  nextHandBtn: { backgroundColor: '#4caf50', borderRadius: scale(10), paddingVertical: scale(16), alignItems: 'center', marginTop: scale(4) },
+  nextHandText: { color: '#fff', fontSize: scaleFont(18), fontWeight: 'bold' },
+  waitText: { color: '#aaa', textAlign: 'center', fontSize: scaleFont(14), marginTop: scale(8) },
 });

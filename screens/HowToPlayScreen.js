@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { scale, scaleFont } from '../game/responsive';
 
 const GAMES = [
   { id: 'blackjack', label: 'Blackjack' },
@@ -132,26 +133,26 @@ export default function HowToPlayScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, backgroundColor: '#1a1a2e', padding: 16, paddingBottom: 40 },
+  container: { flexGrow: 1, backgroundColor: '#1a1a2e', padding: scale(16), paddingBottom: scale(40) },
 
-  chipScroll: { marginBottom: 16 },
-  chipRow: { flexDirection: 'row', gap: 10, paddingVertical: 4 },
-  chip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, backgroundColor: '#16213e', borderWidth: 1.5, borderColor: '#334' },
+  chipScroll: { marginBottom: scale(16) },
+  chipRow: { flexDirection: 'row', gap: scale(10), paddingVertical: scale(4) },
+  chip: { paddingHorizontal: scale(16), paddingVertical: scale(10), borderRadius: scale(20), backgroundColor: '#16213e', borderWidth: 1.5, borderColor: '#334' },
   chipSelected: { backgroundColor: '#e94560', borderColor: '#e94560' },
-  chipText: { color: '#b0b0c0', fontSize: 14, fontWeight: 'bold' },
+  chipText: { color: '#b0b0c0', fontSize: scaleFont(14), fontWeight: 'bold' },
   chipTextSelected: { color: '#fff' },
 
   goalBox: {
-    backgroundColor: '#16213e', borderRadius: 12, padding: 16, marginBottom: 20,
+    backgroundColor: '#16213e', borderRadius: scale(12), padding: scale(16), marginBottom: scale(20),
     borderLeftWidth: 4, borderLeftColor: '#e94560',
   },
-  goalLabel: { color: '#e94560', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6, fontWeight: 'bold' },
-  goalText: { color: '#fff', fontSize: 16, lineHeight: 24 },
+  goalLabel: { color: '#e94560', fontSize: scaleFont(11), textTransform: 'uppercase', letterSpacing: scale(1), marginBottom: scale(6), fontWeight: 'bold' },
+  goalText: { color: '#fff', fontSize: scaleFont(16), lineHeight: scale(24) },
 
-  sectionHeader: { color: '#b0b0c0', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 14, marginTop: 4 },
+  sectionHeader: { color: '#b0b0c0', fontSize: scaleFont(12), textTransform: 'uppercase', letterSpacing: scale(1), marginBottom: scale(14), marginTop: scale(4) },
 
-  ruleRow: { flexDirection: 'row', marginBottom: 14, alignItems: 'flex-start' },
-  bulletCircle: { width: 26, height: 26, borderRadius: 13, backgroundColor: '#e94560', alignItems: 'center', justifyContent: 'center', marginRight: 12, marginTop: 1, flexShrink: 0 },
-  bulletNum: { color: '#fff', fontSize: 13, fontWeight: 'bold' },
-  ruleText: { flex: 1, color: '#e8e8f0', fontSize: 15, lineHeight: 23 },
+  ruleRow: { flexDirection: 'row', marginBottom: scale(14), alignItems: 'flex-start' },
+  bulletCircle: { width: scale(26), height: scale(26), borderRadius: scale(13), backgroundColor: '#e94560', alignItems: 'center', justifyContent: 'center', marginRight: scale(12), marginTop: scale(1), flexShrink: 0 },
+  bulletNum: { color: '#fff', fontSize: scaleFont(13), fontWeight: 'bold' },
+  ruleText: { flex: 1, color: '#e8e8f0', fontSize: scaleFont(15), lineHeight: scale(23) },
 });

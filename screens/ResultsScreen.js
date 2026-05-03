@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { scale, scaleFont } from '../game/responsive';
 
 export default function ResultsScreen() {
   return (
@@ -18,13 +19,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   text: {
-    fontSize: 28,
+    fontSize: scaleFont(28),
     color: '#ffffff',
     fontWeight: 'bold',
   },
   subtext: {
-    fontSize: 16,
+    fontSize: scaleFont(16),
     color: '#b0b0c0',
-    marginTop: 10,
+    marginTop: scale(10),
   },
 });

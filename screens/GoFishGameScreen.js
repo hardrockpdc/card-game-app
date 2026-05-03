@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { createDeck, shuffleDeck } from '../game/deck';
 import Card from '../components/Card';
+import { scale, scaleFont } from '../game/responsive';
 import {
   setServerListeners, broadcastToClients, sendToClient,
   setClientListeners, sendToHost,
@@ -418,61 +419,61 @@ export default function GoFishGameScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   loading: { flex: 1, backgroundColor: '#1a1a2e', alignItems: 'center', justifyContent: 'center' },
-  loadingText: { color: '#fff', fontSize: 18 },
-  container: { flexGrow: 1, backgroundColor: '#1a1a2e', padding: 14, paddingBottom: 40 },
+  loadingText: { color: '#fff', fontSize: scaleFont(18) },
+  container: { flexGrow: 1, backgroundColor: '#1a1a2e', padding: scale(14), paddingBottom: scale(40) },
 
-  banner: { backgroundColor: '#e94560', borderRadius: 10, paddingVertical: 10, alignItems: 'center', marginBottom: 10 },
+  banner: { backgroundColor: '#e94560', borderRadius: scale(10), paddingVertical: scale(10), alignItems: 'center', marginBottom: scale(10) },
   bannerResults: { backgroundColor: '#0d3d2e' },
-  bannerText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  bannerText: { color: '#fff', fontSize: scaleFont(16), fontWeight: 'bold' },
 
   actionBox: {
-    backgroundColor: '#16213e', borderRadius: 10, padding: 12,
-    marginBottom: 10, borderLeftWidth: 3, borderLeftColor: '#e94560',
+    backgroundColor: '#16213e', borderRadius: scale(10), padding: scale(12),
+    marginBottom: scale(10), borderLeftWidth: 3, borderLeftColor: '#e94560',
   },
-  actionText: { color: '#fff', fontSize: 14 },
+  actionText: { color: '#fff', fontSize: scaleFont(14) },
 
-  infoRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  infoRow: { flexDirection: 'row', flexWrap: 'wrap', gap: scale(8), marginBottom: scale(12) },
   infoCard: {
-    flex: 1, minWidth: 80, backgroundColor: '#16213e',
-    borderRadius: 10, padding: 10, alignItems: 'center',
+    flex: 1, minWidth: scale(80), backgroundColor: '#16213e',
+    borderRadius: scale(10), padding: scale(10), alignItems: 'center',
   },
-  infoLabel: { color: '#b0b0c0', fontSize: 11, textAlign: 'center', marginBottom: 4 },
-  infoValue: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
-  infoSub: { color: '#666680', fontSize: 11, marginTop: 2 },
+  infoLabel: { color: '#b0b0c0', fontSize: scaleFont(11), textAlign: 'center', marginBottom: scale(4) },
+  infoValue: { color: '#fff', fontSize: scaleFont(20), fontWeight: 'bold' },
+  infoSub: { color: '#666680', fontSize: scaleFont(11), marginTop: scale(2) },
 
-  sectionLabel: { color: '#b0b0c0', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 },
+  sectionLabel: { color: '#b0b0c0', fontSize: scaleFont(12), textTransform: 'uppercase', letterSpacing: scale(1), marginBottom: scale(8) },
 
-  targetSection: { marginBottom: 12 },
-  targetRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  targetSection: { marginBottom: scale(12) },
+  targetRow: { flexDirection: 'row', flexWrap: 'wrap', gap: scale(10) },
   targetBtn: {
-    flex: 1, minWidth: 100, backgroundColor: '#16213e',
-    borderRadius: 10, padding: 14, alignItems: 'center',
+    flex: 1, minWidth: scale(100), backgroundColor: '#16213e',
+    borderRadius: scale(10), padding: scale(14), alignItems: 'center',
     borderWidth: 1.5, borderColor: '#334',
   },
   targetBtnSelected: { backgroundColor: '#e94560', borderColor: '#e94560' },
-  targetBtnText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  targetBtnText: { color: '#fff', fontSize: scaleFont(16), fontWeight: 'bold' },
   targetBtnTextSelected: { color: '#fff' },
-  targetCardCount: { color: '#aaa', fontSize: 12, marginTop: 4 },
+  targetCardCount: { color: '#aaa', fontSize: scaleFont(12), marginTop: scale(4) },
 
   mySection: {
-    backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 12,
-    padding: 12, marginBottom: 12,
+    backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: scale(12),
+    padding: scale(12), marginBottom: scale(12),
   },
-  myLabel: { color: '#fff', fontSize: 15, fontWeight: 'bold', marginBottom: 6 },
-  myHint: { color: '#888', fontSize: 12, marginBottom: 10 },
+  myLabel: { color: '#fff', fontSize: scaleFont(15), fontWeight: 'bold', marginBottom: scale(6) },
+  myHint: { color: '#888', fontSize: scaleFont(12), marginBottom: scale(10) },
   handRow: { flexDirection: 'row', flexWrap: 'wrap' },
-  cardWrap: { borderRadius: 6 },
+  cardWrap: { borderRadius: scale(6) },
   cardSelected: { transform: [{ translateY: -10 }], shadowColor: '#ffd700', shadowOpacity: 0.9, shadowRadius: 10, elevation: 10 },
   cardDim: { opacity: 0.55 },
 
   askBtn: {
-    backgroundColor: '#e94560', borderRadius: 10,
-    paddingVertical: 16, alignItems: 'center', marginBottom: 12,
+    backgroundColor: '#e94560', borderRadius: scale(10),
+    paddingVertical: scale(16), alignItems: 'center', marginBottom: scale(12),
   },
   askBtnDimmed: { backgroundColor: '#6b2535' },
-  askBtnText: { color: '#fff', fontSize: 17, fontWeight: 'bold' },
+  askBtnText: { color: '#fff', fontSize: scaleFont(17), fontWeight: 'bold' },
 
-  playAgainBtn: { backgroundColor: '#e94560', borderRadius: 10, paddingVertical: 16, alignItems: 'center', marginTop: 4 },
-  playAgainText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-  waitText: { color: '#aaa', textAlign: 'center', fontSize: 14, marginTop: 8 },
+  playAgainBtn: { backgroundColor: '#e94560', borderRadius: scale(10), paddingVertical: scale(16), alignItems: 'center', marginTop: scale(4) },
+  playAgainText: { color: '#fff', fontSize: scaleFont(18), fontWeight: 'bold' },
+  waitText: { color: '#aaa', textAlign: 'center', fontSize: scaleFont(14), marginTop: scale(8) },
 });
