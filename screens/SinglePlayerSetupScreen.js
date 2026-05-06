@@ -123,7 +123,7 @@ const DEFAULT_RUMMY_VARIANT = "ginRummy";
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function SinglePlayerSetupScreen({ navigation }) {
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const isSmallScreen = width < 380;
   const isTablet = width >= 768;
 
@@ -163,14 +163,21 @@ export default function SinglePlayerSetupScreen({ navigation }) {
 
   // ─── Carousel geometry ──────────────────────────────────────────────────────
   const CARD_WIDTH = width * 0.78;
-  const CARD_HEIGHT = 246;
   const GAP = 12;
   const SIDE_OFFSET = (width - CARD_WIDTH) / 2;
   const SNAP_INTERVAL = CARD_WIDTH + GAP;
+  const cardTopSpace = isSmallScreen ? 92 : isTablet ? 116 : 104;
+  const cardBottomSpace = isSmallScreen ? 148 : isTablet ? 160 : 154;
+  const availableCardHeight = height - cardTopSpace - cardBottomSpace;
+  const CARD_HEIGHT = Math.max(
+    isSmallScreen ? 280 : 340,
+    Math.round(availableCardHeight * 0.75),
+  );
 
   // ─── Derived game state ─────────────────────────────────────────────────────
   const carouselGame = CAROUSEL_GAMES[currentIndex];
   const game = GAMES.find((g) => g.id === carouselGame.id);
+  const playButtonLabel = `Play ${carouselGame.label}`;
 
   function openPokerVariantPicker() {
     navigation.navigate("PokerVariantPicker", {
@@ -378,11 +385,7 @@ export default function SinglePlayerSetupScreen({ navigation }) {
             <Text
               style={[styles.playBtnText, { fontSize: playButtonTextSize }]}
             >
-              {carouselGame.id === "poker" ||
-              carouselGame.id === "solitaire" ||
-              carouselGame.id === "rummy"
-                ? `Choose ${carouselGame.label} Variant`
-                : `Play ${carouselGame.label}`}
+              {playButtonLabel}
             </Text>
           </TouchableOpacity>
         </View>

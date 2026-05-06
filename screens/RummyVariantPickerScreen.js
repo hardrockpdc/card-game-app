@@ -5,12 +5,21 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import RummyVariantWheel from "../components/RummyVariantWheel";
 import { RUMMY_VARIANT_OPTIONS, getRummyVariantLabel } from "../game/rummy";
 
-function getInitialVariant(currentVariant) {
-  const found = RUMMY_VARIANT_OPTIONS.find(
-    (option) => option.value === currentVariant,
-  );
+const CONQUIAN_VARIANT_OPTION = {
+  value: "conquian",
+  label: "Conquián",
+  description: "Classic Mexican rummy — meld 9 cards to win.",
+};
 
-  return found ? found.value : RUMMY_VARIANT_OPTIONS[0].value;
+const SINGLE_PLAYER_RUMMY_OPTIONS = [
+  ...RUMMY_VARIANT_OPTIONS,
+  CONQUIAN_VARIANT_OPTION,
+];
+
+function getInitialVariant(currentVariant, options) {
+  const found = options.find((option) => option.value === currentVariant);
+
+  return found ? found.value : options[0].value;
 }
 
 function getModeCopy(mode) {
@@ -29,26 +38,52 @@ function getModeCopy(mode) {
   };
 }
 
+function buildPlayers(playerName, aiCount) {
+  return [
+    { id: "host", name: playerName },
+    ...Array.from({ length: aiCount }, (_, index) => ({
+      id: `ai_${index + 1}`,
+      name: aiCount > 1 ? `Computer ${index + 1}` : "Computer",
+      isAI: true,
+    })),
+  ];
+}
+
+function getSelectedLabel(selectedVariant, options) {
+  const found = options.find((option) => option.value === selectedVariant);
+
+  return found?.label || getRummyVariantLabel(selectedVariant);
+}
+
 function RummyVariantPickerScreen({ navigation, route }) {
   const params = route?.params ?? {};
   const { mode = "singleplayer", currentVariant, launchParams } = params;
+  const pickerOptions =
+    mode === "lobby" ? RUMMY_VARIANT_OPTIONS : SINGLE_PLAYER_RUMMY_OPTIONS;
 
   const [selectedVariant, setSelectedVariant] = useState(() =>
-    getInitialVariant(currentVariant),
+    getInitialVariant(currentVariant, pickerOptions),
   );
   const [aiCount, setAiCount] = useState(1);
   const [difficulty, setDifficulty] = useState("medium");
 
   useEffect(() => {
-    setSelectedVariant(getInitialVariant(currentVariant));
-  }, [currentVariant]);
+    setSelectedVariant(getInitialVariant(currentVariant, pickerOptions));
+  }, [currentVariant, pickerOptions]);
 
   const modeCopy = useMemo(() => getModeCopy(mode), [mode]);
 
   const selectedLabel = useMemo(
-    () => getRummyVariantLabel(selectedVariant),
-    [selectedVariant],
+    () => getSelectedLabel(selectedVariant, pickerOptions),
+    [selectedVariant, pickerOptions],
   );
+
+  const continueLabel =
+    mode === "lobby"
+      ? modeCopy.buttonLabel
+      : selectedVariant === "conquian"
+        ? "Start Conquián Game"
+        : modeCopy.buttonLabel;
 
   const handleContinue = () => {
     if (mode === "lobby") {
@@ -64,21 +99,26 @@ function RummyVariantPickerScreen({ navigation, route }) {
 
     const launchPayload =
       launchParams && typeof launchParams === "object" ? launchParams : {};
+    const playerName = launchPayload.myName ?? "Player";
+    const players = buildPlayers(playerName, aiCount);
 
-    const players = [
-      { id: "host", name: launchPayload.myName ?? "Player" },
-      ...Array.from({ length: aiCount }, (_, index) => ({
-        id: `ai_${index + 1}`,
-        name: aiCount > 1 ? `Computer ${index + 1}` : "Computer",
-        isAI: true,
-      })),
-    ];
+    if (selectedVariant === "conquian") {
+      navigation.navigate("ConquianGame", {
+        ...launchPayload,
+        role: "singleplayer",
+        myName: playerName,
+        players,
+        difficulty,
+      });
+      return;
+    }
 
     navigation.navigate("RummyGame", {
       ...launchPayload,
       players,
       difficulty,
       variantId: selectedVariant,
+      variant: selectedVariant,
     });
   };
 
@@ -97,6 +137,7 @@ function RummyVariantPickerScreen({ navigation, route }) {
           <RummyVariantWheel
             value={selectedVariant}
             onChange={setSelectedVariant}
+            options={pickerOptions}
           />
         </View>
 
@@ -165,14 +206,14 @@ function RummyVariantPickerScreen({ navigation, route }) {
 
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={modeCopy.buttonLabel}
+          accessibilityLabel={continueLabel}
           onPress={handleContinue}
           style={({ pressed }) => [
             styles.button,
             pressed && styles.buttonPressed,
           ]}
         >
-          <Text style={styles.buttonText}>{modeCopy.buttonLabel}</Text>
+          <Text style={styles.buttonText}>{continueLabel}</Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>
