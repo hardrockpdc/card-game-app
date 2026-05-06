@@ -970,9 +970,8 @@ export default function LastCardGameScreen({ navigation, route }) {
           {"  "}({myCards.length})
         </Text>
         <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.handScroll}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.handGrid}
         >
           {myCards.map((card) => {
             const playable = topCard
@@ -1216,9 +1215,13 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: scale(6),
   },
-  handScroll: {
+  handGrid: {
     paddingHorizontal: scale(10),
-    alignItems: "center",
+    paddingBottom: scale(10),
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: scale(6),
   },
   dimmed: {
     opacity: 0.38,

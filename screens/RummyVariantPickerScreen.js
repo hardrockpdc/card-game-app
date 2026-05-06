@@ -36,6 +36,8 @@ function RummyVariantPickerScreen({ navigation, route }) {
   const [selectedVariant, setSelectedVariant] = useState(() =>
     getInitialVariant(currentVariant),
   );
+  const [aiCount, setAiCount] = useState(1);
+  const [difficulty, setDifficulty] = useState("medium");
 
   useEffect(() => {
     setSelectedVariant(getInitialVariant(currentVariant));
@@ -63,8 +65,19 @@ function RummyVariantPickerScreen({ navigation, route }) {
     const launchPayload =
       launchParams && typeof launchParams === "object" ? launchParams : {};
 
+    const players = [
+      { id: "host", name: launchPayload.myName ?? "Player" },
+      ...Array.from({ length: aiCount }, (_, index) => ({
+        id: `ai_${index + 1}`,
+        name: aiCount > 1 ? `Computer ${index + 1}` : "Computer",
+        isAI: true,
+      })),
+    ];
+
     navigation.navigate("RummyGame", {
       ...launchPayload,
+      players,
+      difficulty,
       variantId: selectedVariant,
     });
   };
@@ -85,6 +98,64 @@ function RummyVariantPickerScreen({ navigation, route }) {
             value={selectedVariant}
             onChange={setSelectedVariant}
           />
+        </View>
+
+        <View style={styles.settingsCard}>
+          <Text style={styles.settingsLabel}>Computer Opponents</Text>
+          <View style={styles.countRow}>
+            {[1, 2, 3].map((count) => (
+              <Pressable
+                key={count}
+                onPress={() => setAiCount(count)}
+                style={({ pressed }) => [
+                  styles.countButton,
+                  aiCount === count && styles.countButtonSelected,
+                  pressed && styles.buttonPressed,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.countButtonText,
+                    aiCount === count && styles.countButtonTextSelected,
+                  ]}
+                >
+                  {count}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={styles.settingsLabel}>Difficulty</Text>
+          <View style={styles.difficultyRow}>
+            {[
+              { id: "easy", label: "Easy" },
+              { id: "medium", label: "Medium" },
+              { id: "hard", label: "Hard" },
+            ].map((option) => {
+              const selected = option.id === difficulty;
+
+              return (
+                <Pressable
+                  key={option.id}
+                  onPress={() => setDifficulty(option.id)}
+                  style={({ pressed }) => [
+                    styles.difficultyButton,
+                    selected && styles.difficultyButtonSelected,
+                    pressed && styles.buttonPressed,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.difficultyButtonText,
+                      selected && styles.difficultyButtonTextSelected,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
 
         <View style={styles.selectionSummary}>
@@ -137,6 +208,75 @@ const styles = StyleSheet.create({
   },
   wheelCard: {
     marginBottom: 18,
+  },
+  settingsCard: {
+    marginBottom: 18,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#24344D",
+    backgroundColor: "#0B1320",
+    gap: 12,
+  },
+  settingsLabel: {
+    color: "#A7B3C9",
+    fontSize: 12,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  countRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  countButton: {
+    flex: 1,
+    minHeight: 50,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: "#2c3750",
+    backgroundColor: "#182131",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  countButtonSelected: {
+    borderColor: "#77aef7",
+    backgroundColor: "#21314a",
+  },
+  countButtonText: {
+    color: "#d3dcec",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  countButtonTextSelected: {
+    color: "#eef4ff",
+  },
+  difficultyRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  difficultyButton: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: "#2c3750",
+    backgroundColor: "#182131",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  difficultyButtonSelected: {
+    borderColor: "#77aef7",
+    backgroundColor: "#21314a",
+  },
+  difficultyButtonText: {
+    color: "#d3dcec",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  difficultyButtonTextSelected: {
+    color: "#eef4ff",
   },
   selectionSummary: {
     marginBottom: 20,

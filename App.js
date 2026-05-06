@@ -23,6 +23,7 @@ import RummyGameScreen from "./screens/RummyGameScreen";
 import HowToPlayScreen from "./screens/HowToPlayScreen";
 import WildRoundGameScreen from "./screens/WildRoundGameScreen";
 import LastCardGameScreen from "./screens/LastCardGameScreen";
+import GameSetupScreen from "./screens/GameSetupScreen";
 import CardThemeScreen from "./screens/CardThemeScreen";
 import MultiplayerMenuScreen from "./screens/MultiplayerMenuScreen";
 import ProfileScreen from "./screens/ProfileScreen";
@@ -150,6 +151,11 @@ export default function App() {
             name="LastCardGame"
             component={LastCardGameScreen}
             options={{ title: "Last Card" }}
+          />
+          <Stack.Screen
+            name="GameSetup"
+            component={GameSetupScreen}
+            options={{ title: "Game Setup" }}
           />
           <Stack.Screen
             name="CardThemes"

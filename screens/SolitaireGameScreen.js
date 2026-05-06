@@ -492,7 +492,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
         </View>
       </View>
 
-      <View style={styles.tableauRow}>
+      <View style={[styles.tableauRow, styles.freeCellTableauRow]}>
         {state.tableau.map((pile, pileIndex) => (
           <View key={`freecell-${pileIndex}`} style={styles.tableauColumn}>
             {pile.length === 0 ? (
@@ -980,6 +980,9 @@ const styles = StyleSheet.create({
   freeCellGroupSpaced: {
     gap: 12,
   },
+  freeCellTableauRow: {
+    gap: 12,
+  },
   tableauRow: {
     flexDirection: "row",
     gap: 8,
@@ -1021,8 +1024,8 @@ const styles = StyleSheet.create({
   pyramidRow: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 8,
-    marginTop: 6,
+    gap: 6,
+    marginTop: 4,
   },
   pyramidSpacer: {
     width: 70,
@@ -1034,8 +1037,8 @@ const styles = StyleSheet.create({
   triPeaksRow: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 6,
-    marginTop: 6,
+    gap: 4,
+    marginTop: 4,
   },
   triPeaksSpacer: {
     width: 70,

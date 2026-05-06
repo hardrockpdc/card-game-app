@@ -170,6 +170,7 @@ export default function RummyGameScreen({ navigation, route }) {
   const [myHand, setMyHand] = useState([]);
   const [selectedHandIndexes, setSelectedHandIndexes] = useState([]);
   const [selectedMeldIndex, setSelectedMeldIndex] = useState(null);
+  const [showHeaderDetails, setShowHeaderDetails] = useState(false);
 
   const fullRef = useRef(null);
   const aiTimerRef = useRef(null);
@@ -366,6 +367,86 @@ export default function RummyGameScreen({ navigation, route }) {
       ? navigation.canGoBack()
       : false;
 
+  function renderHeaderCard(isResults = false) {
+    const winnerName =
+      gameState?.winner != null
+        ? getPlayerName(currentPlayers, gameState.winner)
+        : "Nobody";
+    const headerSubtitle = isResults
+      ? gameState.tie
+        ? "The round ended in a tie."
+        : `${winnerName} wins the round.`
+      : statusMessage;
+
+    return (
+      <View
+        style={[
+          styles.headerCard,
+          !showHeaderDetails && styles.headerCardCollapsed,
+        ]}
+      >
+        <Pressable
+          onPress={() => setShowHeaderDetails((value) => !value)}
+          style={({ pressed }) => [
+            styles.headerToggleRow,
+            pressed && styles.headerButtonPressed,
+          ]}
+        >
+          <View style={{ flex: 1 }}>
+            <Text style={styles.kicker}>Rummy</Text>
+            <Text style={styles.title}>{variantLabel}</Text>
+          </View>
+
+          <Text style={styles.headerToggleText}>
+            {showHeaderDetails ? "HIDE" : "SHOW"}
+          </Text>
+        </Pressable>
+
+        {showHeaderDetails ? (
+          <>
+            <Text style={styles.subtitle}>{headerSubtitle}</Text>
+
+            {!isResults ? (
+              <>
+                <View style={styles.metaRow}>
+                  <View style={styles.metaPill}>
+                    <Text style={styles.metaPillLabel}>Round</Text>
+                    <Text style={styles.metaPillValue}>
+                      {gameState.roundNumber || 1}
+                    </Text>
+                  </View>
+                  <View style={styles.metaPill}>
+                    <Text style={styles.metaPillLabel}>Stock</Text>
+                    <Text style={styles.metaPillValue}>
+                      {gameState.stockCount ?? 0}
+                    </Text>
+                  </View>
+                  <View style={styles.metaPill}>
+                    <Text style={styles.metaPillLabel}>Discard</Text>
+                    <Text style={styles.metaPillValue}>
+                      {gameState.discardCount ?? 0}
+                    </Text>
+                  </View>
+                  <View style={styles.metaPill}>
+                    <Text style={styles.metaPillLabel}>Deadwood</Text>
+                    <Text style={styles.metaPillValue}>{myDeadwood}</Text>
+                  </View>
+                </View>
+
+                <Text style={styles.turnText}>
+                  {getActionLabel(gameState, isMyTurn)}
+                  {currentPlayer
+                    ? ` • ${getPlayerName(currentPlayers, currentPlayerIndex)} to act`
+                    : ""}
+                </Text>
+              </>
+            ) : null}
+          </>
+        ) : null}
+      </View>
+    );
+  }
+
   function dispatchAction(moveType, extra = {}) {
     const state = fullRef.current;
     if (!state) {
@@ -534,16 +615,7 @@ export default function RummyGameScreen({ navigation, route }) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          <View style={styles.headerCard}>
-            <Text style={styles.kicker}>Rummy</Text>
-            <Text style={styles.title}>{variantLabel}</Text>
-            <Text style={styles.subtitle}>
-              {gameState.tie
-                ? "The round ended in a tie."
-                : `${winnerName} wins the round.`}
-            </Text>
-            <Text style={styles.statusText}>{statusMessage}</Text>
-          </View>
+          {renderHeaderCard(true)}
 
           <View style={styles.resultsCard}>
             <Text style={styles.sectionTitle}>Final Scores</Text>
@@ -595,43 +667,7 @@ export default function RummyGameScreen({ navigation, route }) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.headerCard}>
-          <Text style={styles.kicker}>Rummy</Text>
-          <Text style={styles.title}>{variantLabel}</Text>
-          <Text style={styles.subtitle}>{statusMessage}</Text>
-
-          <View style={styles.metaRow}>
-            <View style={styles.metaPill}>
-              <Text style={styles.metaPillLabel}>Round</Text>
-              <Text style={styles.metaPillValue}>
-                {gameState.roundNumber || 1}
-              </Text>
-            </View>
-            <View style={styles.metaPill}>
-              <Text style={styles.metaPillLabel}>Stock</Text>
-              <Text style={styles.metaPillValue}>
-                {gameState.stockCount ?? 0}
-              </Text>
-            </View>
-            <View style={styles.metaPill}>
-              <Text style={styles.metaPillLabel}>Discard</Text>
-              <Text style={styles.metaPillValue}>
-                {gameState.discardCount ?? 0}
-              </Text>
-            </View>
-            <View style={styles.metaPill}>
-              <Text style={styles.metaPillLabel}>Deadwood</Text>
-              <Text style={styles.metaPillValue}>{myDeadwood}</Text>
-            </View>
-          </View>
-
-          <Text style={styles.turnText}>
-            {getActionLabel(gameState, isMyTurn)}
-            {currentPlayer
-              ? ` • ${getPlayerName(currentPlayers, currentPlayerIndex)} to act`
-              : ""}
-          </Text>
-        </View>
+        {renderHeaderCard(false)}
 
         <View style={styles.tableCard}>
           <Text style={styles.sectionTitle}>Table</Text>
@@ -877,6 +913,32 @@ const styles = StyleSheet.create({
     backgroundColor: "#0B1320",
     padding: 16,
     gap: 10,
+  },
+  headerCardCollapsed: {
+    paddingVertical: 12,
+    gap: 8,
+  },
+  headerToggleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  headerButtonPressed: {
+    opacity: 0.9,
+  },
+  headerToggleText: {
+    color: "#f4f7fb",
+    fontSize: 13,
+    fontWeight: "900",
+    textTransform: "uppercase",
+    letterSpacing: 0.9,
+    borderWidth: 1,
+    borderColor: "#2f3c55",
+    backgroundColor: "#1d2637",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
   },
   kicker: {
     color: "#7fb3ff",

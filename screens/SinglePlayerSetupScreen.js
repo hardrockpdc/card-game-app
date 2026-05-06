@@ -40,7 +40,7 @@ const CAROUSEL_GAMES = [
     id: "rummy",
     label: "Rummy",
     players: "2–4 players",
-    tag: "4 classic modes",
+    tag: "5 classic modes",
     color: "#14131f",
     accent: "#e94560",
   },
@@ -61,14 +61,6 @@ const CAROUSEL_GAMES = [
     accent: "#6a1b9a",
   },
   {
-    id: "conquian",
-    label: "Conquián",
-    players: "1–4 players",
-    tag: "Conquián",
-    color: "#1a0d04",
-    accent: "#bf360c",
-  },
-  {
     id: "lastCard",
     label: "Last Card",
     players: "2–8 players",
@@ -86,49 +78,36 @@ const GAMES = [
     screen: "Game",
     aiRange: [0, 0],
     hasDifficulty: false,
-    hasTone: false,
   },
   {
     id: "solitaire",
     screen: "SolitaireGame",
     aiRange: [0, 0],
     hasDifficulty: false,
-    hasTone: false,
   },
   {
     id: "rummy",
     screen: "RummyGame",
     aiRange: [1, 3],
     hasDifficulty: true,
-    hasTone: false,
   },
   {
     id: "goFish",
     screen: "GoFishGame",
     aiRange: [1, 3],
     hasDifficulty: true,
-    hasTone: false,
   },
   {
     id: "poker",
     screen: "PokerGame",
     aiRange: [1, 3],
     hasDifficulty: true,
-    hasTone: false,
-  },
-  {
-    id: "conquian",
-    screen: "ConquianGame",
-    aiRange: [1, 3],
-    hasDifficulty: true,
-    hasTone: false,
   },
   {
     id: "lastCard",
     screen: "LastCardGame",
     aiRange: [1, 7],
     hasDifficulty: true,
-    hasTone: false,
   },
 ];
 
@@ -153,9 +132,6 @@ export default function SinglePlayerSetupScreen({ navigation }) {
 
   // Start on Blackjack (index 0) — matches original default gameId
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [numAI, setNumAI] = useState(0);
-  const [difficulty, setDifficulty] = useState("medium");
-  const [tone, setTone] = useState("family");
 
   const flatListRef = useRef(null);
 
@@ -195,30 +171,11 @@ export default function SinglePlayerSetupScreen({ navigation }) {
   // ─── Derived game state ─────────────────────────────────────────────────────
   const carouselGame = CAROUSEL_GAMES[currentIndex];
   const game = GAMES.find((g) => g.id === carouselGame.id);
-  const [minAI, maxAI] = game.aiRange;
-  const clampedAI = Math.min(Math.max(numAI, minAI), maxAI);
-
-  function buildSinglePlayerLaunchParams() {
-    const players = [
-      { id: "host", name: playerName },
-      ...Array.from({ length: clampedAI }, (_, i) => ({
-        id: `ai_${i + 1}`,
-        name: clampedAI > 1 ? `Computer ${i + 1}` : "Computer",
-        isAI: true,
-      })),
-    ];
-
-    const params = { role: "singleplayer", myName: playerName, players };
-    if (game.hasDifficulty) params.difficulty = difficulty;
-    if (game.hasTone) params.tone = tone;
-    return params;
-  }
 
   function openPokerVariantPicker() {
     navigation.navigate("PokerVariantPicker", {
       mode: "singleplayer",
       currentVariant: DEFAULT_POKER_VARIANT,
-      launchParams: buildSinglePlayerLaunchParams(),
     });
   }
 
@@ -230,17 +187,24 @@ export default function SinglePlayerSetupScreen({ navigation }) {
     navigation.navigate("RummyVariantPicker", {
       mode: "singleplayer",
       currentVariant: DEFAULT_RUMMY_VARIANT,
-      launchParams: buildSinglePlayerLaunchParams(),
+    });
+  }
+
+  function openGameSetup() {
+    navigation.navigate("GameSetup", {
+      mode: "singleplayer",
+      gameId: game.id,
+      gameName: carouselGame.label,
+      screenName: game.screen,
+      aiRange: game.aiRange,
+      hasDifficulty: game.hasDifficulty,
     });
   }
 
   // ─── Carousel callbacks ─────────────────────────────────────────────────────
   const onViewableItemsChanged = useCallback(({ viewableItems }) => {
     if (viewableItems.length > 0 && viewableItems[0].index != null) {
-      const idx = viewableItems[0].index;
-      setCurrentIndex(idx);
-      const g = GAMES.find((g) => g.id === CAROUSEL_GAMES[idx].id);
-      if (g) setNumAI((n) => Math.min(Math.max(n, g.aiRange[0]), g.aiRange[1]));
+      setCurrentIndex(viewableItems[0].index);
     }
   }, []);
 
@@ -268,7 +232,12 @@ export default function SinglePlayerSetupScreen({ navigation }) {
       return;
     }
 
-    navigation.navigate(game.screen, buildSinglePlayerLaunchParams());
+    if (game.id === "goFish" || game.id === "lastCard") {
+      openGameSetup();
+      return;
+    }
+
+    navigation.navigate(game.screen);
   }
 
   // ─── Size vars ──────────────────────────────────────────────────────────────
@@ -397,173 +366,8 @@ export default function SinglePlayerSetupScreen({ navigation }) {
           ))}
         </View>
 
-        {/* ── Settings + Play — back inside padded container ── */}
+        {/* Play button */}
         <View style={{ paddingHorizontal: padH }}>
-          {/* AI opponent count */}
-          {game.id === "blackjack" ? (
-            <View style={styles.infoBox}>
-              <Text style={styles.infoText}></Text>
-            </View>
-          ) : game.id === "solitaire" ? (
-            <View style={styles.infoBox}>
-              <Text style={styles.infoText}>Single player only</Text>
-            </View>
-          ) : (
-            <>
-              <Text style={[styles.label, { fontSize: labelSize }]}>
-                {maxAI === 1 ? "Opponent" : "Computer Opponents"}
-              </Text>
-
-              {maxAI > 3 ? (
-                <View style={styles.stepperRow}>
-                  <TouchableOpacity
-                    style={[
-                      styles.stepperBtn,
-                      {
-                        width: stepperButtonSize,
-                        height: stepperButtonSize,
-                        borderRadius: stepperButtonSize / 2,
-                      },
-                    ]}
-                    onPress={() => setNumAI((n) => Math.max(n - 1, minAI))}
-                    disabled={clampedAI <= minAI}
-                  >
-                    <Text
-                      style={[
-                        styles.stepperBtnText,
-                        { fontSize: isSmallScreen ? 26 : 28 },
-                        clampedAI <= minAI && styles.stepperBtnDimmed,
-                      ]}
-                    >
-                      −
-                    </Text>
-                  </TouchableOpacity>
-                  <Text style={styles.stepperValue}>{clampedAI}</Text>
-                  <TouchableOpacity
-                    style={[
-                      styles.stepperBtn,
-                      {
-                        width: stepperButtonSize,
-                        height: stepperButtonSize,
-                        borderRadius: stepperButtonSize / 2,
-                      },
-                    ]}
-                    onPress={() => setNumAI((n) => Math.min(n + 1, maxAI))}
-                    disabled={clampedAI >= maxAI}
-                  >
-                    <Text
-                      style={[
-                        styles.stepperBtnText,
-                        { fontSize: isSmallScreen ? 26 : 28 },
-                        clampedAI >= maxAI && styles.stepperBtnDimmed,
-                      ]}
-                    >
-                      +
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              ) : maxAI > 1 ? (
-                <View style={styles.countRow}>
-                  {[1, 2, 3]
-                    .filter((n) => n >= minAI && n <= maxAI)
-                    .map((n) => (
-                      <TouchableOpacity
-                        key={n}
-                        style={[
-                          styles.countBtn,
-                          {
-                            width: countButtonSize,
-                            height: countButtonSize,
-                            borderRadius: countButtonSize / 2,
-                          },
-                          clampedAI === n && styles.countBtnSelected,
-                        ]}
-                        onPress={() => setNumAI(n)}
-                      >
-                        <Text
-                          style={[
-                            styles.countBtnText,
-                            { fontSize: isSmallScreen ? 24 : 26 },
-                            clampedAI === n && styles.countBtnTextSelected,
-                          ]}
-                        >
-                          {n}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                </View>
-              ) : (
-                <View style={styles.infoBox}>
-                  <Text style={styles.infoText}>1 Computer opponent</Text>
-                </View>
-              )}
-            </>
-          )}
-
-          {/* Tone picker */}
-          {game.hasTone && (
-            <>
-              <Text style={[styles.label, { fontSize: labelSize }]}>
-                Card Tone
-              </Text>
-              <View style={styles.chipRow}>
-                {[
-                  { id: "family", label: "Family 🧒" },
-                  { id: "mature", label: "Mature 🔞" },
-                ].map((t) => (
-                  <TouchableOpacity
-                    key={t.id}
-                    style={[styles.chip, tone === t.id && styles.chipSelected]}
-                    onPress={() => setTone(t.id)}
-                  >
-                    <Text
-                      style={[
-                        styles.chipText,
-                        tone === t.id && styles.chipTextSelected,
-                      ]}
-                    >
-                      {t.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </>
-          )}
-
-          {/* Difficulty picker */}
-          {game.hasDifficulty && (
-            <>
-              <Text style={[styles.label, { fontSize: labelSize }]}>
-                --Difficulty--
-              </Text>
-              <View style={styles.diffRow}>
-                {DIFFICULTIES.map((d) => (
-                  <TouchableOpacity
-                    key={d.id}
-                    style={[
-                      styles.diffBtn,
-                      difficulty === d.id && styles.diffBtnSelected,
-                    ]}
-                    onPress={() => setDifficulty(d.id)}
-                  >
-                    <Text
-                      style={[
-                        styles.diffBtnText,
-                        difficulty === d.id && styles.diffBtnTextSelected,
-                      ]}
-                    >
-                      {d.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <Text style={styles.diffHint}>
-                {DIFFICULTIES.find((d) => d.id === difficulty)?.hint}
-              </Text>
-            </>
-          )}
-
-          {/* Play button */}
           <TouchableOpacity
             style={[
               styles.playBtn,
@@ -696,7 +500,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     gap: 8,
-    paddingVertical: 14,
+    paddingVertical: 8,
   },
   dot: {
     width: 8,
@@ -841,7 +645,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#e94560",
     borderRadius: 12,
     alignItems: "center",
-    marginTop: 36,
+    marginTop: 0,
   },
   playBtnText: {
     color: "#fff",

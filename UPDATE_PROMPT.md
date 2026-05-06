@@ -1,288 +1,244 @@
-# Card Night — Multi-Phase Update Prompt
+# Card Night — Visual & Structural Update Prompt
 
-## Context
+## Overview
 
-I'm Pedro, a beginner React Native developer. This is an **existing project** called Card Night — a cross-platform card game app that runs locally on the same WiFi (no internet). Read `PROJECT_NOTES.md` first to understand the project state, conventions, and what's already built. Also read `CONQUIAN_SPEC.md`, `WILDROUND_SPEC.md`, and `LASTCARD_SPEC.md` for game-specific context.
+This update focuses on visual fixes, layout improvements, and restructuring how game settings (opponent count, difficulty) are presented to the player. No new games are being added. All existing gameplay logic stays the same unless explicitly noted.
 
-This is a **multi-phase update**. **Do not move on to the next phase until I confirm the current one works on my phone.** After each phase, give me a short summary of what changed, what files were touched, how to test it, and whether a new EAS build is needed.
-
----
-
-## Important Project Conventions (read before coding)
-
-- React Native + Expo (custom dev build, NOT Expo Go)
-- Use `SafeAreaProvider` at root, `SafeAreaView` from `react-native-safe-area-context`
-- Game logic lives in `game/*.js` as **pure functions** (no React)
-- Multiplayer uses the host/client pattern documented in `PROJECT_NOTES.md` (`fullRef` / `applyState` / `toPublic` / `PRIVATE_HAND`)
-- Card visuals use the existing `cardTheme.js` system — every theme image is a static `require()`. Adding new themes or assets requires editing this file.
-- Save habit: after each meaningful change, I commit with `git add . && git commit -m "..." && git push`
-- New native packages = new EAS build needed. JS-only changes don't.
+**Tech Stack:** React Native + Expo, React Navigation (native-stack), portrait-only, responsive sizing via `game/responsive.js`.
 
 ---
 
-## Beginner Rules for How You Work With Me
-
-1. **Ask me clarifying questions before each phase if anything is unclear** — don't guess.
-2. **Explain what you're doing in plain language.** When you introduce a new library, pattern, or API, give me a one-sentence explanation of what it is and why it's used.
-3. **Recommend the simplest beginner-friendly approach** when there are multiple options. If you pick something more complex, justify why.
-4. **Flag anything that could cause issues later** before doing it, and suggest alternatives.
-5. After each phase, tell me: what changed, what files were touched, how to test, and whether I need a new EAS build.
-6. **Wait for my confirmation** before moving to the next phase.
+## Changes to Make (in recommended build order)
 
 ---
 
-## Overall Goals (read all of this before starting Phase 1)
+### Change 1: Clean Up the Single Player Setup Screen (`SinglePlayerSetupScreen.js`)
 
-1. Restructure HomeScreen so it has three primary buttons: **Single Player**, **Multiplayer**, **Profile**. The current Home has Single Player, Host a Game, Join a Game — this needs to change.
-2. Replace the floating-avatar-modal profile on HomeScreen with a real, dedicated Profile screen.
-3. Build a Profile system (name, photo, card theme, stats) saved locally with AsyncStorage.
-4. Move the Card Theme picker from Settings → Profile. Keep Settings screen as a placeholder for future settings (it'll be empty for now).
-5. Remove name input fields from HostSetupScreen and JoinScreen — name comes only from Profile.
-6. Add a Multiplayer menu screen with **four buttons**: Host Online, Join Online (both grayed out with "Coming Soon"), Host Local, Join Local (functional, wires to existing host/join flow).
-7. Remove **Wild Round** from the Single-Player carousel (keep it fully working in multiplayer Lobby).
-8. Add Blackjack **split** functionality.
-9. Add **Poker variants**: Texas Hold'em (existing), Omaha, Five Card Draw, Seven Card Stud. When the user taps Poker, show a **simple tap-select picker**.
-10. Add **Solitaire** as a new single-player-only game with 5 versions: Klondike, Spider, FreeCell, Pyramid, TriPeaks. Use the same simple tap-select picker style.
-11. Add **Rummy** as a new game (single + multiplayer) with versions: Gin Rummy, Rummy 500, Indian Rummy, Canasta. Use the same simple tap-select picker style.
-12. Make the entire app **scale up properly on larger screens** (phones with bigger displays, tablets). Same layout, just bigger. Portrait only.
+**What to do:**
 
----
+1. **Remove ALL opponent count, difficulty, and tone selectors** from this screen. This includes:
+   - The "Computer Opponents" label + circle buttons (1, 2, 3) or stepper (+/−)
+   - The "Difficulty" label + Easy / Medium / Hard buttons
+   - The "Card Tone" selector (Family / Mature)
+   - The empty `infoBox` that shows for Blackjack (lines ~403–406 — it renders an empty dark bar)
+   - The "Single player only" `infoBox` that shows for Solitaire
 
-## Phase Breakdown
+2. **Remove Conquián from the carousel.** Delete the Conquián entry from both the `CAROUSEL_GAMES` array and the `GAMES` array. Conquián will now be accessed through the Rummy variant picker instead (see Change 6). **Do NOT delete** `ConquianGameScreen.js` or `game/conquian.js` — those stay exactly as they are.
 
-### Phase 1 ✅ COMPLETE — Audit + HomeScreen Restructure
+3. **Simplify the Play button logic.** After removing settings, the Play button behavior for each game should be:
+   - **Blackjack** → Navigate directly to `Game` screen (no settings needed)
+   - **Solitaire** → Navigate to `SolitaireVariantPicker` (no settings needed)
+   - **Rummy** → Navigate to `RummyVariantPicker` (settings will live there — see Change 5)
+   - **Poker** → Navigate to `PokerVariantPicker` (settings will live there — see Change 5)
+   - **Go Fish, Last Card** → Navigate to a NEW `GameSetupScreen` (see Change 2)
 
-**Audit first, then code.** Before making any changes:
+4. **The `buildSinglePlayerLaunchParams()` function** should be removed or simplified since opponent/difficulty are no longer chosen here. Each destination screen will build its own launch params.
 
-a. Read `App.js`, `screens/HomeScreen.js`, `screens/SinglePlayerSetupScreen.js`, `screens/SettingsScreen.js`, `screens/CardThemeScreen.js`, `game/cardTheme.js`, `components/Card.js`, and `package.json`.
-
-b. Tell me your audit findings: what's already in place that supports these goals, what's missing, and any concerns (especially around the existing in-memory profile in HomeScreen, the hardcoded card sizes in `Card.js`, and the parallel `CAROUSEL_GAMES` / `GAMES` arrays in `SinglePlayerSetupScreen.js`).
-
-**Then make these changes:**
-
-- Restructure HomeScreen to show three primary buttons:
-  - **Single Player** (navigates to existing `SinglePlayerSetup` route)
-  - **Multiplayer** (navigates to a new `MultiplayerMenu` screen — create it in Phase 2)
-  - **Profile** (navigates to a new `Profile` screen — create it in Phase 3; for now, can be a placeholder)
-- Remove the floating "?" avatar button and its profile modal entirely from HomeScreen.
-- Keep the existing **How to Play** and **Settings** links at the bottom.
-- Stop passing `profileName` as a route param from HomeScreen. The new Profile system will handle this in Phase 3.
-- For Phase 1, temporarily fall back to "Player" as the default name everywhere it was using `profileName` until Phase 3 wires up the real Profile.
-
-**Test:** Open the app, see the three new buttons, tap each. Single Player should still work. Multiplayer and Profile can navigate to placeholder screens.
+5. **Keep everything else the same** — the carousel, dot indicators, "Playing as [name]" pill, and overall layout stay as-is. The screen should just be: carousel → dots → Play button. No gap/bar between the dots and the Play button.
 
 ---
 
-### Phase 2 ✅ COMPLETE — Multiplayer Menu Screen
+### Change 2: Create a New Game Setup Screen (`GameSetupScreen.js`)
 
-Create a new `MultiplayerMenuScreen.js` with **four buttons**:
+**Why:** Games without variants that still need opponent count and/or difficulty settings (Go Fish, Last Card) need somewhere for the player to configure those options before starting.
 
-- **Host Online** — disabled, gray, label says "Coming Soon"
-- **Join Online** — disabled, gray, label says "Coming Soon"
-- **Host Local** — functional, navigates to existing `HostSetup` route
-- **Join Local** — functional, navigates to existing `Join` route
+**What to build:**
 
-Register the new screen in `App.js` as `MultiplayerMenu`. Wire the HomeScreen's Multiplayer button to it.
+Create a new screen called `GameSetupScreen.js` that:
 
-**Test:** Tap Multiplayer on Home → see four buttons → Host Local and Join Local still work end-to-end (lobby, start game, etc.). Online buttons are visibly disabled.
+- Receives the game info via route params (game ID, game name, screen name, AI range, whether it has difficulty)
+- Shows the game name as a title at the top
+- Shows a "Computer Opponents" selector (circle buttons for 1–3, or stepper +/− for games with more than 3 max opponents like Last Card which allows 1–7)
+- Shows a "Difficulty" selector (Easy / Medium / Hard) if the game uses difficulty
+- Shows a "Play [Game Name]" button at the bottom
+- Uses the same dark theme and styling as the variant picker screens (`backgroundColor: '#1a1a2e'`, same button styles, same fonts)
 
----
+**Games that use this screen:**
+- **Go Fish** — opponents: 1–3, difficulty: yes
+- **Last Card** — opponents: 1–7, difficulty: yes
 
-### Phase 3 ✅ COMPLETE — Profile System Foundation
+**Games that do NOT use this screen:**
+- Blackjack (no settings needed, goes straight to game)
+- Solitaire (no settings needed, goes to variant picker then straight to game)
+- Rummy (settings added to variant picker — Change 5)
+- Poker (settings added to variant picker — Change 5)
 
-This phase requires installing a new native package, which means a new EAS build will be needed. **Tell me clearly when you're about to do this and stop so I can run the build.**
-
-**Install:** `@react-native-async-storage/async-storage` (briefly explain: AsyncStorage is React Native's built-in way to save small bits of data on the device that survive app restarts — like browser localStorage but for mobile).
-
-**Create a profile module** at `game/profile.js` (pure functions, no React):
-
-- `loadProfile()` — returns saved profile or default
-- `saveProfile(profile)` — persists to AsyncStorage
-- `subscribeProfile(fn)` — listener pattern, same as `cardTheme.js`
-- Profile shape: `{ name: string, photoType: 'avatar' | 'custom' | null, photoValue: string | null, cardTheme: string, stats: {} }`
-  - `photoType: 'avatar'` → `photoValue` is the avatar ID (e.g., `'avatar_01'` through `'avatar_20'`)
-  - `photoType: 'custom'` → `photoValue` is the local file URI
-  - `photoType: null` → no photo set yet
-
-**Create `screens/ProfileScreen.js`** with:
-
-- Name field (editable any time, persisted)
-- Photo selector showing current photo (circular, cropped)
-- Tapping the photo opens a chooser: "Choose Avatar" / "Take Photo" / "Choose from Camera Roll"
-- For now, **20 placeholder avatars** = colored circles each containing a different animal emoji (🐶🐱🐰🐼🦊🐨🐯🦁🐮🐷🐸🐵🐔🦄🐙🦋🐝🐢🦉🦊 — pick 20 distinct emojis, ID them `avatar_01` through `avatar_20`). Tell me clearly that these are placeholders and I'll swap in real artwork later.
-- Card Theme row that links to the existing `CardThemes` route (do NOT duplicate the picker — link to the existing screen)
-- Stats section: leave empty / "Coming soon" placeholder for now (built in Phase 13)
-
-**For photo upload + crop**: use `expo-image-picker` and `expo-image-manipulator` (both are Expo-native, so no extra native modules required beyond AsyncStorage). Crop selected/captured photos to a circular 1:1 aspect.
-
-**First-launch flow:** On app start, if no profile exists yet, navigate to ProfileScreen with a "Welcome! Set up your profile (you can change anything later)" banner. Block the user from navigating to game screens until they've at least entered a name.
-
-**Wire profile name into existing screens:**
-
-- `HomeScreen` — pull name from profile (if set), pass nothing as route params
-- `SinglePlayerSetupScreen` — read `myName` from profile, not route params
-- `HostSetupScreen` — **remove the name input field entirely**. Read host name from profile.
-- `JoinScreen` — **remove the name input field entirely**. Read player name from profile.
-
-**Test:** Set up profile, restart app — profile persists. Pick avatar, name shows on game screens, host/join screens no longer ask for name.
+**Register this screen** in `App.js` navigation.
 
 ---
 
-### Phase 4 ✅ COMPLETE — Move Card Theme to Profile, Keep Settings as Placeholder
+### Change 3: Add Opponent/Difficulty Settings to Variant Picker Screens
 
-- The existing `CardThemes` route stays as-is (don't rebuild it).
-- In `ProfileScreen`, the "Card Theme" row navigates to `CardThemes` (already done in Phase 3).
-- Update `cardTheme.js` so the active theme is **persisted to AsyncStorage via the profile module** (currently it resets on every app restart). When `setTheme` is called, update the profile's `cardTheme` field and save.
-- On app launch, load the saved theme from profile and call `setTheme()` to apply it.
-- **Remove** the Card Themes row from `SettingsScreen.js`. Replace its content with a simple "More settings coming soon" placeholder. Keep the screen and the ⚙️ Settings link on Home — we'll add things here later.
+**What to do:**
 
-**Test:** Change theme in Profile, close app, reopen — theme is still applied. Settings screen shows the placeholder message.
+For **Rummy** (`RummyVariantPickerScreen.js`) and **Poker** (`PokerVariantPickerScreen.js`), add opponent count and difficulty selectors directly on the variant picker screen, below the variant list.
 
----
+**Rummy variant picker additions:**
+- After the variant list, add a "Computer Opponents" selector (1–3 circle buttons)
+- Add a "Difficulty" selector (Easy / Medium / Hard)
+- The "Play [Variant Name]" button at the bottom should pass opponent count and difficulty as part of the launch params
+- **Exception: Conquián** — when Conquián is the selected variant, show opponents 1–3 and difficulty (same as it currently has)
 
-### Phase 5 ✅ COMPLETE — Remove Wild Round from Single Player
+**Poker variant picker additions:**
+- After the variant list, add a "Computer Opponents" selector (1–3, since Poker currently supports 1–3 AI)  
+- Add a "Difficulty" selector (Easy / Medium / Hard)
+- The play button should pass these as launch params
 
-- In `screens/SinglePlayerSetupScreen.js`, remove the `wildRound` entry from both `CAROUSEL_GAMES` and `GAMES` arrays.
-- **Do NOT touch** `WildRoundGameScreen.js`, `game/wildround.js`, `game/wildroundCards.json`, or the Wild Round entry in `LobbyScreen.js`. Multiplayer Wild Round must keep working exactly as it does today.
+**Solitaire variant picker** — no changes needed. Solitaire is single-player only, no opponents or difficulty.
 
-**Test:** Single Player carousel no longer shows Wild Round. Multiplayer Lobby still has Wild Round and it still works in a 3+ player game.
-
----
-
-### Phase 6 ✅ COMPLETE — Card Component + Screen Scaling Foundation
-
-This phase tackles the screen scaling problem. **Audit first**, then plan with me before coding.
-
-**Audit:**
-
-- `components/Card.js` has hardcoded sizes (70×100 and 42×60). This blocks scaling.
-- 5 of 16 screens use `useWindowDimensions`; 11 don't (most game screens).
-
-**Plan with me:** Before coding, propose your approach. My preference is the simplest beginner-friendly option. Likely candidates:
-
-- A `responsive.js` helper module that exports scaling functions based on screen width
-- Updating `Card.js` to accept a `size` prop or compute size from window dimensions
-- Updating each game screen to use responsive sizing
-
-Once we agree, do the foundation:
-
-- Update `Card.js` to scale card size based on screen width (with sensible min/max).
-- Lock the app to **portrait only** (`app.json` orientation setting).
-- Apply responsive sizing to the easiest game screen first (Blackjack `GameScreen.js`) so I can see the effect on my phone vs my tablet (if I have one).
-
-**Test:** Cards visibly larger on a bigger screen. Portrait locked. App looks normal on phone.
+**Styling:** Match the existing look of each picker screen. The opponent/difficulty selectors should use the same button styles as the current `SinglePlayerSetupScreen` (circle buttons for opponent count, rectangular buttons for difficulty).
 
 ---
 
-### Phase 7 ✅ COMPLETE — Apply Scaling to Remaining Screens
+### Change 4: Last Card Hand Layout — Grid Instead of Horizontal Scroll (`LastCardGameScreen.js`)
 
-Apply the same responsive sizing pattern to:
+**Current behavior:** The player's hand is displayed in a single horizontal scrolling row.
 
-- `MultiplayerGameScreen.js` (Blackjack multiplayer)
-- `GoFishGameScreen.js`
-- `PokerGameScreen.js`
-- `ConquianGameScreen.js`
-- `LastCardGameScreen.js`
-- `WildRoundGameScreen.js`
-- All non-game screens that don't already have it (HostSetupScreen, JoinScreen, LobbyScreen, HowToPlayScreen, ResultsScreen)
+**New behavior:** Display the player's hand in a **grid layout**:
+- **5 cards per row**
+- Cards wrap to the next row if the player has more than 5
+- The hand area should be **vertically scrollable** if there are many rows
+- Playable cards should still be visually highlighted the same way they currently are
+- Card sizing should remain the same — just the layout changes from a horizontal row to a wrapped grid
 
-**Same layout, just bigger.** No tablet-specific layouts.
-
-**Test:** Each game looks proportionally bigger on a larger screen.
+**Implementation hint:** Replace the horizontal `ScrollView` / `FlatList` for the hand with a `View` using `flexDirection: 'row'` and `flexWrap: 'wrap'`, inside a vertical `ScrollView` if needed.
 
 ---
 
-### Phase 8 ✅ COMPLETE — Blackjack Split
+### Change 5: Fix Solitaire Card Spacing
 
-Add the ability to **split** when the player is dealt two cards of the same rank.
+#### 5a: FreeCell — Space Out the 8 Columns
 
-- Apply to both `screens/GameScreen.js` (single-player) and `screens/MultiplayerGameScreen.js` (multiplayer).
-- When eligible, show a **Split** button alongside Hit / Stand.
-- After split: two hands, play one then the other, dealer plays once at end against both.
-- Keep all other Blackjack rules unchanged.
+**Problem:** The 8 tableau columns in FreeCell are too cramped — cards are touching or nearly touching each other horizontally.
 
-**Test:** Get two same-rank cards (deal a few hands), split, play both hands, see results correctly.
+**Fix:** Add more horizontal spacing between the 8 columns. Use the Klondike variant's column spacing as the reference — Klondike's 7 columns have good breathing room between them. FreeCell has 8 columns so each column will be slightly narrower, but the gaps between columns should feel similar to Klondike.
 
----
+**Important:** Only adjust horizontal spacing between columns. Don't change the vertical card overlap within columns.
 
-### Phase 9 ✅ COMPLETE — Poker Variants
+#### 5b: TriPeaks — Fix Pyramid Spacing
 
-Poker variants are now built.
+**Problem:** The pyramid/triangle layout in TriPeaks has cards that are too spread apart, making the pyramid shape look loose and messy.
 
-- Added a tap-to-select Poker variant picker.
-- Tapping Poker in the carousel opens the picker.
-- PokerGameScreen now supports:
-  - Texas Hold'em
-  - Omaha
-  - Five Card Draw
-  - Seven Card Stud
-- Single-player Poker and multiplayer Poker both work.
-- Lobby saves the chosen Poker variant and keeps the host params intact.
-- GameNetwork now has a browser-safe fallback so the app can run in web dev mode without crashing.
+**Fix:** Tighten the horizontal and vertical spacing so the pyramid looks compact and clean. Cards in each row should overlap slightly horizontally (like a typical TriPeaks layout), and rows should be closer together vertically.
 
-**Test:** Poker variant can be chosen, saved, and used in both single-player and multiplayer.
+#### 5c: Pyramid — Fix Pyramid Spacing
+
+**Problem:** Same as TriPeaks — the pyramid layout cards are too spread out.
+
+**Fix:** Same approach — tighten horizontal and vertical spacing for a compact, clean pyramid shape. Cards should overlap slightly horizontally within each row.
+
+**All spacing changes are in `SolitaireGameScreen.js`.**
 
 ---
 
-### Phase 10 ✅ COMPLETE — Solitaire (Single Player Only, 5 Versions)
+### Change 6: Move Conquián into the Rummy Variant Picker
 
-**Plan with me first** — Solitaire is significant new work. The picker and routes are wired in; gameplay has been verified. Tell me your plan for the 5 versions:
+**What to do:**
 
-- Klondike (the classic Windows one)
-- Spider (1-suit easy, 2-suit medium, 4-suit hard — confirm with me which difficulties to ship)
-- FreeCell
-- Pyramid
-- TriPeaks
+1. **Add Conquián as a variant** in the Rummy variant picker (`RummyVariantPickerScreen.js`). Add it to the variant list with:
+   - Name: "Conquián"
+   - Description: "Classic Mexican rummy — meld 9 cards to win." (or similar brief description)
+   - It should appear as the last option in the list (after Canasta)
 
-**Then build:**
+2. **When Conquián is selected and Play is tapped**, navigate to `ConquianGame` screen (same screen name it currently uses), passing the same launch params it currently receives (opponents, difficulty, player info).
 
-- New `game/solitaire.js` (or split per variant if it makes sense — your call, but explain why).
-- New `screens/SolitaireGameScreen.js`.
-- Add a `SolitaireVariantPicker` with the same simple tap-select style used for Poker.
-- Add Solitaire to the single-player carousel in `SinglePlayerSetupScreen.js` (both `CAROUSEL_GAMES` and `GAMES` arrays).
-- Tapping Solitaire in the carousel goes to the variant picker, then the game.
-- Single-player only — do **not** add to LobbyScreen.
+3. **Do NOT change** `ConquianGameScreen.js` or `game/conquian.js` — the gameplay, layout, and logic stay exactly the same.
 
-**Test:** All 5 versions playable, correct rules, win/lose detected. Solitaire is verified; polish can happen later.
+4. **Update the Rummy carousel card** in `SinglePlayerSetupScreen.js`:
+   - Change the tag from `"4 classic modes"` to `"5 classic modes"`
+   - Conquián was already removed from the carousel in Change 1
+
+5. **Update `App.js`** if needed to ensure the Conquián route is still registered and reachable from the Rummy picker.
 
 ---
 
-### Phase 11 ✅ COMPLETE — Rummy (Single + Multiplayer, 4 Versions)
+### Change 7: Collapsible Header for Rummy Game Screen (`RummyGameScreen.js`)
 
-Rummy is complete and wired into the app.
+**What to do:**
 
-- Added `game/rummy.js` with shared helpers and the four shipped modes.
-- Added `screens/RummyGameScreen.js` for single-player and multiplayer.
-- Added `RummyVariantPicker` with the same simple tap-select style.
-- Added Rummy to the single-player carousel.
-- Added Rummy to `LobbyScreen.js` so hosts can pick it in multiplayer.
-- AI difficulty: Easy/Medium/Hard for single-player, matching the pattern of the other games.
+The top info section of the Rummy game screen (showing variant name, description, round/stock/discard/deadwood stats, and turn instructions) should be **collapsible** with a SHOW/HIDE toggle button — matching how the Solitaire game screen (`SolitaireGameScreen.js`) already does it.
 
-**Test:** Each variant plays correctly. Single-player vs AI works. Multiplayer works between two phones.
+**Applies to all Rummy variants:** Gin Rummy, Rummy 500, Indian Rummy, Canasta (and Conquián when accessed through its own screen stays unchanged).
 
----
-
-### Phase 12 ✅ COMPLETE — Variant Pickers Polish
-
-By this point we have three variant pickers (Poker, Solitaire, Rummy). Make sure they all use the same simple tap-select picker component for consistency. If you built them ad-hoc earlier, refactor into a shared `components/VariantPicker.js` now.
-
-**Test:** All three pickers look and feel the same. Each variant launches the correct game.
+**Implementation:** Look at how `SolitaireGameScreen.js` implements its collapsible header and follow the same pattern:
+- Default state: collapsed (hidden)
+- Toggle button text: "SHOW" when collapsed, "HIDE" when expanded
+- Smooth transition if Solitaire uses one; otherwise a simple show/hide is fine
 
 ---
 
+### Change 8: Fix All Poker Variants (`PokerGameScreen.js`)
+
+**Problem:** The current `PokerGameScreen.js` was rewritten to support multiple variants (Texas Hold'em, Omaha, Five Card Draw, Seven Card Stud), but the rewrite broke the layout and gameplay quality that the original Texas Hold'em version had.
+
+**What to do:**
+
+Use the **old `PokerGameScreen.js`** (provided separately — 646 lines, Texas Hold'em only) as the reference for layout, gameplay flow, and styling. The old version has:
+
+- A clean banner showing whose turn it is and the current phase
+- A "last action" display
+- A community cards section with pot amount and card placeholders
+- Player cards showing name, chips, bet, fold/all-in status
+- "Your Cards" section showing hole cards
+- Action buttons: Fold, Check/Call, and multiple Raise options
+- Next Hand button at showdown
+- Clean styling with proper use of `scale()` and `scaleFont()` from `game/responsive.js`
+
+**Rebuild `PokerGameScreen.js` so that:**
+
+1. **Texas Hold'em** uses the old layout and logic almost exactly (the old file IS Texas Hold'em)
+2. **Omaha** uses the same layout — the only difference is 4 hole cards instead of 2, and hand evaluation uses exactly 2 hole cards + 3 community cards
+3. **Five Card Draw** uses the same layout but:
+   - No community cards section (hide it or show "No community cards" placeholder)
+   - After the initial deal, players select cards to discard and draw replacements
+   - Add a card selection UI for the draw phase (tap cards to select for discard, then a "Draw" button)
+4. **Seven Card Stud** uses the same layout but:
+   - No community cards section
+   - Players receive cards in rounds (2 down, 4 up, 1 down)
+   - Show face-up cards for each player in their player card section
+
+**Keep the existing `game/poker.js`** logic file — it already has the variant-specific functions (`getPokerVariantConfig`, `dealPokerVariantHands`, `evaluatePokerVariantHand`, etc.). Wire the old-style UI to call these functions based on the selected variant.
+
+**The variant is passed via route params** (e.g., `route.params.variant`). Use this to determine which layout adjustments to make.
+
+**Multiplayer support:** The old file already has the host/client pattern with `setServerListeners`, `setClientListeners`, `broadcastToClients`, etc. Maintain this same pattern for all variants.
+
 ---
 
-## Final Notes
+## Important Notes
 
-- Multiplayer player limits per game (use these in LobbyScreen and any new multiplayer code):
-  - Blackjack: 2–6
-  - Go Fish: 2–4
-  - Poker: 2–8
-  - Conquián: 2–4
-  - Wild Round: 3–8
-  - Last Card: 2–8
-  - Rummy: 2–4 (Gin Rummy 2 only)
-- Once a multiplayer room is full, it auto-locks. Host cannot kick players.
-- For online multiplayer (Host Online / Join Local buttons): not in scope. Just keep the "Coming Soon" buttons from Phase 2.
+- **Do NOT change any game logic** unless explicitly stated above. All rule engines (`game/deck.js`, `game/conquian.js`, `game/poker.js`, `game/rummy.js`, `game/solitaire.js`, `game/lastCard.js`) stay as-is.
+- **Do NOT change the multiplayer networking** (`GameNetwork.js`) or profile system (`profile.js`).
+- **Do NOT change the Home Screen**, Multiplayer Menu, Settings, or any other screens not mentioned above.
+- **Test each change independently** before moving to the next one. The changes are ordered so that earlier changes don't depend on later ones.
+- **Preserve responsive sizing** — continue using `scale()` and `scaleFont()` from `game/responsive.js` and `useWindowDimensions()` where appropriate.
+- **Keep the same dark theme** (`#1a1a2e` background, `#16213e` cards, `#e94560` accent, etc.) across all new and modified screens.
 
-**Read the notes, share findings, ask any clarifying questions, then stop and wait for my go-ahead.**
+---
+
+## Files That Will Be Modified
+
+- `SinglePlayerSetupScreen.js` — remove settings, remove Conquián, simplify Play button
+- `RummyVariantPickerScreen.js` — add opponent/difficulty selectors, add Conquián variant
+- `PokerVariantPickerScreen.js` — add opponent/difficulty selectors
+- `LastCardGameScreen.js` — change hand layout to 5-per-row grid
+- `SolitaireGameScreen.js` — fix FreeCell, TriPeaks, and Pyramid spacing
+- `RummyGameScreen.js` — add collapsible header
+- `PokerGameScreen.js` — rebuild using old file as reference, support all 4 variants
+- `App.js` — register new `GameSetup` screen
+
+## Files That Will Be Created
+
+- `GameSetupScreen.js` — new pre-game setup screen for Go Fish, Last Card
+
+## Files That Must NOT Be Changed
+
+- `game/conquian.js`, `game/poker.js`, `game/rummy.js`, `game/solitaire.js`, `game/lastCard.js`, `game/deck.js`
+- `ConquianGameScreen.js` (gameplay stays exactly the same)
+- `GameNetwork.js`, `profile.js`, `responsive.js`, `cardTheme.js`
+- `HomeScreen.js`, `MultiplayerMenuScreen.js`, `SettingsScreen.js`, `ProfileScreen.js`
+- `Card.js`, `VariantPicker.js`
+
+## Reference File
+
+The old `PokerGameScreen.js` (646 lines, Texas Hold'em only) is provided as a separate file. Use it as the layout and gameplay reference for Change 8.

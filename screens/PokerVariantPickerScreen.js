@@ -1,10 +1,15 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import PokerVariantWheel, {
   POKER_VARIANT_OPTIONS,
 } from "../components/PokerVariantWheel";
+import {
+  getCachedProfile,
+  getDisplayName,
+  subscribeProfile,
+} from "../game/profile";
 
 function getInitialVariant(currentVariant) {
   const found = POKER_VARIANT_OPTIONS.find(
@@ -30,22 +35,65 @@ function getModeCopy(mode) {
   };
 }
 
+function buildPlayers(playerName, aiCount) {
+  return [
+    { id: "host", name: playerName },
+    ...Array.from({ length: aiCount }, (_, index) => ({
+      id: `ai_${index + 1}`,
+      name: aiCount > 1 ? `Computer ${index + 1}` : "Computer",
+      isAI: true,
+    })),
+  ];
+}
+
 function PokerVariantPickerScreen({ navigation, route }) {
   const params = route?.params ?? {};
   const { mode = "singleplayer", currentVariant, launchParams } = params;
 
+  const [playerName, setPlayerName] = useState("Player");
   const [selectedVariant, setSelectedVariant] = useState(() =>
     getInitialVariant(currentVariant),
   );
+  const [aiCount, setAiCount] = useState(1);
+  const [difficulty, setDifficulty] = useState("medium");
 
   useEffect(() => {
     setSelectedVariant(getInitialVariant(currentVariant));
   }, [currentVariant]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    function bootstrapProfile() {
+      const profile = getCachedProfile();
+
+      if (!isMounted) {
+        return;
+      }
+
+      setPlayerName(getDisplayName(profile));
+    }
+
+    bootstrapProfile();
+
+    const unsubscribe = subscribeProfile((profile) => {
+      setPlayerName(getDisplayName(profile));
+    });
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, []);
+
   const modeCopy = useMemo(() => getModeCopy(mode), [mode]);
+  const selectedLabel =
+    POKER_VARIANT_OPTIONS.find((option) => option.value === selectedVariant)
+      ?.label ?? "";
+  const isLobby = mode === "lobby";
 
   const handleContinue = () => {
-    if (mode === "lobby") {
+    if (isLobby) {
       navigation.navigate({
         name: "Lobby",
         params: {
@@ -59,19 +107,28 @@ function PokerVariantPickerScreen({ navigation, route }) {
     const launchPayload =
       launchParams && typeof launchParams === "object" ? launchParams : {};
 
+    const players = buildPlayers(launchPayload.myName ?? playerName, aiCount);
+
     navigation.navigate("PokerGame", {
       ...launchPayload,
+      role: "singleplayer",
+      myName: launchPayload.myName ?? playerName,
+      players,
+      difficulty,
       variant: selectedVariant,
     });
   };
 
-  const selectedLabel =
-    POKER_VARIANT_OPTIONS.find((option) => option.value === selectedVariant)
-      ?.label ?? "";
-
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.playerPill}>
+          <Text style={styles.playerPillText}>Playing as {playerName}</Text>
+        </View>
+
         <View style={styles.header}>
           <Text style={styles.title}>{modeCopy.title}</Text>
           <Text style={styles.subtitle}>{modeCopy.subtitle}</Text>
@@ -83,6 +140,66 @@ function PokerVariantPickerScreen({ navigation, route }) {
             onChange={setSelectedVariant}
           />
         </View>
+
+        {!isLobby ? (
+          <View style={styles.settingsCard}>
+            <Text style={styles.settingsLabel}>Computer Opponents</Text>
+            <View style={styles.countRow}>
+              {[1, 2, 3].map((count) => (
+                <Pressable
+                  key={count}
+                  onPress={() => setAiCount(count)}
+                  style={({ pressed }) => [
+                    styles.countButton,
+                    aiCount === count && styles.countButtonSelected,
+                    pressed && styles.buttonPressed,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.countButtonText,
+                      aiCount === count && styles.countButtonTextSelected,
+                    ]}
+                  >
+                    {count}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <Text style={styles.settingsLabel}>Difficulty</Text>
+            <View style={styles.difficultyRow}>
+              {[
+                { id: "easy", label: "Easy" },
+                { id: "medium", label: "Medium" },
+                { id: "hard", label: "Hard" },
+              ].map((option) => {
+                const selected = option.id === difficulty;
+
+                return (
+                  <Pressable
+                    key={option.id}
+                    onPress={() => setDifficulty(option.id)}
+                    style={({ pressed }) => [
+                      styles.difficultyButton,
+                      selected && styles.difficultyButtonSelected,
+                      pressed && styles.buttonPressed,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.difficultyButtonText,
+                        selected && styles.difficultyButtonTextSelected,
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        ) : null}
 
         <View style={styles.selectionSummary}>
           <Text style={styles.selectionLabel}>Current selection</Text>
@@ -100,7 +217,7 @@ function PokerVariantPickerScreen({ navigation, route }) {
         >
           <Text style={styles.buttonText}>{modeCopy.buttonLabel}</Text>
         </Pressable>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -111,11 +228,26 @@ const styles = StyleSheet.create({
     backgroundColor: "#07111F",
   },
   container: {
-    flex: 1,
+    flexGrow: 1,
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 24,
     backgroundColor: "#07111F",
+  },
+  playerPill: {
+    backgroundColor: "#16213e",
+    borderRadius: 999,
+    borderWidth: 1.5,
+    borderColor: "#334",
+    alignSelf: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginBottom: 18,
+  },
+  playerPillText: {
+    color: "#ffffff",
+    fontSize: 13,
+    fontWeight: "bold",
   },
   header: {
     marginBottom: 20,
@@ -134,6 +266,75 @@ const styles = StyleSheet.create({
   },
   wheelCard: {
     marginBottom: 18,
+  },
+  settingsCard: {
+    marginBottom: 18,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#24344D",
+    backgroundColor: "#0B1320",
+    gap: 12,
+  },
+  settingsLabel: {
+    color: "#A7B3C9",
+    fontSize: 12,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  countRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  countButton: {
+    flex: 1,
+    minHeight: 50,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: "#2c3750",
+    backgroundColor: "#182131",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  countButtonSelected: {
+    borderColor: "#77aef7",
+    backgroundColor: "#21314a",
+  },
+  countButtonText: {
+    color: "#d3dcec",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  countButtonTextSelected: {
+    color: "#eef4ff",
+  },
+  difficultyRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  difficultyButton: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: "#2c3750",
+    backgroundColor: "#182131",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  difficultyButtonSelected: {
+    borderColor: "#77aef7",
+    backgroundColor: "#21314a",
+  },
+  difficultyButtonText: {
+    color: "#d3dcec",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  difficultyButtonTextSelected: {
+    color: "#eef4ff",
   },
   selectionSummary: {
     marginBottom: 20,
