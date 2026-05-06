@@ -297,6 +297,12 @@ export default function SinglePlayerSetupScreen({ navigation }) {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        <View style={{ paddingHorizontal: padH, paddingTop: 12 }}>
+          <View style={styles.playerPill}>
+            <Text style={styles.playerPillText}>Playing as {playerName}</Text>
+          </View>
+        </View>
+
         {/* ── Game carousel ── */}
         <FlatList
           ref={flatListRef}
@@ -393,10 +399,6 @@ export default function SinglePlayerSetupScreen({ navigation }) {
 
         {/* ── Settings + Play — back inside padded container ── */}
         <View style={{ paddingHorizontal: padH }}>
-          <View style={styles.playerPill}>
-            <Text style={styles.playerPillText}>Playing as {playerName}</Text>
-          </View>
-
           {/* AI opponent count */}
           {game.id === "blackjack" ? (
             <View style={styles.infoBox}>

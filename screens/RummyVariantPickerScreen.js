@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import RummyVariantWheel from "../components/RummyVariantWheel";
@@ -71,7 +71,10 @@ function RummyVariantPickerScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.header}>
           <Text style={styles.title}>{modeCopy.title}</Text>
           <Text style={styles.subtitle}>{modeCopy.subtitle}</Text>
@@ -100,7 +103,7 @@ function RummyVariantPickerScreen({ navigation, route }) {
         >
           <Text style={styles.buttonText}>{modeCopy.buttonLabel}</Text>
         </Pressable>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -111,7 +114,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#07111F",
   },
   container: {
-    flex: 1,
+    flexGrow: 1,
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 24,

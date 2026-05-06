@@ -1,19 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { createDeck, shuffleDeck, calculateHandValue } from '../game/deck';
-import Card from '../components/Card';
-import { scale, scaleFont } from '../game/responsive';
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+} from "react-native";
+import { createDeck, shuffleDeck, calculateHandValue } from "../game/deck";
+import Card from "../components/Card";
+import { scale, scaleFont } from "../game/responsive";
 
 export default function GameScreen() {
   const [deck, setDeck] = useState([]);
   const [playerHand, setPlayerHand] = useState([]);
-  const [splitHand, setSplitHand] = useState(null);   // null = no split active
-  const [activeHand, setActiveHand] = useState(0);    // 0 = main, 1 = split
+  const [splitHand, setSplitHand] = useState(null); // null = no split active
+  const [activeHand, setActiveHand] = useState(0); // 0 = main, 1 = split
   const [dealerHand, setDealerHand] = useState([]);
-  const [gameStatus, setGameStatus] = useState('playing');
+  const [gameStatus, setGameStatus] = useState("playing");
   // gameStatus: 'playing' | 'bust' | 'dealerTurn' | 'finished'
-  const [result, setResult] = useState('');
-  const [splitResult, setSplitResult] = useState('');
+  const [result, setResult] = useState("");
+  const [splitResult, setSplitResult] = useState("");
   // result / splitResult: '' | 'win' | 'lose' | 'push'
 
   useEffect(() => {
@@ -31,9 +37,9 @@ export default function GameScreen() {
     setSplitHand(null);
     setActiveHand(0);
     setDealerHand(dealerCards);
-    setGameStatus('playing');
-    setResult('');
-    setSplitResult('');
+    setGameStatus("playing");
+    setResult("");
+    setSplitResult("");
   }
 
   function handleSplit() {
@@ -54,20 +60,20 @@ export default function GameScreen() {
       const newHand = [...playerHand, newCard];
       setPlayerHand(newHand);
       if (calculateHandValue(newHand) > 21) {
-        setResult('lose');
+        setResult("lose");
         if (splitHand !== null) {
           setActiveHand(1); // bust on hand 0 → automatically move to hand 1
         } else {
-          setGameStatus('bust');
+          setGameStatus("bust");
         }
       }
     } else {
       const newSplitHand = [...splitHand, newCard];
       setSplitHand(newSplitHand);
       if (calculateHandValue(newSplitHand) > 21) {
-        setSplitResult('lose');
+        setSplitResult("lose");
         // Pass fresh values because we just mutated deck/splitHand in this same call
-        runDealer(remainingDeck, playerHand, newSplitHand, result, 'lose');
+        runDealer(remainingDeck, playerHand, newSplitHand, result, "lose");
       }
     }
   }
@@ -76,7 +82,7 @@ export default function GameScreen() {
     if (splitHand !== null && activeHand === 0) {
       setActiveHand(1); // hand 0 done → move to hand 1
     } else {
-      setGameStatus('dealerTurn');
+      setGameStatus("dealerTurn");
       // Closure values are fresh here — nothing was mutated above
       runDealer(deck, playerHand, splitHand, result, splitResult);
     }
@@ -100,58 +106,70 @@ export default function GameScreen() {
     const dealerTotal = calculateHandValue(currentDealerHand);
 
     // Evaluate main hand (skip if already busted)
-    if (mainResult !== 'lose') {
+    if (mainResult !== "lose") {
       const playerTotal = calculateHandValue(mainHand);
-      if (dealerTotal > 21 || playerTotal > dealerTotal) setResult('win');
-      else if (dealerTotal > playerTotal) setResult('lose');
-      else setResult('push');
+      if (dealerTotal > 21 || playerTotal > dealerTotal) setResult("win");
+      else if (dealerTotal > playerTotal) setResult("lose");
+      else setResult("push");
     }
 
     // Evaluate split hand (skip if already busted)
     if (split !== null) {
-      if (sResult !== 'lose') {
+      if (sResult !== "lose") {
         const splitTotal = calculateHandValue(split);
-        if (dealerTotal > 21 || splitTotal > dealerTotal) setSplitResult('win');
-        else if (dealerTotal > splitTotal) setSplitResult('lose');
-        else setSplitResult('push');
+        if (dealerTotal > 21 || splitTotal > dealerTotal) setSplitResult("win");
+        else if (dealerTotal > splitTotal) setSplitResult("lose");
+        else setSplitResult("push");
       }
     }
 
-    setGameStatus('finished');
+    setGameStatus("finished");
   }
 
   // Display calculations
   const playerTotal = calculateHandValue(playerHand);
   const splitTotal = splitHand ? calculateHandValue(splitHand) : 0;
-  const showFullDealerHand = gameStatus !== 'playing';
+  const showFullDealerHand = gameStatus !== "playing";
   const dealerDisplayTotal = showFullDealerHand
     ? calculateHandValue(dealerHand)
-    : dealerHand.length > 0 ? calculateHandValue([dealerHand[0]]) : 0;
+    : dealerHand.length > 0
+      ? calculateHandValue([dealerHand[0]])
+      : 0;
 
-  const canPlay = gameStatus === 'playing';
-  const gameOver = gameStatus === 'bust' || gameStatus === 'finished';
+  const canPlay = gameStatus === "playing";
+  const gameOver = gameStatus === "bust" || gameStatus === "finished";
 
-  const canSplit = canPlay && splitHand === null &&
-    playerHand.length === 2 && playerHand[0]?.rank === playerHand[1]?.rank;
+  const canSplit =
+    canPlay &&
+    splitHand === null &&
+    playerHand.length === 2 &&
+    playerHand[0]?.rank === playerHand[1]?.rank;
 
   function resultIcon(r) {
-    if (r === 'win') return ' 🎉';
-    if (r === 'lose') return ' 💥';
-    if (r === 'push') return ' 🤝';
-    return '';
+    if (r === "win") return " 🎉";
+    if (r === "lose") return " 💥";
+    if (r === "push") return " 🤝";
+    return "";
   }
 
   // Status message — only used when there is no split
-  let statusMessage = '';
-  let statusColor = '#ffd700';
+  let statusMessage = "";
+  let statusColor = "#ffd700";
   if (splitHand === null) {
-    if (gameStatus === 'bust') {
-      statusMessage = '💥 Bust! You lose.';
-      statusColor = '#ff6b6b';
-    } else if (gameStatus === 'finished') {
-      if (result === 'win') { statusMessage = '🎉 You win!'; statusColor = '#4ade80'; }
-      else if (result === 'lose') { statusMessage = '😞 Dealer wins.'; statusColor = '#ff6b6b'; }
-      else if (result === 'push') { statusMessage = '🤝 Push (tie).'; statusColor = '#ffd700'; }
+    if (gameStatus === "bust") {
+      statusMessage = "💥 Bust! You lose.";
+      statusColor = "#ff6b6b";
+    } else if (gameStatus === "finished") {
+      if (result === "win") {
+        statusMessage = "🎉 You win!";
+        statusColor = "#4ade80";
+      } else if (result === "lose") {
+        statusMessage = "😞 Dealer wins.";
+        statusColor = "#ff6b6b";
+      } else if (result === "push") {
+        statusMessage = "🤝 Push (tie).";
+        statusColor = "#ffd700";
+      }
     }
   }
 
@@ -163,7 +181,8 @@ export default function GameScreen() {
       {/* Dealer */}
       <View style={styles.section}>
         <Text style={styles.label}>
-          Dealer — {showFullDealerHand ? 'total:' : 'shows'} {dealerDisplayTotal}
+          Dealer — {showFullDealerHand ? "total:" : "shows"}{" "}
+          {dealerDisplayTotal}
         </Text>
         <View style={styles.hand}>
           {dealerHand.map((card, index) => (
@@ -172,6 +191,7 @@ export default function GameScreen() {
               rank={card.rank}
               suit={card.suit}
               faceDown={index === 1 && !showFullDealerHand}
+              sizeScale={1.5}
             />
           ))}
         </View>
@@ -180,13 +200,19 @@ export default function GameScreen() {
       {/* Main hand */}
       <View style={styles.section}>
         <Text style={styles.label}>
-          {splitHand ? (isPlayingHand0 ? '▶ Hand 1' : 'Hand 1') : 'You'}
-          {' — total: '}{playerTotal}
-          {gameOver && splitHand ? resultIcon(result) : ''}
+          {splitHand ? (isPlayingHand0 ? "▶ Hand 1" : "Hand 1") : "You"}
+          {" — total: "}
+          {playerTotal}
+          {gameOver && splitHand ? resultIcon(result) : ""}
         </Text>
         <View style={[styles.hand, isPlayingHand0 && styles.activeHand]}>
           {playerHand.map((card) => (
-            <Card key={card.id} rank={card.rank} suit={card.suit} />
+            <Card
+              key={card.id}
+              rank={card.rank}
+              suit={card.suit}
+              sizeScale={1.5}
+            />
           ))}
         </View>
       </View>
@@ -195,28 +221,40 @@ export default function GameScreen() {
       {splitHand && (
         <View style={styles.section}>
           <Text style={styles.label}>
-            {isPlayingHand1 ? '▶ Hand 2' : 'Hand 2'}
-            {' — total: '}{splitTotal}
-            {gameOver ? resultIcon(splitResult) : ''}
+            {isPlayingHand1 ? "▶ Hand 2" : "Hand 2"}
+            {" — total: "}
+            {splitTotal}
+            {gameOver ? resultIcon(splitResult) : ""}
           </Text>
           <View style={[styles.hand, isPlayingHand1 && styles.activeHand]}>
             {splitHand.map((card) => (
-              <Card key={card.id} rank={card.rank} suit={card.suit} />
+              <Card
+                key={card.id}
+                rank={card.rank}
+                suit={card.suit}
+                sizeScale={1.5}
+              />
             ))}
           </View>
         </View>
       )}
 
       {/* Status message (no-split games only) */}
-      {statusMessage !== '' && (
-        <Text style={[styles.status, { color: statusColor }]}>{statusMessage}</Text>
+      {statusMessage !== "" && (
+        <Text style={[styles.status, { color: statusColor }]}>
+          {statusMessage}
+        </Text>
       )}
 
       {/* Hit / Stand / Split buttons */}
       {!gameOver && (
         <View style={styles.buttonRow}>
           <TouchableOpacity
-            style={[styles.button, styles.hitButton, !canPlay && styles.disabled]}
+            style={[
+              styles.button,
+              styles.hitButton,
+              !canPlay && styles.disabled,
+            ]}
             onPress={handleHit}
             disabled={!canPlay}
           >
@@ -224,7 +262,11 @@ export default function GameScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.button, styles.standButton, !canPlay && styles.disabled]}
+            style={[
+              styles.button,
+              styles.standButton,
+              !canPlay && styles.disabled,
+            ]}
             onPress={handleStand}
             disabled={!canPlay}
           >
@@ -255,41 +297,41 @@ export default function GameScreen() {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    backgroundColor: '#0d5c2e',
-    alignItems: 'center',
+    backgroundColor: "#0d5c2e",
+    alignItems: "center",
     padding: scale(20),
   },
   section: {
-    alignItems: 'center',
+    alignItems: "center",
     marginVertical: scale(20),
   },
   label: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: scaleFont(18),
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: scale(10),
   },
   hand: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
   },
   activeHand: {
     borderWidth: 2,
-    borderColor: '#ffd700',
+    borderColor: "#ffd700",
     borderRadius: scale(10),
     padding: scale(4),
   },
   status: {
     fontSize: scaleFont(24),
-    fontWeight: 'bold',
-    textAlign: 'center',
+    fontWeight: "bold",
+    textAlign: "center",
     marginVertical: scale(15),
   },
   buttonRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
     marginTop: scale(20),
     gap: scale(10),
   },
@@ -299,32 +341,32 @@ const styles = StyleSheet.create({
     borderRadius: scale(10),
   },
   hitButton: {
-    backgroundColor: '#e94560',
+    backgroundColor: "#e94560",
   },
   standButton: {
-    backgroundColor: '#2980b9',
+    backgroundColor: "#2980b9",
   },
   splitButton: {
-    backgroundColor: '#8e44ad',
+    backgroundColor: "#8e44ad",
   },
   disabled: {
     opacity: 0.4,
   },
   buttonText: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: scaleFont(18),
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   playAgainButton: {
     marginTop: scale(30),
-    backgroundColor: '#e94560',
+    backgroundColor: "#e94560",
     paddingVertical: scale(15),
     paddingHorizontal: scale(50),
     borderRadius: scale(10),
   },
   playAgainText: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: scaleFont(18),
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
 });

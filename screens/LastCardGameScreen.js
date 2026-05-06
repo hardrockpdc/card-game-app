@@ -185,6 +185,17 @@ function cardImage(card) {
   return LC[`${card.color}_${ACTION_SUFFIX[rel]}`] ?? LC.card_back;
 }
 
+function cardTitle(card) {
+  if (!card) return "";
+  if (card.type === "number") return String(card.value);
+  if (card.type === "wild") return "Wild";
+  if (card.type === "wild_draw4") return "Wild +4";
+  if (card.type === "draw2") return "+2";
+  if (card.type === "skip") return "Skip";
+  if (card.type === "reverse") return "Reverse";
+  return card.type;
+}
+
 function cardLabel(card) {
   if (!card) return "";
   if (card.type === "number") return String(card.value);
@@ -896,11 +907,14 @@ export default function LastCardGameScreen({ navigation, route }) {
           onPress={onDeckTap}
           activeOpacity={0.8}
         >
-          <Image
-            source={LC.card_back}
-            style={{ width: PILE_W, height: PILE_H, borderRadius: 8 }}
-            resizeMode="contain"
-          />
+          <View style={[styles.cardShell, { width: PILE_W, height: PILE_H }]}>
+            <Image
+              source={LC.card_back}
+              style={styles.cardArt}
+              resizeMode="contain"
+            />
+            <Text style={styles.cardFallbackText}>Deck</Text>
+          </View>
           <View style={styles.countBadge}>
             <Text style={styles.countBadgeText}>
               {gameState?.drawPileCount ?? 0}
@@ -928,11 +942,14 @@ export default function LastCardGameScreen({ navigation, route }) {
           ]}
         >
           {topCard ? (
-            <Image
-              source={cardImage(topCard)}
-              style={{ width: PILE_W, height: PILE_H, borderRadius: 8 }}
-              resizeMode="contain"
-            />
+            <View style={[styles.cardShell, { width: PILE_W, height: PILE_H }]}>
+              <Image
+                source={cardImage(topCard)}
+                style={styles.cardArt}
+                resizeMode="contain"
+              />
+              <Text style={styles.cardFallbackText}>{cardTitle(topCard)}</Text>
+            </View>
           ) : (
             <View
               style={[styles.emptyPile, { width: PILE_W, height: PILE_H }]}
@@ -980,19 +997,26 @@ export default function LastCardGameScreen({ navigation, route }) {
                       : null
                   }
                 >
-                  <Image
-                    source={cardImage(card)}
+                  <View
                     style={[
+                      styles.cardShell,
                       {
                         width: HAND_W,
                         height: HAND_H,
-                        borderRadius: 6,
                         marginHorizontal: 3,
                       },
                       !playable && styles.dimmed,
                     ]}
-                    resizeMode="contain"
-                  />
+                  >
+                    <Image
+                      source={cardImage(card)}
+                      style={styles.cardArt}
+                      resizeMode="contain"
+                    />
+                    <Text style={styles.cardFallbackText}>
+                      {cardTitle(card)}
+                    </Text>
+                  </View>
                 </Animated.View>
               </TouchableOpacity>
             );
@@ -1096,6 +1120,29 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#2a2a4a",
     overflow: "visible",
+  },
+  cardShell: {
+    borderRadius: scale(10),
+    backgroundColor: "#f4efe7",
+    borderWidth: 1,
+    borderColor: "#d8cbb8",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+    padding: scale(4),
+  },
+  cardArt: {
+    width: "100%",
+    height: "100%",
+  },
+  cardFallbackText: {
+    position: "absolute",
+    bottom: scale(6),
+    left: scale(6),
+    color: "#3b2a1a",
+    fontSize: scaleFont(10),
+    fontWeight: "800",
+    opacity: 0.85,
   },
   countBadge: {
     position: "absolute",
