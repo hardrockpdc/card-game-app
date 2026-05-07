@@ -324,9 +324,7 @@ export default function SinglePlayerSetupScreen({ navigation }) {
                         : undefined
                 }
               >
-                <ImageBackground
-                  source={item.image}
-                  resizeMode="cover"
+                <View
                   style={[
                     styles.gameCard,
                     {
@@ -335,12 +333,9 @@ export default function SinglePlayerSetupScreen({ navigation }) {
                       height: CARD_HEIGHT,
                       transform: [{ scale: isActive ? 1.03 : 0.88 }],
                       opacity: isActive ? 1 : 0.5,
-                      overflow: "hidden",
                     },
                   ]}
                 >
-                  <View pointerEvents="none" style={styles.cardImageOverlay} />
-
                   {/* Game name */}
                   <Text style={styles.cardName}>{item.label}</Text>
 
@@ -348,12 +343,14 @@ export default function SinglePlayerSetupScreen({ navigation }) {
                   <View
                     style={[
                       styles.cardVisual,
-                      { borderColor: item.accent + "55" },
+                      { borderColor: item.accent + "55", overflow: "hidden" },
                     ]}
                   >
-                    <Text style={styles.cardVisualText}>
-                      visual coming soon
-                    </Text>
+                    <ImageBackground
+                      source={item.image}
+                      resizeMode="contain"
+                      style={styles.cardVisualImage}
+                    />
                   </View>
 
                   {/* Footer: player count + tag */}
@@ -369,7 +366,7 @@ export default function SinglePlayerSetupScreen({ navigation }) {
                       </Text>
                     </View>
                   </View>
-                </ImageBackground>
+                </View>
               </TouchableOpacity>
             );
           }}
@@ -488,6 +485,11 @@ const styles = StyleSheet.create({
   cardVisualText: {
     color: "#555",
     fontSize: 12,
+  },
+  cardVisualImage: {
+    flex: 1,
+    width: "100%",
+    height: "100%",
   },
   cardImageOverlay: {
     position: "absolute",
