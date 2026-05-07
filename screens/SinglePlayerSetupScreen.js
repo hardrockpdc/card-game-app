@@ -336,9 +336,6 @@ export default function SinglePlayerSetupScreen({ navigation }) {
                     },
                   ]}
                 >
-                  {/* Game name */}
-                  <Text style={styles.cardName}>{item.label}</Text>
-
                   {/* Placeholder visual */}
                   <View
                     style={[
