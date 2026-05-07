@@ -9,6 +9,7 @@ import {
   useWindowDimensions,
   ScrollView,
   ActivityIndicator,
+  ImageBackground,
 } from "react-native";
 import {
   getCachedProfile,
@@ -27,6 +28,7 @@ const CAROUSEL_GAMES = [
     tag: "Classic",
     color: "#081a0f",
     accent: "#2e7d32",
+    image: require("../assets/images/thumb_blackjack.png"),
   },
   {
     id: "solitaire",
@@ -35,6 +37,7 @@ const CAROUSEL_GAMES = [
     tag: "5 classic modes",
     color: "#101826",
     accent: "#7fb3ff",
+    image: require("../assets/images/thumb_solitaire.png"),
   },
   {
     id: "rummy",
@@ -43,6 +46,7 @@ const CAROUSEL_GAMES = [
     tag: "5 classic modes",
     color: "#14131f",
     accent: "#e94560",
+    image: require("../assets/images/thumb_rummy.png"),
   },
   {
     id: "goFish",
@@ -51,6 +55,7 @@ const CAROUSEL_GAMES = [
     tag: "Go Fish!",
     color: "#080d1f",
     accent: "#1565c0",
+    image: require("../assets/images/thumb_gofish.png"),
   },
   {
     id: "poker",
@@ -59,6 +64,7 @@ const CAROUSEL_GAMES = [
     tag: "Texas Hold'em",
     color: "#120822",
     accent: "#6a1b9a",
+    image: require("../assets/images/thumb_poker.png"),
   },
   {
     id: "lastCard",
@@ -67,6 +73,7 @@ const CAROUSEL_GAMES = [
     tag: "UNO-style",
     color: "#111827",
     accent: "#e94560",
+    image: require("../assets/images/thumb_lastcard.png"),
   },
 ];
 
@@ -317,7 +324,9 @@ export default function SinglePlayerSetupScreen({ navigation }) {
                         : undefined
                 }
               >
-                <View
+                <ImageBackground
+                  source={item.image}
+                  resizeMode="cover"
                   style={[
                     styles.gameCard,
                     {
@@ -326,9 +335,12 @@ export default function SinglePlayerSetupScreen({ navigation }) {
                       height: CARD_HEIGHT,
                       transform: [{ scale: isActive ? 1.03 : 0.88 }],
                       opacity: isActive ? 1 : 0.5,
+                      overflow: "hidden",
                     },
                   ]}
                 >
+                  <View pointerEvents="none" style={styles.cardImageOverlay} />
+
                   {/* Game name */}
                   <Text style={styles.cardName}>{item.label}</Text>
 
@@ -357,7 +369,7 @@ export default function SinglePlayerSetupScreen({ navigation }) {
                       </Text>
                     </View>
                   </View>
-                </View>
+                </ImageBackground>
               </TouchableOpacity>
             );
           }}
@@ -476,6 +488,14 @@ const styles = StyleSheet.create({
   cardVisualText: {
     color: "#555",
     fontSize: 12,
+  },
+  cardImageOverlay: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: "rgba(0,0,0,0.45)",
   },
   cardFooter: {
     flexDirection: "row",
