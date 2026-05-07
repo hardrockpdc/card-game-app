@@ -473,7 +473,7 @@ const styles = StyleSheet.create({
   cardVisual: {
     flex: 1,
     borderWidth: 1.5,
-    borderStyle: "dashed",
+    borderStyle: "solid",
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
