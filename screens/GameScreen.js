@@ -491,6 +491,7 @@ export default function GameScreen({ navigation, route }) {
         style={styles.handsScroll}
         contentContainerStyle={styles.handsScrollContent}
       >
+        <View style={styles.table}>
         {/* Dealer */}
         <View style={styles.section}>
           <Text style={styles.label}>
@@ -572,6 +573,7 @@ export default function GameScreen({ navigation, route }) {
             {coinsDeltaLabel}
           </Text>
         )}
+        </View>
       </ScrollView>
 
       {/* Action buttons */}
@@ -637,7 +639,7 @@ export default function GameScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: "#0d5c2e",
+    backgroundColor: "#08401f",
     alignItems: "center",
     padding: scale(20),
   },
@@ -766,7 +768,17 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
   },
   handsScrollContent: {
+    flexGrow: 1,
+    backgroundColor: "#08401f",
+    padding: scale(12),
+  },
+  table: {
+    flexGrow: 1,
+    backgroundColor: "#0d5c2e",
+    borderRadius: scale(20),
     alignItems: "center",
+    padding: scale(20),
+    paddingBottom: scale(30),
   },
   bottomArea: {
     alignSelf: "stretch",
