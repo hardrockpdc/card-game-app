@@ -181,6 +181,9 @@ export default function SinglePlayerSetupScreen({ navigation }) {
     isSmallScreen ? 280 : 340,
     Math.round((availableCardHeight * 0.8) / ACTIVE_SCALE),
   );
+  const CAROUSEL_VERTICAL_PADDING = Math.round(
+    (CARD_HEIGHT * ACTIVE_SCALE - CARD_HEIGHT) / 2,
+  );
 
   // ─── Derived game state ─────────────────────────────────────────────────────
   const carouselGame = CAROUSEL_GAMES[currentIndex];
@@ -284,7 +287,7 @@ export default function SinglePlayerSetupScreen({ navigation }) {
         {/* ── Game carousel ── */}
         <FlatList
           style={{
-            marginTop: isSmallScreen ? 8 : isTablet ? 12 : 10,
+            marginTop: isSmallScreen ? 26 : isTablet ? 32 : 28,
           }}
           ref={flatListRef}
           data={CAROUSEL_GAMES}
@@ -293,7 +296,11 @@ export default function SinglePlayerSetupScreen({ navigation }) {
           showsHorizontalScrollIndicator={false}
           snapToInterval={SNAP_INTERVAL}
           decelerationRate="fast"
-          contentContainerStyle={{ paddingHorizontal: SIDE_OFFSET }}
+          contentContainerStyle={{
+            paddingHorizontal: SIDE_OFFSET,
+            paddingTop: CAROUSEL_VERTICAL_PADDING,
+            paddingBottom: CAROUSEL_VERTICAL_PADDING,
+          }}
           onViewableItemsChanged={onViewableItemsChanged}
           viewabilityConfig={viewabilityConfig}
           initialScrollIndex={currentIndex}

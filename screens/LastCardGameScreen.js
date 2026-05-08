@@ -265,7 +265,12 @@ function toPublic(state) {
 }
 
 export default function LastCardGameScreen({ navigation, route }) {
-  const { role, myName, players: initialPlayers } = route.params;
+  const {
+    role,
+    myName,
+    players: initialPlayers,
+    difficulty = "medium",
+  } = route.params;
   const isSinglePlayer = role === "singleplayer";
   const isHost = role === "host" || isSinglePlayer;
   const myPid = isHost
@@ -983,6 +988,7 @@ export default function LastCardGameScreen({ navigation, route }) {
                 )
               : false;
             const isShaking = card.id === shakeId;
+            const shouldDimUnplayable = difficulty === "easy" && !playable;
             return (
               <TouchableOpacity
                 key={card.id}
@@ -1004,7 +1010,7 @@ export default function LastCardGameScreen({ navigation, route }) {
                         height: HAND_H,
                         marginHorizontal: 3,
                       },
-                      !playable && styles.dimmed,
+                      shouldDimUnplayable && styles.dimmed,
                     ]}
                   >
                     <Image

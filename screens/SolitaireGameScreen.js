@@ -492,57 +492,63 @@ export default function SolitaireGameScreen({ navigation, route }) {
         </View>
       </View>
 
-      <View style={[styles.tableauRow, styles.freeCellTableauRow]}>
-        {state.tableau.map((pile, pileIndex) => (
-          <View key={`freecell-${pileIndex}`} style={styles.tableauColumn}>
-            {pile.length === 0 ? (
-              <Pressable
-                onPress={() =>
-                  dispatch(tapAction({ type: "tableau", index: pileIndex }))
-                }
-                style={({ pressed }) => [
-                  styles.emptyColumnSlot,
-                  pressed && styles.cardTouchPressed,
-                ]}
-              >
-                <Text style={styles.emptyColumnText}>Empty</Text>
-              </Pressable>
-            ) : (
-              <View style={styles.tableauTopSpacer} />
-            )}
-
-            {pile.map((card, cardIndex) => {
-              const selected = isTableauSelection(
-                state.selected,
-                pileIndex,
-                cardIndex,
-              );
-
-              return (
-                <CardSlot
-                  key={card.id}
-                  card={card}
-                  label=""
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.spiderScrollContent}
+      >
+        <View style={[styles.tableauRow, styles.freeCellTableauRow]}>
+          {state.tableau.map((pile, pileIndex) => (
+            <View key={`freecell-${pileIndex}`} style={styles.tableauColumn}>
+              {pile.length === 0 ? (
+                <Pressable
                   onPress={() =>
-                    dispatch(
-                      tapAction({
-                        type: "tableau",
-                        index: pileIndex,
-                        cardIndex,
-                      }),
-                    )
+                    dispatch(tapAction({ type: "tableau", index: pileIndex }))
                   }
-                  selected={selected}
-                  style={[
-                    styles.stackCard,
-                    cardIndex > 0 && styles.stackCardOverlap,
+                  style={({ pressed }) => [
+                    styles.emptyColumnSlot,
+                    pressed && styles.cardTouchPressed,
                   ]}
-                />
-              );
-            })}
-          </View>
-        ))}
-      </View>
+                >
+                  <Text style={styles.emptyColumnText}>Empty</Text>
+                </Pressable>
+              ) : (
+                <View style={styles.tableauTopSpacer} />
+              )}
+
+              {pile.map((card, cardIndex) => {
+                const selected = isTableauSelection(
+                  state.selected,
+                  pileIndex,
+                  cardIndex,
+                );
+
+                return (
+                  <CardSlot
+                    key={card.id}
+                    card={card}
+                    label=""
+                    onPress={() =>
+                      dispatch(
+                        tapAction({
+                          type: "tableau",
+                          index: pileIndex,
+                          cardIndex,
+                        }),
+                      )
+                    }
+                    selected={selected}
+                    style={[
+                      styles.stackCard,
+                      cardIndex > 0 && styles.stackCardOverlap,
+                    ]}
+                  />
+                );
+              })}
+            </View>
+          ))}
+        </View>
+      </ScrollView>
     </View>
   );
 
@@ -580,51 +586,57 @@ export default function SolitaireGameScreen({ navigation, route }) {
           </View>
         </View>
 
-        <View style={styles.pyramidBoard}>
-          {state.pyramidRows.map((row, rowIndex) => (
-            <View
-              key={`pyramid-row-${rowIndex}`}
-              style={[styles.pyramidRow, { marginLeft: rowIndex * 18 }]}
-            >
-              {row.map((card, colIndex) => {
-                if (!card) {
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.spiderScrollContent}
+        >
+          <View style={styles.pyramidBoard}>
+            {state.pyramidRows.map((row, rowIndex) => (
+              <View
+                key={`pyramid-row-${rowIndex}`}
+                style={[styles.pyramidRow, { marginLeft: rowIndex * 18 }]}
+              >
+                {row.map((card, colIndex) => {
+                  if (!card) {
+                    return (
+                      <View
+                        key={`pyramid-empty-${rowIndex}-${colIndex}`}
+                        style={styles.pyramidSpacer}
+                      />
+                    );
+                  }
+
+                  const selected = isPyramidSelection(
+                    state.selected,
+                    rowIndex,
+                    colIndex,
+                  );
+
                   return (
-                    <View
-                      key={`pyramid-empty-${rowIndex}-${colIndex}`}
-                      style={styles.pyramidSpacer}
+                    <CardSlot
+                      key={card.id}
+                      card={card}
+                      label=""
+                      onPress={() =>
+                        dispatch(
+                          tapAction({
+                            type: "pyramid",
+                            row: rowIndex,
+                            col: colIndex,
+                          }),
+                        )
+                      }
+                      selected={selected}
+                      disabled={!card.faceUp}
+                      style={styles.slotCard}
                     />
                   );
-                }
-
-                const selected = isPyramidSelection(
-                  state.selected,
-                  rowIndex,
-                  colIndex,
-                );
-
-                return (
-                  <CardSlot
-                    key={card.id}
-                    card={card}
-                    label=""
-                    onPress={() =>
-                      dispatch(
-                        tapAction({
-                          type: "pyramid",
-                          row: rowIndex,
-                          col: colIndex,
-                        }),
-                      )
-                    }
-                    selected={selected}
-                    disabled={!card.faceUp}
-                    style={styles.slotCard}
-                  />
-                );
-              })}
-            </View>
-          ))}
-        </View>
+                })}
+              </View>
+            ))}
+          </View>
+        </ScrollView>
       </View>
     );
   };
@@ -663,51 +675,57 @@ export default function SolitaireGameScreen({ navigation, route }) {
           </View>
         </View>
 
-        <View style={styles.triPeaksBoard}>
-          {state.boardRows.map((row, rowIndex) => (
-            <View
-              key={`tripeaks-row-${rowIndex}`}
-              style={[styles.triPeaksRow, { marginLeft: rowIndex * 12 }]}
-            >
-              {row.map((card, colIndex) => {
-                if (!card) {
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.spiderScrollContent}
+        >
+          <View style={styles.triPeaksBoard}>
+            {state.boardRows.map((row, rowIndex) => (
+              <View
+                key={`tripeaks-row-${rowIndex}`}
+                style={[styles.triPeaksRow, { marginLeft: rowIndex * 12 }]}
+              >
+                {row.map((card, colIndex) => {
+                  if (!card) {
+                    return (
+                      <View
+                        key={`tripeaks-empty-${rowIndex}-${colIndex}`}
+                        style={styles.triPeaksSpacer}
+                      />
+                    );
+                  }
+
+                  const selected = isTriPeaksSelection(
+                    state.selected,
+                    rowIndex,
+                    colIndex,
+                  );
+
                   return (
-                    <View
-                      key={`tripeaks-empty-${rowIndex}-${colIndex}`}
-                      style={styles.triPeaksSpacer}
+                    <CardSlot
+                      key={card.id}
+                      card={card}
+                      label=""
+                      onPress={() =>
+                        dispatch(
+                          tapAction({
+                            type: "tripeaks",
+                            row: rowIndex,
+                            col: colIndex,
+                          }),
+                        )
+                      }
+                      selected={selected}
+                      disabled={!card.faceUp}
+                      style={styles.slotCard}
                     />
                   );
-                }
-
-                const selected = isTriPeaksSelection(
-                  state.selected,
-                  rowIndex,
-                  colIndex,
-                );
-
-                return (
-                  <CardSlot
-                    key={card.id}
-                    card={card}
-                    label=""
-                    onPress={() =>
-                      dispatch(
-                        tapAction({
-                          type: "tripeaks",
-                          row: rowIndex,
-                          col: colIndex,
-                        }),
-                      )
-                    }
-                    selected={selected}
-                    disabled={!card.faceUp}
-                    style={styles.slotCard}
-                  />
-                );
-              })}
-            </View>
-          ))}
-        </View>
+                })}
+              </View>
+            ))}
+          </View>
+        </ScrollView>
       </View>
     );
   };

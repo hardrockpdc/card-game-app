@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { createDeck, shuffleDeck, calculateHandValue } from "../game/deck";
 import Card from "../components/Card";
 import { scale, scaleFont } from "../game/responsive";
@@ -177,57 +178,41 @@ export default function GameScreen() {
   const isPlayingHand1 = splitHand !== null && activeHand === 1 && !gameOver;
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      {/* Dealer */}
-      <View style={styles.section}>
-        <Text style={styles.label}>
-          Dealer — {showFullDealerHand ? "total:" : "shows"}{" "}
-          {dealerDisplayTotal}
-        </Text>
-        <View style={styles.hand}>
-          {dealerHand.map((card, index) => (
-            <Card
-              key={card.id}
-              rank={card.rank}
-              suit={card.suit}
-              faceDown={index === 1 && !showFullDealerHand}
-              sizeScale={1.5}
-            />
-          ))}
-        </View>
-      </View>
-
-      {/* Main hand */}
-      <View style={styles.section}>
-        <Text style={styles.label}>
-          {splitHand ? (isPlayingHand0 ? "▶ Hand 1" : "Hand 1") : "You"}
-          {" — total: "}
-          {playerTotal}
-          {gameOver && splitHand ? resultIcon(result) : ""}
-        </Text>
-        <View style={[styles.hand, isPlayingHand0 && styles.activeHand]}>
-          {playerHand.map((card) => (
-            <Card
-              key={card.id}
-              rank={card.rank}
-              suit={card.suit}
-              sizeScale={1.5}
-            />
-          ))}
-        </View>
-      </View>
-
-      {/* Split hand (only shown after split) */}
-      {splitHand && (
+    <SafeAreaView style={styles.screen}>
+      {/* Cards + status scroll if they get tall; action buttons stay fixed */}
+      <ScrollView
+        style={styles.handsScroll}
+        contentContainerStyle={styles.handsScrollContent}
+      >
+        {/* Dealer */}
         <View style={styles.section}>
           <Text style={styles.label}>
-            {isPlayingHand1 ? "▶ Hand 2" : "Hand 2"}
-            {" — total: "}
-            {splitTotal}
-            {gameOver ? resultIcon(splitResult) : ""}
+            Dealer — {showFullDealerHand ? "total:" : "shows"}{" "}
+            {dealerDisplayTotal}
           </Text>
-          <View style={[styles.hand, isPlayingHand1 && styles.activeHand]}>
-            {splitHand.map((card) => (
+          <View style={styles.hand}>
+            {dealerHand.map((card, index) => (
+              <Card
+                key={card.id}
+                rank={card.rank}
+                suit={card.suit}
+                faceDown={index === 1 && !showFullDealerHand}
+                sizeScale={1.5}
+              />
+            ))}
+          </View>
+        </View>
+
+        {/* Main hand */}
+        <View style={styles.section}>
+          <Text style={styles.label}>
+            {splitHand ? (isPlayingHand0 ? "▶ Hand 1" : "Hand 1") : "You"}
+            {" — total: "}
+            {playerTotal}
+            {gameOver && splitHand ? resultIcon(result) : ""}
+          </Text>
+          <View style={[styles.hand, isPlayingHand0 && styles.activeHand]}>
+            {playerHand.map((card) => (
               <Card
                 key={card.id}
                 rank={card.rank}
@@ -237,69 +222,101 @@ export default function GameScreen() {
             ))}
           </View>
         </View>
-      )}
 
-      {/* Status message (no-split games only) */}
-      {statusMessage !== "" && (
-        <Text style={[styles.status, { color: statusColor }]}>
-          {statusMessage}
-        </Text>
-      )}
+        {/* Split hand (only shown after split) */}
+        {splitHand && (
+          <View style={styles.section}>
+            <Text style={styles.label}>
+              {isPlayingHand1 ? "▶ Hand 2" : "Hand 2"}
+              {" — total: "}
+              {splitTotal}
+              {gameOver ? resultIcon(splitResult) : ""}
+            </Text>
+            <View style={[styles.hand, isPlayingHand1 && styles.activeHand]}>
+              {splitHand.map((card) => (
+                <Card
+                  key={card.id}
+                  rank={card.rank}
+                  suit={card.suit}
+                  sizeScale={1.5}
+                />
+              ))}
+            </View>
+          </View>
+        )}
 
-      {/* Hit / Stand / Split buttons */}
-      {!gameOver && (
-        <View style={styles.buttonRow}>
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.hitButton,
-              !canPlay && styles.disabled,
-            ]}
-            onPress={handleHit}
-            disabled={!canPlay}
-          >
-            <Text style={styles.buttonText}>Hit</Text>
-          </TouchableOpacity>
+        {/* Status message (no-split games only) */}
+        {statusMessage !== "" && (
+          <Text style={[styles.status, { color: statusColor }]}>
+            {statusMessage}
+          </Text>
+        )}
+      </ScrollView>
 
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.standButton,
-              !canPlay && styles.disabled,
-            ]}
-            onPress={handleStand}
-            disabled={!canPlay}
-          >
-            <Text style={styles.buttonText}>Stand</Text>
-          </TouchableOpacity>
-
-          {canSplit && (
+      {/* Hit / Stand / Split buttons (anchored at bottom) */}
+      {!gameOver ? (
+        <View style={styles.bottomArea}>
+          <View style={styles.buttonRow}>
             <TouchableOpacity
-              style={[styles.button, styles.splitButton]}
-              onPress={handleSplit}
+              style={[
+                styles.button,
+                styles.hitButton,
+                !canPlay && styles.disabled,
+              ]}
+              onPress={handleHit}
+              disabled={!canPlay}
             >
-              <Text style={styles.buttonText}>Split</Text>
+              <Text style={styles.buttonText}>Hit</Text>
             </TouchableOpacity>
-          )}
-        </View>
-      )}
 
-      {/* Play Again */}
-      {gameOver && (
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.standButton,
+                !canPlay && styles.disabled,
+              ]}
+              onPress={handleStand}
+              disabled={!canPlay}
+            >
+              <Text style={styles.buttonText}>Stand</Text>
+            </TouchableOpacity>
+
+            {canSplit && (
+              <TouchableOpacity
+                style={[styles.button, styles.splitButton]}
+                onPress={handleSplit}
+              >
+                <Text style={styles.buttonText}>Split</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      ) : (
         <TouchableOpacity style={styles.playAgainButton} onPress={startNewGame}>
           <Text style={styles.playAgainText}>🔄 Play Again</Text>
         </TouchableOpacity>
       )}
-    </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
+  screen: {
+    flex: 1,
     backgroundColor: "#0d5c2e",
     alignItems: "center",
     padding: scale(20),
+  },
+  handsScroll: {
+    flex: 1,
+    alignSelf: "stretch",
+  },
+  handsScrollContent: {
+    alignItems: "center",
+  },
+  bottomArea: {
+    alignSelf: "stretch",
+    alignItems: "center",
   },
   section: {
     alignItems: "center",
@@ -332,7 +349,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "center",
-    marginTop: scale(20),
+    marginTop: 0,
     gap: scale(10),
   },
   button: {
