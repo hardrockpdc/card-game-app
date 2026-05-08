@@ -173,12 +173,13 @@ export default function SinglePlayerSetupScreen({ navigation }) {
   const GAP = 12;
   const SIDE_OFFSET = (width - CARD_WIDTH) / 2;
   const SNAP_INTERVAL = CARD_WIDTH + GAP;
-  const cardTopSpace = isSmallScreen ? 92 : isTablet ? 116 : 104;
+  const cardTopSpace = isSmallScreen ? 104 : isTablet ? 128 : 116;
   const cardBottomSpace = isSmallScreen ? 148 : isTablet ? 160 : 154;
   const availableCardHeight = height - cardTopSpace - cardBottomSpace;
+  const ACTIVE_SCALE = 1.03;
   const CARD_HEIGHT = Math.max(
     isSmallScreen ? 280 : 340,
-    Math.round(availableCardHeight * 0.75),
+    Math.round((availableCardHeight * 0.8) / ACTIVE_SCALE),
   );
 
   // ─── Derived game state ─────────────────────────────────────────────────────
@@ -282,6 +283,9 @@ export default function SinglePlayerSetupScreen({ navigation }) {
       >
         {/* ── Game carousel ── */}
         <FlatList
+          style={{
+            marginTop: isSmallScreen ? 8 : isTablet ? 12 : 10,
+          }}
           ref={flatListRef}
           data={CAROUSEL_GAMES}
           keyExtractor={(item) => item.id}
