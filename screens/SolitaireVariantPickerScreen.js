@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import SolitaireVariantWheel from '../components/SolitaireVariantWheel';
 import { SPIDER_MODE_OPTIONS, VARIANT_OPTIONS } from '../game/solitaire';
+import { hasSave, clearGame } from '../game/gameSaves';
 
 export default function SolitaireVariantPickerScreen({ navigation, route }) {
   const initialVariantId = route?.params?.variantId || VARIANT_OPTIONS[0].id;
@@ -15,11 +16,37 @@ export default function SolitaireVariantPickerScreen({ navigation, route }) {
     [variantId]
   );
 
-  const startGame = () => {
-    navigation.navigate('SolitaireGame', {
-      variantId,
-      spiderMode: variantId === 'spider' ? spiderMode : undefined,
-    });
+  const startGame = async () => {
+    const saveKey = `@cardnight:save:solitaire:${variantId}`;
+    const exists = await hasSave(saveKey);
+    const variantLabel = selectedVariant.label;
+
+    const navigate = (resume) =>
+      navigation.navigate('SolitaireGame', {
+        variantId,
+        spiderMode: variantId === 'spider' ? spiderMode : undefined,
+        resumeFromSave: resume,
+      });
+
+    if (exists) {
+      Alert.alert(
+        'Game in Progress',
+        `You have a saved ${variantLabel} game. Continue or start fresh?`,
+        [
+          {
+            text: 'Start New',
+            style: 'destructive',
+            onPress: async () => {
+              await clearGame(saveKey);
+              navigate(false);
+            },
+          },
+          { text: 'Continue', onPress: () => navigate(true) },
+        ],
+      );
+    } else {
+      navigate(false);
+    }
   };
 
   return (

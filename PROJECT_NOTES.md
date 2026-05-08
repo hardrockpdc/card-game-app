@@ -223,6 +223,41 @@ All folders use identical filenames: `{rank}_{suit}.png` (ranks: a 2–10 j q k,
 
 ## 🔮 Next Steps When We Resume
 
+### Update Session (current) — Coin Economy + Betting + Save/Resume — COMPLETE ✅
+
+**Phase 1 — Coin Wallet & Economy:**
+- ✅ `game/wallet.js` created — getCoins, setCoins, addCoins, subtractCoins, resetCoins, getLifetimeEarned
+- ✅ `ProfileScreen.js` — coin balance display + Reset to 1000 button + confirmation
+- ✅ `HomeScreen.js` — small gold coin pill showing balance
+- ✅ `SolitaireGameScreen.js` — +250 coins on win (single-player only), win banner
+- ✅ `RummyGameScreen.js` — +500 coins on single-player win
+- ✅ `ConquianGameScreen.js` — +500 coins on single-player win
+- ✅ `LastCardGameScreen.js` — +500 coins on single-player win
+- ✅ `GoFishGameScreen.js` — +500 coins on single-player win
+- ✅ `PokerVariantPickerScreen.js` — buy-in selector (100/250/500/1000), wallet balance, disabled when broke
+- ✅ `PokerGameScreen.js` — buy-in subtracted on start, chips = starting stack, tournament winner gets chips→coins
+
+**Phase 2 — Blackjack Betting:**
+- ✅ `GameScreen.js` — three-state flow (betting → playing → result), 5 bet presets (10/25/50/100/250), wallet integration, standard casino payouts, split support, Game Over modal, "Continue" / "Adjust Bet" buttons
+
+**Phase 3 — Save & Resume:**
+- ✅ `game/gameSaves.js` — saveGame, loadGame, clearGame, hasSave (AsyncStorage, JSON, error-safe)
+- ✅ `GameScreen.js` — auto-save during active hand, restore on resume, clear on new hand / game over
+- ✅ `SolitaireGameScreen.js` — auto-save on every move, restore via __RESTORE__ wrapper reducer, clear on win / New Game
+- ✅ `GoFishGameScreen.js` — auto-save on state change, restore via fullRef, clear on results
+- ✅ `LastCardGameScreen.js` — auto-save on state change, restore via fullRef + handleTurn re-trigger, clear on win
+- ✅ `RummyGameScreen.js` — auto-save on state change, restore via fullRef, clear on game over / Play Again
+- ✅ `ConquianGameScreen.js` — auto-save on state change, restore via fullRef, clear on results / Play Again
+- ✅ `PokerGameScreen.js` — auto-save on state change, restore skips buy-in deduction, clear on tournament end
+- ✅ `SinglePlayerSetupScreen.js` — "Game in Progress?" prompt before Blackjack
+- ✅ `SolitaireVariantPickerScreen.js` — "Game in Progress?" prompt per variant
+- ✅ `RummyVariantPickerScreen.js` — "Game in Progress?" prompt per Rummy variant + Conquian
+- ✅ `PokerVariantPickerScreen.js` — "Game in Progress?" prompt per Poker variant
+- ✅ `GameSetupScreen.js` — "Game in Progress?" prompt for Go Fish + Last Card
+
+Save keys: `@cardnight:save:<game>[:<variant>]`
+
+### After this session
 1. **Phase 5: Visual Theme Project** (paused until on better PC)
 2. **Phase 6: Publish** — Google Play + App Store
 

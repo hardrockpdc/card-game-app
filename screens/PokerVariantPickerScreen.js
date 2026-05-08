@@ -1,6 +1,8 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
+import { hasSave, clearGame } from "../game/gameSaves";
 
 import PokerVariantWheel, {
   POKER_VARIANT_OPTIONS,
@@ -10,6 +12,7 @@ import {
   getDisplayName,
   subscribeProfile,
 } from "../game/profile";
+import { getCoins } from "../game/wallet";
 
 function getInitialVariant(currentVariant) {
   const found = POKER_VARIANT_OPTIONS.find(
@@ -56,6 +59,19 @@ function PokerVariantPickerScreen({ navigation, route }) {
   );
   const [aiCount, setAiCount] = useState(1);
   const [difficulty, setDifficulty] = useState("medium");
+  const [coins, setCoins] = useState(null);
+  const [buyIn, setBuyIn] = useState(100);
+
+  // Refresh wallet balance each time this screen comes into focus.
+  useFocusEffect(
+    useCallback(() => {
+      getCoins().then((c) => {
+        setCoins(c);
+        // If the previously selected buy-in is now unaffordable, reset to 100.
+        setBuyIn((prev) => (c >= prev ? prev : 100));
+      });
+    }, [])
+  );
 
   useEffect(() => {
     setSelectedVariant(getInitialVariant(currentVariant));
@@ -91,8 +107,12 @@ function PokerVariantPickerScreen({ navigation, route }) {
     POKER_VARIANT_OPTIONS.find((option) => option.value === selectedVariant)
       ?.label ?? "";
   const isLobby = mode === "lobby";
+  // Coins loaded and player can afford the minimum buy-in.
+  const coinsLoaded = coins !== null;
+  const canAffordMin = !coinsLoaded || coins >= 100;
+  const canPlay = isLobby || canAffordMin;
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (isLobby) {
       navigation.navigate({
         name: "Lobby",
@@ -108,15 +128,39 @@ function PokerVariantPickerScreen({ navigation, route }) {
       launchParams && typeof launchParams === "object" ? launchParams : {};
 
     const players = buildPlayers(launchPayload.myName ?? playerName, aiCount);
+    const saveKey = `@cardnight:save:poker:${selectedVariant}`;
+    const variantLabel =
+      POKER_VARIANT_OPTIONS.find((o) => o.value === selectedVariant)?.label ?? "Poker";
 
-    navigation.navigate("PokerGame", {
-      ...launchPayload,
-      role: "singleplayer",
-      myName: launchPayload.myName ?? playerName,
-      players,
-      difficulty,
-      variant: selectedVariant,
-    });
+    const doNav = (resume) =>
+      navigation.navigate("PokerGame", {
+        ...launchPayload,
+        role: "singleplayer",
+        myName: launchPayload.myName ?? playerName,
+        players,
+        difficulty,
+        variant: selectedVariant,
+        buyIn,
+        resumeFromSave: resume,
+      });
+
+    const exists = await hasSave(saveKey);
+    if (exists) {
+      Alert.alert(
+        "Game in Progress",
+        `You have a saved ${variantLabel} game. Continue or start fresh?\n\nNote: starting fresh will use a new buy-in.`,
+        [
+          {
+            text: "Start New",
+            style: "destructive",
+            onPress: async () => { await clearGame(saveKey); doNav(false); },
+          },
+          { text: "Continue", onPress: () => doNav(true) },
+        ],
+      );
+    } else {
+      doNav(false);
+    }
   };
 
   return (
@@ -143,6 +187,50 @@ function PokerVariantPickerScreen({ navigation, route }) {
 
         {!isLobby ? (
           <View style={styles.settingsCard}>
+            {coinsLoaded && (
+              <View style={styles.walletRow}>
+                <Text style={styles.settingsLabel}>Your Balance</Text>
+                <Text style={styles.walletBalance}>🪙 {coins.toLocaleString()}</Text>
+              </View>
+            )}
+
+            <Text style={styles.settingsLabel}>Buy-In</Text>
+            <View style={styles.buyInRow}>
+              {[100, 250, 500, 1000].map((amount) => {
+                const isSelected = buyIn === amount;
+                const isAffordable = !coinsLoaded || coins >= amount;
+                return (
+                  <Pressable
+                    key={amount}
+                    onPress={() => { if (isAffordable) setBuyIn(amount); }}
+                    disabled={!isAffordable}
+                    style={({ pressed }) => [
+                      styles.buyInButton,
+                      isSelected && styles.buyInButtonSelected,
+                      !isAffordable && styles.buyInButtonDisabled,
+                      pressed && isAffordable && styles.buttonPressed,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.buyInButtonText,
+                        isSelected && styles.buyInButtonTextSelected,
+                        !isAffordable && styles.buyInButtonTextDisabled,
+                      ]}
+                    >
+                      🪙 {amount}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            {coinsLoaded && coins < 100 && (
+              <Text style={styles.noCoinsWarning}>
+                You need at least 🪙 100 to play. Visit your Profile to reset your coins.
+              </Text>
+            )}
+
             <Text style={styles.settingsLabel}>Computer Opponents</Text>
             <View style={styles.countRow}>
               {[1, 2, 3].map((count) => (
@@ -209,10 +297,12 @@ function PokerVariantPickerScreen({ navigation, route }) {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={modeCopy.buttonLabel}
-          onPress={handleContinue}
+          onPress={canPlay ? handleContinue : undefined}
+          disabled={!canPlay}
           style={({ pressed }) => [
             styles.button,
-            pressed && styles.buttonPressed,
+            !canPlay && styles.buttonDisabled,
+            canPlay && pressed && styles.buttonPressed,
           ]}
         >
           <Text style={styles.buttonText}>{modeCopy.buttonLabel}</Text>
@@ -358,6 +448,55 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
   },
+  walletRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  walletBalance: {
+    color: "#ffd700",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  buyInRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  buyInButton: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: "#2c3750",
+    backgroundColor: "#182131",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+  },
+  buyInButtonSelected: {
+    borderColor: "#ffd700",
+    backgroundColor: "#2a2a10",
+  },
+  buyInButtonDisabled: {
+    opacity: 0.35,
+  },
+  buyInButtonText: {
+    color: "#d3dcec",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  buyInButtonTextSelected: {
+    color: "#ffd700",
+  },
+  buyInButtonTextDisabled: {
+    color: "#555",
+  },
+  noCoinsWarning: {
+    color: "#e94560",
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: "center",
+  },
   button: {
     marginTop: "auto",
     minHeight: 54,
@@ -370,6 +509,12 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
+  },
+  buttonDisabled: {
+    backgroundColor: "#444",
+    opacity: 0.7,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   buttonPressed: {
     opacity: 0.88,

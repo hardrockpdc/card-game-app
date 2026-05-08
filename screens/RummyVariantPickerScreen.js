@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { hasSave, clearGame } from "../game/gameSaves";
 
 import RummyVariantWheel from "../components/RummyVariantWheel";
 import { RUMMY_VARIANT_OPTIONS, getRummyVariantLabel } from "../game/rummy";
@@ -85,7 +86,7 @@ function RummyVariantPickerScreen({ navigation, route }) {
         ? "Start Conquián Game"
         : modeCopy.buttonLabel;
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (mode === "lobby") {
       navigation.navigate({
         name: "Lobby",
@@ -103,23 +104,48 @@ function RummyVariantPickerScreen({ navigation, route }) {
     const players = buildPlayers(playerName, aiCount);
 
     if (selectedVariant === "conquian") {
-      navigation.navigate("ConquianGame", {
-        ...launchPayload,
-        role: "singleplayer",
-        myName: playerName,
-        players,
-        difficulty,
-      });
+      const saveKey = "@cardnight:save:rummy:conquian";
+      const exists = await hasSave(saveKey);
+      const doNav = (resume) =>
+        navigation.navigate("ConquianGame", {
+          ...launchPayload,
+          role: "singleplayer",
+          myName: playerName,
+          players,
+          difficulty,
+          resumeFromSave: resume,
+        });
+      if (exists) {
+        Alert.alert("Game in Progress", "You have a saved Conquián game. Continue or start fresh?", [
+          { text: "Start New", style: "destructive", onPress: async () => { await clearGame(saveKey); doNav(false); } },
+          { text: "Continue", onPress: () => doNav(true) },
+        ]);
+      } else {
+        doNav(false);
+      }
       return;
     }
 
-    navigation.navigate("RummyGame", {
-      ...launchPayload,
-      players,
-      difficulty,
-      variantId: selectedVariant,
-      variant: selectedVariant,
-    });
+    const saveKey = `@cardnight:save:rummy:${selectedVariant}`;
+    const variantLabel = SINGLE_PLAYER_RUMMY_OPTIONS.find((o) => o.value === selectedVariant)?.label ?? "Rummy";
+    const exists = await hasSave(saveKey);
+    const doNav = (resume) =>
+      navigation.navigate("RummyGame", {
+        ...launchPayload,
+        players,
+        difficulty,
+        variantId: selectedVariant,
+        variant: selectedVariant,
+        resumeFromSave: resume,
+      });
+    if (exists) {
+      Alert.alert("Game in Progress", `You have a saved ${variantLabel} game. Continue or start fresh?`, [
+        { text: "Start New", style: "destructive", onPress: async () => { await clearGame(saveKey); doNav(false); } },
+        { text: "Continue", onPress: () => doNav(true) },
+      ]);
+    } else {
+      doNav(false);
+    }
   };
 
   return (

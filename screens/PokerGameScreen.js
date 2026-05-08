@@ -4,6 +4,8 @@ import {
   TouchableOpacity, Alert,
 } from 'react-native';
 import { createDeck, shuffleDeck } from '../game/deck';
+import { addCoins, subtractCoins } from '../game/wallet';
+import { saveGame, loadGame, clearGame } from '../game/gameSaves';
 import Card from '../components/Card';
 import { scale, scaleFont } from '../game/responsive';
 import {
@@ -66,7 +68,7 @@ function bestHand(holeCards, community) {
 
 // ─── Game logic ───────────────────────────────────────────────────────────────
 
-function initDeal(playerList, dealerIdx, prevChips) {
+function initDeal(playerList, dealerIdx, prevChips, startingChips = STARTING_CHIPS) {
   const deck = shuffleDeck(createDeck());
   const n = playerList.length;
   const hands = {};
@@ -76,7 +78,7 @@ function initDeal(playerList, dealerIdx, prevChips) {
   const playerStates = {};
   for (const p of playerList) {
     playerStates[String(p.id)] = {
-      chips: prevChips ? (prevChips[String(p.id)] ?? STARTING_CHIPS) : STARTING_CHIPS,
+      chips: prevChips ? (prevChips[String(p.id)] ?? startingChips) : startingChips,
       bet: 0, folded: false, allIn: false,
     };
   }
@@ -345,15 +347,21 @@ function pokerAIAction(state, pid, difficulty) {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function PokerGameScreen({ navigation, route }) {
-  const { role, myName, players: initialPlayers, difficulty = 'medium' } = route.params;
+  const { role, myName, players: initialPlayers, difficulty = 'medium', buyIn, variant } = route.params;
   const isSinglePlayer = role === 'singleplayer';
   const isHost = role === 'host' || isSinglePlayer;
+  // In single-player, use the chosen buy-in as starting chips; fall back for multiplayer.
+  const startingChips = isSinglePlayer && buyIn ? buyIn : STARTING_CHIPS;
+  const saveKey = isSinglePlayer && variant ? `@cardnight:save:poker:${variant}` : null;
 
   const [gameState, setGameState] = useState(null);
   const [myHand, setMyHand] = useState([]);
+  const [tournamentWinner, setTournamentWinner] = useState(null);
+  const [tournamentCoins, setTournamentCoins] = useState(0);
   const fullRef = useRef(null);
   const dealerRef = useRef(0);
   const chipsRef = useRef(null);
+  const coinRewardedRef = useRef(false);
 
   function applyState(next) {
     fullRef.current = next;
@@ -387,9 +395,36 @@ export default function PokerGameScreen({ navigation, route }) {
     }, 1000 + Math.random() * 800);
   }
 
+  // Auto-save after each state change in single-player.
+  useEffect(() => {
+    if (!saveKey || !fullRef.current) return;
+    if (tournamentWinner !== null) {
+      clearGame(saveKey);
+      return;
+    }
+    saveGame(saveKey, { fullState: fullRef.current });
+  }, [gameState, tournamentWinner]);
+
   useEffect(() => {
     if (!isHost) return;
-    applyState(initDeal(initialPlayers, 0, null));
+
+    async function init() {
+      if (saveKey && route?.params?.resumeFromSave) {
+        const saved = await loadGame(saveKey);
+        if (saved?.fullState) {
+          // Restore without subtracting buy-in (already paid in the original session).
+          applyState(saved.fullState);
+          return;
+        }
+      }
+      applyState(initDeal(initialPlayers, 0, null, startingChips));
+      // Deduct the buy-in from the wallet when a single-player tournament starts.
+      if (isSinglePlayer && buyIn) {
+        subtractCoins(buyIn);
+      }
+    }
+    init();
+
     if (!isSinglePlayer) {
       setServerListeners({
         onMessage: (msg, clientId) => {
@@ -399,7 +434,7 @@ export default function PokerGameScreen({ navigation, route }) {
             const activePlayers = state.players.filter((p) => chipsRef.current[String(p.id)] > 0);
             if (activePlayers.length < 2) return;
             const newDealer = (dealerRef.current + 1) % activePlayers.length;
-            applyState(initDeal(activePlayers, newDealer, chipsRef.current));
+            applyState(initDeal(activePlayers, newDealer, chipsRef.current, startingChips));
             return;
           }
           if (state.players.findIndex((p) => p.id === clientId) !== state.currentPlayerIndex) return;
@@ -436,9 +471,21 @@ export default function PokerGameScreen({ navigation, route }) {
       if (!state) return;
       if (action.action === 'nextHand' && state.phase === 'showdown') {
         const activePlayers = state.players.filter((p) => chipsRef.current[String(p.id)] > 0);
-        if (activePlayers.length < 2) return;
+        if (activePlayers.length < 2) {
+          // Tournament over — determine winner and handle rewards for single player.
+          if (isSinglePlayer) {
+            const winner = activePlayers[0] ?? null;
+            setTournamentWinner(winner ?? { id: '__none__', name: 'Nobody' });
+            if (winner && String(winner.id) === 'host' && !coinRewardedRef.current) {
+              coinRewardedRef.current = true;
+              const wonChips = chipsRef.current['host'] ?? 0;
+              addCoins(wonChips).then(() => setTournamentCoins(wonChips));
+            }
+          }
+          return;
+        }
         const newDealer = (dealerRef.current + 1) % activePlayers.length;
-        applyState(initDeal(activePlayers, newDealer, chipsRef.current));
+        applyState(initDeal(activePlayers, newDealer, chipsRef.current, startingChips));
         return;
       }
       if (state.players.findIndex((p) => p.id === 'host') !== state.currentPlayerIndex) return;
@@ -455,6 +502,34 @@ export default function PokerGameScreen({ navigation, route }) {
 
   if (!gameState) {
     return <View style={styles.loading}><Text style={styles.loadingText}>Dealing…</Text></View>;
+  }
+
+  if (tournamentWinner !== null) {
+    const humanWon = String(tournamentWinner.id) === 'host';
+    return (
+      <View style={styles.tournamentOverContainer}>
+        <Text style={styles.tournamentOverEmoji}>{humanWon ? '🏆' : '💸'}</Text>
+        <Text style={styles.tournamentOverTitle}>
+          {humanWon ? 'Tournament Won!' : 'Tournament Over'}
+        </Text>
+        {humanWon && tournamentCoins > 0 && (
+          <Text style={styles.tournamentCoinsText}>
+            +{tournamentCoins} coins added to your wallet!
+          </Text>
+        )}
+        {!humanWon && (
+          <Text style={styles.tournamentLostText}>
+            You ran out of chips. Visit your Profile to reset your coins.
+          </Text>
+        )}
+        <TouchableOpacity
+          style={styles.tournamentHomeBtn}
+          onPress={() => navigation.navigate('Home')}
+        >
+          <Text style={styles.tournamentHomeBtnText}>Go Home</Text>
+        </TouchableOpacity>
+      </View>
+    );
   }
 
   const { phase, communityCards, pot, playerStates, currentPlayerIndex, currentBet, minRaise, dealerIdx, lastAction, players, handResult } = gameState;
@@ -642,4 +717,22 @@ const styles = StyleSheet.create({
   nextHandBtn: { backgroundColor: '#4caf50', borderRadius: scale(10), paddingVertical: scale(16), alignItems: 'center', marginTop: scale(4) },
   nextHandText: { color: '#fff', fontSize: scaleFont(18), fontWeight: 'bold' },
   waitText: { color: '#aaa', textAlign: 'center', fontSize: scaleFont(14), marginTop: scale(8) },
+
+  tournamentOverContainer: {
+    flex: 1, backgroundColor: '#0a1628', alignItems: 'center', justifyContent: 'center', padding: scale(32),
+  },
+  tournamentOverEmoji: { fontSize: scaleFont(64), marginBottom: scale(12) },
+  tournamentOverTitle: {
+    color: '#fff', fontSize: scaleFont(30), fontWeight: 'bold', textAlign: 'center', marginBottom: scale(16),
+  },
+  tournamentCoinsText: {
+    color: '#ffd700', fontSize: scaleFont(18), fontWeight: 'bold', textAlign: 'center', marginBottom: scale(24),
+  },
+  tournamentLostText: {
+    color: '#b0b0c0', fontSize: scaleFont(15), textAlign: 'center', lineHeight: scale(22), marginBottom: scale(24),
+  },
+  tournamentHomeBtn: {
+    backgroundColor: '#e94560', borderRadius: scale(12), paddingVertical: scale(16), paddingHorizontal: scale(40), alignItems: 'center',
+  },
+  tournamentHomeBtnText: { color: '#fff', fontSize: scaleFont(18), fontWeight: 'bold' },
 });

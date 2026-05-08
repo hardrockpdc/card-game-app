@@ -11,6 +11,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import Card from "../components/Card";
 import { scale, scaleFont } from "../game/responsive";
+import { addCoins } from "../game/wallet";
+import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import {
   broadcastToClients,
   sendToClient,
@@ -174,6 +176,8 @@ export default function RummyGameScreen({ navigation, route }) {
 
   const fullRef = useRef(null);
   const aiTimerRef = useRef(null);
+  const coinRewardedRef = useRef(false);
+  const [coinsEarned, setCoinsEarned] = useState(0);
 
   const variantLabel =
     gameState?.variantLabel || getRummyVariantLabel(variantId);
@@ -306,13 +310,19 @@ export default function RummyGameScreen({ navigation, route }) {
             { id: "ai_1", name: "Computer", isAI: true },
           ];
 
-    applyState(
-      createRummyState({
-        variantId,
-        players: initialPlayers,
-        difficulty,
-      }),
-    );
+    const rummySaveKey = `@cardnight:save:rummy:${variantId}`;
+
+    async function initGame() {
+      if (isSinglePlayer && route?.params?.resumeFromSave) {
+        const saved = await loadGame(rummySaveKey);
+        if (saved?.fullState) {
+          applyState(saved.fullState);
+          return;
+        }
+      }
+      applyState(createRummyState({ variantId, players: initialPlayers, difficulty }));
+    }
+    initGame();
 
     if (!isSinglePlayer) {
       setServerListeners({
@@ -563,6 +573,9 @@ export default function RummyGameScreen({ navigation, route }) {
       return;
     }
 
+    coinRewardedRef.current = false;
+    setCoinsEarned(0);
+    clearGame(`@cardnight:save:rummy:${variantId}`);
     applyState(
       createRummyState({
         variantId: fullRef.current.variantId,
@@ -602,6 +615,31 @@ export default function RummyGameScreen({ navigation, route }) {
     );
   }
 
+  // Auto-save after each state change in single-player.
+  useEffect(() => {
+    if (!isSinglePlayer || !fullRef.current) return;
+    const key = `@cardnight:save:rummy:${variantId}`;
+    const isOver = gameState?.phase === "game-over" || gameState?.winner != null || gameState?.tie;
+    if (isOver) {
+      clearGame(key);
+      return;
+    }
+    saveGame(key, { fullState: fullRef.current });
+  }, [gameState]);
+
+  useEffect(() => {
+    if (!isSinglePlayer) return;
+    const isWon = gameState?.winner != null && !gameState?.tie && gameState.winner === localPlayerIndex;
+    if (isWon && !coinRewardedRef.current) {
+      coinRewardedRef.current = true;
+      addCoins(500).then(() => setCoinsEarned(500));
+    }
+    if (gameState?.winner == null && !gameState?.tie) {
+      coinRewardedRef.current = false;
+      setCoinsEarned(0);
+    }
+  }, [gameState?.winner, gameState?.tie]);
+
   if (
     gameState.phase === "game-over" ||
     gameState.tie ||
@@ -616,6 +654,10 @@ export default function RummyGameScreen({ navigation, route }) {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
           {renderHeaderCard(true)}
+
+          {isSinglePlayer && gameState.winner === localPlayerIndex && coinsEarned > 0 && (
+            <Text style={styles.coinsEarnedText}>+{coinsEarned} coins!</Text>
+          )}
 
           <View style={styles.resultsCard}>
             <Text style={styles.sectionTitle}>Final Scores</Text>
@@ -1245,6 +1287,13 @@ const styles = StyleSheet.create({
     color: "#95A4BB",
     fontSize: 12,
     textAlign: "center",
+  },
+  coinsEarnedText: {
+    color: "#ffd700",
+    fontSize: scaleFont(20),
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: scale(12),
   },
   resultsCard: {
     borderRadius: 22,

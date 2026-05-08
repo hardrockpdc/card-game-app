@@ -17,6 +17,10 @@ import {
   setClientListeners, sendToHost,
 } from '../game/GameNetwork';
 import { scale, scaleFont } from '../game/responsive';
+import { addCoins } from '../game/wallet';
+import { saveGame, loadGame, clearGame } from '../game/gameSaves';
+
+const SAVE_KEY_CONQUIAN = '@cardnight:save:rummy:conquian';
 
 function toPublic(state) {
   return {
@@ -52,12 +56,14 @@ export default function ConquianGameScreen({ navigation, route }) {
     : String(initialPlayers.find(p => p.name === myName)?.id ?? myName);
 
   const fullRef = useRef(null);
+  const coinRewardedRef = useRef(false);
   const [gameState, setGameState] = useState(null);
   const [myHand, setMyHand] = useState([]);
   const [selectedHandIds, setSelectedHandIds] = useState(new Set());
   const [selectedMeldIdx, setSelectedMeldIdx] = useState(null);
   const [passCardId, setPassCardId] = useState(null);
   const [statusMsg, setStatusMsg] = useState('');
+  const [coinsEarned, setCoinsEarned] = useState(0);
 
   // Borrow mode state
   const [borrowMode, setBorrowMode] = useState(false);
@@ -154,9 +160,31 @@ export default function ConquianGameScreen({ navigation, route }) {
 
   // ─── Initialization ──────────────────────────────────────────────────────────
 
+  // Auto-save after each state change in single-player.
+  useEffect(() => {
+    if (!isSinglePlayer || !fullRef.current) return;
+    if (gameState?.phase === 'results') {
+      clearGame(SAVE_KEY_CONQUIAN);
+      return;
+    }
+    saveGame(SAVE_KEY_CONQUIAN, { fullState: fullRef.current });
+  }, [gameState]);
+
   useEffect(() => {
     if (!isHost) return;
-    applyState(deal(initialPlayers));
+
+    async function init() {
+      if (isSinglePlayer && route?.params?.resumeFromSave) {
+        const saved = await loadGame(SAVE_KEY_CONQUIAN);
+        if (saved?.fullState) {
+          applyState(saved.fullState);
+          return;
+        }
+      }
+      applyState(deal(initialPlayers));
+    }
+    init();
+
     if (!isSinglePlayer) {
       setServerListeners({
         onMessage: (msg, clientId) => {
@@ -370,7 +398,10 @@ export default function ConquianGameScreen({ navigation, route }) {
 
   function handlePlayAgain() {
     if (!isHost) return;
+    coinRewardedRef.current = false;
+    setCoinsEarned(0);
     setPassCardId(null);
+    clearGame(SAVE_KEY_CONQUIAN);
     applyState(deal(initialPlayers));
   }
 
@@ -561,6 +592,20 @@ export default function ConquianGameScreen({ navigation, route }) {
     !!activeCard && selectedMeldIdx !== null &&
     canExtendMeld(myMelds[selectedMeldIdx] ?? [], activeCard);
 
+  useEffect(() => {
+    if (!isSinglePlayer) return;
+    const winner = gameState?.winner;
+    const isWon = gameState?.phase === 'results' && !gameState?.tie && String(winner?.id) === String(myPid);
+    if (isWon && !coinRewardedRef.current) {
+      coinRewardedRef.current = true;
+      addCoins(500).then(() => setCoinsEarned(500));
+    }
+    if (gameState?.phase !== 'results') {
+      coinRewardedRef.current = false;
+      setCoinsEarned(0);
+    }
+  }, [gameState?.phase, gameState?.winner, gameState?.tie]);
+
   // ─── Results screen ───────────────────────────────────────────────────────────
 
   if (phase === 'results') {
@@ -572,6 +617,9 @@ export default function ConquianGameScreen({ navigation, route }) {
         <Text style={styles.resultsTitle}>
           {tie ? "It's a Tie!" : iWon ? 'You Win!' : `${winner?.name} Wins!`}
         </Text>
+        {iWon && isSinglePlayer && coinsEarned > 0 && (
+          <Text style={styles.resultsCoins}>+{coinsEarned} coins!</Text>
+        )}
 
         <View style={styles.scoreBoard}>
           {gameState.players.map(p => {
@@ -861,7 +909,8 @@ const styles = StyleSheet.create({
 
   resultsContainer: { flex: 1, backgroundColor: '#1a1a2e', alignItems: 'center', justifyContent: 'center', padding: scale(32) },
   resultsEmoji: { fontSize: scaleFont(52), marginBottom: scale(8) },
-  resultsTitle: { color: '#fff', fontSize: scaleFont(30), fontWeight: 'bold', textAlign: 'center', marginBottom: scale(28) },
+  resultsTitle: { color: '#fff', fontSize: scaleFont(30), fontWeight: 'bold', textAlign: 'center', marginBottom: scale(8) },
+  resultsCoins: { color: '#ffd700', fontSize: scaleFont(20), fontWeight: 'bold', textAlign: 'center', marginBottom: scale(24) },
   scoreBoard: { width: '100%', marginBottom: scale(32), gap: scale(10) },
   scoreRow: { backgroundColor: '#16213e', borderRadius: scale(10), padding: scale(12), borderWidth: 1.5, borderColor: '#334' },
   scoreRowWinner: { borderColor: '#ffd700' },

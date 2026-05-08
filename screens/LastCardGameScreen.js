@@ -32,6 +32,10 @@ import {
   sendToHost,
 } from "../game/GameNetwork";
 import { scale, scaleFont } from "../game/responsive";
+import { addCoins } from "../game/wallet";
+import { saveGame, loadGame, clearGame } from "../game/gameSaves";
+
+const SAVE_KEY_LASTCARD = "@cardnight:save:lastcard";
 
 const COLOR_HEX = {
   od_green: "#556B2F",
@@ -294,7 +298,9 @@ export default function LastCardGameScreen({ navigation, route }) {
   const [phase, setPhase] = useState("playing");
   const [winner, setWinner] = useState(null);
   const [shakeId, setShakeId] = useState(null);
+  const [coinsEarned, setCoinsEarned] = useState(0);
   const shakeAnim = useRef(new Animated.Value(0)).current;
+  const coinRewardedRef = useRef(false);
 
   useEffect(
     () => () => {
@@ -305,6 +311,26 @@ export default function LastCardGameScreen({ navigation, route }) {
     },
     [],
   );
+
+  useEffect(() => {
+    if (!isSinglePlayer) return;
+    const isWon = phase === "gameOver" && winner === myPid;
+    if (isWon && !coinRewardedRef.current) {
+      coinRewardedRef.current = true;
+      clearGame(SAVE_KEY_LASTCARD);
+      addCoins(500).then(() => setCoinsEarned(500));
+    }
+    if (phase !== "gameOver") {
+      coinRewardedRef.current = false;
+      setCoinsEarned(0);
+    }
+  }, [phase, winner]);
+
+  // Auto-save after each state update in single-player.
+  useEffect(() => {
+    if (!isSinglePlayer || !fullRef.current) return;
+    saveGame(SAVE_KEY_LASTCARD, { fullState: fullRef.current });
+  }, [gameState]);
 
   function scheduleTimeout(ref, fn, ms) {
     if (ref.current) clearTimeout(ref.current);
@@ -634,8 +660,21 @@ export default function LastCardGameScreen({ navigation, route }) {
 
   useEffect(() => {
     if (!isHost) return;
-    const next = buildInitialState(initialPlayers);
-    applyState(next);
+
+    async function init() {
+      if (isSinglePlayer && route?.params?.resumeFromSave) {
+        const saved = await loadGame(SAVE_KEY_LASTCARD);
+        if (saved?.fullState) {
+          applyState(saved.fullState);
+          scheduleTimeout(turnTimerRef, () => handleTurn(saved.fullState), 300);
+          return;
+        }
+      }
+      const next = buildInitialState(initialPlayers);
+      applyState(next);
+      scheduleTimeout(turnTimerRef, () => handleTurn(next), 300);
+    }
+    init();
 
     if (!isSinglePlayer) {
       setServerListeners({
@@ -703,7 +742,6 @@ export default function LastCardGameScreen({ navigation, route }) {
         },
       });
     }
-    scheduleTimeout(turnTimerRef, () => handleTurn(next), 300);
     return () => {
       if (aiTimerRef.current) clearTimeout(aiTimerRef.current);
       if (turnTimerRef.current) clearTimeout(turnTimerRef.current);
@@ -850,6 +888,8 @@ export default function LastCardGameScreen({ navigation, route }) {
 
   function onPlayAgain() {
     if (!isHost) return;
+    coinRewardedRef.current = false;
+    setCoinsEarned(0);
     const next = buildInitialState(initialPlayers);
     applyState(next);
     setStatusMsg("Dealing...");
@@ -1053,6 +1093,9 @@ export default function LastCardGameScreen({ navigation, route }) {
               ? `${winner === myPid ? "You win!" : `${(gameState?.players ?? []).find((p) => p.id === winner)?.name ?? "Player"} wins!`}`
               : "Game Over"}
           </Text>
+          {isSinglePlayer && winner === myPid && coinsEarned > 0 && (
+            <Text style={styles.winCoinsText}>+{coinsEarned} coins!</Text>
+          )}
           <TouchableOpacity style={styles.winBtn} onPress={onPlayAgain}>
             <Text style={styles.winBtnText}>Play Again</Text>
           </TouchableOpacity>
@@ -1276,6 +1319,13 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textAlign: "center",
     marginBottom: scale(12),
+  },
+  winCoinsText: {
+    color: "#ffd700",
+    fontSize: scaleFont(20),
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: scale(14),
   },
   winBtn: {
     backgroundColor: "#e94560",

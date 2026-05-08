@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useReducer, useState } from "react";
+import React, { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import {
   Pressable,
   ScrollView,
@@ -20,6 +20,19 @@ import {
   solitaireReducer,
   tapAction,
 } from "../game/solitaire";
+import { addCoins } from "../game/wallet";
+import { saveGame, loadGame, clearGame } from "../game/gameSaves";
+
+function solitaireSaveKey(variantId) {
+  return `@cardnight:save:solitaire:${variantId}`;
+}
+
+// Wraps the official reducer to allow full state restoration without
+// modifying the game logic file.
+function solitaireReducerWithRestore(state, action) {
+  if (action.type === "__RESTORE__") return action.payload;
+  return solitaireReducer(state, action);
+}
 
 function sameTarget(selected, target) {
   if (!selected || !target) {
@@ -125,13 +138,56 @@ export default function SolitaireGameScreen({ navigation, route }) {
   const { width } = useWindowDimensions();
   const spiderBoardWidth = Math.max(width - 28, 500);
 
-  const [state, dispatch] = useReducer(solitaireReducer, null, () =>
+  const [state, dispatch] = useReducer(solitaireReducerWithRestore, null, () =>
     createSolitaireState(routeVariantId, { spiderMode: routeSpiderMode }),
   );
+  const coinRewardedRef = useRef(false);
+  const [coinsEarned, setCoinsEarned] = useState(0);
+  // Tracks whether the initial mount already dispatched newGameAction so the
+  // restore effect (which fires after) knows if it should override it.
+  const initialGameDispatched = useRef(false);
 
   useEffect(() => {
+    initialGameDispatched.current = true;
     dispatch(newGameAction(routeVariantId, { spiderMode: routeSpiderMode }));
+    coinRewardedRef.current = false;
+    setCoinsEarned(0);
   }, [routeVariantId, routeSpiderMode]);
+
+  // Restore saved game on initial mount (fires after newGameAction effect above).
+  useEffect(() => {
+    async function checkResume() {
+      if (!route?.params?.resumeFromSave) return;
+      const saved = await loadGame(solitaireSaveKey(routeVariantId));
+      if (saved?.state) {
+        dispatch({ type: "__RESTORE__", payload: saved.state });
+        coinRewardedRef.current = false;
+        setCoinsEarned(0);
+      }
+    }
+    checkResume();
+  }, []);
+
+  // Auto-save after every move; clear save on win.
+  useEffect(() => {
+    const key = solitaireSaveKey(state.variantId || routeVariantId);
+    if (state.status === "won") {
+      clearGame(key);
+      return;
+    }
+    saveGame(key, { state });
+  }, [state]);
+
+  useEffect(() => {
+    if (state.status === "won" && !coinRewardedRef.current) {
+      coinRewardedRef.current = true;
+      addCoins(250).then(() => setCoinsEarned(250));
+    }
+    if (state.status !== "won") {
+      coinRewardedRef.current = false;
+      setCoinsEarned(0);
+    }
+  }, [state.status]);
 
   const variant = useMemo(
     () => getVariantOption(state.variantId),
@@ -145,6 +201,9 @@ export default function SolitaireGameScreen({ navigation, route }) {
   const headerText = variant.description;
 
   const restart = () => {
+    coinRewardedRef.current = false;
+    setCoinsEarned(0);
+    clearGame(solitaireSaveKey(state.variantId || routeVariantId));
     dispatch(newGameAction(state.variantId, { spiderMode: state.spiderMode }));
   };
 
@@ -734,6 +793,14 @@ export default function SolitaireGameScreen({ navigation, route }) {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.content}>
         {renderHeader()}
+        {state.status === "won" && (
+          <View style={styles.winBanner}>
+            <Text style={styles.winBannerTitle}>🏆 You Won!</Text>
+            {coinsEarned > 0 && (
+              <Text style={styles.winBannerCoins}>+{coinsEarned} coins!</Text>
+            )}
+          </View>
+        )}
         {state.variantId === "klondike" ? renderKlondike() : null}
         {state.variantId === "spider" ? renderSpider() : null}
         {state.variantId === "freecell" ? renderFreeCell() : null}
@@ -748,6 +815,25 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#0f1115",
+  },
+  winBanner: {
+    backgroundColor: "#16213e",
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: "#ffd700",
+    padding: 18,
+    alignItems: "center",
+    gap: 6,
+  },
+  winBannerTitle: {
+    color: "#ffffff",
+    fontSize: 22,
+    fontWeight: "bold",
+  },
+  winBannerCoins: {
+    color: "#ffd700",
+    fontSize: 18,
+    fontWeight: "bold",
   },
   content: {
     padding: 14,

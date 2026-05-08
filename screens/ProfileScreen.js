@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   View,
@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
+import { useFocusEffect } from "@react-navigation/native";
 import { THEMES_LIST } from "../game/cardTheme";
 import {
   loadProfile,
@@ -20,6 +21,7 @@ import {
   hasProfileName,
   subscribeProfile,
 } from "../game/profile";
+import { getCoins, resetCoins as resetWalletCoins } from "../game/wallet";
 
 const AVATAR_CHOICES = [
   { id: "avatar_01", emoji: "🐶", color: "#ff8a80" },
@@ -97,6 +99,33 @@ export default function ProfileScreen({ navigation, route }) {
   const [nameDraft, setNameDraft] = useState("");
   const [showPhotoActions, setShowPhotoActions] = useState(false);
   const [showAvatarGrid, setShowAvatarGrid] = useState(false);
+  const [coins, setCoins] = useState(null);
+
+  // Refresh coin balance every time this screen comes into focus.
+  // useFocusEffect fires on mount AND whenever you navigate back to this screen.
+  useFocusEffect(
+    useCallback(() => {
+      getCoins().then(setCoins);
+    }, [])
+  );
+
+  async function handleResetCoins() {
+    Alert.alert(
+      "Reset Coins?",
+      "This will reset your coin balance back to 1000. Are you sure?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Reset",
+          style: "destructive",
+          onPress: async () => {
+            await resetWalletCoins();
+            setCoins(1000);
+          },
+        },
+      ]
+    );
+  }
 
   useEffect(() => {
     let isMounted = true;
@@ -436,6 +465,21 @@ export default function ProfileScreen({ navigation, route }) {
             </View>
           </View>
 
+          <View style={styles.walletCard}>
+            <Text style={styles.sectionLabel}>Coins</Text>
+            <View style={styles.walletRow}>
+              <Text style={styles.coinDisplay}>
+                🪙 {coins !== null ? coins.toLocaleString() : "—"}
+              </Text>
+              <TouchableOpacity
+                style={styles.resetBtn}
+                onPress={handleResetCoins}
+              >
+                <Text style={styles.resetBtnText}>Reset to 1000</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
           <View style={styles.statsCard}>
             <Text style={styles.sectionLabel}>Stats</Text>
             <Text style={styles.statsComingSoon}>Coming soon</Text>
@@ -665,6 +709,37 @@ const styles = StyleSheet.create({
   themeBtnText: {
     color: "#ffffff",
     fontWeight: "bold",
+  },
+  walletCard: {
+    backgroundColor: "#16213e",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+  },
+  walletRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 16,
+  },
+  coinDisplay: {
+    color: "#ffffff",
+    fontSize: 24,
+    fontWeight: "bold",
+  },
+  resetBtn: {
+    backgroundColor: "#1f2a44",
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: "#e94560",
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    alignItems: "center",
+  },
+  resetBtnText: {
+    color: "#e94560",
+    fontWeight: "bold",
+    fontSize: 14,
   },
   statsCard: {
     backgroundColor: "#16213e",

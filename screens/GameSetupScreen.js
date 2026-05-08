@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  Alert,
   ActivityIndicator,
   Pressable,
   ScrollView,
@@ -9,6 +10,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { hasSave, clearGame } from "../game/gameSaves";
 
 import {
   getCachedProfile,
@@ -94,7 +96,7 @@ export default function GameSetupScreen({ navigation, route }) {
   const useStepper = maxAI > 3;
   const playTextSize = isSmallScreen ? 16 : 17;
 
-  function handlePlay() {
+  async function handlePlay() {
     const players = buildPlayers(playerName, clampedAI);
     const launchParams = {
       role: "singleplayer",
@@ -109,7 +111,29 @@ export default function GameSetupScreen({ navigation, route }) {
       launchParams.difficulty = difficulty;
     }
 
-    navigation.navigate(screenName, launchParams);
+    const saveKey =
+      gameId === "goFish" ? "@cardnight:save:gofish" : "@cardnight:save:lastcard";
+
+    const doNav = (resume) =>
+      navigation.navigate(screenName, { ...launchParams, resumeFromSave: resume });
+
+    const exists = await hasSave(saveKey);
+    if (exists) {
+      Alert.alert(
+        "Game in Progress",
+        `You have a saved ${gameName} game. Continue or start fresh?`,
+        [
+          {
+            text: "Start New",
+            style: "destructive",
+            onPress: async () => { await clearGame(saveKey); doNav(false); },
+          },
+          { text: "Continue", onPress: () => doNav(true) },
+        ],
+      );
+    } else {
+      doNav(false);
+    }
   }
 
   if (isLoadingProfile) {

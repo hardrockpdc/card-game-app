@@ -4,6 +4,10 @@ import {
   TouchableOpacity, Alert,
 } from 'react-native';
 import { createDeck, shuffleDeck } from '../game/deck';
+import { addCoins } from '../game/wallet';
+import { saveGame, loadGame, clearGame } from '../game/gameSaves';
+
+const SAVE_KEY_GOFISH = '@cardnight:save:gofish';
 import Card from '../components/Card';
 import { scale, scaleFont } from '../game/responsive';
 import {
@@ -205,7 +209,9 @@ export default function GoFishGameScreen({ navigation, route }) {
   const [myHand, setMyHand] = useState([]);
   const [selectedRank, setSelectedRank] = useState(null);
   const [selectedTarget, setSelectedTarget] = useState(null);
+  const [coinsEarned, setCoinsEarned] = useState(0);
   const fullRef = useRef(null);
+  const coinRewardedRef = useRef(false);
   function applyState(next) {
     fullRef.current = next;
     setMyHand(next.hands['host'] ?? []);
@@ -240,9 +246,31 @@ export default function GoFishGameScreen({ navigation, route }) {
     }, 1000 + Math.random() * 600);
   }
 
+  // Auto-save after each state change in single-player.
+  useEffect(() => {
+    if (!isSinglePlayer || !fullRef.current) return;
+    if (gameState?.phase === 'results') {
+      clearGame(SAVE_KEY_GOFISH);
+      return;
+    }
+    saveGame(SAVE_KEY_GOFISH, { fullState: fullRef.current });
+  }, [gameState]);
+
   useEffect(() => {
     if (!isHost) return;
-    applyState(dealGoFish(initialPlayers));
+
+    async function init() {
+      if (isSinglePlayer && route?.params?.resumeFromSave) {
+        const saved = await loadGame(SAVE_KEY_GOFISH);
+        if (saved?.fullState) {
+          applyState(saved.fullState);
+          return;
+        }
+      }
+      applyState(dealGoFish(initialPlayers));
+    }
+    init();
+
     if (!isSinglePlayer) {
       setServerListeners({
         onMessage: (msg, clientId) => {
@@ -282,6 +310,19 @@ export default function GoFishGameScreen({ navigation, route }) {
     setSelectedTarget(null);
   }
 
+  useEffect(() => {
+    if (!isSinglePlayer) return;
+    const isWon = gameState?.phase === 'results' && gameState?.winner?.id === 'host';
+    if (isWon && !coinRewardedRef.current) {
+      coinRewardedRef.current = true;
+      addCoins(500).then(() => setCoinsEarned(500));
+    }
+    if (gameState?.phase !== 'results') {
+      coinRewardedRef.current = false;
+      setCoinsEarned(0);
+    }
+  }, [gameState?.phase, gameState?.winner]);
+
   if (!gameState) {
     return <View style={styles.loading}><Text style={styles.loadingText}>Dealing cards…</Text></View>;
   }
@@ -307,6 +348,9 @@ export default function GoFishGameScreen({ navigation, route }) {
             ? '▶  Your turn'
             : `Waiting for ${currentPlayer?.name}…`}
         </Text>
+        {phase === 'results' && isSinglePlayer && coinsEarned > 0 && (
+          <Text style={styles.coinsEarnedText}>+{coinsEarned} coins!</Text>
+        )}
       </View>
 
       {/* Last action message */}
@@ -402,7 +446,13 @@ export default function GoFishGameScreen({ navigation, route }) {
       {phase === 'results' && isHost && (
         <TouchableOpacity
           style={styles.playAgainBtn}
-          onPress={() => { applyState(dealGoFish(initialPlayers)); setSelectedRank(null); setSelectedTarget(null); }}
+          onPress={() => {
+            coinRewardedRef.current = false;
+            setCoinsEarned(0);
+            applyState(dealGoFish(initialPlayers));
+            setSelectedRank(null);
+            setSelectedTarget(null);
+          }}
         >
           <Text style={styles.playAgainText}>🔄  Play Again</Text>
         </TouchableOpacity>
@@ -425,6 +475,7 @@ const styles = StyleSheet.create({
   banner: { backgroundColor: '#e94560', borderRadius: scale(10), paddingVertical: scale(10), alignItems: 'center', marginBottom: scale(10) },
   bannerResults: { backgroundColor: '#0d3d2e' },
   bannerText: { color: '#fff', fontSize: scaleFont(16), fontWeight: 'bold' },
+  coinsEarnedText: { color: '#ffd700', fontSize: scaleFont(15), fontWeight: 'bold', marginTop: 4 },
 
   actionBox: {
     backgroundColor: '#16213e', borderRadius: scale(10), padding: scale(12),

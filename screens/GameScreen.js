@@ -1,33 +1,136 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { createDeck, shuffleDeck, calculateHandValue } from "../game/deck";
 import Card from "../components/Card";
 import { scale, scaleFont } from "../game/responsive";
+import { getCoins, addCoins, subtractCoins } from "../game/wallet";
+import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 
-export default function GameScreen() {
+const BET_OPTIONS = [10, 25, 50, 100, 250];
+const MIN_BET = 10;
+const SAVE_KEY = "@cardnight:save:blackjack";
+
+export default function GameScreen({ navigation, route }) {
+  // ── Wallet state ──────────────────────────────────────────────────
+  const [coins, setCoins] = useState(null);
+  const [selectedBet, setSelectedBet] = useState(null);
+  const [currentBet, setCurrentBet] = useState(0);
+  const [coinsDelta, setCoinsDelta] = useState(0);
+  const [showGameOver, setShowGameOver] = useState(false);
+  const currentBetRef = useRef(0);
+  const payoutDoneRef = useRef(false);
+
+  // ── Screen phase: 'betting' | 'playing' | 'result' ───────────────
+  const [screenPhase, setScreenPhase] = useState("betting");
+
+  // ── Game state ────────────────────────────────────────────────────
   const [deck, setDeck] = useState([]);
   const [playerHand, setPlayerHand] = useState([]);
-  const [splitHand, setSplitHand] = useState(null); // null = no split active
-  const [activeHand, setActiveHand] = useState(0); // 0 = main, 1 = split
+  const [splitHand, setSplitHand] = useState(null);
+  const [activeHand, setActiveHand] = useState(0);
   const [dealerHand, setDealerHand] = useState([]);
-  const [gameStatus, setGameStatus] = useState("playing");
-  // gameStatus: 'playing' | 'bust' | 'dealerTurn' | 'finished'
+  const [gameStatus, setGameStatus] = useState("idle");
+  // gameStatus: 'idle' | 'playing' | 'bust' | 'dealerTurn' | 'finished'
   const [result, setResult] = useState("");
   const [splitResult, setSplitResult] = useState("");
-  // result / splitResult: '' | 'win' | 'lose' | 'push'
 
+  // ── Load wallet + check for saved game on mount ───────────────────
   useEffect(() => {
-    startNewGame();
+    getCoins().then(setCoins);
+
+    async function checkResume() {
+      if (!route?.params?.resumeFromSave) return;
+      const saved = await loadGame(SAVE_KEY);
+      if (!saved) return;
+      const bet = saved.currentBet ?? 0;
+      currentBetRef.current = bet;
+      setCurrentBet(bet);
+      setSelectedBet(bet);
+      setDeck(saved.deck ?? []);
+      setPlayerHand(saved.playerHand ?? []);
+      setSplitHand(saved.splitHand ?? null);
+      setActiveHand(saved.activeHand ?? 0);
+      setDealerHand(saved.dealerHand ?? []);
+      setGameStatus(saved.gameStatus ?? "playing");
+      setResult(saved.result ?? "");
+      setSplitResult(saved.splitResult ?? "");
+      setCoinsDelta(saved.coinsDelta ?? 0);
+      setScreenPhase(saved.screenPhase ?? "playing");
+    }
+    checkResume();
   }, []);
 
-  function startNewGame() {
+  // ── Auto-save during active hand ──────────────────────────────────
+  useEffect(() => {
+    if (screenPhase === "betting") return;
+    saveGame(SAVE_KEY, {
+      screenPhase,
+      currentBet: currentBetRef.current,
+      deck,
+      playerHand,
+      splitHand,
+      activeHand,
+      dealerHand,
+      gameStatus,
+      result,
+      splitResult,
+      coinsDelta,
+    });
+  }, [screenPhase, playerHand, splitHand, dealerHand, gameStatus, result, splitResult, coinsDelta]);
+
+  // ── Payout ────────────────────────────────────────────────────────
+  // Called once per hand when it's fully resolved.
+  // All result values are passed as parameters to avoid stale closure issues.
+  async function resolveHandPayout(mainResult, sResult, hadSplit) {
+    if (payoutDoneRef.current) return;
+    payoutDoneRef.current = true;
+
+    const bet = currentBetRef.current;
+    let payout = 0;
+    if (mainResult === "win") payout += bet * 2;
+    else if (mainResult === "push") payout += bet;
+    else if (mainResult === "blackjack")
+      payout += bet + Math.floor(bet * 1.5);
+    // 'lose': 0
+
+    if (hadSplit) {
+      if (sResult === "win") payout += bet * 2;
+      else if (sResult === "push") payout += bet;
+    }
+
+    let newCoins;
+    if (payout > 0) {
+      newCoins = await addCoins(payout);
+    } else {
+      newCoins = await getCoins();
+    }
+    setCoins(newCoins);
+
+    const totalBet = hadSplit ? bet * 2 : bet;
+    setCoinsDelta(payout - totalBet);
+    setScreenPhase("result");
+  }
+
+  // ── Deal ──────────────────────────────────────────────────────────
+  async function handleDeal() {
+    if (!selectedBet || screenPhase !== "betting") return;
+
+    const bet = selectedBet;
+    currentBetRef.current = bet;
+    payoutDoneRef.current = false;
+    setCurrentBet(bet);
+    clearGame(SAVE_KEY);
+
+    // Deal cards synchronously before the async wallet call so the
+    // UI transitions immediately without a blank flash.
     const newDeck = shuffleDeck(createDeck());
     const playerCards = [newDeck[0], newDeck[2]];
     const dealerCards = [newDeck[1], newDeck[3]];
@@ -38,12 +141,31 @@ export default function GameScreen() {
     setSplitHand(null);
     setActiveHand(0);
     setDealerHand(dealerCards);
-    setGameStatus("playing");
     setResult("");
     setSplitResult("");
+    setGameStatus("playing");
+    setScreenPhase("playing");
+
+    // Deduct bet (async — wallet update appears after the next render)
+    const newCoins = await subtractCoins(bet);
+    setCoins(newCoins);
+
+    // Check for natural blackjack (21 on the first two cards)
+    const playerVal = calculateHandValue(playerCards);
+    const dealerVal = calculateHandValue(dealerCards);
+    if (playerVal === 21) {
+      const bjResult = dealerVal === 21 ? "push" : "blackjack";
+      setResult(bjResult);
+      setGameStatus("finished");
+      resolveHandPayout(bjResult, "", false);
+    }
   }
 
-  function handleSplit() {
+  // ── Split ─────────────────────────────────────────────────────────
+  async function handleSplit() {
+    if (coins === null || coins < currentBetRef.current) return;
+    const newCoins = await subtractCoins(currentBetRef.current);
+    setCoins(newCoins);
     const newCard0 = deck[0];
     const newCard1 = deck[1];
     setPlayerHand([playerHand[0], newCard0]);
@@ -52,6 +174,7 @@ export default function GameScreen() {
     setActiveHand(0);
   }
 
+  // ── Hit ───────────────────────────────────────────────────────────
   function handleHit() {
     const newCard = deck[0];
     const remainingDeck = deck.slice(1);
@@ -63,9 +186,10 @@ export default function GameScreen() {
       if (calculateHandValue(newHand) > 21) {
         setResult("lose");
         if (splitHand !== null) {
-          setActiveHand(1); // bust on hand 0 → automatically move to hand 1
+          setActiveHand(1); // bust on hand 0 → move to hand 1
         } else {
           setGameStatus("bust");
+          resolveHandPayout("lose", "", false);
         }
       }
     } else {
@@ -73,64 +197,134 @@ export default function GameScreen() {
       setSplitHand(newSplitHand);
       if (calculateHandValue(newSplitHand) > 21) {
         setSplitResult("lose");
-        // Pass fresh values because we just mutated deck/splitHand in this same call
         runDealer(remainingDeck, playerHand, newSplitHand, result, "lose");
       }
     }
   }
 
+  // ── Stand ─────────────────────────────────────────────────────────
   function handleStand() {
     if (splitHand !== null && activeHand === 0) {
-      setActiveHand(1); // hand 0 done → move to hand 1
+      setActiveHand(1);
     } else {
       setGameStatus("dealerTurn");
-      // Closure values are fresh here — nothing was mutated above
       runDealer(deck, playerHand, splitHand, result, splitResult);
     }
   }
 
-  // Runs the dealer turn and resolves both hands.
-  // All parameters are passed explicitly to avoid stale closure issues
+  // ── Dealer turn ───────────────────────────────────────────────────
+  // All result values are passed explicitly to avoid stale closure issues
   // when called from inside handleHit.
-  function runDealer(deckNow, mainHand, split, mainResult, sResult) {
+  function runDealer(deckNow, mainHand, split, mainResultIn, sResultIn) {
     let currentDealerHand = [...dealerHand];
     let currentDeck = [...deckNow];
-
     while (calculateHandValue(currentDealerHand) < 17) {
       currentDealerHand.push(currentDeck[0]);
       currentDeck = currentDeck.slice(1);
     }
-
     setDealerHand(currentDealerHand);
     setDeck(currentDeck);
-
     const dealerTotal = calculateHandValue(currentDealerHand);
 
-    // Evaluate main hand (skip if already busted)
-    if (mainResult !== "lose") {
+    let finalMain = mainResultIn;
+    let finalSplit = sResultIn;
+
+    if (mainResultIn !== "lose") {
       const playerTotal = calculateHandValue(mainHand);
-      if (dealerTotal > 21 || playerTotal > dealerTotal) setResult("win");
-      else if (dealerTotal > playerTotal) setResult("lose");
-      else setResult("push");
+      if (dealerTotal > 21 || playerTotal > dealerTotal) finalMain = "win";
+      else if (dealerTotal > playerTotal) finalMain = "lose";
+      else finalMain = "push";
+      setResult(finalMain);
     }
 
-    // Evaluate split hand (skip if already busted)
-    if (split !== null) {
-      if (sResult !== "lose") {
-        const splitTotal = calculateHandValue(split);
-        if (dealerTotal > 21 || splitTotal > dealerTotal) setSplitResult("win");
-        else if (dealerTotal > splitTotal) setSplitResult("lose");
-        else setSplitResult("push");
-      }
+    if (split !== null && sResultIn !== "lose") {
+      const splitTotal = calculateHandValue(split);
+      if (dealerTotal > 21 || splitTotal > dealerTotal) finalSplit = "win";
+      else if (dealerTotal > splitTotal) finalSplit = "lose";
+      else finalSplit = "push";
+      setSplitResult(finalSplit);
     }
 
     setGameStatus("finished");
+    resolveHandPayout(finalMain, finalSplit, split !== null);
   }
 
-  // Display calculations
+  // ── Continue (same bet, deal immediately) ────────────────────────
+  async function handleContinueSameBet() {
+    clearGame(SAVE_KEY);
+    const bet = currentBetRef.current;
+    const freshCoins = await getCoins();
+    setCoins(freshCoins);
+
+    if (freshCoins < MIN_BET) {
+      setShowGameOver(true);
+      return;
+    }
+
+    // If they can no longer afford the same bet, fall back to betting screen.
+    if (freshCoins < bet) {
+      setCoinsDelta(0);
+      setResult("");
+      setSplitResult("");
+      setGameStatus("idle");
+      setSplitHand(null);
+      setScreenPhase("betting");
+      return;
+    }
+
+    payoutDoneRef.current = false;
+    setCurrentBet(bet);
+
+    const newDeck = shuffleDeck(createDeck());
+    const playerCards = [newDeck[0], newDeck[2]];
+    const dealerCards = [newDeck[1], newDeck[3]];
+    const remainingDeck = newDeck.slice(4);
+
+    setDeck(remainingDeck);
+    setPlayerHand(playerCards);
+    setSplitHand(null);
+    setActiveHand(0);
+    setDealerHand(dealerCards);
+    setResult("");
+    setSplitResult("");
+    setGameStatus("playing");
+    setScreenPhase("playing");
+
+    const newCoins = await subtractCoins(bet);
+    setCoins(newCoins);
+
+    const playerVal = calculateHandValue(playerCards);
+    const dealerVal = calculateHandValue(dealerCards);
+    if (playerVal === 21) {
+      const bjResult = dealerVal === 21 ? "push" : "blackjack";
+      setResult(bjResult);
+      setGameStatus("finished");
+      resolveHandPayout(bjResult, "", false);
+    }
+  }
+
+  // ── Adjust bet (go back to betting screen) ────────────────────────
+  async function handleAdjustBet() {
+    clearGame(SAVE_KEY);
+    const freshCoins = await getCoins();
+    setCoins(freshCoins);
+    if (freshCoins < MIN_BET) {
+      setShowGameOver(true);
+      return;
+    }
+    setCoinsDelta(0);
+    setResult("");
+    setSplitResult("");
+    setGameStatus("idle");
+    setSplitHand(null);
+    setScreenPhase("betting");
+  }
+
+  // ── Display values ────────────────────────────────────────────────
   const playerTotal = calculateHandValue(playerHand);
   const splitTotal = splitHand ? calculateHandValue(splitHand) : 0;
-  const showFullDealerHand = gameStatus !== "playing";
+  const showFullDealerHand =
+    gameStatus !== "playing" && gameStatus !== "idle";
   const dealerDisplayTotal = showFullDealerHand
     ? calculateHandValue(dealerHand)
     : dealerHand.length > 0
@@ -142,18 +336,13 @@ export default function GameScreen() {
 
   const canSplit =
     canPlay &&
+    activeHand === 0 &&
     splitHand === null &&
     playerHand.length === 2 &&
-    playerHand[0]?.rank === playerHand[1]?.rank;
+    playerHand[0]?.rank === playerHand[1]?.rank &&
+    coins !== null &&
+    coins >= currentBetRef.current;
 
-  function resultIcon(r) {
-    if (r === "win") return " 🎉";
-    if (r === "lose") return " 💥";
-    if (r === "push") return " 🤝";
-    return "";
-  }
-
-  // Status message — only used when there is no split
   let statusMessage = "";
   let statusColor = "#ffd700";
   if (splitHand === null) {
@@ -168,18 +357,136 @@ export default function GameScreen() {
         statusMessage = "😞 Dealer wins.";
         statusColor = "#ff6b6b";
       } else if (result === "push") {
-        statusMessage = "🤝 Push (tie).";
+        statusMessage = "🤝 Push — bet returned.";
         statusColor = "#ffd700";
+      } else if (result === "blackjack") {
+        statusMessage = "🃏 Blackjack! You win!";
+        statusColor = "#4ade80";
       }
     }
   }
 
+  const coinsDeltaLabel =
+    coinsDelta > 0
+      ? `+${coinsDelta} coins!`
+      : coinsDelta < 0
+        ? `${coinsDelta} coins`
+        : "Bet returned";
+
   const isPlayingHand0 = splitHand !== null && activeHand === 0 && !gameOver;
   const isPlayingHand1 = splitHand !== null && activeHand === 1 && !gameOver;
 
+  function resultIcon(r) {
+    if (r === "win" || r === "blackjack") return " 🎉";
+    if (r === "lose") return " 💥";
+    if (r === "push") return " 🤝";
+    return "";
+  }
+
+  // ── Game Over modal (shared between both screens) ─────────────────
+  const gameOverModal = (
+    <Modal transparent animationType="fade" visible={showGameOver}>
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalBox}>
+          <Text style={styles.modalEmoji}>💸</Text>
+          <Text style={styles.modalTitle}>Out of Coins!</Text>
+          <Text style={styles.modalMessage}>
+            You're out of coins. Visit your Profile to reset your balance.
+          </Text>
+          <TouchableOpacity
+            style={styles.modalButton}
+            onPress={() => {
+              setShowGameOver(false);
+              navigation.navigate("Profile");
+            }}
+          >
+            <Text style={styles.modalButtonText}>Go to Profile</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+
+  // ── Betting screen ────────────────────────────────────────────────
+  if (screenPhase === "betting") {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <ScrollView
+          contentContainerStyle={styles.bettingContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          <Text style={styles.bettingTitle}>♠ Blackjack</Text>
+
+          <View style={styles.walletDisplay}>
+            <Text style={styles.walletLabel}>Your Balance</Text>
+            <Text style={styles.walletAmount}>
+              🪙 {coins !== null ? coins.toLocaleString() : "—"}
+            </Text>
+          </View>
+
+          <Text style={styles.betLabel}>Select Your Bet</Text>
+          <View style={styles.betRow}>
+            {BET_OPTIONS.map((amount) => {
+              const isSelected = selectedBet === amount;
+              const canAfford = coins !== null && coins >= amount;
+              return (
+                <TouchableOpacity
+                  key={amount}
+                  style={[
+                    styles.betButton,
+                    isSelected && styles.betButtonSelected,
+                    !canAfford && styles.betButtonDisabled,
+                  ]}
+                  onPress={() => {
+                    if (canAfford) setSelectedBet(amount);
+                  }}
+                  disabled={!canAfford}
+                >
+                  <Text
+                    style={[
+                      styles.betButtonText,
+                      isSelected && styles.betButtonTextSelected,
+                    ]}
+                  >
+                    {amount}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <TouchableOpacity
+            style={[
+              styles.dealButton,
+              !selectedBet && styles.dealButtonDisabled,
+            ]}
+            onPress={handleDeal}
+            disabled={!selectedBet}
+          >
+            <Text style={styles.dealButtonText}>
+              {selectedBet
+                ? `Deal  —  🪙 ${selectedBet}`
+                : "Select a bet first"}
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+
+        {gameOverModal}
+      </SafeAreaView>
+    );
+  }
+
+  // ── Playing / Result screen ───────────────────────────────────────
   return (
     <SafeAreaView style={styles.screen}>
-      {/* Cards + status scroll if they get tall; action buttons stay fixed */}
+      {/* Wallet + bet bar */}
+      <View style={styles.walletBar}>
+        <Text style={styles.walletBarCoins}>
+          🪙 {coins !== null ? coins.toLocaleString() : "—"}
+        </Text>
+        <Text style={styles.walletBarBet}>Bet: {currentBet}</Text>
+      </View>
+
       <ScrollView
         style={styles.handsScroll}
         contentContainerStyle={styles.handsScrollContent}
@@ -187,8 +494,8 @@ export default function GameScreen() {
         {/* Dealer */}
         <View style={styles.section}>
           <Text style={styles.label}>
-            Dealer — {showFullDealerHand ? "total:" : "shows"}{" "}
-            {dealerDisplayTotal}
+            Dealer —{" "}
+            {showFullDealerHand ? "total:" : "shows"} {dealerDisplayTotal}
           </Text>
           <View style={styles.hand}>
             {dealerHand.map((card, index) => (
@@ -223,7 +530,7 @@ export default function GameScreen() {
           </View>
         </View>
 
-        {/* Split hand (only shown after split) */}
+        {/* Split hand */}
         {splitHand && (
           <View style={styles.section}>
             <Text style={styles.label}>
@@ -245,16 +552,30 @@ export default function GameScreen() {
           </View>
         )}
 
-        {/* Status message (no-split games only) */}
+        {/* Status message */}
         {statusMessage !== "" && (
           <Text style={[styles.status, { color: statusColor }]}>
             {statusMessage}
           </Text>
         )}
+
+        {/* Coins delta — shown only in result state */}
+        {screenPhase === "result" && (
+          <Text
+            style={[
+              styles.coinsDeltaText,
+              coinsDelta >= 0
+                ? styles.coinsDeltaPositive
+                : styles.coinsDeltaNegative,
+            ]}
+          >
+            {coinsDeltaLabel}
+          </Text>
+        )}
       </ScrollView>
 
-      {/* Hit / Stand / Split buttons (anchored at bottom) */}
-      {!gameOver ? (
+      {/* Action buttons */}
+      {screenPhase === "playing" && !gameOver ? (
         <View style={styles.bottomArea}>
           <View style={styles.buttonRow}>
             <TouchableOpacity
@@ -291,11 +612,24 @@ export default function GameScreen() {
             )}
           </View>
         </View>
-      ) : (
-        <TouchableOpacity style={styles.playAgainButton} onPress={startNewGame}>
-          <Text style={styles.playAgainText}>🔄 Play Again</Text>
-        </TouchableOpacity>
-      )}
+      ) : screenPhase === "result" ? (
+        <View style={styles.resultButtonRow}>
+          <TouchableOpacity
+            style={[styles.resultButton, styles.adjustBetButton]}
+            onPress={handleAdjustBet}
+          >
+            <Text style={styles.resultButtonText}>Adjust Bet</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.resultButton, styles.continueButton]}
+            onPress={handleContinueSameBet}
+          >
+            <Text style={styles.resultButtonText}>Continue</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
+
+      {gameOverModal}
     </SafeAreaView>
   );
 }
@@ -307,6 +641,126 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: scale(20),
   },
+
+  // ── Betting screen ────────────────────────────────────────────────
+  bettingContainer: {
+    flexGrow: 1,
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: scale(20),
+    paddingVertical: scale(24),
+  },
+  bettingTitle: {
+    color: "#ffffff",
+    fontSize: scaleFont(32),
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+  walletDisplay: {
+    backgroundColor: "#0a4a24",
+    borderRadius: scale(14),
+    borderWidth: 1.5,
+    borderColor: "#1a7a44",
+    paddingVertical: scale(14),
+    paddingHorizontal: scale(28),
+    alignItems: "center",
+    width: "100%",
+  },
+  walletLabel: {
+    color: "#b0d4b0",
+    fontSize: scaleFont(12),
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    marginBottom: scale(4),
+  },
+  walletAmount: {
+    color: "#ffd700",
+    fontSize: scaleFont(30),
+    fontWeight: "bold",
+  },
+  betLabel: {
+    color: "#e0e0e0",
+    fontSize: scaleFont(14),
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    alignSelf: "flex-start",
+  },
+  betRow: {
+    flexDirection: "row",
+    gap: scale(8),
+    width: "100%",
+  },
+  betButton: {
+    flex: 1,
+    minHeight: scale(52),
+    borderRadius: scale(12),
+    borderWidth: 1.5,
+    borderColor: "#1a7a44",
+    backgroundColor: "#0a4a24",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  betButtonSelected: {
+    borderColor: "#ffd700",
+    backgroundColor: "#1a4a10",
+  },
+  betButtonDisabled: {
+    opacity: 0.3,
+  },
+  betButtonText: {
+    color: "#e0e0e0",
+    fontSize: scaleFont(15),
+    fontWeight: "bold",
+  },
+  betButtonTextSelected: {
+    color: "#ffd700",
+  },
+  dealButton: {
+    width: "100%",
+    minHeight: scale(56),
+    borderRadius: scale(14),
+    backgroundColor: "#e94560",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: scale(4),
+  },
+  dealButtonDisabled: {
+    backgroundColor: "#555",
+    opacity: 0.7,
+  },
+  dealButtonText: {
+    color: "#ffffff",
+    fontSize: scaleFont(18),
+    fontWeight: "bold",
+  },
+
+  // ── Wallet bar (playing/result screen) ───────────────────────────
+  walletBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    alignSelf: "stretch",
+    backgroundColor: "#0a4a24",
+    borderRadius: scale(10),
+    paddingVertical: scale(8),
+    paddingHorizontal: scale(14),
+    marginBottom: scale(6),
+    borderWidth: 1,
+    borderColor: "#1a7a44",
+  },
+  walletBarCoins: {
+    color: "#ffd700",
+    fontSize: scaleFont(15),
+    fontWeight: "bold",
+  },
+  walletBarBet: {
+    color: "#b0d4b0",
+    fontSize: scaleFont(14),
+    fontWeight: "bold",
+  },
+
+  // ── Playing/Result screen (cards & status) ───────────────────────
   handsScroll: {
     flex: 1,
     alignSelf: "stretch",
@@ -343,13 +797,24 @@ const styles = StyleSheet.create({
     fontSize: scaleFont(24),
     fontWeight: "bold",
     textAlign: "center",
-    marginVertical: scale(15),
+    marginVertical: scale(10),
+  },
+  coinsDeltaText: {
+    fontSize: scaleFont(20),
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: scale(10),
+  },
+  coinsDeltaPositive: {
+    color: "#ffd700",
+  },
+  coinsDeltaNegative: {
+    color: "#ff6b6b",
   },
   buttonRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "center",
-    marginTop: 0,
     gap: scale(10),
   },
   button: {
@@ -374,16 +839,80 @@ const styles = StyleSheet.create({
     fontSize: scaleFont(18),
     fontWeight: "bold",
   },
-  playAgainButton: {
-    marginTop: scale(30),
-    backgroundColor: "#e94560",
-    paddingVertical: scale(15),
-    paddingHorizontal: scale(50),
-    borderRadius: scale(10),
+  resultButtonRow: {
+    flexDirection: "row",
+    gap: scale(10),
+    marginTop: scale(12),
+    paddingHorizontal: scale(4),
   },
-  playAgainText: {
+  resultButton: {
+    flex: 1,
+    paddingVertical: scale(15),
+    borderRadius: scale(10),
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  continueButton: {
+    backgroundColor: "#e94560",
+  },
+  adjustBetButton: {
+    backgroundColor: "#2c3e50",
+    borderWidth: 1.5,
+    borderColor: "#4a6080",
+  },
+  resultButtonText: {
     color: "#ffffff",
-    fontSize: scaleFont(18),
+    fontSize: scaleFont(16),
+    fontWeight: "bold",
+  },
+
+  // ── Game Over modal ───────────────────────────────────────────────
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.75)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: scale(24),
+  },
+  modalBox: {
+    backgroundColor: "#16213e",
+    borderRadius: scale(20),
+    borderWidth: 1.5,
+    borderColor: "#e94560",
+    padding: scale(28),
+    alignItems: "center",
+    width: "100%",
+    maxWidth: 360,
+  },
+  modalEmoji: {
+    fontSize: scaleFont(48),
+    marginBottom: scale(10),
+  },
+  modalTitle: {
+    color: "#ffffff",
+    fontSize: scaleFont(22),
+    fontWeight: "bold",
+    marginBottom: scale(10),
+    textAlign: "center",
+  },
+  modalMessage: {
+    color: "#b0b0c0",
+    fontSize: scaleFont(15),
+    textAlign: "center",
+    lineHeight: scale(22),
+    marginBottom: scale(24),
+  },
+  modalButton: {
+    backgroundColor: "#e94560",
+    borderRadius: scale(12),
+    paddingVertical: scale(14),
+    paddingHorizontal: scale(40),
+    alignItems: "center",
+    width: "100%",
+  },
+  modalButtonText: {
+    color: "#ffffff",
+    fontSize: scaleFont(16),
     fontWeight: "bold",
   },
 });
