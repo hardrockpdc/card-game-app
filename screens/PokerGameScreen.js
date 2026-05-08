@@ -471,10 +471,14 @@ export default function PokerGameScreen({ navigation, route }) {
       if (!state) return;
       if (action.action === 'nextHand' && state.phase === 'showdown') {
         const activePlayers = state.players.filter((p) => chipsRef.current[String(p.id)] > 0);
-        if (activePlayers.length < 2) {
-          // Tournament over — determine winner and handle rewards for single player.
+        const hostChips = chipsRef.current['host'] ?? 0;
+        const hostIsOut = isSinglePlayer && hostChips === 0;
+
+        if (activePlayers.length < 2 || hostIsOut) {
+          // Tournament over — end immediately if host is eliminated, no need to
+          // watch computers play each other out.
           if (isSinglePlayer) {
-            const winner = activePlayers[0] ?? null;
+            const winner = hostIsOut ? null : (activePlayers[0] ?? null);
             setTournamentWinner(winner ?? { id: '__none__', name: 'Nobody' });
             if (winner && String(winner.id) === 'host' && !coinRewardedRef.current) {
               coinRewardedRef.current = true;
