@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { AppState } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -31,6 +32,11 @@ import { loadProfile } from "./game/profile";
 import { setTheme } from "./game/cardTheme";
 import { ThemeProvider } from "./game/ThemeContext";
 import ErrorBoundary from "./components/ErrorBoundary";
+import {
+  stopServer,
+  stopBroadcasting,
+  stopDiscovery,
+} from "./game/GameNetwork";
 
 const Stack = createNativeStackNavigator();
 
@@ -41,6 +47,20 @@ export default function App() {
         setTheme(profile.cardTheme);
       }
     });
+  }, []);
+
+  // Close TCP server and UDP sockets when the app moves to the background.
+  // Prevents "port already in use" errors on the next host attempt when the
+  // user never went through the normal back-button flow to trigger cleanup.
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "background") {
+        stopServer();
+        stopBroadcasting();
+        stopDiscovery();
+      }
+    });
+    return () => sub.remove();
   }, []);
 
   return (
