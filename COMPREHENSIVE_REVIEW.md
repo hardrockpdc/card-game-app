@@ -118,7 +118,7 @@ Track progress here. Update checkboxes as items complete.
 - [ ] Test on lowest-end Android phone available
 - [ ] Test on at least one real iPhone
 - [ ] EAS production build, test the actual binary
-- [ ] **UX10 + L9** — About screen, basic stats display
+- [x] **UX10 + L9** — About screen, basic stats display
 - [ ] **UX2** — First-time tutorial overlays (at least Blackjack + 1 rummy variant)
 - [ ] Submit to TestFlight (iOS) for ≥1 week of real testing before final submit
 
