@@ -102,7 +102,7 @@ Track progress here. Update checkboxes as items complete.
 - [x] **UX1** — Soft-redirect to Profile instead of forced redirect
 - [ ] **UX3** — Quit Game button in all game screens
 - [ ] **UX5** — Tap-to-copy IP in HostSetupScreen
-- [ ] **UX6** — Toast messages for illegal moves
+- [x] **UX6** — Toast messages for illegal moves
 - [x] **M4** — Strip `console.log` calls in production
 - [ ] **M5** — Sweep hardcoded sizes, replace with `scale()`/`scaleFont()`
 - [ ] **M6** — Decide what to do with ResultsScreen (use it or remove it)
