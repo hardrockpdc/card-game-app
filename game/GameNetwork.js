@@ -1,6 +1,8 @@
-import { Platform } from "react-native";
+import { Alert, Platform } from "react-native";
 import TcpSocket from "react-native-tcp-socket";
 import UdpSocket from "react-native-udp";
+
+export const PROTOCOL_VERSION = 1;
 
 const PORT = 7777;
 const DISCOVERY_PORT = 7778;
@@ -37,6 +39,17 @@ export function startServer() {
           if (!line.trim()) return;
           try {
             const msg = JSON.parse(line);
+            if (msg.protocolVersion !== PROTOCOL_VERSION) {
+              socket.write(
+                JSON.stringify({
+                  type: "VERSION_MISMATCH",
+                  serverVersion: PROTOCOL_VERSION,
+                  protocolVersion: PROTOCOL_VERSION,
+                }) + "\n",
+              );
+              socket.destroy();
+              return;
+            }
             // Auto-store player name whenever a JOIN message arrives
             if (msg.type === "JOIN" && msg.name) {
               playerNames.set(id, msg.name);
@@ -77,14 +90,14 @@ export function stopServer() {
 
 export function broadcastToClients(message) {
   if (IS_WEB) return;
-  const data = JSON.stringify(message) + "\n";
+  const data = JSON.stringify({ ...message, protocolVersion: PROTOCOL_VERSION }) + "\n";
   clients.forEach((socket) => socket.write(data));
 }
 
 export function sendToClient(clientId, message) {
   if (IS_WEB) return;
   const socket = clients.get(clientId);
-  if (socket) socket.write(JSON.stringify(message) + "\n");
+  if (socket) socket.write(JSON.stringify({ ...message, protocolVersion: PROTOCOL_VERSION }) + "\n");
 }
 
 export function getClientCount() {
@@ -139,7 +152,16 @@ export function connectToHost(ip, callbacks) {
       .forEach((line) => {
         if (!line.trim()) return;
         try {
-          clientListeners.onMessage?.(JSON.parse(line));
+          const parsed = JSON.parse(line);
+          if (parsed.type === "VERSION_MISMATCH") {
+            Alert.alert(
+              "Update Required",
+              "The host is running a different version of Card Night. Please update your app to join this game.",
+              [{ text: "OK" }],
+            );
+            return;
+          }
+          clientListeners.onMessage?.(parsed);
         } catch (_) {}
       });
   });
@@ -157,7 +179,7 @@ export function connectToHost(ip, callbacks) {
 
 export function sendToHost(message) {
   if (IS_WEB) return;
-  if (clientSocket) clientSocket.write(JSON.stringify(message) + "\n");
+  if (clientSocket) clientSocket.write(JSON.stringify({ ...message, protocolVersion: PROTOCOL_VERSION }) + "\n");
 }
 
 export function disconnectFromHost() {
@@ -197,7 +219,7 @@ export function startBroadcasting(hostName, hostIp) {
     console.log("[Broadcast] Socket ready");
 
     const payload = new TextEncoder().encode(
-      JSON.stringify({ type: "CARD_GAME", name: hostName }),
+      JSON.stringify({ type: "CARD_GAME", name: hostName, protocolVersion: PROTOCOL_VERSION }),
     );
 
     const sendTo = (addr) => {
@@ -258,7 +280,7 @@ export function startDiscovery(onGameFound) {
   discoverySocket.on("message", (data, rinfo) => {
     try {
       const msg = JSON.parse(data.toString());
-      if (msg.type === "CARD_GAME") {
+      if (msg.type === "CARD_GAME" && msg.protocolVersion === PROTOCOL_VERSION) {
         onGameFound({ name: msg.name, ip: rinfo.address });
       }
     } catch (_) {}
