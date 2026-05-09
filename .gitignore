@@ -42,3 +42,6 @@ yarn-error.*
 
 # card image backup (created by scripts/compress-cards.js)
 assets/_card_originals_backup/
+
+# scratch / temp files
+*.tmp

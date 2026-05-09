@@ -88,7 +88,7 @@ Track progress here. Update checkboxes as items complete.
 
 ### 🔴 MONTH 1 — Critical store-blockers + structural cleanup
 
-- [ ] **H1** — Delete `*.tmp` files, update `.gitignore` to block them
+- [x] **H1** — Delete `*.tmp` files, update `.gitignore` to block them
 - [ ] **L1** — Add README.md with setup instructions
 - [ ] **H2** — Update PROJECT_NOTES.md to reflect ThemeContext refactor
 - [ ] **M9** — Extract `useResumePrompt` hook, dedupe across 5 screens
