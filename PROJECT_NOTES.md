@@ -184,7 +184,15 @@ All folders use identical filenames: `{rank}_{suit}.png` (ranks: a 2–10 j q k,
 
 ## 📍 Where We Are Right Now
 
-**Update Phases 1–12 complete.** Project is at a clean, stable state.
+**Update Phases 1–12 complete + Performance & Crash-Risk pass complete.**
+
+### Performance & Crash-Risk Pass (5 fixes)
+
+- ✅ **Fix #1:** Card PNGs resized 300×420 → 200×280 (indexed-color palette). Decoded RAM reduced from ~206 MB worst-case to ~92 MB. `scripts/compress-cards.js` added for future re-runs. `assets/_card_originals_backup/` added to .gitignore.
+- ✅ **Fix #2:** `game/ThemeContext.js` created — single AppState listener for theme changes instead of one per Card. `components/Card.js` wrapped in `React.memo`; size calculations memoized with `useMemo`. Reduces re-renders during gameplay.
+- ✅ **Fix #3:** `components/ErrorBoundary.js` added — class component wrapping `<NavigationContainer>` in App.js. Catches uncaught render errors and shows a dark-themed "Something went wrong" screen with "Return to Home" button instead of a blank white crash.
+- ✅ **Fix #4:** `aiTimerRef` + useEffect cleanup added to `PokerGameScreen.js`, `ConquianGameScreen.js`, and `GoFishGameScreen.js`. Prevents AI setTimeout from firing on unmounted components after mid-game navigation. `LastCardGameScreen` and `WildRoundGameScreen` were already correct.
+- ✅ **Fix #5:** `AppState` listener added to `App.js`. Calls `stopServer()`, `stopBroadcasting()`, `stopDiscovery()` when app goes to background. Prevents "port already in use" errors on next host attempt.
 
 **What was added in this update session:**
 
