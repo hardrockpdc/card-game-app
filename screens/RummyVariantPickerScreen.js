@@ -5,6 +5,7 @@ import { useResumePrompt } from "../game/useResumePrompt";
 
 import RummyVariantWheel from "../components/RummyVariantWheel";
 import { RUMMY_VARIANT_OPTIONS, getRummyVariantLabel } from "../game/rummy";
+import { scale, scaleFont } from "../game/responsive";
 
 const CONQUIAN_VARIANT_OPTION = {
   value: "conquian",
@@ -228,54 +229,54 @@ const styles = StyleSheet.create({
   },
   container: {
     flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 24,
+    paddingHorizontal: scale(20),
+    paddingTop: scale(16),
+    paddingBottom: scale(24),
     backgroundColor: "#07111F",
   },
   header: {
-    marginBottom: 20,
+    marginBottom: scale(20),
   },
   title: {
     color: "#F4F7FB",
-    fontSize: 28,
+    fontSize: scaleFont(28),
     fontWeight: "800",
     letterSpacing: 0.2,
   },
   subtitle: {
-    marginTop: 8,
+    marginTop: scale(8),
     color: "#A7B3C9",
-    fontSize: 15,
-    lineHeight: 21,
+    fontSize: scaleFont(15),
+    lineHeight: scale(21),
   },
   wheelCard: {
-    marginBottom: 18,
+    marginBottom: scale(18),
   },
   settingsCard: {
-    marginBottom: 18,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 18,
+    marginBottom: scale(18),
+    paddingVertical: scale(14),
+    paddingHorizontal: scale(16),
+    borderRadius: scale(18),
     borderWidth: 1,
     borderColor: "#24344D",
     backgroundColor: "#0B1320",
-    gap: 12,
+    gap: scale(12),
   },
   settingsLabel: {
     color: "#A7B3C9",
-    fontSize: 12,
+    fontSize: scaleFont(12),
     fontWeight: "700",
     textTransform: "uppercase",
     letterSpacing: 1,
   },
   countRow: {
     flexDirection: "row",
-    gap: 10,
+    gap: scale(10),
   },
   countButton: {
     flex: 1,
-    minHeight: 50,
-    borderRadius: 16,
+    minHeight: scale(50),
+    borderRadius: scale(16),
     borderWidth: 1.5,
     borderColor: "#2c3750",
     backgroundColor: "#182131",
@@ -288,7 +289,7 @@ const styles = StyleSheet.create({
   },
   countButtonText: {
     color: "#d3dcec",
-    fontSize: 16,
+    fontSize: scaleFont(16),
     fontWeight: "800",
   },
   countButtonTextSelected: {
@@ -296,12 +297,12 @@ const styles = StyleSheet.create({
   },
   difficultyRow: {
     flexDirection: "row",
-    gap: 8,
+    gap: scale(8),
   },
   difficultyButton: {
     flex: 1,
-    minHeight: 48,
-    borderRadius: 14,
+    minHeight: scale(48),
+    borderRadius: scale(14),
     borderWidth: 1.5,
     borderColor: "#2c3750",
     backgroundColor: "#182131",
@@ -314,38 +315,38 @@ const styles = StyleSheet.create({
   },
   difficultyButtonText: {
     color: "#d3dcec",
-    fontSize: 12,
+    fontSize: scaleFont(12),
     fontWeight: "800",
   },
   difficultyButtonTextSelected: {
     color: "#eef4ff",
   },
   selectionSummary: {
-    marginBottom: 20,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 18,
+    marginBottom: scale(20),
+    paddingVertical: scale(14),
+    paddingHorizontal: scale(16),
+    borderRadius: scale(18),
     borderWidth: 1,
     borderColor: "#24344D",
     backgroundColor: "#0B1320",
   },
   selectionLabel: {
     color: "#A7B3C9",
-    fontSize: 12,
+    fontSize: scaleFont(12),
     fontWeight: "700",
     textTransform: "uppercase",
     letterSpacing: 1,
   },
   selectionValue: {
-    marginTop: 8,
+    marginTop: scale(8),
     color: "#F4F7FB",
-    fontSize: 18,
+    fontSize: scaleFont(18),
     fontWeight: "700",
   },
   button: {
     marginTop: "auto",
-    minHeight: 54,
-    borderRadius: 18,
+    minHeight: scale(54),
+    borderRadius: scale(18),
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#C1121F",
@@ -361,7 +362,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "#FFFFFF",
-    fontSize: 17,
+    fontSize: scaleFont(17),
     fontWeight: "800",
     letterSpacing: 0.4,
   },

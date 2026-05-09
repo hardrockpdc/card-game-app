@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import SolitaireVariantWheel from '../components/SolitaireVariantWheel';
 import { SPIDER_MODE_OPTIONS, VARIANT_OPTIONS } from '../game/solitaire';
 import { useResumePrompt } from '../game/useResumePrompt';
+import { scale, scaleFont } from '../game/responsive';
 
 export default function SolitaireVariantPickerScreen({ navigation, route }) {
   const initialVariantId = route?.params?.variantId || VARIANT_OPTIONS[0].id;
@@ -99,54 +100,54 @@ const styles = StyleSheet.create({
     backgroundColor: '#0f1115',
   },
   content: {
-    padding: 18,
-    gap: 14,
+    padding: scale(18),
+    gap: scale(14),
   },
   kicker: {
     color: '#7fb3ff',
     textTransform: 'uppercase',
     letterSpacing: 1.4,
-    fontSize: 12,
+    fontSize: scaleFont(12),
     fontWeight: '800',
   },
   title: {
     color: '#f5f7fb',
-    fontSize: 34,
+    fontSize: scaleFont(34),
     fontWeight: '900',
   },
   subtitle: {
     color: '#95a2b6',
-    fontSize: 15,
-    lineHeight: 21,
+    fontSize: scaleFont(15),
+    lineHeight: scale(21),
   },
   panel: {
-    borderRadius: 22,
+    borderRadius: scale(22),
     borderWidth: 1,
     borderColor: '#243042',
     backgroundColor: '#151a24',
-    padding: 16,
-    gap: 16,
+    padding: scale(16),
+    gap: scale(16),
   },
   modeBlock: {
-    gap: 8,
+    gap: scale(8),
   },
   modeLabel: {
     color: '#dce5f2',
-    fontSize: 14,
+    fontSize: scaleFont(14),
     fontWeight: '800',
   },
   modeRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: scale(8),
     flexWrap: 'wrap',
   },
   modeChip: {
-    borderRadius: 999,
+    borderRadius: scale(999),
     borderWidth: 1,
     borderColor: '#2c3750',
     backgroundColor: '#182131',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: scale(12),
+    paddingVertical: scale(8),
   },
   modeChipSelected: {
     borderColor: '#77aef7',
@@ -157,49 +158,49 @@ const styles = StyleSheet.create({
   },
   modeChipText: {
     color: '#d3dcec',
-    fontSize: 12,
+    fontSize: scaleFont(12),
     fontWeight: '800',
   },
   modeChipTextSelected: {
     color: '#eef4ff',
   },
   preview: {
-    borderRadius: 18,
+    borderRadius: scale(18),
     borderWidth: 1,
     borderColor: '#223049',
     backgroundColor: '#101521',
-    padding: 14,
-    gap: 4,
+    padding: scale(14),
+    gap: scale(4),
   },
   previewLabel: {
     color: '#8799b8',
-    fontSize: 11,
+    fontSize: scaleFont(11),
     textTransform: 'uppercase',
     letterSpacing: 0.9,
     fontWeight: '800',
   },
   previewTitle: {
     color: '#f4f7fb',
-    fontSize: 20,
+    fontSize: scaleFont(20),
     fontWeight: '900',
   },
   previewDescription: {
     color: '#a5b3c7',
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: scaleFont(13),
+    lineHeight: scale(18),
   },
   playButton: {
-    borderRadius: 16,
+    borderRadius: scale(16),
     backgroundColor: '#77aef7',
     alignItems: 'center',
-    paddingVertical: 14,
+    paddingVertical: scale(14),
   },
   playButtonPressed: {
     opacity: 0.92,
   },
   playButtonText: {
     color: '#08111f',
-    fontSize: 16,
+    fontSize: scaleFont(16),
     fontWeight: '900',
   },
 });

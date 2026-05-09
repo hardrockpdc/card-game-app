@@ -8,6 +8,7 @@ import {
   ScrollView,
   useWindowDimensions,
 } from "react-native";
+import { scale, scaleFont } from "../game/responsive";
 
 export default function MultiplayerMenuScreen({ navigation }) {
   const { width } = useWindowDimensions();
@@ -136,7 +137,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#1a1a2e",
     alignItems: "center",
     justifyContent: "center",
-    padding: 24,
+    padding: scale(24),
   },
   content: {
     width: "100%",
@@ -146,21 +147,21 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontWeight: "bold",
     textAlign: "center",
-    marginBottom: 8,
+    marginBottom: scale(8),
   },
   subtitle: {
     color: "#b0b0c0",
     textAlign: "center",
-    marginBottom: 28,
+    marginBottom: scale(28),
   },
   disabledButton: {
     width: "100%",
     maxWidth: 420,
-    borderRadius: 12,
+    borderRadius: scale(12),
     borderWidth: 2,
     borderColor: "#4a4a5f",
     backgroundColor: "#2a2a3d",
-    marginBottom: 14,
+    marginBottom: scale(14),
   },
   disabledButtonText: {
     color: "#8b8ba3",
@@ -168,8 +169,8 @@ const styles = StyleSheet.create({
   },
   comingSoon: {
     color: "#b0b0c0",
-    fontSize: 12,
-    marginTop: 4,
+    fontSize: scaleFont(12),
+    marginTop: scale(4),
   },
   buttonTextRow: {
     alignItems: "center",
@@ -178,10 +179,10 @@ const styles = StyleSheet.create({
   primaryButton: {
     width: "100%",
     maxWidth: 420,
-    borderRadius: 12,
+    borderRadius: scale(12),
     backgroundColor: "#e94560",
-    marginTop: 8,
-    marginBottom: 14,
+    marginTop: scale(8),
+    marginBottom: scale(14),
     alignItems: "center",
   },
   primaryButtonText: {
@@ -191,23 +192,23 @@ const styles = StyleSheet.create({
   secondaryButton: {
     width: "100%",
     maxWidth: 420,
-    borderRadius: 12,
+    borderRadius: scale(12),
     borderWidth: 2,
     borderColor: "#e94560",
     backgroundColor: "transparent",
     alignItems: "center",
-    marginBottom: 18,
+    marginBottom: scale(18),
   },
   secondaryButtonText: {
     color: "#e94560",
     fontWeight: "bold",
   },
   backButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingVertical: scale(8),
+    paddingHorizontal: scale(16),
   },
   backButtonText: {
     color: "#b0b0c0",
-    fontSize: 16,
+    fontSize: scaleFont(16),
   },
 });
