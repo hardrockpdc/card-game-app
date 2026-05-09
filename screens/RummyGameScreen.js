@@ -605,17 +605,8 @@ export default function RummyGameScreen({ navigation, route }) {
     );
   }
 
-  if (!gameState) {
-    return (
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.loadingWrap}>
-          <Text style={styles.loadingText}>Dealing cards…</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   // Auto-save after each state change in single-player.
+  // Must be before the early return below so hook call order is consistent.
   useEffect(() => {
     if (!isSinglePlayer || !fullRef.current) return;
     const key = `@cardnight:save:rummy:${variantId}`;
@@ -639,6 +630,16 @@ export default function RummyGameScreen({ navigation, route }) {
       setCoinsEarned(0);
     }
   }, [gameState?.winner, gameState?.tie]);
+
+  if (!gameState) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.loadingWrap}>
+          <Text style={styles.loadingText}>Dealing cards…</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (
     gameState.phase === "game-over" ||
