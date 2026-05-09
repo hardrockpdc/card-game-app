@@ -57,12 +57,6 @@ export default function HomeScreen({ navigation }) {
       setProfileName(getDisplayName(profile));
       setProfileHasName(hasProfileName(profile));
       setIsLoadingProfile(false);
-
-      if (!hasProfileName(profile)) {
-        navigation.navigate("Profile", {
-          welcomeMessage: PROFILE_WELCOME_MESSAGE,
-        });
-      }
     }
 
     bootstrapProfile();
@@ -131,6 +125,7 @@ export default function HomeScreen({ navigation }) {
           <TouchableOpacity
             style={[
               styles.singlePlayerButton,
+              !profileHasName && styles.singlePlayerButtonDisabled,
               {
                 paddingVertical: buttonVertical,
                 paddingHorizontal: buttonHorizontal,
@@ -141,11 +136,17 @@ export default function HomeScreen({ navigation }) {
             <Text
               style={[
                 styles.singlePlayerButtonText,
+                !profileHasName && styles.singlePlayerButtonTextDisabled,
                 { fontSize: buttonTextSize },
               ]}
             >
               Single Player
             </Text>
+            {!profileHasName && (
+              <Text style={styles.singlePlayerButtonHint}>
+                Set up your profile to play
+              </Text>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -267,9 +268,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     maxWidth: 420,
   },
+  singlePlayerButtonDisabled: {
+    borderColor: "#555",
+    opacity: 0.55,
+  },
   singlePlayerButtonText: {
     color: "#4caf50",
     fontWeight: "bold",
+  },
+  singlePlayerButtonTextDisabled: {
+    color: "#888",
+  },
+  singlePlayerButtonHint: {
+    color: "#888",
+    fontSize: 12,
+    marginTop: 4,
   },
   primaryButton: {
     backgroundColor: "#e94560",
