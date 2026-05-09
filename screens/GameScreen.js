@@ -20,19 +20,19 @@ import TutorialOverlay, { hasSeen } from "../components/TutorialOverlay";
 
 const BLACKJACK_SLIDES = [
   {
-    emoji: '🃏',
-    title: 'Beat the Dealer',
-    body: 'Try to get closer to 21 than the dealer without going over.',
+    emoji: "🃏",
+    title: "Beat the Dealer",
+    body: "Try to get closer to 21 than the dealer without going over.",
   },
   {
-    emoji: '👆',
-    title: 'Hit or Stand',
-    body: 'Tap HIT to take another card. Tap STAND to keep your total and let the dealer play.',
+    emoji: "👆",
+    title: "Hit or Stand",
+    body: "Tap HIT to take another card. Tap STAND to keep your total and let the dealer play.",
   },
   {
-    emoji: '🪙',
-    title: 'Place Your Bet',
-    body: 'Choose a bet before each hand. Win = double your bet. Blackjack (Ace + 10-card) = 1.5×.',
+    emoji: "🪙",
+    title: "Place Your Bet",
+    body: "Choose a bet before each hand. Win = double your bet. Blackjack (Ace + 10-card) = 1.5×.",
   },
 ];
 
@@ -68,7 +68,9 @@ export default function GameScreen({ navigation, route }) {
   // ── Load wallet + check for saved game on mount ───────────────────
   useEffect(() => {
     getCoins().then(setCoins);
-    hasSeen('blackjack').then((seen) => { if (!seen) setShowTutorial(true); });
+    hasSeen("blackjack").then((seen) => {
+      if (!seen) setShowTutorial(true);
+    });
 
     async function checkResume() {
       if (!route?.params?.resumeFromSave) return;
@@ -108,7 +110,16 @@ export default function GameScreen({ navigation, route }) {
       splitResult,
       coinsDelta,
     });
-  }, [screenPhase, playerHand, splitHand, dealerHand, gameStatus, result, splitResult, coinsDelta]);
+  }, [
+    screenPhase,
+    playerHand,
+    splitHand,
+    dealerHand,
+    gameStatus,
+    result,
+    splitResult,
+    coinsDelta,
+  ]);
 
   // ── Payout ────────────────────────────────────────────────────────
   // Called once per hand when it's fully resolved.
@@ -121,8 +132,7 @@ export default function GameScreen({ navigation, route }) {
     let payout = 0;
     if (mainResult === "win") payout += bet * 2;
     else if (mainResult === "push") payout += bet;
-    else if (mainResult === "blackjack")
-      payout += bet + Math.floor(bet * 1.5);
+    else if (mainResult === "blackjack") payout += bet + Math.floor(bet * 1.5);
     // 'lose': 0
 
     if (hadSplit) {
@@ -140,7 +150,10 @@ export default function GameScreen({ navigation, route }) {
 
     const totalBet = hadSplit ? bet * 2 : bet;
     setCoinsDelta(payout - totalBet);
-    if (payout > totalBet) { playSound("win"); recordWin("blackjack"); }
+    if (payout > totalBet) {
+      playSound("win");
+      recordWin("blackjack");
+    }
     setScreenPhase("result");
   }
 
@@ -351,8 +364,7 @@ export default function GameScreen({ navigation, route }) {
   // ── Display values ────────────────────────────────────────────────
   const playerTotal = calculateHandValue(playerHand);
   const splitTotal = splitHand ? calculateHandValue(splitHand) : 0;
-  const showFullDealerHand =
-    gameStatus !== "playing" && gameStatus !== "idle";
+  const showFullDealerHand = gameStatus !== "playing" && gameStatus !== "idle";
   const dealerDisplayTotal = showFullDealerHand
     ? calculateHandValue(dealerHand)
     : dealerHand.length > 0
@@ -526,87 +538,87 @@ export default function GameScreen({ navigation, route }) {
         contentContainerStyle={styles.handsScrollContent}
       >
         <View style={styles.table}>
-        {/* Dealer */}
-        <View style={styles.section}>
-          <Text style={styles.label}>
-            Dealer —{" "}
-            {showFullDealerHand ? "total:" : "shows"} {dealerDisplayTotal}
-          </Text>
-          <View style={styles.hand}>
-            {dealerHand.map((card, index) => (
-              <Card
-                key={card.id}
-                rank={card.rank}
-                suit={card.suit}
-                faceDown={index === 1 && !showFullDealerHand}
-                sizeScale={1.5}
-              />
-            ))}
-          </View>
-        </View>
-
-        {/* Main hand */}
-        <View style={styles.section}>
-          <Text style={styles.label}>
-            {splitHand ? (isPlayingHand0 ? "▶ Hand 1" : "Hand 1") : "You"}
-            {" — total: "}
-            {playerTotal}
-            {gameOver && splitHand ? resultIcon(result) : ""}
-          </Text>
-          <View style={[styles.hand, isPlayingHand0 && styles.activeHand]}>
-            {playerHand.map((card) => (
-              <Card
-                key={card.id}
-                rank={card.rank}
-                suit={card.suit}
-                sizeScale={1.5}
-              />
-            ))}
-          </View>
-        </View>
-
-        {/* Split hand */}
-        {splitHand && (
+          {/* Dealer */}
           <View style={styles.section}>
             <Text style={styles.label}>
-              {isPlayingHand1 ? "▶ Hand 2" : "Hand 2"}
-              {" — total: "}
-              {splitTotal}
-              {gameOver ? resultIcon(splitResult) : ""}
+              Dealer — {showFullDealerHand ? "total:" : "shows"}{" "}
+              {dealerDisplayTotal}
             </Text>
-            <View style={[styles.hand, isPlayingHand1 && styles.activeHand]}>
-              {splitHand.map((card) => (
+            <View style={styles.hand}>
+              {dealerHand.map((card, index) => (
                 <Card
                   key={card.id}
                   rank={card.rank}
                   suit={card.suit}
-                  sizeScale={1.5}
+                  faceDown={index === 1 && !showFullDealerHand}
+                  sizeScale={1}
                 />
               ))}
             </View>
           </View>
-        )}
 
-        {/* Status message */}
-        {statusMessage !== "" && (
-          <Text style={[styles.status, { color: statusColor }]}>
-            {statusMessage}
-          </Text>
-        )}
+          {/* Main hand */}
+          <View style={styles.section}>
+            <Text style={styles.label}>
+              {splitHand ? (isPlayingHand0 ? "▶ Hand 1" : "Hand 1") : "You"}
+              {" — total: "}
+              {playerTotal}
+              {gameOver && splitHand ? resultIcon(result) : ""}
+            </Text>
+            <View style={[styles.hand, isPlayingHand0 && styles.activeHand]}>
+              {playerHand.map((card) => (
+                <Card
+                  key={card.id}
+                  rank={card.rank}
+                  suit={card.suit}
+                  sizeScale={1}
+                />
+              ))}
+            </View>
+          </View>
 
-        {/* Coins delta — shown only in result state */}
-        {screenPhase === "result" && (
-          <Text
-            style={[
-              styles.coinsDeltaText,
-              coinsDelta >= 0
-                ? styles.coinsDeltaPositive
-                : styles.coinsDeltaNegative,
-            ]}
-          >
-            {coinsDeltaLabel}
-          </Text>
-        )}
+          {/* Split hand */}
+          {splitHand && (
+            <View style={styles.section}>
+              <Text style={styles.label}>
+                {isPlayingHand1 ? "▶ Hand 2" : "Hand 2"}
+                {" — total: "}
+                {splitTotal}
+                {gameOver ? resultIcon(splitResult) : ""}
+              </Text>
+              <View style={[styles.hand, isPlayingHand1 && styles.activeHand]}>
+                {splitHand.map((card) => (
+                  <Card
+                    key={card.id}
+                    rank={card.rank}
+                    suit={card.suit}
+                    sizeScale={1}
+                  />
+                ))}
+              </View>
+            </View>
+          )}
+
+          {/* Status message */}
+          {statusMessage !== "" && (
+            <Text style={[styles.status, { color: statusColor }]}>
+              {statusMessage}
+            </Text>
+          )}
+
+          {/* Coins delta — shown only in result state */}
+          {screenPhase === "result" && (
+            <Text
+              style={[
+                styles.coinsDeltaText,
+                coinsDelta >= 0
+                  ? styles.coinsDeltaPositive
+                  : styles.coinsDeltaNegative,
+              ]}
+            >
+              {coinsDeltaLabel}
+            </Text>
+          )}
         </View>
       </ScrollView>
 
@@ -666,7 +678,12 @@ export default function GameScreen({ navigation, route }) {
       ) : null}
 
       {gameOverModal}
-      <QuitButton onQuit={() => { clearGame(SAVE_KEY); navigation.navigate("Home"); }} />
+      <QuitButton
+        onQuit={() => {
+          clearGame(SAVE_KEY);
+          navigation.navigate("Home");
+        }}
+      />
     </SafeAreaView>
   );
 }

@@ -19,7 +19,9 @@
       "bundleIdentifier": "com.pedro.cardgameapp",
       "infoPlist": {
         "NSLocalNetworkUsageDescription": "Card Night uses your local network to find and connect to games on the same Wi-Fi.",
-        "NSBonjourServices": ["_cardnight._tcp"]
+        "NSBonjourServices": [
+          "_cardnight._tcp"
+        ]
       }
     },
     "android": {
@@ -43,6 +45,9 @@
         "projectId": "ca993ea1-d3bf-4c46-ad57-f51c28c366b4"
       }
     },
-    "owner": "hardrockpdc"
+    "owner": "hardrockpdc",
+    "plugins": [
+      "expo-audio"
+    ]
   }
 }

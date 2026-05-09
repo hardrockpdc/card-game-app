@@ -16,8 +16,7 @@ function Card({ rank, suit, faceDown, small = false, sizeScale = 1 }) {
   // Memoize size calculations so they only recompute when dimensions or
   // the small/sizeScale props actually change.
   const { w, h, m, r } = useMemo(() => {
-    const scale =
-      Math.min(Math.max(width / BASE_WIDTH, 0.85), 1.5) * sizeScale;
+    const scale = Math.min(Math.max(width / BASE_WIDTH, 0.85), 1.5) * sizeScale;
     return {
       w: Math.round((small ? 42 : 70) * scale),
       h: Math.round((small ? 60 : 100) * scale),

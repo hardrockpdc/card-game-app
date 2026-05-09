@@ -16,7 +16,8 @@
       "Read(//c/Users/hardr/.claude/projects/**)",
       "Bash(mkdir -p 'C:/Users/hardr/.claude/projects/c--Users-hardr-OneDrive-Documents-Projects-card-game-app/memory')",
       "Bash(del \"old_poker_screen.tmp\")",
-      "Bash(del \"old_poker_fbbc8cc.tmp\")"
+      "Bash(del \"old_poker_fbbc8cc.tmp\")",
+      "Bash(npx expo *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\hardr\\.claude\\projects\\c--Users-hardr-OneDrive-Documents-Projects-card-game-app"
