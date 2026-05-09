@@ -80,6 +80,7 @@ card-game-app/
 │   └── RummyVariantWheel.js       (simple tap-select rummy variant picker UI)
 ├── game/
 │   ├── deck.js                    (createDeck, shuffleDeck, calculateHandValue)
+│   ├── ThemeContext.js            (React context for card theme — single listener, shared across all Cards)
 │   ├── conquian.js                (Conquián game logic — pure functions)
 │   ├── wildround.js               (Wild Round game logic — pure functions)
 │   ├── lastCard.js                (Last Card game logic — pure functions)
@@ -169,7 +170,8 @@ All folders use identical filenames: `{rank}_{suit}.png` (ranks: a 2–10 j q k,
 **Theme system files:**
 
 - `game/cardTheme.js` — module singleton, 265 static requires (5 themes × 53 images), `setTheme`/`getTheme`/`subscribe`/`getCardImage`/`getCardBackImage`/`getThemePreviewImage`/`THEMES_LIST` exports
-- `components/Card.js` — uses cardTheme.js, subscribes to live changes via `useEffect`
+- `game/ThemeContext.js` — React context wrapping `cardTheme.js`; provides `useTheme()` hook; single AppState subscriber shared across all Card instances (replaces per-Card `useEffect` subscribers)
+- `components/Card.js` — uses `ThemeContext` via `useTheme()`; wrapped in `React.memo`; size calculations memoized with `useMemo`
 - `screens/CardThemeScreen.js` — full-screen swiper (FlatList pagingEnabled), Ace of Spades preview, dot indicators, "Use This Theme" button
 - `screens/ProfileScreen.js` — "Card Theme" row links to `CardThemes` route
 - `screens/SettingsScreen.js` — now a plain placeholder ("More settings coming soon"); Card Themes row removed
