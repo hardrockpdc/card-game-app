@@ -362,6 +362,7 @@ export default function PokerGameScreen({ navigation, route }) {
   const dealerRef = useRef(0);
   const chipsRef = useRef(null);
   const coinRewardedRef = useRef(false);
+  const aiTimerRef = useRef(null);
 
   function applyState(next) {
     fullRef.current = next;
@@ -384,7 +385,8 @@ export default function PokerGameScreen({ navigation, route }) {
     if (!isHost || state.phase === 'showdown') return;
     const currentP = state.players[state.currentPlayerIndex];
     if (!currentP?.isAI) return;
-    setTimeout(() => {
+    if (aiTimerRef.current) clearTimeout(aiTimerRef.current);
+    aiTimerRef.current = setTimeout(() => {
       const s = fullRef.current;
       if (!s || s.phase === 'showdown') return;
       const cp = s.players[s.currentPlayerIndex];
@@ -394,6 +396,12 @@ export default function PokerGameScreen({ navigation, route }) {
       if (next !== s) applyState(next);
     }, 1000 + Math.random() * 800);
   }
+
+  useEffect(() => {
+    return () => {
+      if (aiTimerRef.current) clearTimeout(aiTimerRef.current);
+    };
+  }, []);
 
   // Auto-save after each state change in single-player.
   useEffect(() => {

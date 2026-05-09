@@ -212,6 +212,7 @@ export default function GoFishGameScreen({ navigation, route }) {
   const [coinsEarned, setCoinsEarned] = useState(0);
   const fullRef = useRef(null);
   const coinRewardedRef = useRef(false);
+  const aiTimerRef = useRef(null);
   function applyState(next) {
     fullRef.current = next;
     setMyHand(next.hands['host'] ?? []);
@@ -231,7 +232,8 @@ export default function GoFishGameScreen({ navigation, route }) {
     if (!isHost || state.phase !== 'playing') return;
     const currentP = state.players[state.currentPlayerIndex];
     if (!currentP?.isAI) return;
-    setTimeout(() => {
+    if (aiTimerRef.current) clearTimeout(aiTimerRef.current);
+    aiTimerRef.current = setTimeout(() => {
       const s = fullRef.current;
       if (!s || s.phase !== 'playing') return;
       const cp = s.players[s.currentPlayerIndex];
@@ -245,6 +247,12 @@ export default function GoFishGameScreen({ navigation, route }) {
       applyState(doAsk(s, aiPid, target.id, rank));
     }, 1000 + Math.random() * 600);
   }
+
+  useEffect(() => {
+    return () => {
+      if (aiTimerRef.current) clearTimeout(aiTimerRef.current);
+    };
+  }, []);
 
   // Auto-save after each state change in single-player.
   useEffect(() => {

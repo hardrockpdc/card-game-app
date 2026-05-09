@@ -57,6 +57,7 @@ export default function ConquianGameScreen({ navigation, route }) {
 
   const fullRef = useRef(null);
   const coinRewardedRef = useRef(false);
+  const aiTimerRef = useRef(null);
   const [gameState, setGameState] = useState(null);
   const [myHand, setMyHand] = useState([]);
   const [selectedHandIds, setSelectedHandIds] = useState(new Set());
@@ -101,7 +102,8 @@ export default function ConquianGameScreen({ navigation, route }) {
     if (!isHost || state.phase !== 'playing') return;
     const cp = state.players[state.currentPlayerIndex];
     if (!cp?.isAI) return;
-    setTimeout(() => {
+    if (aiTimerRef.current) clearTimeout(aiTimerRef.current);
+    aiTimerRef.current = setTimeout(() => {
       const s = fullRef.current;
       if (!s || s.phase !== 'playing') return;
       const cp2 = s.players[s.currentPlayerIndex];
@@ -109,6 +111,12 @@ export default function ConquianGameScreen({ navigation, route }) {
       runAITurn(s);
     }, 700 + Math.random() * 500);
   }
+
+  useEffect(() => {
+    return () => {
+      if (aiTimerRef.current) clearTimeout(aiTimerRef.current);
+    };
+  }, []);
 
   function runAITurn(state) {
     const cp = state.players[state.currentPlayerIndex];
