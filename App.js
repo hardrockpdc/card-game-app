@@ -29,6 +29,7 @@ import MultiplayerMenuScreen from "./screens/MultiplayerMenuScreen";
 import ProfileScreen from "./screens/ProfileScreen";
 import { loadProfile } from "./game/profile";
 import { setTheme } from "./game/cardTheme";
+import { ThemeProvider } from "./game/ThemeContext";
 
 const Stack = createNativeStackNavigator();
 
@@ -43,6 +44,7 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
+      <ThemeProvider>
       <NavigationContainer>
         <Stack.Navigator
           initialRouteName="Home"
@@ -174,6 +176,7 @@ export default function App() {
           />
         </Stack.Navigator>
       </NavigationContainer>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }
