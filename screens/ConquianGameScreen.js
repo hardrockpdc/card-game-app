@@ -21,6 +21,7 @@ import {
 import { scale, scaleFont } from '../game/responsive';
 import { addCoins } from '../game/wallet';
 import { saveGame, loadGame, clearGame } from '../game/gameSaves';
+import { recordWin } from '../game/profile';
 
 const SAVE_KEY_CONQUIAN = '@cardnight:save:rummy:conquian';
 
@@ -493,6 +494,7 @@ export default function ConquianGameScreen({ navigation, route }) {
     if (isWon && !coinRewardedRef.current) {
       coinRewardedRef.current = true;
       addCoins(500).then(() => setCoinsEarned(500));
+      recordWin('conquian');
     }
     if (gameState?.phase !== 'results') {
       coinRewardedRef.current = false;

@@ -15,6 +15,7 @@ import QuitButton from "../components/QuitButton";
 import { scale, scaleFont } from "../game/responsive";
 import { addCoins } from "../game/wallet";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
+import { recordWin } from "../game/profile";
 import {
   broadcastToClients,
   sendToClient,
@@ -636,6 +637,7 @@ export default function RummyGameScreen({ navigation, route }) {
     if (isWon && !coinRewardedRef.current) {
       coinRewardedRef.current = true;
       addCoins(500).then(() => setCoinsEarned(500));
+      recordWin("rummy");
     }
     if (gameState?.winner == null && !gameState?.tie) {
       coinRewardedRef.current = false;

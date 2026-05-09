@@ -6,6 +6,7 @@ import {
 import { createDeck, shuffleDeck } from '../game/deck';
 import { addCoins, subtractCoins } from '../game/wallet';
 import { saveGame, loadGame, clearGame } from '../game/gameSaves';
+import { recordWin } from '../game/profile';
 import Card from '../components/Card';
 import { scale, scaleFont } from '../game/responsive';
 import QuitButton from '../components/QuitButton';
@@ -494,6 +495,7 @@ export default function PokerGameScreen({ navigation, route }) {
               coinRewardedRef.current = true;
               const wonChips = chipsRef.current['host'] ?? 0;
               addCoins(wonChips).then(() => setTournamentCoins(wonChips));
+              recordWin('poker');
             }
           }
           return;

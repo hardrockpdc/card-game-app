@@ -108,6 +108,14 @@ export async function updateProfile(updates) {
   return saveProfile({ ...currentProfile, ...updates });
 }
 
+export async function recordWin(gameId) {
+  const profile = await loadProfile();
+  const stats = { ...profile.stats };
+  const entry = stats[gameId] || { wins: 0 };
+  stats[gameId] = { wins: entry.wins + 1 };
+  await saveProfile({ ...profile, stats });
+}
+
 export function subscribeProfile(listener) {
   listeners.add(listener);
   return () => {

@@ -37,6 +37,7 @@ import {
 import { scale, scaleFont } from "../game/responsive";
 import { addCoins } from "../game/wallet";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
+import { recordWin } from "../game/profile";
 
 const SAVE_KEY_LASTCARD = "@cardnight:save:lastcard";
 
@@ -322,6 +323,7 @@ export default function LastCardGameScreen({ navigation, route }) {
       coinRewardedRef.current = true;
       clearGame(SAVE_KEY_LASTCARD);
       addCoins(500).then(() => setCoinsEarned(500));
+      recordWin("lastcard");
     }
     if (phase !== "gameOver") {
       coinRewardedRef.current = false;

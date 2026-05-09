@@ -22,6 +22,7 @@ import {
   tapAction,
 } from "../game/solitaire";
 import { addCoins } from "../game/wallet";
+import { recordWin } from "../game/profile";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 
 function solitaireSaveKey(variantId) {
@@ -183,6 +184,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
     if (state.status === "won" && !coinRewardedRef.current) {
       coinRewardedRef.current = true;
       addCoins(250).then(() => setCoinsEarned(250));
+      recordWin("solitaire");
     }
     if (state.status !== "won") {
       coinRewardedRef.current = false;

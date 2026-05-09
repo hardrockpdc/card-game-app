@@ -28,6 +28,8 @@ import GameSetupScreen from "./screens/GameSetupScreen";
 import CardThemeScreen from "./screens/CardThemeScreen";
 import MultiplayerMenuScreen from "./screens/MultiplayerMenuScreen";
 import ProfileScreen from "./screens/ProfileScreen";
+import AboutScreen from "./screens/AboutScreen";
+import StatsScreen from "./screens/StatsScreen";
 import { loadProfile } from "./game/profile";
 import { setTheme } from "./game/cardTheme";
 import { initSounds } from "./game/sounds";
@@ -197,6 +199,16 @@ export default function App() {
             name="Profile"
             component={ProfileScreen}
             options={{ title: "Profile" }}
+          />
+          <Stack.Screen
+            name="About"
+            component={AboutScreen}
+            options={{ title: "About" }}
+          />
+          <Stack.Screen
+            name="Stats"
+            component={StatsScreen}
+            options={{ title: "Stats" }}
           />
         </Stack.Navigator>
       </NavigationContainer>

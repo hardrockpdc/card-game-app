@@ -6,6 +6,7 @@ import {
 import { createDeck, shuffleDeck } from '../game/deck';
 import { addCoins } from '../game/wallet';
 import { saveGame, loadGame, clearGame } from '../game/gameSaves';
+import { recordWin } from '../game/profile';
 
 const SAVE_KEY_GOFISH = '@cardnight:save:gofish';
 import Card from '../components/Card';
@@ -326,6 +327,7 @@ export default function GoFishGameScreen({ navigation, route }) {
     if (isWon && !coinRewardedRef.current) {
       coinRewardedRef.current = true;
       addCoins(500).then(() => setCoinsEarned(500));
+      recordWin('gofish');
     }
     if (gameState?.phase !== 'results') {
       coinRewardedRef.current = false;

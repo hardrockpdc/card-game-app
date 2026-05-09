@@ -15,6 +15,7 @@ import { playSound } from "../game/sounds";
 import { scale, scaleFont } from "../game/responsive";
 import { getCoins, addCoins, subtractCoins } from "../game/wallet";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
+import { recordWin } from "../game/profile";
 
 const BET_OPTIONS = [10, 25, 50, 100, 250];
 const MIN_BET = 10;
@@ -118,7 +119,7 @@ export default function GameScreen({ navigation, route }) {
 
     const totalBet = hadSplit ? bet * 2 : bet;
     setCoinsDelta(payout - totalBet);
-    if (payout > totalBet) playSound("win");
+    if (payout > totalBet) { playSound("win"); recordWin("blackjack"); }
     setScreenPhase("result");
   }
 

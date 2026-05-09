@@ -482,8 +482,21 @@ export default function ProfileScreen({ navigation, route }) {
           </View>
 
           <View style={styles.statsCard}>
-            <Text style={styles.sectionLabel}>Stats</Text>
-            <Text style={styles.statsComingSoon}>Coming soon</Text>
+            <Text style={styles.sectionLabel}>More</Text>
+            <TouchableOpacity
+              style={styles.moreRow}
+              onPress={() => navigation.navigate('Stats')}
+            >
+              <Text style={styles.moreRowText}>📊 Stats</Text>
+              <Text style={styles.moreRowArrow}>›</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.moreRow, styles.moreRowLast]}
+              onPress={() => navigation.navigate('About')}
+            >
+              <Text style={styles.moreRowText}>ℹ️ About Card Night</Text>
+              <Text style={styles.moreRowArrow}>›</Text>
+            </TouchableOpacity>
           </View>
 
           <TouchableOpacity
@@ -748,9 +761,24 @@ const styles = StyleSheet.create({
     padding: scale(16),
     marginBottom: scale(18),
   },
-  statsComingSoon: {
-    color: "#b0b0c0",
+  moreRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: scale(12),
+    borderBottomWidth: 1,
+    borderBottomColor: "#22223a",
+  },
+  moreRowLast: {
+    borderBottomWidth: 0,
+  },
+  moreRowText: {
+    color: "#c0c0d4",
     fontSize: scaleFont(15),
+  },
+  moreRowArrow: {
+    color: "#666680",
+    fontSize: scaleFont(18),
   },
   backBtn: {
     alignItems: "center",
