@@ -194,6 +194,49 @@ All folders use identical filenames: `{rank}_{suit}.png` (ranks: a 2–10 j q k,
 - `screens/ProfileScreen.js` — "Card Theme" row links to `CardThemes` route
 - `screens/SettingsScreen.js` — now a plain placeholder ("More settings coming soon"); Card Themes row removed
 
+## 🔐 Security Model
+
+### Coin Wallet (v1.0 — local only, no encryption)
+
+`game/wallet.js` stores the coin balance and lifetime earnings in plain
+`AsyncStorage` (JSON, no encryption). A user with a rooted Android device
+could manually edit the stored value and give themselves an arbitrary coin
+balance.
+
+**Why this is acceptable for v1.0:**
+- Coins are purely local — there is no server, no leaderboard, and no way
+  for one player's coin total to affect another player's experience.
+- Cheating your own coin balance in a local card game has zero impact on
+  anyone else.
+
+**What must change before adding a leaderboard:**
+This MUST be addressed before shipping any feature that compares coin totals
+across players (leaderboard, achievements, ranked play). Two viable paths:
+
+1. **Signed/encrypted local storage** — use a library like
+   `react-native-encrypted-storage` to store coins under device-level
+   encryption. Harder to tamper with, but still possible on rooted devices.
+2. **Server-validated transactions** — move coin earning/spending to a backend
+   that validates each transaction. Correct but adds significant infrastructure.
+
+Path 2 is the right long-term answer. Don't ship a leaderboard without it.
+
+### Profile & Save Data
+
+Same situation — `profile.js` and `gameSaves.js` both use plain AsyncStorage.
+Profile data (name, avatar, stats) and save game state are all readable and
+editable on a rooted device. Acceptable for v1.0 local-only play.
+
+### Network Security
+
+All multiplayer traffic is local TCP (port 7777) and UDP discovery (port 7778).
+No data is ever sent to the internet. No user accounts. No analytics. No ads.
+The only permissions that touch the network are `NEARBY_WIFI_DEVICES` /
+`ACCESS_WIFI_STATE` (Android) and `NSLocalNetworkUsageDescription` (iOS) —
+both explicitly for LAN-only play.
+
+---
+
 ## 📐 Layout Conventions
 
 - Use `SafeAreaProvider` at the app root.
