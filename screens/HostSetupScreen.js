@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Platform,
 } from "react-native";
 import * as Network from "expo-network";
+import * as Clipboard from "expo-clipboard";
 import {
   startServer,
   stopServer,
@@ -23,6 +24,8 @@ export default function HostSetupScreen({ navigation }) {
   const [playerCount, setPlayerCount] = useState(0);
   const [serverReady, setServerReady] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [copied, setCopied] = useState(false);
+  const copyTimerRef = useRef(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -60,8 +63,17 @@ export default function HostSetupScreen({ navigation }) {
     return () => {
       isMounted = false;
       unsubscribe();
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
     };
   }, [navigation]);
+
+  async function handleCopyIP() {
+    if (!ipAddress) return;
+    await Clipboard.setStringAsync(ipAddress);
+    setCopied(true);
+    if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    copyTimerRef.current = setTimeout(() => setCopied(false), 2000);
+  }
 
   function goToLobby() {
     navigation.navigate("Lobby", {
@@ -95,8 +107,14 @@ export default function HostSetupScreen({ navigation }) {
         <Text style={styles.nameText}>{hostName}</Text>
       </View>
 
-      {/* IP address card */}
-      <View style={styles.ipBox}>
+      {/* IP address card — tap to copy */}
+      <TouchableOpacity
+        style={[styles.ipBox, copied && styles.ipBoxCopied]}
+        onPress={handleCopyIP}
+        activeOpacity={0.75}
+        accessibilityRole="button"
+        accessibilityLabel="Copy IP address"
+      >
         <Text style={styles.ipLabel}>Your WiFi IP Address</Text>
         {ipAddress ? (
           <Text style={styles.ipAddress}>{ipAddress}</Text>
@@ -107,10 +125,10 @@ export default function HostSetupScreen({ navigation }) {
             style={{ marginVertical: 8 }}
           />
         )}
-        <Text style={styles.ipHint}>
-          Joining players will find your game automatically
+        <Text style={[styles.ipHint, copied && styles.ipHintCopied]}>
+          {copied ? "✓ Copied!" : "Tap to copy"}
         </Text>
-      </View>
+      </TouchableOpacity>
 
       {/* Server status + player count row */}
       <View style={styles.statusRow}>
@@ -203,6 +221,13 @@ const styles = StyleSheet.create({
   ipHint: {
     color: "#666680",
     fontSize: scaleFont(12),
+  },
+  ipBoxCopied: {
+    borderColor: "#4caf50",
+  },
+  ipHintCopied: {
+    color: "#4caf50",
+    fontWeight: "bold",
   },
   statusRow: {
     flexDirection: "row",
