@@ -10,11 +10,14 @@ import {
 import { createDeck, shuffleDeck, calculateHandValue } from "../game/deck";
 import Card from "../components/Card";
 import { scale, scaleFont } from "../game/responsive";
+import QuitButton from "../components/QuitButton";
 import {
   setServerListeners,
   broadcastToClients,
   setClientListeners,
   sendToHost,
+  stopServer,
+  disconnectFromHost,
 } from "../game/GameNetwork";
 
 // ─── Pure game-logic helpers (no React, easy to test) ────────────────────────
@@ -343,6 +346,7 @@ export default function MultiplayerGameScreen({ navigation, route }) {
   }
 
   return (
+    <View style={styles.screenRoot}>
     <ScrollView contentContainerStyle={styles.container}>
       {/* Turn / phase banner */}
       <View
@@ -560,12 +564,18 @@ export default function MultiplayerGameScreen({ navigation, route }) {
         </Text>
       )}
     </ScrollView>
+      <QuitButton onQuit={() => {
+        if (isHost) { stopServer(); } else { disconnectFromHost(); }
+        navigation.navigate('Home');
+      }} />
+    </View>
   );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
+  screenRoot: { flex: 1, backgroundColor: "#0d5c2e" },
   loading: {
     flex: 1,
     backgroundColor: "#0d5c2e",

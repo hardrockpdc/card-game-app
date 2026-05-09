@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import Card from "../components/Card";
+import QuitButton from "../components/QuitButton";
 import {
   SPIDER_MODE_OPTIONS,
   createSolitaireState,
@@ -807,6 +808,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
         {state.variantId === "pyramid" ? renderPyramid() : null}
         {state.variantId === "tripeaks" ? renderTriPeaks() : null}
       </ScrollView>
+      <QuitButton onQuit={() => { clearGame(solitaireSaveKey(state.variantId || routeVariantId)); navigation.navigate("Home"); }} />
     </SafeAreaView>
   );
 }

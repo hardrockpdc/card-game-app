@@ -10,6 +10,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import QuitButton from "../components/QuitButton";
 import {
   COLORS,
   createDeck,
@@ -30,6 +31,8 @@ import {
   sendToClient,
   setClientListeners,
   sendToHost,
+  stopServer,
+  disconnectFromHost,
 } from "../game/GameNetwork";
 import { scale, scaleFont } from "../game/responsive";
 import { addCoins } from "../game/wallet";
@@ -1107,6 +1110,12 @@ export default function LastCardGameScreen({ navigation, route }) {
           </TouchableOpacity>
         </View>
       )}
+      <QuitButton onQuit={() => {
+        if (isSinglePlayer) { clearGame(SAVE_KEY_LASTCARD); }
+        else if (isHost) { stopServer(); }
+        else { disconnectFromHost(); }
+        navigation.navigate('Home');
+      }} />
     </SafeAreaView>
   );
 }

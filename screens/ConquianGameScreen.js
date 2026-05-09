@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Card from '../components/Card';
+import QuitButton from '../components/QuitButton';
 import {
   deal, doSelectPassCard, doDrawFromStock,
   doLayDownMeld, doExtendMeldFromHand,
@@ -15,6 +16,7 @@ import {
 import {
   setServerListeners, broadcastToClients, sendToClient,
   setClientListeners, sendToHost,
+  stopServer, disconnectFromHost,
 } from '../game/GameNetwork';
 import { scale, scaleFont } from '../game/responsive';
 import { addCoins } from '../game/wallet';
@@ -909,6 +911,12 @@ export default function ConquianGameScreen({ navigation, route }) {
       </View>
 
     </ScrollView>
+      <QuitButton onQuit={() => {
+        if (isSinglePlayer) { clearGame(SAVE_KEY_CONQUIAN); }
+        else if (isHost) { stopServer(); }
+        else { disconnectFromHost(); }
+        navigation.navigate('Home');
+      }} />
     </SafeAreaView>
   );
 }

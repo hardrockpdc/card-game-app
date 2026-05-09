@@ -10,9 +10,11 @@ import { saveGame, loadGame, clearGame } from '../game/gameSaves';
 const SAVE_KEY_GOFISH = '@cardnight:save:gofish';
 import Card from '../components/Card';
 import { scale, scaleFont } from '../game/responsive';
+import QuitButton from '../components/QuitButton';
 import {
   setServerListeners, broadcastToClients, sendToClient,
   setClientListeners, sendToHost,
+  stopServer, disconnectFromHost,
 } from '../game/GameNetwork';
 
 // ─── Game logic ───────────────────────────────────────────────────────────────
@@ -343,6 +345,7 @@ export default function GoFishGameScreen({ navigation, route }) {
   const displayHand = sortHand(myHand);
 
   return (
+    <View style={styles.screenRoot}>
     <ScrollView contentContainerStyle={styles.container}>
 
       {/* Banner */}
@@ -470,12 +473,20 @@ export default function GoFishGameScreen({ navigation, route }) {
       )}
 
     </ScrollView>
+      <QuitButton onQuit={() => {
+        if (isSinglePlayer) { clearGame(SAVE_KEY_GOFISH); }
+        else if (isHost) { stopServer(); }
+        else { disconnectFromHost(); }
+        navigation.navigate('Home');
+      }} />
+    </View>
   );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
+  screenRoot: { flex: 1, backgroundColor: '#1a1a2e' },
   loading: { flex: 1, backgroundColor: '#1a1a2e', alignItems: 'center', justifyContent: 'center' },
   loadingText: { color: '#fff', fontSize: scaleFont(18) },
   container: { flexGrow: 1, backgroundColor: '#1a1a2e', padding: scale(14), paddingBottom: scale(40) },

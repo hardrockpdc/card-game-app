@@ -11,6 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import Card from "../components/Card";
 import Toast, { useToast } from "../components/Toast";
+import QuitButton from "../components/QuitButton";
 import { scale, scaleFont } from "../game/responsive";
 import { addCoins } from "../game/wallet";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
@@ -20,6 +21,8 @@ import {
   sendToHost,
   setClientListeners,
   setServerListeners,
+  stopServer,
+  disconnectFromHost,
 } from "../game/GameNetwork";
 
 const {
@@ -934,6 +937,12 @@ export default function RummyGameScreen({ navigation, route }) {
         </View>
       </ScrollView>
       <Toast message={toastMessage} revision={toastRevision} />
+      <QuitButton onQuit={() => {
+        if (isSinglePlayer) { clearGame(`@cardnight:save:rummy:${variantId}`); }
+        else if (isHost) { stopServer(); }
+        else { disconnectFromHost(); }
+        navigation.navigate('Home');
+      }} />
     </SafeAreaView>
   );
 }

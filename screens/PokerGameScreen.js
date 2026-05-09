@@ -8,9 +8,11 @@ import { addCoins, subtractCoins } from '../game/wallet';
 import { saveGame, loadGame, clearGame } from '../game/gameSaves';
 import Card from '../components/Card';
 import { scale, scaleFont } from '../game/responsive';
+import QuitButton from '../components/QuitButton';
 import {
   setServerListeners, broadcastToClients, sendToClient,
   setClientListeners, sendToHost,
+  stopServer, disconnectFromHost,
 } from '../game/GameNetwork';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -567,6 +569,7 @@ export default function PokerGameScreen({ navigation, route }) {
   const phaseLabel = { preflop: 'Pre-Flop', flop: 'Flop', turn: 'Turn', river: 'River', showdown: 'Showdown' };
 
   return (
+    <View style={styles.screenRoot}>
     <ScrollView contentContainerStyle={styles.container}>
 
       {/* Banner */}
@@ -673,12 +676,20 @@ export default function PokerGameScreen({ navigation, route }) {
       )}
 
     </ScrollView>
+      <QuitButton onQuit={() => {
+        if (isSinglePlayer && saveKey) { clearGame(saveKey); }
+        else if (isHost) { stopServer(); }
+        else { disconnectFromHost(); }
+        navigation.navigate('Home');
+      }} />
+    </View>
   );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
+  screenRoot: { flex: 1, backgroundColor: '#0a1628' },
   loading: { flex: 1, backgroundColor: '#0a1628', alignItems: 'center', justifyContent: 'center' },
   loadingText: { color: '#fff', fontSize: scaleFont(18) },
   container: { flexGrow: 1, backgroundColor: '#0a1628', padding: scale(14), paddingBottom: scale(40) },

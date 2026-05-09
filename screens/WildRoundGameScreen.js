@@ -11,6 +11,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import QuitButton from "../components/QuitButton";
 import {
   createDeck,
   dealHands,
@@ -26,6 +27,8 @@ import {
   sendToClient,
   setClientListeners,
   sendToHost,
+  stopServer,
+  disconnectFromHost,
 } from "../game/GameNetwork";
 import { scale, scaleFont } from "../game/responsive";
 
@@ -1092,6 +1095,10 @@ export default function WildRoundGameScreen({ navigation, route }) {
             </View>
           );
         })()}
+      <QuitButton onQuit={() => {
+        if (isHost) { stopServer(); } else { disconnectFromHost(); }
+        navigation.navigate('Home');
+      }} />
     </SafeAreaView>
   );
 }

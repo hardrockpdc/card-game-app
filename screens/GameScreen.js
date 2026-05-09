@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { createDeck, shuffleDeck, calculateHandValue } from "../game/deck";
 import Card from "../components/Card";
+import QuitButton from "../components/QuitButton";
 import { scale, scaleFont } from "../game/responsive";
 import { getCoins, addCoins, subtractCoins } from "../game/wallet";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
@@ -632,6 +633,7 @@ export default function GameScreen({ navigation, route }) {
       ) : null}
 
       {gameOverModal}
+      <QuitButton onQuit={() => { clearGame(SAVE_KEY); navigation.navigate("Home"); }} />
     </SafeAreaView>
   );
 }
