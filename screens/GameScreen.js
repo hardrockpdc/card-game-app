@@ -16,6 +16,25 @@ import { scale, scaleFont } from "../game/responsive";
 import { getCoins, addCoins, subtractCoins } from "../game/wallet";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import { recordWin } from "../game/profile";
+import TutorialOverlay, { hasSeen } from "../components/TutorialOverlay";
+
+const BLACKJACK_SLIDES = [
+  {
+    emoji: '🃏',
+    title: 'Beat the Dealer',
+    body: 'Try to get closer to 21 than the dealer without going over.',
+  },
+  {
+    emoji: '👆',
+    title: 'Hit or Stand',
+    body: 'Tap HIT to take another card. Tap STAND to keep your total and let the dealer play.',
+  },
+  {
+    emoji: '🪙',
+    title: 'Place Your Bet',
+    body: 'Choose a bet before each hand. Win = double your bet. Blackjack (Ace + 10-card) = 1.5×.',
+  },
+];
 
 const BET_OPTIONS = [10, 25, 50, 100, 250];
 const MIN_BET = 10;
@@ -28,6 +47,7 @@ export default function GameScreen({ navigation, route }) {
   const [currentBet, setCurrentBet] = useState(0);
   const [coinsDelta, setCoinsDelta] = useState(0);
   const [showGameOver, setShowGameOver] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
   const currentBetRef = useRef(0);
   const payoutDoneRef = useRef(false);
 
@@ -48,6 +68,7 @@ export default function GameScreen({ navigation, route }) {
   // ── Load wallet + check for saved game on mount ───────────────────
   useEffect(() => {
     getCoins().then(setCoins);
+    hasSeen('blackjack').then((seen) => { if (!seen) setShowTutorial(true); });
 
     async function checkResume() {
       if (!route?.params?.resumeFromSave) return;
@@ -479,6 +500,12 @@ export default function GameScreen({ navigation, route }) {
         </ScrollView>
 
         {gameOverModal}
+        <TutorialOverlay
+          visible={showTutorial}
+          slides={BLACKJACK_SLIDES}
+          gameId="blackjack"
+          onDone={() => setShowTutorial(false)}
+        />
       </SafeAreaView>
     );
   }

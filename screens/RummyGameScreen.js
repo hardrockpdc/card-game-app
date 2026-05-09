@@ -12,6 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Card from "../components/Card";
 import Toast, { useToast } from "../components/Toast";
 import QuitButton from "../components/QuitButton";
+import TutorialOverlay, { hasSeen } from "../components/TutorialOverlay";
 import { scale, scaleFont } from "../game/responsive";
 import { addCoins } from "../game/wallet";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
@@ -33,6 +34,24 @@ const {
   getRummyVariantLabel,
   calculateRummyDeadwood,
 } = require("../game/rummy");
+
+const GIN_RUMMY_SLIDES = [
+  {
+    emoji: '🃏',
+    title: 'Form Melds',
+    body: 'Build sets (3 cards of the same rank) or runs (3+ cards of the same suit in order).',
+  },
+  {
+    emoji: '🔄',
+    title: 'Draw & Discard',
+    body: 'Each turn: draw a card from the stock or discard pile, then discard one from your hand.',
+  },
+  {
+    emoji: '🏆',
+    title: 'Knock or Go Gin',
+    body: 'Knock when your unmelded cards total 10 or less. Get all 10 cards into melds for "Gin" — worth 25 bonus points!',
+  },
+];
 
 function findLocalPlayerIndex(players, myName, isHost) {
   if (isHost) {
@@ -184,6 +203,7 @@ export default function RummyGameScreen({ navigation, route }) {
   const coinRewardedRef = useRef(false);
   const { show: showToast, message: toastMessage, revision: toastRevision } = useToast();
   const [coinsEarned, setCoinsEarned] = useState(0);
+  const [showTutorial, setShowTutorial] = useState(false);
 
   const variantLabel =
     gameState?.variantLabel || getRummyVariantLabel(variantId);
@@ -645,6 +665,11 @@ export default function RummyGameScreen({ navigation, route }) {
     }
   }, [gameState?.winner, gameState?.tie]);
 
+  useEffect(() => {
+    if (variantId !== 'ginRummy') return;
+    hasSeen('ginRummy').then((seen) => { if (!seen) setShowTutorial(true); });
+  }, []);
+
   if (!gameState) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -945,6 +970,12 @@ export default function RummyGameScreen({ navigation, route }) {
         else { disconnectFromHost(); }
         navigation.navigate('Home');
       }} />
+      <TutorialOverlay
+        visible={showTutorial}
+        slides={GIN_RUMMY_SLIDES}
+        gameId="ginRummy"
+        onDone={() => setShowTutorial(false)}
+      />
     </SafeAreaView>
   );
 }
