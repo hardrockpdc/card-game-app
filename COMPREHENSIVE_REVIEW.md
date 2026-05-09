@@ -104,7 +104,7 @@ Track progress here. Update checkboxes as items complete.
 - [ ] **UX5** — Tap-to-copy IP in HostSetupScreen
 - [x] **UX6** — Toast messages for illegal moves
 - [x] **M4** — Strip `console.log` calls in production
-- [ ] **M5** — Sweep hardcoded sizes, replace with `scale()`/`scaleFont()`
+- [x] **M5** — Sweep hardcoded sizes, replace with `scale()`/`scaleFont()`
 - [ ] **M6** — Decide what to do with ResultsScreen (use it or remove it)
 - [ ] **M7** — Decide what to do with SettingsScreen (use it or remove it)
 - [ ] **L8** — Decide on "Coming Soon" buttons (remove or label clearly)
