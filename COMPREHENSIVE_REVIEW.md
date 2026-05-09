@@ -99,7 +99,7 @@ Track progress here. Update checkboxes as items complete.
 
 ### 🟡 MONTH 2 — Polish + UX critical wins
 
-- [ ] **UX1** — Soft-redirect to Profile instead of forced redirect
+- [x] **UX1** — Soft-redirect to Profile instead of forced redirect
 - [ ] **UX3** — Quit Game button in all game screens
 - [ ] **UX5** — Tap-to-copy IP in HostSetupScreen
 - [ ] **UX6** — Toast messages for illegal moves
