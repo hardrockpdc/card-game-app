@@ -227,7 +227,7 @@ All folders use identical filenames: `{rank}_{suit}.png` (ranks: a 2–10 j q k,
 
 **Visual assets update:** Cards now use neon image assets in `assets/cards/` (replaced procedural drawing).
 
-**EAS build status:** A new EAS build was required for Update Phase 3 (added `@react-native-async-storage/async-storage`). `expo-image-picker` and `expo-image-manipulator` are Expo-native and didn't require a separate build. Current build includes all packages through Phase 9.
+**EAS build status:** A new EAS build was required for Update Phase 3 (added `@react-native-async-storage/async-storage`). `expo-image-picker` and `expo-image-manipulator` are Expo-native and didn't require a separate build. Current build includes all packages through Phase 9. **A new EAS build is pending for the C1 network permissions added on 2026-05-09.**
 
 **Removed games (cleaned up):** Crazy Eights, War, Snap. These were intentionally cut to keep the lineup focused.
 
@@ -277,9 +277,19 @@ Save keys: `@cardnight:save:<game>[:<variant>]`
 
 **⚠️ Known follow-up — ConquianGameScreen has the identical bug:** One `useEffect` at line ~603 sits after early returns at lines ~484 and ~490. Conquian appears to work currently because the first render's state initializes synchronously enough to avoid the mismatch in testing — but it is a latent crash risk. Should be fixed in a dedicated session.
 
+### Pre-Publish Prep Session (Month 1 block — 2026-05-09)
+
+- ✅ **H1:** Deleted stale `.tmp` scratch files; added `*.tmp` to `.gitignore`
+- ✅ **L1:** Created `README.md` — setup steps, EAS build commands, links to spec files
+- ✅ **H2:** Updated `PROJECT_NOTES.md` to reflect `ThemeContext.js` refactor (file tree, Card.js description, theme system files list)
+- ✅ **M9:** Extracted `game/useResumePrompt.js` — custom hook encapsulating the save/resume Alert pattern. Refactored 5 screens to use it: `SinglePlayerSetupScreen`, `RummyVariantPickerScreen`, `SolitaireVariantPickerScreen`, `PokerVariantPickerScreen`, `GameSetupScreen`
+- ✅ **C6+H3:** Added `PROTOCOL_VERSION = 1` to `game/GameNetwork.js`. Every outgoing TCP message now carries `protocolVersion`. Server rejects mismatched clients with a `VERSION_MISMATCH` message then closes the socket. Client shows a friendly "Update Required" Alert on mismatch. UDP broadcast and discovery both include/check `protocolVersion`.
+- ✅ **C1:** Added Android (`NEARBY_WIFI_DEVICES`, `ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE`, `INTERNET`) and iOS (`NSLocalNetworkUsageDescription`, `NSBonjourServices`) permissions to `app.json`. **A new EAS build is required before these take effect on device.**
+
 ### After this session
-1. **Phase 5: Visual Theme Project** (paused until on better PC)
-2. **Phase 6: Publish** — Google Play + App Store
+1. **Run a new EAS build** so C1 permissions are active on device (Android + iOS)
+2. **Phase 5: Visual Theme Project** (paused until on better PC)
+3. **Phase 6: Publish** — Google Play + App Store
 
 ## 💡 Important Reminders
 
