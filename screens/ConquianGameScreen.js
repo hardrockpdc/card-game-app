@@ -479,6 +479,21 @@ export default function ConquianGameScreen({ navigation, route }) {
     }
   }
 
+  // Must be before the early returns below so hook call order is consistent.
+  useEffect(() => {
+    if (!isSinglePlayer) return;
+    const winner = gameState?.winner;
+    const isWon = gameState?.phase === 'results' && !gameState?.tie && String(winner?.id) === String(myPid);
+    if (isWon && !coinRewardedRef.current) {
+      coinRewardedRef.current = true;
+      addCoins(500).then(() => setCoinsEarned(500));
+    }
+    if (gameState?.phase !== 'results') {
+      coinRewardedRef.current = false;
+      setCoinsEarned(0);
+    }
+  }, [gameState?.phase, gameState?.winner, gameState?.tie]);
+
   // ─── Guards ──────────────────────────────────────────────────────────────────
 
   if (!gameState) {
@@ -599,20 +614,6 @@ export default function ConquianGameScreen({ navigation, route }) {
   const canTakeExtend = isMyTurn && turnPhase === 'action' &&
     !!activeCard && selectedMeldIdx !== null &&
     canExtendMeld(myMelds[selectedMeldIdx] ?? [], activeCard);
-
-  useEffect(() => {
-    if (!isSinglePlayer) return;
-    const winner = gameState?.winner;
-    const isWon = gameState?.phase === 'results' && !gameState?.tie && String(winner?.id) === String(myPid);
-    if (isWon && !coinRewardedRef.current) {
-      coinRewardedRef.current = true;
-      addCoins(500).then(() => setCoinsEarned(500));
-    }
-    if (gameState?.phase !== 'results') {
-      coinRewardedRef.current = false;
-      setCoinsEarned(0);
-    }
-  }, [gameState?.phase, gameState?.winner, gameState?.tie]);
 
   // ─── Results screen ───────────────────────────────────────────────────────────
 
