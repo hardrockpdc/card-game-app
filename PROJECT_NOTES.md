@@ -91,7 +91,8 @@ card-game-app/
 │   ├── PokerVariantWheel.js       (simple tap-select poker variant picker UI)
 │   ├── RummyVariantWheel.js       (simple tap-select rummy variant picker UI)
 │   ├── Toast.js                   (animated pill toast + useToast hook — illegal move feedback + error sound)
-│   └── QuitButton.js              (absolute-positioned ✕ Quit button — used by all 9 game screens)
+│   ├── QuitButton.js              (absolute-positioned ✕ Quit button — used by all 9 game screens)
+│   └── TutorialOverlay.js         (first-time tutorial modal — slide carousel, AsyncStorage seen-tracking, Skip/Got It)
 ├── game/
 │   ├── deck.js                    (createDeck, shuffleDeck, calculateHandValue)
 │   ├── ThemeContext.js            (React context for card theme — single listener, shared across all Cards)
@@ -127,9 +128,11 @@ card-game-app/
 │   ├── MultiplayerMenuScreen.js   (Host Online/Join Online = Coming Soon; Host Local/Join Local = functional)
 │   ├── RummyGameScreen.js         (Rummy — single + multiplayer)
 │   ├── RummyVariantPickerScreen.js (tap-select Rummy variant picker)
-│   ├── ProfileScreen.js           (name, avatar/photo picker, card theme link, stats placeholder)
+│   ├── ProfileScreen.js           (name, avatar/photo picker, card theme link; More section → Stats + About)
 │   ├── HowToPlayScreen.js         (rules reference screen)
 │   ├── ResultsScreen.js           (real implementation — winner headline, scoreboard, Play Again / Back to Menu)
+│   ├── AboutScreen.js             (app name, version from app.json, credits, copyright, Privacy Policy link)
+│   ├── StatsScreen.js             (Total Wins + Lifetime Coins summary; per-game win table, green on wins > 0)
 │   └── SettingsScreen.js          (placeholder — "More settings coming soon"; link removed from HomeScreen)
 ├── App.js                         (navigation stack — all screens registered)
 ├── app.json                       (bundle ID: com.pedro.cardgameapp, EAS projectId)
@@ -327,6 +330,22 @@ both explicitly for LAN-only play.
 - ✅ `GameSetupScreen.js` — "Game in Progress?" prompt for Go Fish + Last Card
 
 Save keys: `@cardnight:save:<game>[:<variant>]`
+
+### Month 3 Pre-Launch Session (2026-05-09) — COMPLETE ✅
+
+All JS-only items from the Month 3 block are done:
+
+- ✅ **C4** — Security model documented in PROJECT_NOTES.md (wallet trust model: plain AsyncStorage, local-only, acceptable for v1.0, must address before leaderboard)
+- ✅ **C5** — `APP_STORE_REVIEW_NOTES.md` created — paste-ready review notes for App Store Connect and Google Play Console (LAN ports, demo flow, camera permission justification, no data collection)
+- ✅ **UX10 + L9** — `screens/AboutScreen.js` + `screens/StatsScreen.js` created; `game/profile.js` now has `recordWin(gameId)` function; win tracking wired into all 7 game screens (Blackjack, Solitaire, GoFish, LastCard, Rummy, Conquián, Poker); Profile screen "More" section replaced with tappable Stats + About rows
+- ✅ **UX2** — `components/TutorialOverlay.js` created; first-time tutorial wired into Blackjack (3 slides) and Gin Rummy (3 slides only); AsyncStorage key `@cardnight:tutorial:{gameId}` tracks seen state; overlay shows once then never again
+
+**Still to do before EAS production build:**
+- Manual test pass on phone (checklist provided — see above)
+- Replace silent sound WAV placeholders with real audio if desired
+- Host privacy policy at GitHub Pages URL in AboutScreen
+- Final app icons and splash screen (Pedro handling)
+- EAS production build (ask first — see EAS Build Walkthrough below)
 
 ### Rummy Crash Fix
 
