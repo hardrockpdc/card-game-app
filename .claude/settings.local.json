@@ -9,7 +9,15 @@
       "Bash(Get-ChildItem -Recurse -Path \"c:\\\\Users\\\\hardr\\\\OneDrive\\\\Documents\\\\Projects\\\\card-game-app\\\\screens\" -Filter \"*.js\")",
       "Bash(Select-String -Pattern \"LastCard|lastcard\")",
       "Bash(Select-Object Path, LineNumber, Line)",
-      "Bash(node --input-type=module --eval ' *)"
+      "Bash(node --input-type=module --eval ' *)",
+      "Bash(awk 'NR>=300 && NR<=320' screens/MultiplayerGameScreen.js)",
+      "Bash(awk 'NR>=655 && NR<=670' screens/LastCardGameScreen.js)",
+      "Bash(ls \"C:\\\\Users\\\\hardr\\\\.claude\\\\projects\\\\c--Users-hardr-OneDrive-Documents-Projects-card-game-app\\\\\" 2>&1)",
+      "Read(//c/Users/hardr/.claude/projects/**)",
+      "Bash(mkdir -p 'C:/Users/hardr/.claude/projects/c--Users-hardr-OneDrive-Documents-Projects-card-game-app/memory')"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\hardr\\.claude\\projects\\c--Users-hardr-OneDrive-Documents-Projects-card-game-app"
     ]
   }
 }
