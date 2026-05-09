@@ -92,7 +92,7 @@ Track progress here. Update checkboxes as items complete.
 - [x] **L1** — Add README.md with setup instructions
 - [x] **H2** — Update PROJECT_NOTES.md to reflect ThemeContext refactor
 - [x] **M9** — Extract `useResumePrompt` hook, dedupe across 5 screens
-- [ ] **C6 + H3** — Add `protocolVersion` to network messages, reject mismatches
+- [x] **C6 + H3** — Add `protocolVersion` to network messages, reject mismatches
 - [ ] **C1** — Add Android + iOS network permissions to `app.json`
 - [ ] **C2** — Write privacy policy, host it (GitHub Pages is free)
 - [ ] **C3** — Final app icons, splash screen, store screenshots
