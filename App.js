@@ -30,6 +30,7 @@ import ProfileScreen from "./screens/ProfileScreen";
 import { loadProfile } from "./game/profile";
 import { setTheme } from "./game/cardTheme";
 import { ThemeProvider } from "./game/ThemeContext";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 const Stack = createNativeStackNavigator();
 
@@ -43,6 +44,7 @@ export default function App() {
   }, []);
 
   return (
+    <ErrorBoundary>
     <SafeAreaProvider>
       <ThemeProvider>
       <NavigationContainer>
@@ -178,5 +180,6 @@ export default function App() {
       </NavigationContainer>
       </ThemeProvider>
     </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }
