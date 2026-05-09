@@ -113,7 +113,7 @@ Track progress here. Update checkboxes as items complete.
 ### 🟢 MONTH 3 — Final pre-launch
 
 - [x] **C4** — Document wallet "trust model" (not encrypted, fine for v1)
-- [ ] **C5** — Write App Store review notes explaining local-network use
+- [x] **C5** — Write App Store review notes explaining local-network use
 - [ ] Manual test pass: every game × every variant × single + multiplayer
 - [ ] Test on lowest-end Android phone available
 - [ ] Test on at least one real iPhone
