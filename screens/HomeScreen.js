@@ -9,7 +9,12 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
-import { loadProfile, getDisplayName, hasProfileName, subscribeProfile } from "../game/profile";
+import {
+  loadProfile,
+  getDisplayName,
+  hasProfileName,
+  subscribeProfile,
+} from "../game/profile";
 import { getCoins } from "../game/wallet";
 
 const PROFILE_WELCOME_MESSAGE =
@@ -36,7 +41,7 @@ export default function HomeScreen({ navigation }) {
   useFocusEffect(
     useCallback(() => {
       getCoins().then(setCoins);
-    }, [])
+    }, []),
   );
 
   useEffect(() => {
@@ -66,7 +71,6 @@ export default function HomeScreen({ navigation }) {
       setProfileName(getDisplayName(profile));
       setProfileHasName(hasProfileName(profile));
     });
-
     return () => {
       isMounted = false;
       unsubscribeProfile();
