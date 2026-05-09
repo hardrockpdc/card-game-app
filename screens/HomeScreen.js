@@ -190,12 +190,6 @@ export default function HomeScreen({ navigation }) {
             >
               <Text style={styles.linkText}>📖 How to Play</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.bottomLink}
-              onPress={() => navigation.navigate("Settings")}
-            >
-              <Text style={styles.linkText}>⚙️ Settings</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
