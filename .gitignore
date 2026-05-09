@@ -39,3 +39,6 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# card image backup (created by scripts/compress-cards.js)
+assets/_card_originals_backup/
