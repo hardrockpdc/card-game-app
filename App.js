@@ -30,6 +30,7 @@ import MultiplayerMenuScreen from "./screens/MultiplayerMenuScreen";
 import ProfileScreen from "./screens/ProfileScreen";
 import { loadProfile } from "./game/profile";
 import { setTheme } from "./game/cardTheme";
+import { initSounds } from "./game/sounds";
 import { ThemeProvider } from "./game/ThemeContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import {
@@ -47,6 +48,7 @@ export default function App() {
         setTheme(profile.cardTheme);
       }
     });
+    initSounds();
   }, []);
 
   // Close TCP server and UDP sockets when the app moves to the background.

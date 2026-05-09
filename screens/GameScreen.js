@@ -11,6 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { createDeck, shuffleDeck, calculateHandValue } from "../game/deck";
 import Card from "../components/Card";
 import QuitButton from "../components/QuitButton";
+import { playSound } from "../game/sounds";
 import { scale, scaleFont } from "../game/responsive";
 import { getCoins, addCoins, subtractCoins } from "../game/wallet";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
@@ -117,6 +118,7 @@ export default function GameScreen({ navigation, route }) {
 
     const totalBet = hadSplit ? bet * 2 : bet;
     setCoinsDelta(payout - totalBet);
+    if (payout > totalBet) playSound("win");
     setScreenPhase("result");
   }
 
@@ -146,6 +148,7 @@ export default function GameScreen({ navigation, route }) {
     setSplitResult("");
     setGameStatus("playing");
     setScreenPhase("playing");
+    playSound("card_deal");
 
     // Deduct bet (async — wallet update appears after the next render)
     const newCoins = await subtractCoins(bet);
@@ -177,6 +180,7 @@ export default function GameScreen({ navigation, route }) {
 
   // ── Hit ───────────────────────────────────────────────────────────
   function handleHit() {
+    playSound("card_flip");
     const newCard = deck[0];
     const remainingDeck = deck.slice(1);
     setDeck(remainingDeck);
@@ -290,6 +294,7 @@ export default function GameScreen({ navigation, route }) {
     setSplitResult("");
     setGameStatus("playing");
     setScreenPhase("playing");
+    playSound("card_deal");
 
     const newCoins = await subtractCoins(bet);
     setCoins(newCoins);

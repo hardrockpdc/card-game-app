@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Animated, StyleSheet, Text } from "react-native";
+import { playSound } from "../game/sounds";
 
 export function useToast() {
   const [state, setState] = useState({ message: "", revision: 0 });
@@ -16,6 +17,7 @@ export default function Toast({ message, revision }) {
   useEffect(() => {
     if (!message) return;
     if (timerRef.current) clearTimeout(timerRef.current);
+    playSound("error");
 
     Animated.timing(opacity, {
       toValue: 1,
