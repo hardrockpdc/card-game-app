@@ -46,6 +46,17 @@ A cross-platform React Native mobile app for playing card games with friends and
 - ✅ **Update Phase 10:** Solitaire complete — Klondike, Spider, FreeCell, Pyramid, TriPeaks; picker/routes added; gameplay verified
 - ✅ **Update Phase 11:** Rummy complete — Gin Rummy, Rummy 500, Indian Rummy, Canasta; single + multiplayer; simple tap-select picker
 - ✅ **Update Phase 12:** Variant pickers polished — Poker, Solitaire, and Rummy now share one tap-select picker component
+- ✅ **Month 2 Polish:** Pre-publish UX + quality sweep (all JS-only items complete; two native items installed, awaiting EAS build)
+  - **M4:** `game/logger.js` created; all `console.log`/`warn` silenced in production via `__DEV__` guard; GameNetwork, profile, wildround updated
+  - **UX1:** HomeScreen no longer auto-redirects to Profile on mount; Single Player button disabled (with hint) until profile name is set
+  - **UX6:** `components/Toast.js` + `useToast` hook — animated pill toasts for illegal-move feedback; wired into Rummy (4 moves) and Conquián
+  - **UX3:** `components/QuitButton.js` — absolute-positioned ✕ Quit button added to all 9 game screens; multiplayer screens call `stopServer()`/`disconnectFromHost()` on quit; ScrollView-root screens wrapped in a `View` to host the overlay
+  - **M5:** `scale()`/`scaleFont()` applied to all remaining StyleSheet numeric values in 6 screens (GameSetupScreen, ProfileScreen, MultiplayerMenuScreen, SolitaireVariantPickerScreen, RummyVariantPickerScreen, PokerVariantPickerScreen)
+  - **M6:** `ResultsScreen.js` fully implemented (winner headline, scoreboard, Play Again + Back to Menu); WildRoundGameScreen wired to navigate there on game-over via `navigation.replace`
+  - **M7:** Settings gear link removed from HomeScreen (SettingsScreen kept as placeholder but unlisted)
+  - **L8:** MultiplayerMenuScreen subtitle + button labels updated — "Not available yet" / "coming in a future update" instead of "Coming Soon"
+  - **UX5:** `expo-clipboard` installed; HostSetupScreen IP card is now tappable → copies IP, shows ✓ Copied! feedback (awaits EAS build)
+  - **UX4:** `expo-av` installed; `game/sounds.js` preloads card_flip/card_deal/win/error sounds; wired into Blackjack (deal, hit, win) and Toast (error on any illegal move); silent WAV placeholders in `assets/sounds/` — replace with real audio files; `initSounds()` called from App.js (awaits EAS build)
 - 🔜 **Phase 5: Visual Theme Project (PAUSED)** ⏸️ paused until better PC available
   - Plan: Each game gets its own distinct theme (Blackjack=casino, Poker=premium black, Wild Round=neon party, etc.)
   - Theme switching: User can pick between themes per game
@@ -73,11 +84,14 @@ A cross-platform React Native mobile app for playing card games with friends and
 ```
 card-game-app/
 ├── assets/
+│   └── sounds/                    (card_flip.wav, card_deal.wav, win.wav, error.wav — silent placeholders, replace with real audio)
 ├── components/
 │   ├── Card.js                    (reusable playing card visual)
 │   ├── VariantPicker.js           (shared tap-select picker UI)
 │   ├── PokerVariantWheel.js       (simple tap-select poker variant picker UI)
-│   └── RummyVariantWheel.js       (simple tap-select rummy variant picker UI)
+│   ├── RummyVariantWheel.js       (simple tap-select rummy variant picker UI)
+│   ├── Toast.js                   (animated pill toast + useToast hook — illegal move feedback + error sound)
+│   └── QuitButton.js              (absolute-positioned ✕ Quit button — used by all 9 game screens)
 ├── game/
 │   ├── deck.js                    (createDeck, shuffleDeck, calculateHandValue)
 │   ├── ThemeContext.js            (React context for card theme — single listener, shared across all Cards)
@@ -89,8 +103,10 @@ card-game-app/
 │   ├── rummy.js                   (Rummy game logic — Gin Rummy, Rummy 500, Indian Rummy, Canasta)
 │   ├── wildroundCards.json        (100 prompts + 300 answers — Phase E complete)
 │   ├── GameNetwork.js             (TCP server/client + UDP discovery)
+│   ├── logger.js                  (log/warn — no-ops in production builds via __DEV__)
 │   ├── profile.js                 (loadProfile, saveProfile, subscribeProfile, getDisplayName — AsyncStorage)
-│   └── responsive.js              (scale(), scaleFont() — BASE_WIDTH 390, clamped factors)
+│   ├── responsive.js              (scale(), scaleFont() — BASE_WIDTH 390, clamped factors)
+│   └── sounds.js                  (initSounds/playSound — expo-av; preloads 4 sounds on app start; graceful no-op if unavailable)
 ├── screens/
 │   ├── HomeScreen.js              (main menu)
 │   ├── HostSetupScreen.js         (name from profile, starts TCP server, shows IP)
@@ -113,8 +129,8 @@ card-game-app/
 │   ├── RummyVariantPickerScreen.js (tap-select Rummy variant picker)
 │   ├── ProfileScreen.js           (name, avatar/photo picker, card theme link, stats placeholder)
 │   ├── HowToPlayScreen.js         (rules reference screen)
-│   ├── ResultsScreen.js           (placeholder)
-│   └── SettingsScreen.js          (placeholder — "More settings coming soon")
+│   ├── ResultsScreen.js           (real implementation — winner headline, scoreboard, Play Again / Back to Menu)
+│   └── SettingsScreen.js          (placeholder — "More settings coming soon"; link removed from HomeScreen)
 ├── App.js                         (navigation stack — all screens registered)
 ├── app.json                       (bundle ID: com.pedro.cardgameapp, EAS projectId)
 ├── eas.json                       (development/preview/production build profiles)
@@ -131,6 +147,8 @@ card-game-app/
 @react-navigation/native: ^7.2.2
 @react-navigation/native-stack: ^7.14.11
 expo: ~54.0.33
+expo-av                                    (sound effects — added Month 2, requires EAS build)
+expo-clipboard                             (tap-to-copy IP — added Month 2, requires EAS build)
 expo-dev-client: ~6.0.20
 expo-image-manipulator                     (photo crop to 1:1 — added Phase 3, Expo-native, no extra native module)
 expo-image-picker                          (camera roll + camera access — added Phase 3, Expo-native)
