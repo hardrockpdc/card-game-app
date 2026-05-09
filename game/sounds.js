@@ -1,4 +1,4 @@
-import { Audio } from "expo-av";
+import { createAudioPlayer, setAudioModeAsync } from "expo-audio";
 
 const FILES = {
   card_flip: require("../assets/sounds/card_flip.wav"),
@@ -11,26 +11,21 @@ const pool = {};
 
 export async function initSounds() {
   try {
-    await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
-    await Promise.all(
-      Object.entries(FILES).map(async ([key, source]) => {
-        const { sound } = await Audio.Sound.createAsync(source, {
-          shouldPlay: false,
-        });
-        pool[key] = sound;
-      }),
-    );
+    await setAudioModeAsync({ playsInSilentModeIOS: true });
+    for (const [key, source] of Object.entries(FILES)) {
+      pool[key] = createAudioPlayer(source);
+    }
   } catch {
     // degrade silently — no audio hardware, simulator, etc.
   }
 }
 
-export async function playSound(name) {
+export function playSound(name) {
   try {
-    const sound = pool[name];
-    if (!sound) return;
-    await sound.setPositionAsync(0);
-    await sound.playAsync();
+    const player = pool[name];
+    if (!player) return;
+    player.seekTo(0);
+    player.play();
   } catch {
     // ignore playback errors
   }
