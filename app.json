@@ -16,14 +16,24 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.pedro.cardgameapp"
+      "bundleIdentifier": "com.pedro.cardgameapp",
+      "infoPlist": {
+        "NSLocalNetworkUsageDescription": "Card Night uses your local network to find and connect to games on the same Wi-Fi.",
+        "NSBonjourServices": ["_cardnight._tcp"]
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1a1a2e"
       },
-      "package": "com.pedro.cardgameapp"
+      "package": "com.pedro.cardgameapp",
+      "permissions": [
+        "android.permission.NEARBY_WIFI_DEVICES",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.ACCESS_WIFI_STATE",
+        "android.permission.INTERNET"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
