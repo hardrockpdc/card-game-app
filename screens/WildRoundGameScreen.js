@@ -88,6 +88,7 @@ export default function WildRoundGameScreen({ navigation, route }) {
 
   const fullRef = useRef(null);
   const lastPromptRef = useRef(null);
+  const navigatedToResultsRef = useRef(false);
   const [gameState, setGameState] = useState(null);
   const [myHand, setMyHand] = useState([]);
   const [privateJudgePrompt, setPrivateJudgePrompt] = useState(null);
@@ -103,6 +104,27 @@ export default function WildRoundGameScreen({ navigation, route }) {
     if (gameState?.currentPrompt)
       lastPromptRef.current = gameState.currentPrompt;
   }, [privateJudgePrompt, gameState?.currentPrompt]);
+
+  useEffect(() => {
+    if (!gameState || gameState.phase !== 'gameOver') return;
+    if (navigatedToResultsRef.current) return;
+    navigatedToResultsRef.current = true;
+    const scores = [...(gameState.players ?? [])]
+      .sort((a, b) => b.score - a.score)
+      .map((p) => ({
+        name: p.name,
+        score: `${p.score}/${WIN_SCORE}`,
+        isWinner: String(p.id) === String(gameState.winner?.id),
+      }));
+    navigation.replace('Results', {
+      gameName: 'Wild Round',
+      headline: `🎉 ${gameState.winner?.name ?? 'Someone'} wins!`,
+      isLocalWin: String(gameState.winner?.id) === String(myPid),
+      scores,
+      playAgainRoute: isSinglePlayer ? 'WildRoundGame' : null,
+      playAgainParams: isSinglePlayer ? route.params : null,
+    });
+  }, [gameState]);
   const revealCardWidth = Math.max(width - 32, 0);
   const revealCardHeight = Math.round(height * 0.38);
 
@@ -637,39 +659,9 @@ export default function WildRoundGameScreen({ navigation, route }) {
   const displayPrompt =
     isJudge && gs.phase === "judgeSkip" ? privateJudgePrompt : gs.currentPrompt;
 
-  // ── Game over ───────────────────────────────────────────────────────────────
+  // ── Game over — navigate to ResultsScreen ──────────────────────────────────
   if (gs.phase === "gameOver") {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.gameOverTitle}>🎉 {gs.winner?.name} wins!</Text>
-        <View style={styles.finalScoreboard}>
-          {[...gs.players]
-            .sort((a, b) => b.score - a.score)
-            .map((p) => (
-              <View key={String(p.id)} style={styles.finalRow}>
-                <Text style={styles.finalName}>
-                  {String(p.id) === String(gs.winner?.id) ? "🏆 " : "    "}
-                  {p.name}
-                </Text>
-                <Text style={styles.finalScore}>
-                  {p.score}/{WIN_SCORE}
-                </Text>
-              </View>
-            ))}
-        </View>
-        {(isSinglePlayer || isHost) && (
-          <TouchableOpacity style={styles.primaryBtn} onPress={startNewGame}>
-            <Text style={styles.primaryBtnText}>Play Again</Text>
-          </TouchableOpacity>
-        )}
-        <TouchableOpacity
-          style={styles.secondaryBtn}
-          onPress={() => navigation.navigate("Home")}
-        >
-          <Text style={styles.secondaryBtnText}>Back to Menu</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
-    );
+    return <SafeAreaView style={styles.container} />;
   }
 
   // ── Main game ───────────────────────────────────────────────────────────────
@@ -1297,29 +1289,6 @@ const styles = StyleSheet.create({
   revealFooter: {
     marginTop: "auto",
   },
-
-  gameOverTitle: {
-    color: "#ffffff",
-    fontSize: scaleFont(32),
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: scale(32),
-    marginTop: scale(16),
-  },
-  finalScoreboard: {
-    backgroundColor: "#16213e",
-    borderRadius: scale(14),
-    padding: scale(16),
-    marginBottom: scale(32),
-    gap: scale(10),
-  },
-  finalRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  finalName: { color: "#ffffff", fontSize: scaleFont(17) },
-  finalScore: { color: "#e94560", fontSize: scaleFont(17), fontWeight: "bold" },
 
   deckArea: {
     flex: 1,
