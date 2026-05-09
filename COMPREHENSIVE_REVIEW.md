@@ -103,7 +103,7 @@ Track progress here. Update checkboxes as items complete.
 - [ ] **UX3** — Quit Game button in all game screens
 - [ ] **UX5** — Tap-to-copy IP in HostSetupScreen
 - [ ] **UX6** — Toast messages for illegal moves
-- [ ] **M4** — Strip `console.log` calls in production
+- [x] **M4** — Strip `console.log` calls in production
 - [ ] **M5** — Sweep hardcoded sizes, replace with `scale()`/`scaleFont()`
 - [ ] **M6** — Decide what to do with ResultsScreen (use it or remove it)
 - [ ] **M7** — Decide what to do with SettingsScreen (use it or remove it)
