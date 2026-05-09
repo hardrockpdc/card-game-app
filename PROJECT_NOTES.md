@@ -265,6 +265,16 @@ All folders use identical filenames: `{rank}_{suit}.png` (ranks: a 2–10 j q k,
 
 Save keys: `@cardnight:save:<game>[:<variant>]`
 
+### Rummy Crash Fix
+
+**Bug:** All 4 Rummy variants crashed immediately on launch.
+
+**Root cause:** Two `useEffect` calls in `screens/RummyGameScreen.js` were placed *after* the `if (!gameState) return <loading>` early return. On the first render `gameState` is null, so the early return fires and those hooks are never called. On the second render (after `initGame()` sets state) the early return is skipped and the hooks fire — changing the hook count between renders. React throws a "change in order of Hooks" error and crashes the screen.
+
+**Fix:** Moved the two `useEffect` blocks (auto-save and coin reward) to *before* the `if (!gameState)` guard. Their internal null guards (`if (!fullRef.current) return` and `gameState?.winner` optional chaining) keep them safe when state is still null.
+
+**⚠️ Known follow-up — ConquianGameScreen has the identical bug:** One `useEffect` at line ~603 sits after early returns at lines ~484 and ~490. Conquian appears to work currently because the first render's state initializes synchronously enough to avoid the mismatch in testing — but it is a latent crash risk. Should be fixed in a dedicated session.
+
 ### After this session
 1. **Phase 5: Visual Theme Project** (paused until on better PC)
 2. **Phase 6: Publish** — Google Play + App Store
