@@ -1,4 +1,5 @@
 import cards from "./wildroundCards.json";
+import { log } from "./logger";
 
 function shuffle(arr) {
   const a = [...arr];
@@ -111,18 +112,18 @@ export function runTests() {
 
   function assert(label, condition) {
     if (condition) {
-      console.log(`  ✓ ${label}`);
+      log(`  ✓ ${label}`);
       passed++;
     } else {
-      console.log(`  ✗ FAIL: ${label}`);
+      log(`  ✗ FAIL: ${label}`);
       failed++;
     }
   }
 
-  console.log("\n=== Wild Round — Phase A tests ===\n");
+  log("\n=== Wild Round — Phase A tests ===\n");
 
   // ── createDeck ──────────────────────────────────────────────────────────────
-  console.log("createDeck:");
+  log("createDeck:");
   const familyDeck = createDeck("family");
   assert(
     "family prompts are all tone=family",
@@ -156,7 +157,7 @@ export function runTests() {
   );
 
   // ── dealHands ───────────────────────────────────────────────────────────────
-  console.log("\ndealHands:");
+  log("\ndealHands:");
   const rawPlayers = [
     { id: "host", name: "Pedro" },
     { id: "2", name: "Maria" },
@@ -187,7 +188,7 @@ export function runTests() {
   );
 
   // ── pickPrompt ──────────────────────────────────────────────────────────────
-  console.log("\npickPrompt:");
+  log("\npickPrompt:");
   const { prompt, promptDeck: deckAfterPick } = pickPrompt(matureDeck.prompts);
   assert(
     "returns a prompt with text",
@@ -201,7 +202,7 @@ export function runTests() {
   assert("returns null on empty deck", p2 === null);
 
   // ── processSubmission ───────────────────────────────────────────────────────
-  console.log("\nprocessSubmission:");
+  log("\nprocessSubmission:");
   let state = {
     players,
     judgeIndex: 0, // Pedro is judge
@@ -247,7 +248,7 @@ export function runTests() {
   assert("Luis can submit", state.submissions.length === 2);
 
   // ── pickWinner ──────────────────────────────────────────────────────────────
-  console.log("\npickWinner:");
+  log("\npickWinner:");
   const winningCardId = state.submissions[0].cardId; // Maria wins
   state = pickWinner(state, winningCardId);
 
@@ -274,7 +275,7 @@ export function runTests() {
   assert("invalid card id throws", badWinner);
 
   // ── checkWin ────────────────────────────────────────────────────────────────
-  console.log("\ncheckWin:");
+  log("\ncheckWin:");
   assert("no winner at score 1", checkWin(state) === null);
 
   const atNineState = {
@@ -295,5 +296,5 @@ export function runTests() {
   assert("winner detected above 10", checkWin(aboveTenState)?.id === "2");
 
   // ── Summary ─────────────────────────────────────────────────────────────────
-  console.log(`\n=== ${passed} passed, ${failed} failed ===\n`);
+  log(`\n=== ${passed} passed, ${failed} failed ===\n`);
 }

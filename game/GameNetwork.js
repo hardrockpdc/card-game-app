@@ -1,6 +1,7 @@
 import { Alert, Platform } from "react-native";
 import TcpSocket from "react-native-tcp-socket";
 import UdpSocket from "react-native-udp";
+import { log } from "./logger";
 
 export const PROTOCOL_VERSION = 1;
 
@@ -69,11 +70,11 @@ export function startServer() {
   });
 
   server.listen({ port: PORT, host: "0.0.0.0" }, () => {
-    console.log(`[GameNetwork] Server listening on port ${PORT}`);
+    log(`[GameNetwork] Server listening on port ${PORT}`);
   });
 
   server.on("error", (err) => {
-    console.log("[GameNetwork] Server error:", err.message);
+    log("[GameNetwork] Server error:", err.message);
   });
 }
 
@@ -208,7 +209,7 @@ export function startBroadcasting(hostName, hostIp) {
   const subnetBroadcast =
     parts.length === 4 ? `${parts[0]}.${parts[1]}.${parts[2]}.255` : null;
 
-  console.log(
+  log(
     `[Broadcast] Starting — hostIp: ${hostIp}, subnet: ${subnetBroadcast}`,
   );
 
@@ -216,7 +217,7 @@ export function startBroadcasting(hostName, hostIp) {
 
   broadcastSocket.bind(0, () => {
     broadcastSocket.setBroadcast(true);
-    console.log("[Broadcast] Socket ready");
+    log("[Broadcast] Socket ready");
 
     const payload = new TextEncoder().encode(
       JSON.stringify({ type: "CARD_GAME", name: hostName, protocolVersion: PROTOCOL_VERSION }),
@@ -231,7 +232,7 @@ export function startBroadcasting(hostName, hostIp) {
         addr,
         (err) => {
           if (err)
-            console.log(`[Broadcast] send error (${addr}):`, err.message);
+            log(`[Broadcast] send error (${addr}):`, err.message);
         },
       );
     };
@@ -247,7 +248,7 @@ export function startBroadcasting(hostName, hostIp) {
   });
 
   broadcastSocket.on("error", (err) => {
-    console.log("[Broadcast] socket error:", err.message);
+    log("[Broadcast] socket error:", err.message);
   });
 }
 
@@ -274,7 +275,7 @@ export function startDiscovery(onGameFound) {
 
   discoverySocket.bind(DISCOVERY_PORT, () => {
     discoverySocket.setBroadcast(true);
-    console.log("[Discovery] Listening on port", DISCOVERY_PORT);
+    log("[Discovery] Listening on port", DISCOVERY_PORT);
   });
 
   discoverySocket.on("message", (data, rinfo) => {
@@ -287,7 +288,7 @@ export function startDiscovery(onGameFound) {
   });
 
   discoverySocket.on("error", (err) => {
-    console.log("[Discovery] socket error:", err.message);
+    log("[Discovery] socket error:", err.message);
   });
 }
 

@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { warn } from "./logger";
 
 const PROFILE_STORAGE_KEY = "@card-night/profile";
 
@@ -78,7 +79,7 @@ export async function loadProfile() {
       ? normalizeProfile(JSON.parse(rawProfile))
       : getDefaultProfile();
   } catch (error) {
-    console.warn("[profile] Failed to load profile", error);
+    warn("[profile] Failed to load profile", error);
     cachedProfile = getDefaultProfile();
   }
 
@@ -94,7 +95,7 @@ export async function saveProfile(profile) {
       JSON.stringify(nextProfile),
     );
   } catch (error) {
-    console.warn("[profile] Failed to save profile", error);
+    warn("[profile] Failed to save profile", error);
   }
 
   cachedProfile = nextProfile;
@@ -118,7 +119,7 @@ export async function clearProfile() {
   try {
     await AsyncStorage.removeItem(PROFILE_STORAGE_KEY);
   } catch (error) {
-    console.warn("[profile] Failed to clear profile", error);
+    warn("[profile] Failed to clear profile", error);
   }
 
   cachedProfile = getDefaultProfile();
