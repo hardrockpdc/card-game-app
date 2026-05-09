@@ -1,15 +1,16 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import SolitaireVariantWheel from '../components/SolitaireVariantWheel';
 import { SPIDER_MODE_OPTIONS, VARIANT_OPTIONS } from '../game/solitaire';
-import { hasSave, clearGame } from '../game/gameSaves';
+import { useResumePrompt } from '../game/useResumePrompt';
 
 export default function SolitaireVariantPickerScreen({ navigation, route }) {
   const initialVariantId = route?.params?.variantId || VARIANT_OPTIONS[0].id;
   const [variantId, setVariantId] = useState(initialVariantId);
   const [spiderMode, setSpiderMode] = useState(4);
+  const promptIfSaved = useResumePrompt();
 
   const selectedVariant = useMemo(
     () => VARIANT_OPTIONS.find((option) => option.id === variantId) || VARIANT_OPTIONS[0],
@@ -17,36 +18,13 @@ export default function SolitaireVariantPickerScreen({ navigation, route }) {
   );
 
   const startGame = async () => {
-    const saveKey = `@cardnight:save:solitaire:${variantId}`;
-    const exists = await hasSave(saveKey);
-    const variantLabel = selectedVariant.label;
-
-    const navigate = (resume) =>
-      navigation.navigate('SolitaireGame', {
-        variantId,
-        spiderMode: variantId === 'spider' ? spiderMode : undefined,
-        resumeFromSave: resume,
-      });
-
-    if (exists) {
-      Alert.alert(
-        'Game in Progress',
-        `You have a saved ${variantLabel} game. Continue or start fresh?`,
-        [
-          {
-            text: 'Start New',
-            style: 'destructive',
-            onPress: async () => {
-              await clearGame(saveKey);
-              navigate(false);
-            },
-          },
-          { text: 'Continue', onPress: () => navigate(true) },
-        ],
-      );
-    } else {
-      navigate(false);
-    }
+    const navParams = { variantId, spiderMode: variantId === 'spider' ? spiderMode : undefined };
+    await promptIfSaved({
+      saveKey: `@cardnight:save:solitaire:${variantId}`,
+      gameName: selectedVariant.label,
+      onFresh: () => navigation.navigate('SolitaireGame', { ...navParams, resumeFromSave: false }),
+      onResume: () => navigation.navigate('SolitaireGame', { ...navParams, resumeFromSave: true }),
+    });
   };
 
   return (

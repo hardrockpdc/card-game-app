@@ -1,7 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-  Alert,
   View,
   Text,
   TouchableOpacity,
@@ -18,7 +17,7 @@ import {
   hasProfileName,
   subscribeProfile,
 } from "../game/profile";
-import { hasSave, clearGame } from "../game/gameSaves";
+import { useResumePrompt } from "../game/useResumePrompt";
 
 // ─── Display data for the carousel (order + visuals) ─────────────────────────
 
@@ -170,6 +169,8 @@ export default function SinglePlayerSetupScreen({ navigation }) {
     };
   }, []);
 
+  const promptIfSaved = useResumePrompt();
+
   // ─── Carousel geometry ──────────────────────────────────────────────────────
   const CARD_WIDTH = width * 0.78;
   const GAP = 12;
@@ -233,29 +234,12 @@ export default function SinglePlayerSetupScreen({ navigation }) {
   // ─── Play handler ───────────────────────────────────────────────────────────
   async function handlePlay() {
     if (game.id === "blackjack") {
-      const exists = await hasSave("@cardnight:save:blackjack");
-      if (exists) {
-        Alert.alert(
-          "Game in Progress",
-          "You have a saved Blackjack game. Continue or start fresh?",
-          [
-            {
-              text: "Start New",
-              style: "destructive",
-              onPress: async () => {
-                await clearGame("@cardnight:save:blackjack");
-                navigation.navigate("Game");
-              },
-            },
-            {
-              text: "Continue",
-              onPress: () => navigation.navigate("Game", { resumeFromSave: true }),
-            },
-          ],
-        );
-      } else {
-        navigation.navigate("Game");
-      }
+      await promptIfSaved({
+        saveKey: "@cardnight:save:blackjack",
+        gameName: "Blackjack",
+        onFresh: () => navigation.navigate("Game"),
+        onResume: () => navigation.navigate("Game", { resumeFromSave: true }),
+      });
       return;
     }
 

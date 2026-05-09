@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  Alert,
   ActivityIndicator,
   Pressable,
   ScrollView,
@@ -10,7 +9,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { hasSave, clearGame } from "../game/gameSaves";
+import { useResumePrompt } from "../game/useResumePrompt";
 
 import {
   getCachedProfile,
@@ -88,6 +87,8 @@ export default function GameSetupScreen({ navigation, route }) {
     setAiCount((current) => clamp(current, minAI, maxAI));
   }, [aiRange]);
 
+  const promptIfSaved = useResumePrompt();
+
   const [minAI, maxAI] = aiRange;
   const clampedAI = useMemo(
     () => clamp(aiCount, minAI, maxAI),
@@ -114,26 +115,12 @@ export default function GameSetupScreen({ navigation, route }) {
     const saveKey =
       gameId === "goFish" ? "@cardnight:save:gofish" : "@cardnight:save:lastcard";
 
-    const doNav = (resume) =>
-      navigation.navigate(screenName, { ...launchParams, resumeFromSave: resume });
-
-    const exists = await hasSave(saveKey);
-    if (exists) {
-      Alert.alert(
-        "Game in Progress",
-        `You have a saved ${gameName} game. Continue or start fresh?`,
-        [
-          {
-            text: "Start New",
-            style: "destructive",
-            onPress: async () => { await clearGame(saveKey); doNav(false); },
-          },
-          { text: "Continue", onPress: () => doNav(true) },
-        ],
-      );
-    } else {
-      doNav(false);
-    }
+    await promptIfSaved({
+      saveKey,
+      gameName,
+      onFresh: () => navigation.navigate(screenName, { ...launchParams, resumeFromSave: false }),
+      onResume: () => navigation.navigate(screenName, { ...launchParams, resumeFromSave: true }),
+    });
   }
 
   if (isLoadingProfile) {

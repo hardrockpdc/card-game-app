@@ -91,7 +91,7 @@ Track progress here. Update checkboxes as items complete.
 - [x] **H1** — Delete `*.tmp` files, update `.gitignore` to block them
 - [x] **L1** — Add README.md with setup instructions
 - [x] **H2** — Update PROJECT_NOTES.md to reflect ThemeContext refactor
-- [ ] **M9** — Extract `useResumePrompt` hook, dedupe across 5 screens
+- [x] **M9** — Extract `useResumePrompt` hook, dedupe across 5 screens
 - [ ] **C6 + H3** — Add `protocolVersion` to network messages, reject mismatches
 - [ ] **C1** — Add Android + iOS network permissions to `app.json`
 - [ ] **C2** — Write privacy policy, host it (GitHub Pages is free)

@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
-import { hasSave, clearGame } from "../game/gameSaves";
+import { useResumePrompt } from "../game/useResumePrompt";
 
 import PokerVariantWheel, {
   POKER_VARIANT_OPTIONS,
@@ -61,6 +61,7 @@ function PokerVariantPickerScreen({ navigation, route }) {
   const [difficulty, setDifficulty] = useState("medium");
   const [coins, setCoins] = useState(null);
   const [buyIn, setBuyIn] = useState(100);
+  const promptIfSaved = useResumePrompt();
 
   // Refresh wallet balance each time this screen comes into focus.
   useFocusEffect(
@@ -126,41 +127,26 @@ function PokerVariantPickerScreen({ navigation, route }) {
 
     const launchPayload =
       launchParams && typeof launchParams === "object" ? launchParams : {};
-
     const players = buildPlayers(launchPayload.myName ?? playerName, aiCount);
     const saveKey = `@cardnight:save:poker:${selectedVariant}`;
     const variantLabel =
       POKER_VARIANT_OPTIONS.find((o) => o.value === selectedVariant)?.label ?? "Poker";
-
-    const doNav = (resume) =>
-      navigation.navigate("PokerGame", {
-        ...launchPayload,
-        role: "singleplayer",
-        myName: launchPayload.myName ?? playerName,
-        players,
-        difficulty,
-        variant: selectedVariant,
-        buyIn,
-        resumeFromSave: resume,
-      });
-
-    const exists = await hasSave(saveKey);
-    if (exists) {
-      Alert.alert(
-        "Game in Progress",
-        `You have a saved ${variantLabel} game. Continue or start fresh?\n\nNote: starting fresh will use a new buy-in.`,
-        [
-          {
-            text: "Start New",
-            style: "destructive",
-            onPress: async () => { await clearGame(saveKey); doNav(false); },
-          },
-          { text: "Continue", onPress: () => doNav(true) },
-        ],
-      );
-    } else {
-      doNav(false);
-    }
+    const navParams = {
+      ...launchPayload,
+      role: "singleplayer",
+      myName: launchPayload.myName ?? playerName,
+      players,
+      difficulty,
+      variant: selectedVariant,
+      buyIn,
+    };
+    await promptIfSaved({
+      saveKey,
+      gameName: variantLabel,
+      onFresh: () => navigation.navigate("PokerGame", { ...navParams, resumeFromSave: false }),
+      onResume: () => navigation.navigate("PokerGame", { ...navParams, resumeFromSave: true }),
+      extraMessage: "Note: starting fresh will use a new buy-in.",
+    });
   };
 
   return (
