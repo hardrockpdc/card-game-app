@@ -30,7 +30,7 @@ export default function MultiplayerMenuScreen({ navigation }) {
             Multiplayer
           </Text>
           <Text style={[styles.subtitle, { fontSize: subtitleSize }]}>
-            Choose local play or wait for online mode
+            Local play is ready — online mode coming in a future update
           </Text>
 
           <TouchableOpacity
@@ -53,7 +53,7 @@ export default function MultiplayerMenuScreen({ navigation }) {
               >
                 Host Online
               </Text>
-              <Text style={styles.comingSoon}>Coming Soon</Text>
+              <Text style={styles.comingSoon}>Not available yet</Text>
             </View>
           </TouchableOpacity>
 
@@ -77,7 +77,7 @@ export default function MultiplayerMenuScreen({ navigation }) {
               >
                 Join Online
               </Text>
-              <Text style={styles.comingSoon}>Coming Soon</Text>
+              <Text style={styles.comingSoon}>Not available yet</Text>
             </View>
           </TouchableOpacity>
 
