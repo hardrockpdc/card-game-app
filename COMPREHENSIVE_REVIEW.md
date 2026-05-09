@@ -105,9 +105,9 @@ Track progress here. Update checkboxes as items complete.
 - [x] **UX6** — Toast messages for illegal moves
 - [x] **M4** — Strip `console.log` calls in production
 - [x] **M5** — Sweep hardcoded sizes, replace with `scale()`/`scaleFont()`
-- [ ] **M6** — Decide what to do with ResultsScreen (use it or remove it)
-- [ ] **M7** — Decide what to do with SettingsScreen (use it or remove it)
-- [ ] **L8** — Decide on "Coming Soon" buttons (remove or label clearly)
+- [x] **M6** — Decide what to do with ResultsScreen (use it or remove it)
+- [x] **M7** — Decide what to do with SettingsScreen (use it or remove it)
+- [x] **L8** — Decide on "Coming Soon" buttons (remove or label clearly)
 - [ ] **UX4** — Basic card-flip + win sounds (huge perceived quality boost)
 
 ### 🟢 MONTH 3 — Final pre-launch
