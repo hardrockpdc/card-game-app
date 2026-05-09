@@ -398,7 +398,11 @@ export default function ConquianGameScreen({ navigation, route }) {
       const s = fullRef.current;
       if (!s) return;
       const next = doDiscardCard(s, myPid, cardId);
-      if (next !== s) applyState(next);
+      if (next !== s) {
+        applyState(next);
+      } else {
+        setStatusMsg("Can't discard that card right now");
+      }
     } else {
       sendToHost({ type: 'ACTION', action: 'discard', cardId });
     }

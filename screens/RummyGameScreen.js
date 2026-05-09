@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import Card from "../components/Card";
+import Toast, { useToast } from "../components/Toast";
 import { scale, scaleFont } from "../game/responsive";
 import { addCoins } from "../game/wallet";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
@@ -177,6 +178,7 @@ export default function RummyGameScreen({ navigation, route }) {
   const fullRef = useRef(null);
   const aiTimerRef = useRef(null);
   const coinRewardedRef = useRef(false);
+  const { show: showToast, message: toastMessage, revision: toastRevision } = useToast();
   const [coinsEarned, setCoinsEarned] = useState(0);
 
   const variantLabel =
@@ -457,7 +459,7 @@ export default function RummyGameScreen({ navigation, route }) {
     );
   }
 
-  function dispatchAction(moveType, extra = {}) {
+  function dispatchAction(moveType, extra = {}, onFail) {
     const state = fullRef.current;
     if (!state) {
       return;
@@ -472,6 +474,8 @@ export default function RummyGameScreen({ navigation, route }) {
 
       if (next !== state) {
         applyState(next);
+      } else {
+        onFail?.();
       }
       return;
     }
@@ -534,9 +538,11 @@ export default function RummyGameScreen({ navigation, route }) {
       return;
     }
 
-    dispatchAction("lay-meld", {
-      cardIndexes: selectedHandIndexes,
-    });
+    dispatchAction(
+      "lay-meld",
+      { cardIndexes: selectedHandIndexes },
+      () => showToast("Invalid meld — cards must form a valid set or run"),
+    );
   }
 
   function handleExtendMeld() {
@@ -544,10 +550,11 @@ export default function RummyGameScreen({ navigation, route }) {
       return;
     }
 
-    dispatchAction("extend-meld", {
-      meldIndex: selectedMeldIndex,
-      cardIndex: selectedHandIndexes[0],
-    });
+    dispatchAction(
+      "extend-meld",
+      { meldIndex: selectedMeldIndex, cardIndex: selectedHandIndexes[0] },
+      () => showToast("That card doesn't extend the selected meld"),
+    );
   }
 
   function handleDiscard() {
@@ -555,9 +562,11 @@ export default function RummyGameScreen({ navigation, route }) {
       return;
     }
 
-    dispatchAction("discard-card", {
-      cardIndex: selectedHandIndexes[0],
-    });
+    dispatchAction(
+      "discard-card",
+      { cardIndex: selectedHandIndexes[0] },
+      () => showToast("Draw a card before discarding"),
+    );
   }
 
   function handleKnock() {
@@ -565,7 +574,7 @@ export default function RummyGameScreen({ navigation, route }) {
       return;
     }
 
-    dispatchAction("knock");
+    dispatchAction("knock", {}, () => showToast("Can't knock yet — deadwood too high"));
   }
 
   function handlePlayAgain() {
@@ -924,6 +933,7 @@ export default function RummyGameScreen({ navigation, route }) {
           ) : null}
         </View>
       </ScrollView>
+      <Toast message={toastMessage} revision={toastRevision} />
     </SafeAreaView>
   );
 }
