@@ -50,6 +50,9 @@ export default function GameScreen({ navigation, route }) {
   // scroll padding 12*2=24, table horizontal padding 12*2=24
   const handWidth = width - 48;
 
+  const isFree = route?.params?.mode === 'free';
+  const freeCoinsRef = useRef(1000);
+
   // ── Wallet state ──────────────────────────────────────────────────
   const [coins, setCoins] = useState(null);
   const [selectedBet, setSelectedBet] = useState(null);
@@ -76,13 +79,18 @@ export default function GameScreen({ navigation, route }) {
 
   // ── Load wallet + check for saved game on mount ───────────────────
   useEffect(() => {
-    getCoins().then(setCoins);
+    if (isFree) {
+      freeCoinsRef.current = 1000;
+      setCoins(1000);
+    } else {
+      getCoins().then(setCoins);
+    }
     hasSeen("blackjack").then((seen) => {
       if (!seen) setShowTutorial(true);
     });
 
     async function checkResume() {
-      if (!route?.params?.resumeFromSave) return;
+      if (isFree || !route?.params?.resumeFromSave) return;
       const saved = await loadGame(SAVE_KEY);
       if (!saved) return;
       const bet = saved.currentBet ?? 0;
@@ -105,7 +113,7 @@ export default function GameScreen({ navigation, route }) {
 
   // ── Auto-save during active hand ──────────────────────────────────
   useEffect(() => {
-    if (screenPhase === "betting") return;
+    if (isFree || screenPhase === "betting") return;
     saveGame(SAVE_KEY, {
       screenPhase,
       currentBet: currentBetRef.current,
@@ -149,13 +157,18 @@ export default function GameScreen({ navigation, route }) {
       else if (sResult === "push") payout += bet;
     }
 
-    let newCoins;
-    if (payout > 0) {
-      newCoins = await addCoins(payout);
+    if (isFree) {
+      freeCoinsRef.current += payout;
+      setCoins(freeCoinsRef.current);
     } else {
-      newCoins = await getCoins();
+      let newCoins;
+      if (payout > 0) {
+        newCoins = await addCoins(payout);
+      } else {
+        newCoins = await getCoins();
+      }
+      setCoins(newCoins);
     }
-    setCoins(newCoins);
 
     const totalBet = hadSplit ? bet * 2 : bet;
     setCoinsDelta(payout - totalBet);
@@ -194,9 +207,13 @@ export default function GameScreen({ navigation, route }) {
     setScreenPhase("playing");
     playSound("card_deal");
 
-    // Deduct bet (async — wallet update appears after the next render)
-    const newCoins = await subtractCoins(bet);
-    setCoins(newCoins);
+    if (isFree) {
+      freeCoinsRef.current -= bet;
+      setCoins(freeCoinsRef.current);
+    } else {
+      const newCoins = await subtractCoins(bet);
+      setCoins(newCoins);
+    }
 
     // Check for natural blackjack (21 on the first two cards)
     const playerVal = calculateHandValue(playerCards);
@@ -300,25 +317,31 @@ export default function GameScreen({ navigation, route }) {
 
   // ── Continue (same bet, deal immediately) ────────────────────────
   async function handleContinueSameBet() {
-    clearGame(SAVE_KEY);
     const bet = currentBetRef.current;
-    const freshCoins = await getCoins();
-    setCoins(freshCoins);
+    let freshCoins;
 
-    if (freshCoins < MIN_BET) {
-      setShowGameOver(true);
-      return;
-    }
-
-    // If they can no longer afford the same bet, fall back to betting screen.
-    if (freshCoins < bet) {
-      setCoinsDelta(0);
-      setResult("");
-      setSplitResult("");
-      setGameStatus("idle");
-      setSplitHand(null);
-      setScreenPhase("betting");
-      return;
+    if (isFree) {
+      if (freeCoinsRef.current < MIN_BET) freeCoinsRef.current = 1000;
+      freshCoins = freeCoinsRef.current;
+      setCoins(freshCoins);
+    } else {
+      clearGame(SAVE_KEY);
+      freshCoins = await getCoins();
+      setCoins(freshCoins);
+      if (freshCoins < MIN_BET) {
+        setShowGameOver(true);
+        return;
+      }
+      // If they can no longer afford the same bet, fall back to betting screen.
+      if (freshCoins < bet) {
+        setCoinsDelta(0);
+        setResult("");
+        setSplitResult("");
+        setGameStatus("idle");
+        setSplitHand(null);
+        setScreenPhase("betting");
+        return;
+      }
     }
 
     payoutDoneRef.current = false;
@@ -340,8 +363,13 @@ export default function GameScreen({ navigation, route }) {
     setScreenPhase("playing");
     playSound("card_deal");
 
-    const newCoins = await subtractCoins(bet);
-    setCoins(newCoins);
+    if (isFree) {
+      freeCoinsRef.current -= bet;
+      setCoins(freeCoinsRef.current);
+    } else {
+      const newCoins = await subtractCoins(bet);
+      setCoins(newCoins);
+    }
 
     const playerVal = calculateHandValue(playerCards);
     const dealerVal = calculateHandValue(dealerCards);
@@ -355,12 +383,19 @@ export default function GameScreen({ navigation, route }) {
 
   // ── Adjust bet (go back to betting screen) ────────────────────────
   async function handleAdjustBet() {
-    clearGame(SAVE_KEY);
-    const freshCoins = await getCoins();
-    setCoins(freshCoins);
-    if (freshCoins < MIN_BET) {
-      setShowGameOver(true);
-      return;
+    if (isFree) {
+      if (freeCoinsRef.current < MIN_BET) {
+        freeCoinsRef.current = 1000;
+        setCoins(1000);
+      }
+    } else {
+      clearGame(SAVE_KEY);
+      const freshCoins = await getCoins();
+      setCoins(freshCoins);
+      if (freshCoins < MIN_BET) {
+        setShowGameOver(true);
+        return;
+      }
     }
     setCoinsDelta(0);
     setResult("");
@@ -454,6 +489,9 @@ export default function GameScreen({ navigation, route }) {
           showsVerticalScrollIndicator={false}
         >
           <Text style={styles.bettingTitle}>♠ Blackjack</Text>
+          {isFree && (
+            <Text style={styles.freePlayBadge}>🎮 Free Play — Play Money</Text>
+          )}
 
           <View style={styles.walletDisplay}>
             <Text style={styles.walletLabel}>Your Balance</Text>
@@ -695,6 +733,13 @@ const styles = StyleSheet.create({
     fontSize: scaleFont(32),
     fontWeight: "bold",
     textAlign: "center",
+  },
+  freePlayBadge: {
+    color: "#7fb3ff",
+    fontSize: scaleFont(13),
+    fontWeight: "700",
+    textAlign: "center",
+    marginTop: scale(-8),
   },
   walletDisplay: {
     backgroundColor: "#0a4a24",
