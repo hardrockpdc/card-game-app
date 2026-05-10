@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Modal,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { createDeck, shuffleDeck, calculateHandValue } from "../game/deck";
@@ -44,6 +45,10 @@ const MIN_BET = 10;
 const SAVE_KEY = "@cardnight:save:blackjack";
 
 export default function GameScreen({ navigation, route }) {
+  const { width } = useWindowDimensions();
+  // scroll padding 12*2=24, table horizontal padding 12*2=24
+  const handWidth = width - 48;
+
   // ── Wallet state ──────────────────────────────────────────────────
   const [coins, setCoins] = useState(null);
   const [selectedBet, setSelectedBet] = useState(null);
@@ -547,7 +552,7 @@ export default function GameScreen({ navigation, route }) {
               Dealer — {showFullDealerHand ? "total:" : "shows"}{" "}
               {dealerDisplayTotal}
             </Text>
-            <View style={styles.hand}>
+            <View style={[styles.hand, { width: handWidth }]}>
               {dealerHand.map((card, index) => (
                 <Card
                   key={card.id}
@@ -568,7 +573,7 @@ export default function GameScreen({ navigation, route }) {
               {playerTotal}
               {gameOver && splitHand ? resultIcon(result) : ""}
             </Text>
-            <View style={[styles.hand, isPlayingHand0 && styles.activeHand]}>
+            <View style={[styles.hand, isPlayingHand0 && styles.activeHand, { width: handWidth }]}>
               {playerHand.map((card) => (
                 <Card
                   key={card.id}
@@ -589,7 +594,7 @@ export default function GameScreen({ navigation, route }) {
                 {splitTotal}
                 {gameOver ? resultIcon(splitResult) : ""}
               </Text>
-              <View style={[styles.hand, isPlayingHand1 && styles.activeHand]}>
+              <View style={[styles.hand, isPlayingHand1 && styles.activeHand, { width: handWidth }]}>
                 {splitHand.map((card) => (
                   <Card
                     key={card.id}
@@ -832,7 +837,8 @@ const styles = StyleSheet.create({
     backgroundColor: BG,
     borderRadius: scale(20),
     alignItems: "center",
-    padding: scale(20),
+    paddingHorizontal: scale(12),
+    paddingVertical: scale(20),
     paddingBottom: scale(30),
   },
   bottomArea: {
@@ -853,7 +859,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "center",
-    alignSelf: "stretch",
   },
   activeHand: {
     borderWidth: 2,
