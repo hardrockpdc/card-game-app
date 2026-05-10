@@ -315,7 +315,6 @@ export default function SolitaireGameScreen({ navigation, route }) {
             label="Waste"
             onPress={() => dispatch(tapAction({ type: "waste" }))}
             selected={sameTarget(state.selected, { type: "waste" })}
-            sizeScale={0.7}
             style={{ width: topSlotW, height: topSlotH, minWidth: topSlotW, minHeight: topSlotH }}
           />
 
@@ -333,7 +332,6 @@ export default function SolitaireGameScreen({ navigation, route }) {
                   dispatch(tapAction({ type: "foundation", index }))
                 }
                 selected={selected}
-                sizeScale={0.7}
                 style={{ width: topSlotW, height: topSlotH, minWidth: topSlotW, minHeight: topSlotH }}
               />
             );
