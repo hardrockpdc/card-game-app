@@ -315,7 +315,12 @@ export default function SolitaireGameScreen({ navigation, route }) {
             label="Waste"
             onPress={() => dispatch(tapAction({ type: "waste" }))}
             selected={sameTarget(state.selected, { type: "waste" })}
-            style={{ width: topSlotW, height: topSlotH, minWidth: topSlotW, minHeight: topSlotH }}
+            style={{
+              width: topSlotW,
+              height: topSlotH,
+              minWidth: topSlotW,
+              minHeight: topSlotH,
+            }}
           />
 
           {state.foundations.map((foundation, index) => {
@@ -332,7 +337,12 @@ export default function SolitaireGameScreen({ navigation, route }) {
                   dispatch(tapAction({ type: "foundation", index }))
                 }
                 selected={selected}
-                style={{ width: topSlotW, height: topSlotH, minWidth: topSlotW, minHeight: topSlotH }}
+                style={{
+                  width: topSlotW,
+                  height: topSlotH,
+                  minWidth: topSlotW,
+                  minHeight: topSlotH,
+                }}
               />
             );
           })}
@@ -784,7 +794,12 @@ export default function SolitaireGameScreen({ navigation, route }) {
         {state.variantId === "pyramid" ? renderPyramid() : null}
         {state.variantId === "tripeaks" ? renderTriPeaks() : null}
       </ScrollView>
-      <QuitButton onQuit={() => { clearGame(solitaireSaveKey(state.variantId || routeVariantId)); navigation.navigate("Home"); }} />
+      <QuitButton
+        onQuit={() => {
+          clearGame(solitaireSaveKey(state.variantId || routeVariantId));
+          navigation.navigate("Home");
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -1047,7 +1062,8 @@ const styles = StyleSheet.create({
   },
   emptyCardText: {
     color: "#7f8ea8",
-    fontSize: 11,
+    fontSize: 9,
+    lineHeight: 11,
     textAlign: "center",
     fontWeight: "800",
   },
@@ -1085,15 +1101,20 @@ const styles = StyleSheet.create({
     height: 16,
   },
   emptyColumnSlot: {
-    width: "100%",
-    minHeight: 26,
-    borderRadius: 12,
+    width: 70,
+    height: 98,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: "#34425f",
+    backgroundColor: "#101521",
     alignItems: "center",
     justifyContent: "center",
+    paddingHorizontal: 6,
   },
   emptyColumnText: {
-    color: "#71809a",
-    fontSize: 11,
+    opacity: 0,
+    fontSize: 1,
     fontWeight: "800",
   },
   stackCard: {
