@@ -50,7 +50,7 @@ export default function GameScreen({ navigation, route }) {
   // scroll padding 12*2=24, table horizontal padding 12*2=24
   const handWidth = width - 48;
 
-  const isFree = route?.params?.mode === 'free';
+  const isFree = route?.params?.mode === "free";
   const freeCoinsRef = useRef(1000);
 
   // ── Wallet state ──────────────────────────────────────────────────
@@ -539,7 +539,12 @@ export default function GameScreen({ navigation, route }) {
             onPress={handleDeal}
             disabled={!selectedBet}
           >
-            <Text style={[styles.dealButtonText, !selectedBet && styles.dealButtonTextDisabled]}>
+            <Text
+              style={[
+                styles.dealButtonText,
+                !selectedBet && styles.dealButtonTextDisabled,
+              ]}
+            >
               {selectedBet
                 ? `Deal  —  🪙 ${selectedBet}`
                 : "Select a bet first"}
@@ -601,7 +606,13 @@ export default function GameScreen({ navigation, route }) {
               {playerTotal}
               {gameOver && splitHand ? resultIcon(result) : ""}
             </Text>
-            <View style={[styles.hand, isPlayingHand0 && styles.activeHand, { width: handWidth }]}>
+            <View
+              style={[
+                styles.hand,
+                isPlayingHand0 && styles.activeHand,
+                { width: handWidth },
+              ]}
+            >
               {playerHand.map((card) => (
                 <Card
                   key={card.id}
@@ -622,7 +633,13 @@ export default function GameScreen({ navigation, route }) {
                 {splitTotal}
                 {gameOver ? resultIcon(splitResult) : ""}
               </Text>
-              <View style={[styles.hand, isPlayingHand1 && styles.activeHand, { width: handWidth }]}>
+              <View
+                style={[
+                  styles.hand,
+                  isPlayingHand1 && styles.activeHand,
+                  { width: handWidth },
+                ]}
+              >
                 {splitHand.map((card) => (
                   <Card
                     key={card.id}
@@ -714,7 +731,7 @@ export default function GameScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: "#08401f",
+    backgroundColor: BG,
     alignItems: "center",
     padding: scale(20),
   },
@@ -937,5 +954,4 @@ const styles = StyleSheet.create({
     fontSize: scaleFont(18),
     fontWeight: "bold",
   },
-
 });

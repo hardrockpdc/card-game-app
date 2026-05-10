@@ -31,8 +31,10 @@ import {
   disconnectFromHost,
 } from "../game/GameNetwork";
 import { scale, scaleFont } from "../game/responsive";
+import { getTableTheme } from "../game/tableThemes";
 
 const WIN_SCORE = 10;
+const BG = getTableTheme("wildround").table;
 
 function localShuffle(arr) {
   const a = [...arr];
@@ -106,7 +108,7 @@ export default function WildRoundGameScreen({ navigation, route }) {
   }, [privateJudgePrompt, gameState?.currentPrompt]);
 
   useEffect(() => {
-    if (!gameState || gameState.phase !== 'gameOver') return;
+    if (!gameState || gameState.phase !== "gameOver") return;
     if (navigatedToResultsRef.current) return;
     navigatedToResultsRef.current = true;
     const scores = [...(gameState.players ?? [])]
@@ -116,12 +118,12 @@ export default function WildRoundGameScreen({ navigation, route }) {
         score: `${p.score}/${WIN_SCORE}`,
         isWinner: String(p.id) === String(gameState.winner?.id),
       }));
-    navigation.replace('Results', {
-      gameName: 'Wild Round',
-      headline: `🎉 ${gameState.winner?.name ?? 'Someone'} wins!`,
+    navigation.replace("Results", {
+      gameName: "Wild Round",
+      headline: `🎉 ${gameState.winner?.name ?? "Someone"} wins!`,
       isLocalWin: String(gameState.winner?.id) === String(myPid),
       scores,
-      playAgainRoute: isSinglePlayer ? 'WildRoundGame' : null,
+      playAgainRoute: isSinglePlayer ? "WildRoundGame" : null,
       playAgainParams: isSinglePlayer ? route.params : null,
     });
   }, [gameState]);
@@ -1087,16 +1089,22 @@ export default function WildRoundGameScreen({ navigation, route }) {
             </View>
           );
         })()}
-      <QuitButton onQuit={() => {
-        if (isHost) { stopServer(); } else { disconnectFromHost(); }
-        navigation.navigate('Home');
-      }} />
+      <QuitButton
+        onQuit={() => {
+          if (isHost) {
+            stopServer();
+          } else {
+            disconnectFromHost();
+          }
+          navigation.navigate("Home");
+        }}
+      />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#1a1a2e", padding: scale(16) },
+  container: { flex: 1, backgroundColor: BG, padding: scale(16) },
 
   promptBox: {
     backgroundColor: "#2d1b69",
@@ -1143,7 +1151,11 @@ const styles = StyleSheet.create({
     marginBottom: scale(8),
   },
   answerCardSelected: { borderColor: "#e94560", backgroundColor: "#2a1020" },
-  answerCardText: { color: "#ffffff", fontSize: scaleFont(15), lineHeight: scale(21) },
+  answerCardText: {
+    color: "#ffffff",
+    fontSize: scaleFont(15),
+    lineHeight: scale(21),
+  },
 
   primaryBtn: {
     backgroundColor: "#e94560",
@@ -1153,7 +1165,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: scale(10),
   },
-  primaryBtnText: { color: "#fff", fontSize: scaleFont(17), fontWeight: "bold" },
+  primaryBtnText: {
+    color: "#fff",
+    fontSize: scaleFont(17),
+    fontWeight: "bold",
+  },
   secondaryBtn: {
     backgroundColor: "#16213e",
     borderRadius: scale(10),
@@ -1164,7 +1180,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: scale(10),
   },
-  secondaryBtnText: { color: "#b0b0c0", fontSize: scaleFont(15), fontWeight: "bold" },
+  secondaryBtnText: {
+    color: "#b0b0c0",
+    fontSize: scaleFont(15),
+    fontWeight: "bold",
+  },
   btnDimmed: { opacity: 0.4 },
 
   revealScreen: {

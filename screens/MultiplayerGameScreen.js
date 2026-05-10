@@ -350,73 +350,100 @@ export default function MultiplayerGameScreen({ navigation, route }) {
 
   return (
     <View style={styles.screenRoot}>
-    <ScrollView contentContainerStyle={styles.container}>
-      {/* Turn / phase banner */}
-      <View
-        style={[styles.banner, phase === "results" && styles.bannerResults]}
-      >
-        <Text style={styles.bannerText}>
-          {phase === "results"
-            ? "Game Over"
-            : isMyTurn
-              ? "▶  Your turn"
-              : `Waiting for ${currentPlayer?.name}…`}
-        </Text>
-      </View>
-
-      {/* Dealer */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionName}>Dealer</Text>
-          <Text style={styles.sectionValue}>
-            {showFullDealer
-              ? `= ${calculateHandValue(dealer.hand)}`
-              : dealer.hand.length > 0 && !dealer.hand[0].hidden
-                ? `shows ${calculateHandValue([dealer.hand[0]])}`
-                : ""}
+      <ScrollView contentContainerStyle={styles.container}>
+        {/* Turn / phase banner */}
+        <View
+          style={[styles.banner, phase === "results" && styles.bannerResults]}
+        >
+          <Text style={styles.bannerText}>
+            {phase === "results"
+              ? "Game Over"
+              : isMyTurn
+                ? "▶  Your turn"
+                : `Waiting for ${currentPlayer?.name}…`}
           </Text>
-          {showFullDealer && dealer.status === "bust" && (
-            <Text style={styles.labelBust}>BUST</Text>
-          )}
         </View>
-        <View style={styles.handRow}>
-          {dealer.hand.map((card) => (
-            <Card
-              key={card.id}
-              rank={card.rank}
-              suit={card.suit}
-              faceDown={!!card.hidden}
-              sizeScale={2}
-            />
-          ))}
+
+        {/* Dealer */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionName}>Dealer</Text>
+            <Text style={styles.sectionValue}>
+              {showFullDealer
+                ? `= ${calculateHandValue(dealer.hand)}`
+                : dealer.hand.length > 0 && !dealer.hand[0].hidden
+                  ? `shows ${calculateHandValue([dealer.hand[0]])}`
+                  : ""}
+            </Text>
+            {showFullDealer && dealer.status === "bust" && (
+              <Text style={styles.labelBust}>BUST</Text>
+            )}
+          </View>
+          <View style={styles.handRow}>
+            {dealer.hand.map((card) => (
+              <Card
+                key={card.id}
+                rank={card.rank}
+                suit={card.suit}
+                faceDown={!!card.hidden}
+                sizeScale={2}
+              />
+            ))}
+          </View>
         </View>
-      </View>
 
-      {/* All players */}
-      {players.map((player, index) => {
-        const isMe = index === myIndex;
-        const isCurrent = index === currentPlayerIndex && phase === "playing";
-        const hasSplit = player.splitHand !== null;
-        const mainHandValue = calculateHandValue(player.hand);
-        const splitHandValue = hasSplit
-          ? calculateHandValue(player.splitHand)
-          : 0;
-        const slot = currentHandSlot ?? "main";
+        {/* All players */}
+        {players.map((player, index) => {
+          const isMe = index === myIndex;
+          const isCurrent = index === currentPlayerIndex && phase === "playing";
+          const hasSplit = player.splitHand !== null;
+          const mainHandValue = calculateHandValue(player.hand);
+          const splitHandValue = hasSplit
+            ? calculateHandValue(player.splitHand)
+            : 0;
+          const slot = currentHandSlot ?? "main";
 
-        return (
-          <View
-            key={String(player.id)}
-            style={[styles.section, isCurrent && styles.sectionActive]}
-          >
-            {/* Section header */}
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionName}>
-                {player.name}
-                {isMe ? " (you)" : ""}
-              </Text>
-              {!hasSplit && (
-                <>
-                  <Text style={styles.sectionValue}>= {mainHandValue}</Text>
+          return (
+            <View
+              key={String(player.id)}
+              style={[styles.section, isCurrent && styles.sectionActive]}
+            >
+              {/* Section header */}
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionName}>
+                  {player.name}
+                  {isMe ? " (you)" : ""}
+                </Text>
+                {!hasSplit && (
+                  <>
+                    <Text style={styles.sectionValue}>= {mainHandValue}</Text>
+                    {phase === "playing" && player.status === "bust" && (
+                      <Text style={styles.labelBust}>BUST</Text>
+                    )}
+                    {phase === "playing" && player.status === "stand" && (
+                      <Text style={styles.labelStand}>STAND</Text>
+                    )}
+                    {phase === "results" && player.result !== "" && (
+                      <Text
+                        style={[
+                          styles.labelResult,
+                          { color: resultColor(player.result) },
+                        ]}
+                      >
+                        {resultLabel(player.result)}
+                      </Text>
+                    )}
+                  </>
+                )}
+              </View>
+
+              {/* Main hand label (only when split exists) */}
+              {hasSplit && (
+                <View style={styles.handLabelRow}>
+                  <Text style={styles.handLabel}>
+                    {isCurrent && slot === "main" ? "▶ " : ""}Hand 1 ={" "}
+                    {mainHandValue}
+                  </Text>
                   {phase === "playing" && player.status === "bust" && (
                     <Text style={styles.labelBust}>BUST</Text>
                   )}
@@ -433,144 +460,126 @@ export default function MultiplayerGameScreen({ navigation, route }) {
                       {resultLabel(player.result)}
                     </Text>
                   )}
-                </>
+                </View>
               )}
-            </View>
 
-            {/* Main hand label (only when split exists) */}
-            {hasSplit && (
-              <View style={styles.handLabelRow}>
-                <Text style={styles.handLabel}>
-                  {isCurrent && slot === "main" ? "▶ " : ""}Hand 1 ={" "}
-                  {mainHandValue}
-                </Text>
-                {phase === "playing" && player.status === "bust" && (
-                  <Text style={styles.labelBust}>BUST</Text>
-                )}
-                {phase === "playing" && player.status === "stand" && (
-                  <Text style={styles.labelStand}>STAND</Text>
-                )}
-                {phase === "results" && player.result !== "" && (
-                  <Text
+              {/* Main hand cards */}
+              <View
+                style={[
+                  styles.handRow,
+                  hasSplit &&
+                    isCurrent &&
+                    slot === "main" &&
+                    styles.activeHandBorder,
+                ]}
+              >
+                {player.hand.map((card) => (
+                  <Card
+                    key={card.id}
+                    rank={card.rank}
+                    suit={card.suit}
+                    sizeScale={2}
+                  />
+                ))}
+              </View>
+
+              {/* Split hand */}
+              {hasSplit && (
+                <>
+                  <View style={styles.handLabelRow}>
+                    <Text style={styles.handLabel}>
+                      {isCurrent && slot === "split" ? "▶ " : ""}Hand 2 ={" "}
+                      {splitHandValue}
+                    </Text>
+                    {phase === "playing" && player.splitStatus === "bust" && (
+                      <Text style={styles.labelBust}>BUST</Text>
+                    )}
+                    {phase === "playing" && player.splitStatus === "stand" && (
+                      <Text style={styles.labelStand}>STAND</Text>
+                    )}
+                    {phase === "results" && player.splitResult !== "" && (
+                      <Text
+                        style={[
+                          styles.labelResult,
+                          { color: resultColor(player.splitResult) },
+                        ]}
+                      >
+                        {resultLabel(player.splitResult)}
+                      </Text>
+                    )}
+                  </View>
+                  <View
                     style={[
-                      styles.labelResult,
-                      { color: resultColor(player.result) },
+                      styles.handRow,
+                      isCurrent && slot === "split" && styles.activeHandBorder,
                     ]}
                   >
-                    {resultLabel(player.result)}
-                  </Text>
-                )}
-              </View>
-            )}
+                    {player.splitHand.map((card) => (
+                      <Card
+                        key={card.id}
+                        rank={card.rank}
+                        suit={card.suit}
+                        sizeScale={2}
+                      />
+                    ))}
+                  </View>
+                </>
+              )}
 
-            {/* Main hand cards */}
-            <View
-              style={[
-                styles.handRow,
-                hasSplit &&
-                  isCurrent &&
-                  slot === "main" &&
-                  styles.activeHandBorder,
-              ]}
-            >
-              {player.hand.map((card) => (
-                <Card
-                  key={card.id}
-                  rank={card.rank}
-                  suit={card.suit}
-                  sizeScale={2}
-                />
-              ))}
-            </View>
-
-            {/* Split hand */}
-            {hasSplit && (
-              <>
-                <View style={styles.handLabelRow}>
-                  <Text style={styles.handLabel}>
-                    {isCurrent && slot === "split" ? "▶ " : ""}Hand 2 ={" "}
-                    {splitHandValue}
-                  </Text>
-                  {phase === "playing" && player.splitStatus === "bust" && (
-                    <Text style={styles.labelBust}>BUST</Text>
-                  )}
-                  {phase === "playing" && player.splitStatus === "stand" && (
-                    <Text style={styles.labelStand}>STAND</Text>
-                  )}
-                  {phase === "results" && player.splitResult !== "" && (
-                    <Text
-                      style={[
-                        styles.labelResult,
-                        { color: resultColor(player.splitResult) },
-                      ]}
-                    >
-                      {resultLabel(player.splitResult)}
-                    </Text>
-                  )}
-                </View>
-                <View
-                  style={[
-                    styles.handRow,
-                    isCurrent && slot === "split" && styles.activeHandBorder,
-                  ]}
-                >
-                  {player.splitHand.map((card) => (
-                    <Card
-                      key={card.id}
-                      rank={card.rank}
-                      suit={card.suit}
-                      sizeScale={2}
-                    />
-                  ))}
-                </View>
-              </>
-            )}
-
-            {/* Hit / Stand / Split — only for the active player on their turn */}
-            {isMe && isMyTurn && (
-              <View style={styles.actionRow}>
-                <TouchableOpacity
-                  style={[styles.actionBtn, styles.hitBtn]}
-                  onPress={() => handleAction("hit")}
-                >
-                  <Text style={styles.actionBtnText}>Hit</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.actionBtn, styles.standBtn]}
-                  onPress={() => handleAction("stand")}
-                >
-                  <Text style={styles.actionBtnText}>Stand</Text>
-                </TouchableOpacity>
-                {canSplit && (
+              {/* Hit / Stand / Split — only for the active player on their turn */}
+              {isMe && isMyTurn && (
+                <View style={styles.actionRow}>
                   <TouchableOpacity
-                    style={[styles.actionBtn, styles.splitBtn]}
-                    onPress={() => handleAction("split")}
+                    style={[styles.actionBtn, styles.hitBtn]}
+                    onPress={() => handleAction("hit")}
                   >
-                    <Text style={styles.actionBtnText}>Split</Text>
+                    <Text style={styles.actionBtnText}>Hit</Text>
                   </TouchableOpacity>
-                )}
-              </View>
-            )}
-          </View>
-        );
-      })}
+                  <TouchableOpacity
+                    style={[styles.actionBtn, styles.standBtn]}
+                    onPress={() => handleAction("stand")}
+                  >
+                    <Text style={styles.actionBtnText}>Stand</Text>
+                  </TouchableOpacity>
+                  {canSplit && (
+                    <TouchableOpacity
+                      style={[styles.actionBtn, styles.splitBtn]}
+                      onPress={() => handleAction("split")}
+                    >
+                      <Text style={styles.actionBtnText}>Split</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+            </View>
+          );
+        })}
 
-      {/* Play Again — host only, after results */}
-      {phase === "results" && isHost && (
-        <TouchableOpacity style={styles.playAgainBtn} onPress={handlePlayAgain}>
-          <Text style={styles.playAgainText}>🔄 Play Again</Text>
-        </TouchableOpacity>
-      )}
-      {phase === "results" && !isHost && (
-        <Text style={styles.waitText}>
-          Waiting for host to deal a new hand…
-        </Text>
-      )}
-    </ScrollView>
-      <QuitButton onQuit={() => {
-        if (isHost) { stopServer(); } else { disconnectFromHost(); }
-        navigation.navigate('Home');
-      }} />
+        {/* Play Again — host only, after results */}
+        {phase === "results" && isHost && (
+          <TouchableOpacity
+            style={styles.playAgainBtn}
+            onPress={handlePlayAgain}
+          >
+            <Text style={styles.playAgainText}>🔄 Play Again</Text>
+          </TouchableOpacity>
+        )}
+        {phase === "results" && !isHost && (
+          <Text style={styles.waitText}>
+            Waiting for host to deal a new hand…
+          </Text>
+        )}
+      </ScrollView>
+      <QuitButton
+        onQuit={() => {
+          if (isHost) {
+            stopServer();
+          } else {
+            disconnectFromHost();
+          }
+          navigation.navigate("Home");
+        }}
+      />
     </View>
   );
 }
@@ -601,7 +610,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: scale(12),
   },
-  bannerResults: { backgroundColor: "#1a1a2e" },
+  bannerResults: { backgroundColor: BG },
   bannerText: { color: "#fff", fontSize: scaleFont(16), fontWeight: "bold" },
 
   section: {
