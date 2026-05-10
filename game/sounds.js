@@ -13,22 +13,13 @@ const MUTED_KEY = "@cardnight:soundMuted";
 let _muted = false;
 const pool = {};
 
-// Keep this function very small: it just loads the persisted mute flag and
-// updates the module-level cache.
 async function loadMutedFromStorage() {
   const raw = await AsyncStorage.getItem(MUTED_KEY);
   _muted = raw === "true";
 }
 
 export async function initSounds() {
-  // Load mute preference first so playSound() can early-return immediately
-  // after init.
-  try {
-    await loadMutedFromStorage();
-  } catch {
-    // ignore — default is unmuted
-  }
-
+  // Create players as early as possible so playSound works immediately.
   try {
     await setAudioModeAsync({ playsInSilentModeIOS: true });
   } catch {
@@ -40,7 +31,14 @@ export async function initSounds() {
       pool[key] = createAudioPlayer(source);
     }
   } catch {
-    // degrade silently — no audio hardware, simulator, etc.
+    // degrade silently
+  }
+
+  // Then load persisted mute preference (affects subsequent playback).
+  try {
+    await loadMutedFromStorage();
+  } catch {
+    // ignore — default is unmuted
   }
 }
 
@@ -53,7 +51,7 @@ export async function setMuted(value) {
   try {
     await AsyncStorage.setItem(MUTED_KEY, String(_muted));
   } catch {
-    // If persistence fails, still keep the in-memory flag.
+    // ignore persistence failures; still update in-memory cache
   }
 }
 
