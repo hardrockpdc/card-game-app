@@ -31,7 +31,6 @@ export default function SolitaireVariantPickerScreen({ navigation, route }) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.kicker}>Card Games</Text>
         <Text style={styles.title}>Solitaire</Text>
         <Text style={styles.subtitle}>
           Pick a mode, then start a new game.
@@ -71,14 +70,6 @@ export default function SolitaireVariantPickerScreen({ navigation, route }) {
             </View>
           ) : null}
 
-          <View style={styles.preview}>
-            <Text style={styles.previewLabel}>Selected</Text>
-            <Text style={styles.previewTitle}>{selectedVariant.label}</Text>
-            <Text style={styles.previewDescription}>
-              {selectedVariant.description}
-            </Text>
-          </View>
-
           <Pressable
             onPress={startGame}
             style={({ pressed }) => [
@@ -114,6 +105,7 @@ const styles = StyleSheet.create({
     color: '#f5f7fb',
     fontSize: scaleFont(34),
     fontWeight: '900',
+    textAlign: 'center',
   },
   subtitle: {
     color: '#95a2b6',
@@ -163,31 +155,6 @@ const styles = StyleSheet.create({
   },
   modeChipTextSelected: {
     color: '#eef4ff',
-  },
-  preview: {
-    borderRadius: scale(18),
-    borderWidth: 1,
-    borderColor: '#223049',
-    backgroundColor: '#101521',
-    padding: scale(14),
-    gap: scale(4),
-  },
-  previewLabel: {
-    color: '#8799b8',
-    fontSize: scaleFont(11),
-    textTransform: 'uppercase',
-    letterSpacing: 0.9,
-    fontWeight: '800',
-  },
-  previewTitle: {
-    color: '#f4f7fb',
-    fontSize: scaleFont(20),
-    fontWeight: '900',
-  },
-  previewDescription: {
-    color: '#a5b3c7',
-    fontSize: scaleFont(13),
-    lineHeight: scale(18),
   },
   playButton: {
     borderRadius: scale(16),
