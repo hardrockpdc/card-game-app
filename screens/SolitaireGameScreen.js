@@ -352,23 +352,26 @@ export default function SolitaireGameScreen({ navigation, route }) {
           {state.tableau.map((pile, pileIndex) => (
             <View key={`klondike-${pileIndex}`} style={styles.tableauColumn}>
               {pile.length === 0 ? (
-                <Pressable
-                  onPress={() =>
-                    dispatch(tapAction({ type: "tableau", index: pileIndex }))
-                  }
-                  style={({ pressed }) => [
-                    styles.emptyColumnSlot,
-                    pressed && styles.cardTouchPressed,
-                    {
-                      width: topSlotW,
-                      height: topSlotH,
-                      minWidth: topSlotW,
-                      minHeight: topSlotH,
-                    },
-                  ]}
-                >
-                  <Text style={styles.emptyColumnText}>Empty</Text>
-                </Pressable>
+                <>
+                  <View style={styles.tableauTopSpacer} />
+                  <Pressable
+                    onPress={() =>
+                      dispatch(tapAction({ type: "tableau", index: pileIndex }))
+                    }
+                    style={({ pressed }) => [
+                      styles.emptyColumnSlot,
+                      pressed && styles.cardTouchPressed,
+                      {
+                        width: topSlotW,
+                        height: topSlotH,
+                        minWidth: topSlotW,
+                        minHeight: topSlotH,
+                      },
+                    ]}
+                  >
+                    <Text style={styles.emptyColumnText}>Empty</Text>
+                  </Pressable>
+                </>
               ) : (
                 <View style={styles.tableauTopSpacer} />
               )}
@@ -553,17 +556,20 @@ export default function SolitaireGameScreen({ navigation, route }) {
           {state.tableau.map((pile, pileIndex) => (
             <View key={`freecell-${pileIndex}`} style={styles.tableauColumn}>
               {pile.length === 0 ? (
-                <Pressable
-                  onPress={() =>
-                    dispatch(tapAction({ type: "tableau", index: pileIndex }))
-                  }
-                  style={({ pressed }) => [
-                    styles.emptyColumnSlot,
-                    pressed && styles.cardTouchPressed,
-                  ]}
-                >
-                  <Text style={styles.emptyColumnText}>Empty</Text>
-                </Pressable>
+                <>
+                  <View style={styles.tableauTopSpacer} />
+                  <Pressable
+                    onPress={() =>
+                      dispatch(tapAction({ type: "tableau", index: pileIndex }))
+                    }
+                    style={({ pressed }) => [
+                      styles.emptyColumnSlot,
+                      pressed && styles.cardTouchPressed,
+                    ]}
+                  >
+                    <Text style={styles.emptyColumnText}>Empty</Text>
+                  </Pressable>
+                </>
               ) : (
                 <View style={styles.tableauTopSpacer} />
               )}
