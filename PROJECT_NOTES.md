@@ -92,7 +92,8 @@ card-game-app/
 │   ├── RummyVariantWheel.js       (simple tap-select rummy variant picker UI)
 │   ├── Toast.js                   (animated pill toast + useToast hook — illegal move feedback + error sound)
 │   ├── QuitButton.js              (absolute-positioned ✕ Quit button — used by all 9 game screens)
-│   └── TutorialOverlay.js         (first-time tutorial modal — slide carousel, AsyncStorage seen-tracking, Skip/Got It)
+│   ├── TutorialOverlay.js         (first-time tutorial modal — slide carousel, AsyncStorage seen-tracking, Skip/Got It)
+│   └── EndOfRoundModal.js         (reusable round-end modal — title, message, Continue/AdjustBet/Leave buttons, tableColor border tint)
 ├── game/
 │   ├── deck.js                    (createDeck, shuffleDeck, calculateHandValue)
 │   ├── ThemeContext.js            (React context for card theme — single listener, shared across all Cards)
@@ -107,13 +108,15 @@ card-game-app/
 │   ├── logger.js                  (log/warn — no-ops in production builds via __DEV__)
 │   ├── profile.js                 (loadProfile, saveProfile, subscribeProfile, getDisplayName — AsyncStorage)
 │   ├── responsive.js              (scale(), scaleFont() — BASE_WIDTH 390, clamped factors)
-│   └── sounds.js                  (initSounds/playSound — expo-av; preloads 4 sounds on app start; graceful no-op if unavailable)
+│   ├── sounds.js                  (initSounds/playSound — expo-audio; preloads 4 sounds on app start; graceful no-op if unavailable)
+│   └── tableThemes.js             (TABLE_THEMES map + getTableTheme(gameId) — table/accent colors for all 8 games)
 ├── screens/
 │   ├── HomeScreen.js              (main menu)
 │   ├── HostSetupScreen.js         (name from profile, starts TCP server, shows IP)
 │   ├── JoinScreen.js              (UDP auto-discovery list, tap to join)
 │   ├── LobbyScreen.js             (player list, game selector, Start Game)
-│   ├── GameScreen.js              (single-player Blackjack)
+│   ├── BlackjackModePickerScreen.js (Free Play / Casino mode selector before entering Blackjack)
+│   ├── GameScreen.js              (single-player Blackjack — handles mode: 'free' | 'casino' route param)
 │   ├── MultiplayerGameScreen.js   (multiplayer Blackjack)
 │   ├── GoFishGameScreen.js        (multiplayer Go Fish)
 │   ├── PokerGameScreen.js         (Poker variants: Texas Hold'em, Omaha, Five Card Draw, Seven Card Stud)
@@ -365,6 +368,22 @@ All JS-only items from the Month 3 block are done:
 - ✅ **M9:** Extracted `game/useResumePrompt.js` — custom hook encapsulating the save/resume Alert pattern. Refactored 5 screens to use it: `SinglePlayerSetupScreen`, `RummyVariantPickerScreen`, `SolitaireVariantPickerScreen`, `PokerVariantPickerScreen`, `GameSetupScreen`
 - ✅ **C6+H3:** Added `PROTOCOL_VERSION = 1` to `game/GameNetwork.js`. Every outgoing TCP message now carries `protocolVersion`. Server rejects mismatched clients with a `VERSION_MISMATCH` message then closes the socket. Client shows a friendly "Update Required" Alert on mismatch. UDP broadcast and discovery both include/check `protocolVersion`.
 - ✅ **C1:** Added Android (`NEARBY_WIFI_DEVICES`, `ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE`, `INTERNET`) and iOS (`NSLocalNetworkUsageDescription`, `NSBonjourServices`) permissions to `app.json`. **A new EAS build is required before these take effect on device.**
+
+### Month 3 Polish Session (2026-05-09) — COMPLETE ✅
+
+11 JS-only polish items completed (all committed, no EAS rebuild needed):
+
+- ✅ **P1** — `game/tableThemes.js` created: `TABLE_THEMES` map + `getTableTheme(gameId)` for 8 games (blackjack, poker, solitaire, rummy, conquian, gofish, lastcard, wildround)
+- ✅ **P3** — Nav headers hidden (`headerShown: false`) on all 9 game screens in `App.js`; `QuitButton.js` `top` moved to `scale(50)` so it clears the status bar
+- ✅ **P2** — Table background colors unified via `getTableTheme`: Blackjack/Multiplayer → green `#35654D`; Solitaire → teal `#01889F`; Rummy/Conquian → crimson `#B22222`; GoFish → ocean blue `#0D6E8C`; Poker → `#35654D`; LastCard/WildRound → `#1a1a2e`
+- ✅ **P4** — Solitaire "Back" + "New Game" inline buttons removed from game header; clean headerless layout
+- ✅ **P10** — `SolitaireVariantPickerScreen` decluttered: kicker text and preview card block removed; title centered
+- ✅ **P9** — Solitaire Klondike top row (stock, waste, 4 foundations) refactored to use computed slot size (`topSlotW/topSlotH`) for a consistent 6-slot layout across all screen widths; `klondikeTopRow` style added
+- ✅ **P11** — Blackjack hand wrapping fixed: `useWindowDimensions` added; explicit `handWidth = width - 48` applied to all three hand containers (dealer, player, split); table horizontal padding reduced from `scale(20)` → `scale(12)` to give more card room
+- ✅ **P8** — Deal button resized: `minHeight scale(56)→scale(78)` (+40%), `fontSize scaleFont(18)→scaleFont(23)` (×1.3x); active state uses gold accent (`ACCENT` from tableThemes), dark text; disabled state uses grey
+- ✅ **P5** — `components/EndOfRoundModal.js` created: reusable round-end modal with title, message, and three optional action buttons (Continue/Play Again, Adjust Bet, Leave); `tableColor` prop tints the border
+- ✅ **P6** — `EndOfRoundModal` wired into Blackjack (`GameScreen.js`): replaces inline status/coinsDelta text and the old result button row; out-of-coins modal also migrated to it
+- ✅ **P7** — `screens/BlackjackModePickerScreen.js` created: Free Play / Casino selector before entering Blackjack; `GameScreen` reads `mode` param and branches on `isFree` — free mode uses `freeCoinsRef` (starts 1000, refills when low), skips wallet calls and game saves entirely
 
 ### After this session
 1. **Run a new EAS build** so C1 permissions are active on device (Android + iOS)
