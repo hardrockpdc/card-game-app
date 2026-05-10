@@ -15,6 +15,9 @@ import {
   setClientListeners, sendToHost,
   stopServer, disconnectFromHost,
 } from '../game/GameNetwork';
+import { getTableTheme } from '../game/tableThemes';
+
+const BG = getTableTheme('poker').table;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -691,10 +694,10 @@ export default function PokerGameScreen({ navigation, route }) {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  screenRoot: { flex: 1, backgroundColor: '#0a1628' },
-  loading: { flex: 1, backgroundColor: '#0a1628', alignItems: 'center', justifyContent: 'center' },
+  screenRoot: { flex: 1, backgroundColor: BG },
+  loading: { flex: 1, backgroundColor: BG, alignItems: 'center', justifyContent: 'center' },
   loadingText: { color: '#fff', fontSize: scaleFont(18) },
-  container: { flexGrow: 1, backgroundColor: '#0a1628', padding: scale(14), paddingBottom: scale(40) },
+  container: { flexGrow: 1, backgroundColor: BG, padding: scale(14), paddingBottom: scale(40) },
 
   banner: { backgroundColor: '#e94560', borderRadius: scale(10), paddingVertical: scale(10), alignItems: 'center', marginBottom: scale(8) },
   bannerShowdown: { backgroundColor: '#7b2d8b' },
@@ -744,7 +747,7 @@ const styles = StyleSheet.create({
   waitText: { color: '#aaa', textAlign: 'center', fontSize: scaleFont(14), marginTop: scale(8) },
 
   tournamentOverContainer: {
-    flex: 1, backgroundColor: '#0a1628', alignItems: 'center', justifyContent: 'center', padding: scale(32),
+    flex: 1, backgroundColor: BG, alignItems: 'center', justifyContent: 'center', padding: scale(32),
   },
   tournamentOverEmoji: { fontSize: scaleFont(64), marginBottom: scale(12) },
   tournamentOverTitle: {

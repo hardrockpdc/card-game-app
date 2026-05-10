@@ -19,6 +19,9 @@ import {
   stopServer,
   disconnectFromHost,
 } from "../game/GameNetwork";
+import { getTableTheme } from "../game/tableThemes";
+
+const BG = getTableTheme("blackjack").table;
 
 // ─── Pure game-logic helpers (no React, easy to test) ────────────────────────
 
@@ -575,10 +578,10 @@ export default function MultiplayerGameScreen({ navigation, route }) {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  screenRoot: { flex: 1, backgroundColor: "#0d5c2e" },
+  screenRoot: { flex: 1, backgroundColor: BG },
   loading: {
     flex: 1,
-    backgroundColor: "#0d5c2e",
+    backgroundColor: BG,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -586,7 +589,7 @@ const styles = StyleSheet.create({
 
   container: {
     flexGrow: 1,
-    backgroundColor: "#0d5c2e",
+    backgroundColor: BG,
     padding: scale(14),
     paddingBottom: scale(40),
   },

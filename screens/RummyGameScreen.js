@@ -13,6 +13,9 @@ import Card from "../components/Card";
 import Toast, { useToast } from "../components/Toast";
 import QuitButton from "../components/QuitButton";
 import TutorialOverlay, { hasSeen } from "../components/TutorialOverlay";
+import { getTableTheme } from "../game/tableThemes";
+
+const BG = getTableTheme("rummy").table;
 import { scale, scaleFont } from "../game/responsive";
 import { addCoins } from "../game/wallet";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
@@ -983,19 +986,19 @@ export default function RummyGameScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#1a1a2e",
+    backgroundColor: BG,
   },
   scrollContent: {
     padding: 14,
     paddingBottom: 40,
     gap: 14,
-    backgroundColor: "#1a1a2e",
+    backgroundColor: BG,
   },
   loadingWrap: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#1a1a2e",
+    backgroundColor: BG,
   },
   loadingText: {
     color: "#b0b0c0",

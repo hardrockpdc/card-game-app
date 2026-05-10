@@ -24,6 +24,9 @@ import {
 import { addCoins } from "../game/wallet";
 import { recordWin } from "../game/profile";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
+import { getTableTheme } from "../game/tableThemes";
+
+const BG = getTableTheme("solitaire").table;
 
 function solitaireSaveKey(variantId) {
   return `@cardnight:save:solitaire:${variantId}`;
@@ -818,7 +821,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#0f1115",
+    backgroundColor: BG,
   },
   winBanner: {
     backgroundColor: "#16213e",

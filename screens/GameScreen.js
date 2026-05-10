@@ -17,6 +17,9 @@ import { getCoins, addCoins, subtractCoins } from "../game/wallet";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import { recordWin } from "../game/profile";
 import TutorialOverlay, { hasSeen } from "../components/TutorialOverlay";
+import { getTableTheme } from "../game/tableThemes";
+
+const BG = getTableTheme("blackjack").table;
 
 const BLACKJACK_SLIDES = [
   {
@@ -821,12 +824,12 @@ const styles = StyleSheet.create({
   },
   handsScrollContent: {
     flexGrow: 1,
-    backgroundColor: "#08401f",
+    backgroundColor: BG,
     padding: scale(12),
   },
   table: {
     flexGrow: 1,
-    backgroundColor: "#0d5c2e",
+    backgroundColor: BG,
     borderRadius: scale(20),
     alignItems: "center",
     padding: scale(20),

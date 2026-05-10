@@ -7,7 +7,9 @@ import { createDeck, shuffleDeck } from '../game/deck';
 import { addCoins } from '../game/wallet';
 import { saveGame, loadGame, clearGame } from '../game/gameSaves';
 import { recordWin } from '../game/profile';
+import { getTableTheme } from '../game/tableThemes';
 
+const BG = getTableTheme('gofish').table;
 const SAVE_KEY_GOFISH = '@cardnight:save:gofish';
 import Card from '../components/Card';
 import { scale, scaleFont } from '../game/responsive';
@@ -488,10 +490,10 @@ export default function GoFishGameScreen({ navigation, route }) {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  screenRoot: { flex: 1, backgroundColor: '#1a1a2e' },
-  loading: { flex: 1, backgroundColor: '#1a1a2e', alignItems: 'center', justifyContent: 'center' },
+  screenRoot: { flex: 1, backgroundColor: BG },
+  loading: { flex: 1, backgroundColor: BG, alignItems: 'center', justifyContent: 'center' },
   loadingText: { color: '#fff', fontSize: scaleFont(18) },
-  container: { flexGrow: 1, backgroundColor: '#1a1a2e', padding: scale(14), paddingBottom: scale(40) },
+  container: { flexGrow: 1, backgroundColor: BG, padding: scale(14), paddingBottom: scale(40) },
 
   banner: { backgroundColor: '#e94560', borderRadius: scale(10), paddingVertical: scale(10), alignItems: 'center', marginBottom: scale(10) },
   bannerResults: { backgroundColor: '#0d3d2e' },

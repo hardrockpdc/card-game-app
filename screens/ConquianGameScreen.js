@@ -22,7 +22,9 @@ import { scale, scaleFont } from '../game/responsive';
 import { addCoins } from '../game/wallet';
 import { saveGame, loadGame, clearGame } from '../game/gameSaves';
 import { recordWin } from '../game/profile';
+import { getTableTheme } from '../game/tableThemes';
 
+const BG = getTableTheme('conquian').table;
 const SAVE_KEY_CONQUIAN = '@cardnight:save:rummy:conquian';
 
 function toPublic(state) {
@@ -924,11 +926,11 @@ export default function ConquianGameScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  loading: { flex: 1, backgroundColor: '#1a1a2e', alignItems: 'center', justifyContent: 'center' },
+  loading: { flex: 1, backgroundColor: BG, alignItems: 'center', justifyContent: 'center' },
   loadingText: { color: '#fff', fontSize: scaleFont(20) },
 
-  safeArea: { flex: 1, backgroundColor: '#1a1a2e' },
-  container: { backgroundColor: '#1a1a2e', paddingTop: scale(12), paddingBottom: scale(16) },
+  safeArea: { flex: 1, backgroundColor: BG },
+  container: { backgroundColor: BG, paddingTop: scale(12), paddingBottom: scale(16) },
 
   resultsContainer: { flex: 1, backgroundColor: '#1a1a2e', alignItems: 'center', justifyContent: 'center', padding: scale(32) },
   resultsEmoji: { fontSize: scaleFont(52), marginBottom: scale(8) },
