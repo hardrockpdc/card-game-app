@@ -21,6 +21,7 @@ import TutorialOverlay, { hasSeen } from "../components/TutorialOverlay";
 import { getTableTheme } from "../game/tableThemes";
 
 const BG = getTableTheme("blackjack").table;
+const ACCENT = getTableTheme("blackjack").accent;
 
 const BLACKJACK_SLIDES = [
   {
@@ -511,7 +512,7 @@ export default function GameScreen({ navigation, route }) {
             onPress={handleDeal}
             disabled={!selectedBet}
           >
-            <Text style={styles.dealButtonText}>
+            <Text style={[styles.dealButtonText, !selectedBet && styles.dealButtonTextDisabled]}>
               {selectedBet
                 ? `Deal  —  🪙 ${selectedBet}`
                 : "Select a bet first"}
@@ -780,21 +781,24 @@ const styles = StyleSheet.create({
   },
   dealButton: {
     width: "100%",
-    minHeight: scale(56),
+    minHeight: scale(78),
     borderRadius: scale(14),
-    backgroundColor: "#e94560",
+    backgroundColor: ACCENT,
     alignItems: "center",
     justifyContent: "center",
     marginTop: scale(4),
   },
   dealButtonDisabled: {
-    backgroundColor: "#555",
-    opacity: 0.7,
+    backgroundColor: "#444",
+    opacity: 0.8,
   },
   dealButtonText: {
-    color: "#ffffff",
-    fontSize: scaleFont(18),
+    color: "#08111f",
+    fontSize: scaleFont(23),
     fontWeight: "bold",
+  },
+  dealButtonTextDisabled: {
+    color: "#aaaaaa",
   },
 
   // ── Wallet bar (playing/result screen) ───────────────────────────
