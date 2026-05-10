@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Modal,
   useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -18,6 +17,7 @@ import { getCoins, addCoins, subtractCoins } from "../game/wallet";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import { recordWin } from "../game/profile";
 import TutorialOverlay, { hasSeen } from "../components/TutorialOverlay";
+import EndOfRoundModal from "../components/EndOfRoundModal";
 import { getTableTheme } from "../game/tableThemes";
 
 const BG = getTableTheme("blackjack").table;
@@ -432,28 +432,17 @@ export default function GameScreen({ navigation, route }) {
     return "";
   }
 
-  // ── Game Over modal (shared between both screens) ─────────────────
-  const gameOverModal = (
-    <Modal transparent animationType="fade" visible={showGameOver}>
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalBox}>
-          <Text style={styles.modalEmoji}>💸</Text>
-          <Text style={styles.modalTitle}>Out of Coins!</Text>
-          <Text style={styles.modalMessage}>
-            You're out of coins. Visit your Profile to reset your balance.
-          </Text>
-          <TouchableOpacity
-            style={styles.modalButton}
-            onPress={() => {
-              setShowGameOver(false);
-              navigation.navigate("Profile");
-            }}
-          >
-            <Text style={styles.modalButtonText}>Go to Profile</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
+  const outOfCoinsModal = (
+    <EndOfRoundModal
+      visible={showGameOver}
+      title="💸 Out of Coins!"
+      message="You're out of coins. Visit your Profile to reset your balance."
+      showLeave
+      onLeave={() => {
+        setShowGameOver(false);
+        navigation.navigate("Profile");
+      }}
+    />
   );
 
   // ── Betting screen ────────────────────────────────────────────────
@@ -520,7 +509,7 @@ export default function GameScreen({ navigation, route }) {
           </TouchableOpacity>
         </ScrollView>
 
-        {gameOverModal}
+        {outOfCoinsModal}
         <TutorialOverlay
           visible={showTutorial}
           slides={BLACKJACK_SLIDES}
@@ -608,24 +597,10 @@ export default function GameScreen({ navigation, route }) {
             </View>
           )}
 
-          {/* Status message */}
-          {statusMessage !== "" && (
+          {/* Status shown during bust/dealer-turn before result modal appears */}
+          {statusMessage !== "" && screenPhase !== "result" && (
             <Text style={[styles.status, { color: statusColor }]}>
               {statusMessage}
-            </Text>
-          )}
-
-          {/* Coins delta — shown only in result state */}
-          {screenPhase === "result" && (
-            <Text
-              style={[
-                styles.coinsDeltaText,
-                coinsDelta >= 0
-                  ? styles.coinsDeltaPositive
-                  : styles.coinsDeltaNegative,
-              ]}
-            >
-              {coinsDeltaLabel}
             </Text>
           )}
         </View>
@@ -669,24 +644,25 @@ export default function GameScreen({ navigation, route }) {
             )}
           </View>
         </View>
-      ) : screenPhase === "result" ? (
-        <View style={styles.resultButtonRow}>
-          <TouchableOpacity
-            style={[styles.resultButton, styles.adjustBetButton]}
-            onPress={handleAdjustBet}
-          >
-            <Text style={styles.resultButtonText}>Adjust Bet</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.resultButton, styles.continueButton]}
-            onPress={handleContinueSameBet}
-          >
-            <Text style={styles.resultButtonText}>Continue</Text>
-          </TouchableOpacity>
-        </View>
       ) : null}
 
-      {gameOverModal}
+      <EndOfRoundModal
+        visible={screenPhase === "result"}
+        title={statusMessage}
+        message={coinsDeltaLabel}
+        showContinue
+        showAdjustBet
+        showLeave
+        onContinue={handleContinueSameBet}
+        onAdjustBet={handleAdjustBet}
+        onLeave={() => {
+          clearGame(SAVE_KEY);
+          navigation.navigate("Home");
+        }}
+        tableColor={BG}
+      />
+
+      {outOfCoinsModal}
       <QuitButton
         onQuit={() => {
           clearGame(SAVE_KEY);
@@ -916,80 +892,5 @@ const styles = StyleSheet.create({
     fontSize: scaleFont(18),
     fontWeight: "bold",
   },
-  resultButtonRow: {
-    flexDirection: "row",
-    gap: scale(10),
-    marginTop: scale(12),
-    paddingHorizontal: scale(4),
-  },
-  resultButton: {
-    flex: 1,
-    paddingVertical: scale(15),
-    borderRadius: scale(10),
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  continueButton: {
-    backgroundColor: "#e94560",
-  },
-  adjustBetButton: {
-    backgroundColor: "#2c3e50",
-    borderWidth: 1.5,
-    borderColor: "#4a6080",
-  },
-  resultButtonText: {
-    color: "#ffffff",
-    fontSize: scaleFont(16),
-    fontWeight: "bold",
-  },
 
-  // ── Game Over modal ───────────────────────────────────────────────
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.75)",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: scale(24),
-  },
-  modalBox: {
-    backgroundColor: "#16213e",
-    borderRadius: scale(20),
-    borderWidth: 1.5,
-    borderColor: "#e94560",
-    padding: scale(28),
-    alignItems: "center",
-    width: "100%",
-    maxWidth: 360,
-  },
-  modalEmoji: {
-    fontSize: scaleFont(48),
-    marginBottom: scale(10),
-  },
-  modalTitle: {
-    color: "#ffffff",
-    fontSize: scaleFont(22),
-    fontWeight: "bold",
-    marginBottom: scale(10),
-    textAlign: "center",
-  },
-  modalMessage: {
-    color: "#b0b0c0",
-    fontSize: scaleFont(15),
-    textAlign: "center",
-    lineHeight: scale(22),
-    marginBottom: scale(24),
-  },
-  modalButton: {
-    backgroundColor: "#e94560",
-    borderRadius: scale(12),
-    paddingVertical: scale(14),
-    paddingHorizontal: scale(40),
-    alignItems: "center",
-    width: "100%",
-  },
-  modalButtonText: {
-    color: "#ffffff",
-    fontSize: scaleFont(16),
-    fontWeight: "bold",
-  },
 });
