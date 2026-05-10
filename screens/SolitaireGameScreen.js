@@ -199,11 +199,6 @@ export default function SolitaireGameScreen({ navigation, route }) {
     () => getVariantOption(state.variantId),
     [state.variantId],
   );
-  const canGoBack =
-    typeof navigation?.canGoBack === "function"
-      ? navigation.canGoBack()
-      : false;
-
   const headerText = variant.description;
 
   const restart = () => {
@@ -242,33 +237,6 @@ export default function SolitaireGameScreen({ navigation, route }) {
 
       {showHeaderDetails ? (
         <>
-          <View style={styles.headerTopRow}>
-            <View style={{ flex: 1 }} />
-            <View style={styles.headerActions}>
-              <Pressable
-                onPress={restart}
-                style={({ pressed }) => [
-                  styles.headerButton,
-                  pressed && styles.headerButtonPressed,
-                ]}
-              >
-                <Text style={styles.headerButtonText}>New Game</Text>
-              </Pressable>
-
-              {canGoBack ? (
-                <Pressable
-                  onPress={() => navigation.goBack()}
-                  style={({ pressed }) => [
-                    styles.headerButton,
-                    pressed && styles.headerButtonPressed,
-                  ]}
-                >
-                  <Text style={styles.headerButtonText}>Back</Text>
-                </Pressable>
-              ) : null}
-            </View>
-          </View>
-
           <View style={styles.metaRow}>
             <View style={styles.metaPill}>
               <Text style={styles.metaPillLabel}>Moves</Text>
