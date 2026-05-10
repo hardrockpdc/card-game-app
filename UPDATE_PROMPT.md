@@ -301,6 +301,11 @@ Foundations first, then components, then rollout, then game-specific:
 
 After R8, update PROJECT_NOTES.md with a summary of all 8 items.
 
+✅ Completed so far in this session:
+
+- R1 — tableThemes foundation + refactor hardcoded table colors in game screens
+- R7 — Solitaire fixes (Waste wrapping + dashed empty tableau slots) + alignment tweak (empty slot vertical position)
+
 A note on R6 ordering: The EndOfRoundModal rollout COULD go before R5
 (headers), but doing headers first means each game screen gets touched
 once for the header refactor and we already know what the layout looks
