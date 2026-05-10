@@ -1,5 +1,6 @@
 import React from "react";
 import { Alert, Pressable, StyleSheet, Text } from "react-native";
+import { scale, scaleFont } from "../game/responsive";
 
 export default function QuitButton({ onQuit }) {
   function handlePress() {
@@ -24,14 +25,14 @@ export default function QuitButton({ onQuit }) {
 const styles = StyleSheet.create({
   button: {
     position: "absolute",
-    top: 12,
-    right: 12,
+    top: scale(50),
+    right: scale(12),
     backgroundColor: "rgba(20,20,35,0.78)",
-    borderRadius: 14,
+    borderRadius: scale(14),
     borderWidth: 1,
     borderColor: "#444",
-    paddingHorizontal: 11,
-    paddingVertical: 6,
+    paddingHorizontal: scale(11),
+    paddingVertical: scale(6),
     zIndex: 99,
   },
   pressed: {

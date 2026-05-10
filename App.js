@@ -103,7 +103,7 @@ export default function App() {
           <Stack.Screen
             name="Game"
             component={GameScreen}
-            options={{ title: "Blackjack" }}
+            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="Results"
@@ -118,22 +118,22 @@ export default function App() {
           <Stack.Screen
             name="MultiplayerGame"
             component={MultiplayerGameScreen}
-            options={{ title: "Blackjack" }}
+            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="GoFishGame"
             component={GoFishGameScreen}
-            options={{ title: "Go Fish" }}
+            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="ConquianGame"
             component={ConquianGameScreen}
-            options={{ title: "Conquián" }}
+            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="PokerGame"
             component={PokerGameScreen}
-            options={{ title: "Poker" }}
+            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="PokerVariantPicker"
@@ -148,7 +148,7 @@ export default function App() {
           <Stack.Screen
             name="SolitaireGame"
             component={SolitaireGameScreen}
-            options={{ title: "Solitaire" }}
+            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="RummyVariantPicker"
@@ -158,7 +158,7 @@ export default function App() {
           <Stack.Screen
             name="RummyGame"
             component={RummyGameScreen}
-            options={{ title: "Rummy" }}
+            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="SinglePlayerSetup"
@@ -173,12 +173,12 @@ export default function App() {
           <Stack.Screen
             name="WildRoundGame"
             component={WildRoundGameScreen}
-            options={{ title: "Wild Round" }}
+            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="LastCardGame"
             component={LastCardGameScreen}
-            options={{ title: "Last Card" }}
+            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="GameSetup"
