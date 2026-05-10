@@ -359,6 +359,12 @@ export default function SolitaireGameScreen({ navigation, route }) {
                   style={({ pressed }) => [
                     styles.emptyColumnSlot,
                     pressed && styles.cardTouchPressed,
+                    {
+                      width: topSlotW,
+                      height: topSlotH,
+                      minWidth: topSlotW,
+                      minHeight: topSlotH,
+                    },
                   ]}
                 >
                   <Text style={styles.emptyColumnText}>Empty</Text>
