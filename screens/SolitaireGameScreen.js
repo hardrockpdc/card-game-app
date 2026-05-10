@@ -121,12 +121,13 @@ function CardSlot({
   );
 }
 
-function StockSlot({ label, onPress, disabled = false }) {
+function StockSlot({ label, onPress, disabled = false, style }) {
   return (
     <Pressable
       onPress={disabled ? undefined : onPress}
       style={({ pressed }) => [
         styles.stockSlot,
+        style,
         pressed && !disabled && styles.cardTouchPressed,
       ]}
     >
@@ -142,6 +143,10 @@ export default function SolitaireGameScreen({ navigation, route }) {
   const [showHeaderDetails, setShowHeaderDetails] = useState(false);
   const { width } = useWindowDimensions();
   const spiderBoardWidth = Math.max(width - 28, 500);
+  // Top row (Klondike): 6 equal slots across boardCard inner width
+  // outer padding 14*2=28, boardCard padding 12*2=24, 5 gaps of 4px = 20
+  const topSlotW = Math.max(Math.floor((width - 28 - 24 - 20) / 6), 38);
+  const topSlotH = Math.round(topSlotW * 1.4);
 
   const [state, dispatch] = useReducer(solitaireReducerWithRestore, null, () =>
     createSolitaireState(routeVariantId, { spiderMode: routeSpiderMode }),
@@ -296,12 +301,13 @@ export default function SolitaireGameScreen({ navigation, route }) {
 
     return (
       <View style={styles.boardCard}>
-        <View style={styles.topRow}>
+        <View style={[styles.topRow, styles.klondikeTopRow]}>
           <StockSlot
             label={
               state.stock.length > 0 ? `Stock ${state.stock.length}` : "Recycle"
             }
             onPress={() => dispatch(tapAction({ type: "stock" }))}
+            style={{ width: topSlotW, height: topSlotH }}
           />
 
           <CardSlot
@@ -309,30 +315,29 @@ export default function SolitaireGameScreen({ navigation, route }) {
             label="Waste"
             onPress={() => dispatch(tapAction({ type: "waste" }))}
             selected={sameTarget(state.selected, { type: "waste" })}
-            style={styles.slotCard}
+            sizeScale={0.7}
+            style={{ width: topSlotW, height: topSlotH, minWidth: topSlotW, minHeight: topSlotH }}
           />
 
-          <View style={styles.foundationRow}>
-            {state.foundations.map((foundation, index) => {
-              const top = getTopCard(foundation);
-              const selected =
-                state.selected?.type === "foundation" &&
-                state.selected.index === index;
-
-              return (
-                <CardSlot
-                  key={`foundation-${index}`}
-                  card={top}
-                  label={`F${index + 1}`}
-                  onPress={() =>
-                    dispatch(tapAction({ type: "foundation", index }))
-                  }
-                  selected={selected}
-                  style={styles.slotCard}
-                />
-              );
-            })}
-          </View>
+          {state.foundations.map((foundation, index) => {
+            const top = getTopCard(foundation);
+            const selected =
+              state.selected?.type === "foundation" &&
+              state.selected.index === index;
+            return (
+              <CardSlot
+                key={`foundation-${index}`}
+                card={top}
+                label={`F${index + 1}`}
+                onPress={() =>
+                  dispatch(tapAction({ type: "foundation", index }))
+                }
+                selected={selected}
+                sizeScale={0.7}
+                style={{ width: topSlotW, height: topSlotH, minWidth: topSlotW, minHeight: topSlotH }}
+              />
+            );
+          })}
         </View>
 
         <View style={styles.tableauRow}>
@@ -978,6 +983,11 @@ const styles = StyleSheet.create({
     gap: 12,
     alignItems: "flex-start",
     flexWrap: "wrap",
+  },
+  klondikeTopRow: {
+    gap: 4,
+    flexWrap: "nowrap",
+    justifyContent: "space-between",
   },
   stockSlot: {
     width: 70,
