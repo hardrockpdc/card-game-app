@@ -4,142 +4,193 @@ import { useNavigation } from "@react-navigation/native";
 import { scale, scaleFont } from "../game/responsive";
 import { getMuted, setMuted } from "../game/sounds";
 
-function getHowToPlayGameId({ onHowToPlay, gameId }) {
-  if (typeof onHowToPlay === "string") return onHowToPlay;
-  if (gameId) return gameId;
-  return null;
-}
-
 function isFunction(x) {
   return typeof x === "function";
 }
 
-export default function GameMenu({
-  onRestart,
-  onHowToPlay,
-  onQuit,
-  gameId,
-  extraItems = [],
-}) {
+function MenuDivider({ k }) {
+  return <View key={k} style={styles.divider} />;
+}
+
+export default function GameMenu({ menuItems }) {
   const navigation = useNavigation();
   const [open, setOpen] = useState(false);
 
   const [muted, setMutedState] = useState(getMuted());
 
-  const howToPlayGameId = useMemo(
-    () => getHowToPlayGameId({ onHowToPlay, gameId }),
-    [onHowToPlay, gameId],
-  );
+  const rows = useMemo(() => {
+    const items = Array.isArray(menuItems) ? menuItems : [];
 
-  const defaultItems = useMemo(() => {
-    return [
-      {
-        key: "restart",
-        icon: "🔄",
-        label: "Restart Game",
-        onPress: () => {
-          if (!isFunction(onRestart)) return;
-          Alert.alert(
-            "Restart Game?",
-            "Current progress will be lost.",
-            [
-              { text: "Cancel", style: "cancel" },
-              {
-                text: "Restart",
-                style: "destructive",
-                onPress: () => {
-                  setOpen(false);
-                  onRestart();
-                },
-              },
-            ],
-            { cancelable: true },
-          );
-        },
-        disabled: !isFunction(onRestart),
-      },
-      {
-        key: "howto",
-        icon: "📖",
-        label: "How to Play",
-        onPress: () => {
-          if (isFunction(onHowToPlay)) {
+    return items.map((item, idx) => {
+      const key = item?.key ?? `${item?.type ?? "item"}-${idx}`;
+
+      if (item?.type === "divider") {
+        return <MenuDivider key={key} k={key} />;
+      }
+
+      if (item?.type === "sound") {
+        return (
+          <Pressable
+            key={key}
+            onPress={() => {
+              const next = !muted;
+              setMutedState(next);
+              setMuted(next);
+              setOpen(false);
+            }}
+            style={({ pressed }) => [
+              styles.menuRow,
+              pressed && !item?.disabled && styles.menuRowPressed,
+              item?.disabled && styles.menuRowDisabled,
+            ]}
+            disabled={item?.disabled}
+          >
+            <Text style={styles.menuIcon}>{muted ? "🔇" : "🔊"}</Text>
+            <Text style={styles.menuLabel}>Sound: {muted ? "Off" : "On"}</Text>
+          </Pressable>
+        );
+      }
+
+      if (item?.type === "restart") {
+        return (
+          <Pressable
+            key={key}
+            onPress={() => {
+              if (!isFunction(item?.onRestart)) return;
+              Alert.alert(
+                "Restart Game?",
+                "Current progress will be lost.",
+                [
+                  { text: "Cancel", style: "cancel" },
+                  {
+                    text: "Restart",
+                    style: "destructive",
+                    onPress: () => {
+                      setOpen(false);
+                      item.onRestart();
+                    },
+                  },
+                ],
+                { cancelable: true },
+              );
+            }}
+            style={({ pressed }) => [
+              styles.menuRow,
+              pressed && !item?.disabled && styles.menuRowPressed,
+              item?.disabled && styles.menuRowDisabled,
+            ]}
+            disabled={!isFunction(item?.onRestart) || item?.disabled}
+          >
+            <Text style={styles.menuIcon}>🔄</Text>
+            <Text style={styles.menuLabel}>Restart Game</Text>
+          </Pressable>
+        );
+      }
+
+      if (item?.type === "howto") {
+        return (
+          <Pressable
+            key={key}
+            onPress={() => {
+              setOpen(false);
+              const params = item?.gameId ? { gameId: item.gameId } : undefined;
+              navigation.navigate("HowToPlay", params);
+            }}
+            style={({ pressed }) => [
+              styles.menuRow,
+              pressed && !item?.disabled && styles.menuRowPressed,
+              item?.disabled && styles.menuRowDisabled,
+            ]}
+            disabled={item?.disabled}
+          >
+            <Text style={styles.menuIcon}>📖</Text>
+            <Text style={styles.menuLabel}>How to Play</Text>
+          </Pressable>
+        );
+      }
+
+      if (item?.type === "theme") {
+        return (
+          <Pressable
+            key={key}
+            onPress={() => {
+              setOpen(false);
+              navigation.navigate("CardThemes");
+            }}
+            style={({ pressed }) => [
+              styles.menuRow,
+              pressed && !item?.disabled && styles.menuRowPressed,
+              item?.disabled && styles.menuRowDisabled,
+            ]}
+            disabled={item?.disabled}
+          >
+            <Text style={styles.menuIcon}>🎨</Text>
+            <Text style={styles.menuLabel}>Card Theme</Text>
+          </Pressable>
+        );
+      }
+
+      if (item?.type === "quit") {
+        return (
+          <Pressable
+            key={key}
+            onPress={() => {
+              if (!isFunction(item?.onQuit)) return;
+              Alert.alert(
+                "Quit this game?",
+                "Your progress will be lost.",
+                [
+                  { text: "Cancel", style: "cancel" },
+                  {
+                    text: "Quit",
+                    style: "destructive",
+                    onPress: () => {
+                      setOpen(false);
+                      item.onQuit();
+                    },
+                  },
+                ],
+                { cancelable: true },
+              );
+            }}
+            style={({ pressed }) => [
+              styles.menuRow,
+              pressed && !item?.disabled && styles.menuRowPressed,
+              item?.disabled && styles.menuRowDisabled,
+            ]}
+            disabled={!isFunction(item?.onQuit) || item?.disabled}
+          >
+            <Text style={styles.menuIcon}>❌</Text>
+            <Text style={styles.menuLabel}>Quit Game</Text>
+          </Pressable>
+        );
+      }
+
+      // Generic fallback item
+      const icon = item?.icon ?? "•";
+      const label = item?.label ?? "Menu Item";
+      const onPress = item?.onPress;
+
+      return (
+        <Pressable
+          key={key}
+          onPress={() => {
             setOpen(false);
-            onHowToPlay();
-            return;
-          }
-          const params = howToPlayGameId
-            ? { gameId: howToPlayGameId }
-            : undefined;
-          setOpen(false);
-          navigation.navigate("HowToPlay", params);
-        },
-        disabled: false,
-      },
-      {
-        key: "sound",
-        icon: muted ? "🔇" : "🔊",
-        label: `Sound: ${muted ? "Off" : "On"}`,
-        onPress: async () => {
-          const next = !muted;
-          setMutedState(next);
-          await setMuted(next);
-        },
-        disabled: false,
-      },
-      {
-        key: "theme",
-        icon: "🎨",
-        label: "Card Theme",
-        onPress: () => {
-          setOpen(false);
-          navigation.navigate("CardThemes");
-        },
-        disabled: false,
-      },
-      { key: "divider-after-theme", type: "divider" },
-      {
-        key: "quit",
-        icon: "❌",
-        label: "Quit Game",
-        onPress: () => {
-          if (!isFunction(onQuit)) return;
-          Alert.alert(
-            "Quit this game?",
-            "Your progress will be lost.",
-            [
-              { text: "Cancel", style: "cancel" },
-              {
-                text: "Quit",
-                style: "destructive",
-                onPress: () => {
-                  setOpen(false);
-                  onQuit();
-                },
-              },
-            ],
-            { cancelable: true },
-          );
-        },
-        disabled: !isFunction(onQuit),
-      },
-    ];
-  }, [muted, onHowToPlay, onRestart, onQuit, howToPlayGameId, navigation]);
-
-  const menuRows = useMemo(() => {
-    const topExtra = (extraItems || []).map((it, idx) => ({
-      key: `extra-${idx}`,
-      icon: it.icon ?? "•",
-      label: it.label ?? "Extra",
-      onPress: () => {
-        setOpen(false);
-        if (isFunction(it.onPress)) it.onPress();
-      },
-      disabled: !isFunction(it.onPress),
-    }));
-
-    return [...topExtra, ...defaultItems];
-  }, [extraItems, defaultItems]);
+            if (isFunction(onPress)) onPress();
+          }}
+          style={({ pressed }) => [
+            styles.menuRow,
+            pressed && !item?.disabled && styles.menuRowPressed,
+            item?.disabled && styles.menuRowDisabled,
+          ]}
+          disabled={!isFunction(onPress) || item?.disabled}
+        >
+          <Text style={styles.menuIcon}>{icon}</Text>
+          <Text style={styles.menuLabel}>{label}</Text>
+        </Pressable>
+      );
+    });
+  }, [menuItems, muted, navigation]);
 
   return (
     <>
@@ -163,28 +214,7 @@ export default function GameMenu({
         onRequestClose={() => setOpen(false)}
       >
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
-          <View style={styles.menuBox}>
-            {menuRows.map((row) => {
-              if (row.type === "divider") {
-                return <View key={row.key} style={styles.divider} />;
-              }
-
-              return (
-                <Pressable
-                  key={row.key}
-                  onPress={row.disabled ? undefined : row.onPress}
-                  style={({ pressed }) => [
-                    styles.menuRow,
-                    row.disabled && styles.menuRowDisabled,
-                    pressed && !row.disabled && styles.menuRowPressed,
-                  ]}
-                >
-                  <Text style={styles.menuIcon}>{row.icon}</Text>
-                  <Text style={styles.menuLabel}>{row.label}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          <View style={styles.menuBox}>{rows}</View>
         </Pressable>
       </Modal>
     </>
