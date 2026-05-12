@@ -3,13 +3,14 @@ import {
   View, Text, StyleSheet, ScrollView,
   TouchableOpacity, Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { createDeck, shuffleDeck } from '../game/deck';
 import { addCoins, subtractCoins } from '../game/wallet';
 import { saveGame, loadGame, clearGame } from '../game/gameSaves';
 import { recordWin } from '../game/profile';
 import Card from '../components/Card';
 import { scale, scaleFont } from '../game/responsive';
-import QuitButton from '../components/QuitButton';
+import GameHeader from '../components/GameHeader';
 import {
   setServerListeners, broadcastToClients, sendToClient,
   setClientListeners, sendToHost,
@@ -573,8 +574,38 @@ export default function PokerGameScreen({ navigation, route }) {
 
   const phaseLabel = { preflop: 'Pre-Flop', flop: 'Flop', turn: 'Turn', river: 'River', showdown: 'Showdown' };
 
+  function handleQuit() {
+    if (isSinglePlayer && saveKey) clearGame(saveKey);
+    else if (isHost) stopServer();
+    else disconnectFromHost();
+    navigation.navigate('Home');
+  }
+
+  const menuItems = [
+    { type: 'restart', disabled: true },
+    { type: 'howto', gameId: 'poker' },
+    { type: 'sound' },
+    { type: 'theme' },
+    { type: 'divider' },
+    { type: 'quit', onQuit: handleQuit },
+  ];
+
   return (
-    <View style={styles.screenRoot}>
+    <SafeAreaView style={styles.screenRoot}>
+      <GameHeader
+        gameId="poker"
+        title="Poker"
+        leftInfo={
+          <View style={styles.headerInfoRow}>
+            <Text style={styles.headerVariant}>{variant || 'Texas Hold\'em'}</Text>
+            <View style={styles.headerChipRow}>
+              <Text style={styles.headerChips}>🪙 {myChips}</Text>
+              {pot > 0 && <Text style={styles.headerPot}>Pot: {pot}</Text>}
+            </View>
+          </View>
+        }
+        menuItems={menuItems}
+      />
     <ScrollView contentContainerStyle={styles.container}>
 
       {/* Banner */}
@@ -681,13 +712,7 @@ export default function PokerGameScreen({ navigation, route }) {
       )}
 
     </ScrollView>
-      <QuitButton onQuit={() => {
-        if (isSinglePlayer && saveKey) { clearGame(saveKey); }
-        else if (isHost) { stopServer(); }
-        else { disconnectFromHost(); }
-        navigation.navigate('Home');
-      }} />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -695,6 +720,11 @@ export default function PokerGameScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   screenRoot: { flex: 1, backgroundColor: BG },
+  headerInfoRow: { gap: scale(2) },
+  headerVariant: { color: '#a4b1c4', fontSize: scaleFont(13), fontWeight: '700' },
+  headerChipRow: { flexDirection: 'row', alignItems: 'center', gap: scale(12) },
+  headerChips: { color: '#ffd700', fontSize: scaleFont(14), fontWeight: '800' },
+  headerPot: { color: '#b0d4b0', fontSize: scaleFont(13), fontWeight: '700' },
   loading: { flex: 1, backgroundColor: BG, alignItems: 'center', justifyContent: 'center' },
   loadingText: { color: '#fff', fontSize: scaleFont(18) },
   container: { flexGrow: 1, backgroundColor: BG, padding: scale(14), paddingBottom: scale(40) },
