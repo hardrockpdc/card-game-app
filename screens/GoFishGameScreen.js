@@ -11,9 +11,10 @@ import { getTableTheme } from '../game/tableThemes';
 
 const BG = getTableTheme('gofish').table;
 const SAVE_KEY_GOFISH = '@cardnight:save:gofish';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Card from '../components/Card';
 import { scale, scaleFont } from '../game/responsive';
-import QuitButton from '../components/QuitButton';
+import GameHeader from '../components/GameHeader';
 import {
   setServerListeners, broadcastToClients, sendToClient,
   setClientListeners, sendToHost,
@@ -337,6 +338,31 @@ export default function GoFishGameScreen({ navigation, route }) {
     }
   }, [gameState?.phase, gameState?.winner]);
 
+  function handleQuit() {
+    if (isSinglePlayer) clearGame(SAVE_KEY_GOFISH);
+    else if (isHost) stopServer();
+    else disconnectFromHost();
+    navigation.navigate('Home');
+  }
+
+  function handleRestart() {
+    if (isSinglePlayer) clearGame(SAVE_KEY_GOFISH);
+    applyState(dealGoFish(initialPlayers));
+  }
+
+  const menuItems = [
+    {
+      type: 'restart',
+      onRestart: isHost ? handleRestart : null,
+      disabled: !isHost,
+    },
+    { type: 'howto', gameId: 'gofish' },
+    { type: 'sound' },
+    { type: 'theme' },
+    { type: 'divider' },
+    { type: 'quit', onQuit: handleQuit },
+  ];
+
   if (!gameState) {
     return <View style={styles.loading}><Text style={styles.loadingText}>Dealing cards…</Text></View>;
   }
@@ -349,7 +375,13 @@ export default function GoFishGameScreen({ navigation, route }) {
   const displayHand = sortHand(myHand);
 
   return (
-    <View style={styles.screenRoot}>
+    <SafeAreaView style={styles.screenRoot}>
+      <GameHeader
+        gameId="gofish"
+        title="Go Fish"
+        subtitle={isSinglePlayer ? 'Single Player' : 'Multiplayer'}
+        menuItems={menuItems}
+      />
     <ScrollView contentContainerStyle={styles.container}>
 
       {/* Banner */}
@@ -477,13 +509,7 @@ export default function GoFishGameScreen({ navigation, route }) {
       )}
 
     </ScrollView>
-      <QuitButton onQuit={() => {
-        if (isSinglePlayer) { clearGame(SAVE_KEY_GOFISH); }
-        else if (isHost) { stopServer(); }
-        else { disconnectFromHost(); }
-        navigation.navigate('Home');
-      }} />
-    </View>
+    </SafeAreaView>
   );
 }
 
