@@ -39,8 +39,11 @@ import { scale, scaleFont } from "../game/responsive";
 import { addCoins } from "../game/wallet";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import { recordWin } from "../game/profile";
+import { getTableTheme } from "../game/tableThemes";
 
 const SAVE_KEY_LASTCARD = "@cardnight:save:lastcard";
+
+const BG = getTableTheme("lastcard").table;
 
 const COLOR_HEX = {
   od_green: "#556B2F",
@@ -1132,16 +1135,27 @@ export default function LastCardGameScreen({ navigation, route }) {
 
       <EndOfRoundModal
         visible={showRoundModal}
-        title={winner
-          ? (winner === myPid ? "🏆 You Win!" : `${(gameState?.players ?? []).find((p) => p.id === winner)?.name ?? "Player"} wins!`)
-          : "Game Over"}
-        message={isSinglePlayer && winner === myPid && coinsEarned > 0 ? `+${coinsEarned} coins!` : ""}
+        title={
+          winner
+            ? winner === myPid
+              ? "🏆 You Win!"
+              : `${(gameState?.players ?? []).find((p) => p.id === winner)?.name ?? "Player"} wins!`
+            : "Game Over"
+        }
+        message={
+          isSinglePlayer && winner === myPid && coinsEarned > 0
+            ? `+${coinsEarned} coins!`
+            : ""
+        }
         showContinue={isHost}
         showLeave
         isGameOver
-        onContinue={() => { setShowRoundModal(false); onPlayAgain(); }}
+        onContinue={() => {
+          setShowRoundModal(false);
+          onPlayAgain();
+        }}
         onLeave={handleQuit}
-        tableColor="#0f0f1e"
+        tableColor={BG}
       />
     </SafeAreaView>
   );
@@ -1150,7 +1164,7 @@ export default function LastCardGameScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#0f0f1e",
+    backgroundColor: BG,
   },
   topBar: {
     maxHeight: scale(72),
