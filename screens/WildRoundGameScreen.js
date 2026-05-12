@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import GameHeader from "../components/GameHeader";
+import EndOfRoundModal from "../components/EndOfRoundModal";
 import {
   createDeck,
   dealHands,
@@ -90,7 +91,6 @@ export default function WildRoundGameScreen({ navigation, route }) {
 
   const fullRef = useRef(null);
   const lastPromptRef = useRef(null);
-  const navigatedToResultsRef = useRef(false);
   const [gameState, setGameState] = useState(null);
   const [myHand, setMyHand] = useState([]);
   const [privateJudgePrompt, setPrivateJudgePrompt] = useState(null);
@@ -99,6 +99,7 @@ export default function WildRoundGameScreen({ navigation, route }) {
   const [deckIndex, setDeckIndex] = useState(0);
   const [judgeDeckIndex, setJudgeDeckIndex] = useState(0);
   const [viewerDeckIndex, setViewerDeckIndex] = useState(0);
+  const [showRoundModal, setShowRoundModal] = useState(false);
   const { width, height } = useWindowDimensions();
   const [revealIndex, setRevealIndex] = useState(0);
   useEffect(() => {
@@ -109,24 +110,8 @@ export default function WildRoundGameScreen({ navigation, route }) {
 
   useEffect(() => {
     if (!gameState || gameState.phase !== "gameOver") return;
-    if (navigatedToResultsRef.current) return;
-    navigatedToResultsRef.current = true;
-    const scores = [...(gameState.players ?? [])]
-      .sort((a, b) => b.score - a.score)
-      .map((p) => ({
-        name: p.name,
-        score: `${p.score}/${WIN_SCORE}`,
-        isWinner: String(p.id) === String(gameState.winner?.id),
-      }));
-    navigation.replace("Results", {
-      gameName: "Wild Round",
-      headline: `🎉 ${gameState.winner?.name ?? "Someone"} wins!`,
-      isLocalWin: String(gameState.winner?.id) === String(myPid),
-      scores,
-      playAgainRoute: isSinglePlayer ? "WildRoundGame" : null,
-      playAgainParams: isSinglePlayer ? route.params : null,
-    });
-  }, [gameState]);
+    setShowRoundModal(true);
+  }, [gameState?.phase]);
   const revealCardWidth = Math.max(width - 32, 0);
   const revealCardHeight = Math.round(height * 0.38);
 
@@ -661,11 +646,6 @@ export default function WildRoundGameScreen({ navigation, route }) {
   const displayPrompt =
     isJudge && gs.phase === "judgeSkip" ? privateJudgePrompt : gs.currentPrompt;
 
-  // ── Game over — navigate to ResultsScreen ──────────────────────────────────
-  if (gs.phase === "gameOver") {
-    return <SafeAreaView style={styles.container} />;
-  }
-
   // ── Main game ───────────────────────────────────────────────────────────────
   const menuItems = [
     {
@@ -1115,6 +1095,22 @@ export default function WildRoundGameScreen({ navigation, route }) {
             </View>
           );
         })()}
+
+      <EndOfRoundModal
+        visible={showRoundModal}
+        title={`🎉 ${gameState?.winner?.name ?? "Someone"} wins!`}
+        message=""
+        showContinue={isHost}
+        showLeave
+        isGameOver
+        onContinue={() => { setShowRoundModal(false); startNewGame(); }}
+        onLeave={() => {
+          if (isHost) stopServer();
+          else disconnectFromHost();
+          navigation.navigate("Home");
+        }}
+        tableColor={BG}
+      />
     </SafeAreaView>
   );
 }

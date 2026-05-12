@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import GameHeader from "../components/GameHeader";
+import EndOfRoundModal from "../components/EndOfRoundModal";
 import {
   COLORS,
   createDeck,
@@ -303,6 +304,7 @@ export default function LastCardGameScreen({ navigation, route }) {
   const [winner, setWinner] = useState(null);
   const [shakeId, setShakeId] = useState(null);
   const [coinsEarned, setCoinsEarned] = useState(0);
+  const [showRoundModal, setShowRoundModal] = useState(false);
   const shakeAnim = useRef(new Animated.Value(0)).current;
   const coinRewardedRef = useRef(false);
 
@@ -330,6 +332,10 @@ export default function LastCardGameScreen({ navigation, route }) {
       setCoinsEarned(0);
     }
   }, [phase, winner]);
+
+  useEffect(() => {
+    if (phase === "gameOver") setShowRoundModal(true);
+  }, [phase]);
 
   // Auto-save after each state update in single-player.
   useEffect(() => {
@@ -1124,27 +1130,19 @@ export default function LastCardGameScreen({ navigation, route }) {
         </View>
       )}
 
-      {phase === "gameOver" && (
-        <View style={styles.overlay}>
-          <Text style={styles.winTitle}>
-            {winner
-              ? `${winner === myPid ? "You win!" : `${(gameState?.players ?? []).find((p) => p.id === winner)?.name ?? "Player"} wins!`}`
-              : "Game Over"}
-          </Text>
-          {isSinglePlayer && winner === myPid && coinsEarned > 0 && (
-            <Text style={styles.winCoinsText}>+{coinsEarned} coins!</Text>
-          )}
-          <TouchableOpacity style={styles.winBtn} onPress={onPlayAgain}>
-            <Text style={styles.winBtnText}>Play Again</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.winBtn, styles.winBtnSecondary]}
-            onPress={() => navigation.goBack()}
-          >
-            <Text style={styles.winBtnText}>Home</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      <EndOfRoundModal
+        visible={showRoundModal}
+        title={winner
+          ? (winner === myPid ? "🏆 You Win!" : `${(gameState?.players ?? []).find((p) => p.id === winner)?.name ?? "Player"} wins!`)
+          : "Game Over"}
+        message={isSinglePlayer && winner === myPid && coinsEarned > 0 ? `+${coinsEarned} coins!` : ""}
+        showContinue={isHost}
+        showLeave
+        isGameOver
+        onContinue={() => { setShowRoundModal(false); onPlayAgain(); }}
+        onLeave={handleQuit}
+        tableColor="#0f0f1e"
+      />
     </SafeAreaView>
   );
 }

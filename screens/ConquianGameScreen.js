@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import Card from "../components/Card";
 import GameHeader from "../components/GameHeader";
+import EndOfRoundModal from "../components/EndOfRoundModal";
 import {
   deal,
   doSelectPassCard,
@@ -95,6 +96,7 @@ export default function ConquianGameScreen({ navigation, route }) {
   const [passCardId, setPassCardId] = useState(null);
   const [statusMsg, setStatusMsg] = useState("");
   const [coinsEarned, setCoinsEarned] = useState(0);
+  const [showRoundModal, setShowRoundModal] = useState(false);
 
   // Borrow mode state
   const [borrowMode, setBorrowMode] = useState(false);
@@ -635,6 +637,10 @@ export default function ConquianGameScreen({ navigation, route }) {
     }
   }, [gameState?.phase, gameState?.winner, gameState?.tie]);
 
+  useEffect(() => {
+    if (gameState?.phase === "results") setShowRoundModal(true);
+  }, [gameState?.phase]);
+
   // ─── Guards ──────────────────────────────────────────────────────────────────
 
   if (!gameState) {
@@ -886,20 +892,17 @@ export default function ConquianGameScreen({ navigation, route }) {
           })}
         </View>
 
-        {isHost && (
-          <TouchableOpacity
-            style={styles.playAgainBtn}
-            onPress={handlePlayAgain}
-          >
-            <Text style={styles.playAgainText}>Play Again</Text>
-          </TouchableOpacity>
-        )}
-        <TouchableOpacity
-          style={styles.homeBtn}
-          onPress={() => navigation.navigate("Home")}
-        >
-          <Text style={styles.homeBtnText}>Home</Text>
-        </TouchableOpacity>
+        <EndOfRoundModal
+          visible={showRoundModal}
+          title={tie ? "🤝 It's a Tie!" : iWon ? "🏆 You Win!" : `👑 ${winner?.name} Wins!`}
+          message={iWon && isSinglePlayer && coinsEarned > 0 ? `+${coinsEarned} coins!` : ""}
+          showContinue={isHost}
+          showLeave
+          isGameOver
+          onContinue={() => { setShowRoundModal(false); handlePlayAgain(); }}
+          onLeave={() => navigation.navigate("Home")}
+          tableColor={BG}
+        />
       </SafeAreaView>
     );
   }
@@ -1288,24 +1291,6 @@ const styles = StyleSheet.create({
   },
   scoreBarFillWinner: { backgroundColor: "#ffd700" },
   scoreCount: { color: "#b0b0c0", fontSize: scaleFont(12), textAlign: "right" },
-  playAgainBtn: {
-    backgroundColor: "#4caf50",
-    paddingHorizontal: scale(48),
-    paddingVertical: scale(18),
-    borderRadius: scale(12),
-    marginBottom: scale(16),
-  },
-  playAgainText: { color: "#fff", fontSize: scaleFont(20), fontWeight: "bold" },
-  homeBtn: {
-    backgroundColor: "#16213e",
-    paddingHorizontal: scale(48),
-    paddingVertical: scale(14),
-    borderRadius: scale(12),
-    borderWidth: 1,
-    borderColor: "#334",
-  },
-  homeBtnText: { color: "#b0b0c0", fontSize: scaleFont(16) },
-
   opponentsRow: {
     paddingHorizontal: scale(12),
     gap: scale(6),

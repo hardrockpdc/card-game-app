@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Card from '../components/Card';
 import { scale, scaleFont } from '../game/responsive';
 import GameHeader from '../components/GameHeader';
+import EndOfRoundModal from '../components/EndOfRoundModal';
 import {
   setServerListeners, broadcastToClients, sendToClient,
   setClientListeners, sendToHost,
@@ -216,6 +217,7 @@ export default function GoFishGameScreen({ navigation, route }) {
   const [selectedRank, setSelectedRank] = useState(null);
   const [selectedTarget, setSelectedTarget] = useState(null);
   const [coinsEarned, setCoinsEarned] = useState(0);
+  const [showRoundModal, setShowRoundModal] = useState(false);
   const fullRef = useRef(null);
   const coinRewardedRef = useRef(false);
   const aiTimerRef = useRef(null);
@@ -338,6 +340,10 @@ export default function GoFishGameScreen({ navigation, route }) {
     }
   }, [gameState?.phase, gameState?.winner]);
 
+  useEffect(() => {
+    if (gameState?.phase === 'results') setShowRoundModal(true);
+  }, [gameState?.phase]);
+
   function handleQuit() {
     if (isSinglePlayer) clearGame(SAVE_KEY_GOFISH);
     else if (isHost) stopServer();
@@ -395,9 +401,6 @@ export default function GoFishGameScreen({ navigation, route }) {
             ? '▶  Your turn'
             : `Waiting for ${currentPlayer?.name}…`}
         </Text>
-        {phase === 'results' && isSinglePlayer && coinsEarned > 0 && (
-          <Text style={styles.coinsEarnedText}>+{coinsEarned} coins!</Text>
-        )}
       </View>
 
       {/* Last action message */}
@@ -489,26 +492,25 @@ export default function GoFishGameScreen({ navigation, route }) {
         </TouchableOpacity>
       )}
 
-      {/* Results */}
-      {phase === 'results' && isHost && (
-        <TouchableOpacity
-          style={styles.playAgainBtn}
-          onPress={() => {
-            coinRewardedRef.current = false;
-            setCoinsEarned(0);
-            applyState(dealGoFish(initialPlayers));
-            setSelectedRank(null);
-            setSelectedTarget(null);
-          }}
-        >
-          <Text style={styles.playAgainText}>🔄  Play Again</Text>
-        </TouchableOpacity>
-      )}
-      {phase === 'results' && !isHost && (
-        <Text style={styles.waitText}>Waiting for host to deal again…</Text>
-      )}
-
     </ScrollView>
+
+      <EndOfRoundModal
+        visible={showRoundModal}
+        title={`🏆 ${winner?.name ?? 'Game Over'}!`}
+        message={coinsEarned > 0 ? `+${coinsEarned} coins!` : ''}
+        showContinue={isHost}
+        showLeave
+        onContinue={() => {
+          setShowRoundModal(false);
+          coinRewardedRef.current = false;
+          setCoinsEarned(0);
+          setSelectedRank(null);
+          setSelectedTarget(null);
+          applyState(dealGoFish(initialPlayers));
+        }}
+        onLeave={handleQuit}
+        tableColor={BG}
+      />
     </SafeAreaView>
   );
 }
@@ -524,7 +526,6 @@ const styles = StyleSheet.create({
   banner: { backgroundColor: '#e94560', borderRadius: scale(10), paddingVertical: scale(10), alignItems: 'center', marginBottom: scale(10) },
   bannerResults: { backgroundColor: '#0d3d2e' },
   bannerText: { color: '#fff', fontSize: scaleFont(16), fontWeight: 'bold' },
-  coinsEarnedText: { color: '#ffd700', fontSize: scaleFont(15), fontWeight: 'bold', marginTop: 4 },
 
   actionBox: {
     backgroundColor: '#16213e', borderRadius: scale(10), padding: scale(12),
@@ -573,7 +574,4 @@ const styles = StyleSheet.create({
   askBtnDimmed: { backgroundColor: '#6b2535' },
   askBtnText: { color: '#fff', fontSize: scaleFont(17), fontWeight: 'bold' },
 
-  playAgainBtn: { backgroundColor: '#e94560', borderRadius: scale(10), paddingVertical: scale(16), alignItems: 'center', marginTop: scale(4) },
-  playAgainText: { color: '#fff', fontSize: scaleFont(18), fontWeight: 'bold' },
-  waitText: { color: '#aaa', textAlign: 'center', fontSize: scaleFont(14), marginTop: scale(8) },
 });

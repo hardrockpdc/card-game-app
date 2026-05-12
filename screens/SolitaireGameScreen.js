@@ -11,6 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import Card from "../components/Card";
 import GameHeader from "../components/GameHeader";
+import EndOfRoundModal from "../components/EndOfRoundModal";
 import {
   SPIDER_MODE_OPTIONS,
   createSolitaireState,
@@ -153,6 +154,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
   );
   const coinRewardedRef = useRef(false);
   const [coinsEarned, setCoinsEarned] = useState(0);
+  const [showRoundModal, setShowRoundModal] = useState(false);
   // Tracks whether the initial mount already dispatched newGameAction so the
   // restore effect (which fires after) knows if it should override it.
   const initialGameDispatched = useRef(false);
@@ -198,6 +200,10 @@ export default function SolitaireGameScreen({ navigation, route }) {
       coinRewardedRef.current = false;
       setCoinsEarned(0);
     }
+  }, [state.status]);
+
+  useEffect(() => {
+    if (state.status === "won") setShowRoundModal(true);
   }, [state.status]);
 
   const variant = useMemo(
@@ -771,14 +777,20 @@ export default function SolitaireGameScreen({ navigation, route }) {
       />
       <ScrollView contentContainerStyle={styles.content}>
         {renderStatsBar()}
-        {state.status === "won" && (
-          <View style={styles.winBanner}>
-            <Text style={styles.winBannerTitle}>🏆 You Won!</Text>
-            {coinsEarned > 0 && (
-              <Text style={styles.winBannerCoins}>+{coinsEarned} coins!</Text>
-            )}
-          </View>
-        )}
+        <EndOfRoundModal
+          visible={showRoundModal}
+          title="🏆 You Won!"
+          message={coinsEarned > 0 ? `+${coinsEarned} coins!` : ""}
+          showContinue
+          showLeave
+          isGameOver
+          onContinue={() => { setShowRoundModal(false); restart(); }}
+          onLeave={() => {
+            clearGame(solitaireSaveKey(state.variantId || routeVariantId));
+            navigation.navigate("Home");
+          }}
+          tableColor={BG}
+        />
         {state.variantId === "klondike" ? renderKlondike() : null}
         {state.variantId === "spider" ? renderSpider() : null}
         {state.variantId === "freecell" ? renderFreeCell() : null}
@@ -793,25 +805,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: BG,
-  },
-  winBanner: {
-    backgroundColor: "#16213e",
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: "#ffd700",
-    padding: 18,
-    alignItems: "center",
-    gap: 6,
-  },
-  winBannerTitle: {
-    color: "#ffffff",
-    fontSize: 22,
-    fontWeight: "bold",
-  },
-  winBannerCoins: {
-    color: "#ffd700",
-    fontSize: 18,
-    fontWeight: "bold",
   },
   content: {
     padding: 14,

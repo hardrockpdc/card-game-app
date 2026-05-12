@@ -11,6 +11,7 @@ import { recordWin } from '../game/profile';
 import Card from '../components/Card';
 import { scale, scaleFont } from '../game/responsive';
 import GameHeader from '../components/GameHeader';
+import EndOfRoundModal from '../components/EndOfRoundModal';
 import {
   setServerListeners, broadcastToClients, sendToClient,
   setClientListeners, sendToHost,
@@ -701,17 +702,20 @@ export default function PokerGameScreen({ navigation, route }) {
         </View>
       )}
 
-      {/* Next hand / results */}
-      {phase === 'showdown' && isHost && (
-        <TouchableOpacity style={styles.nextHandBtn} onPress={() => act({ action: 'nextHand' })}>
-          <Text style={styles.nextHandText}>Next Hand →</Text>
-        </TouchableOpacity>
-      )}
-      {phase === 'showdown' && !isHost && (
-        <Text style={styles.waitText}>Waiting for host to deal next hand…</Text>
-      )}
-
     </ScrollView>
+
+      <EndOfRoundModal
+        visible={phase === 'showdown'}
+        title={handResult?.type === 'fold'
+          ? `🏆 ${handResult.winnerName} wins!`
+          : `🏆 ${(handResult?.winners ?? []).map((w) => w.name).join(' & ')} win!`}
+        message=""
+        showContinue={isHost}
+        showLeave
+        onContinue={() => act({ action: 'nextHand' })}
+        onLeave={handleQuit}
+        tableColor={BG}
+      />
     </SafeAreaView>
   );
 }
@@ -772,8 +776,6 @@ const styles = StyleSheet.create({
   raiseBtnText: { color: '#fff', fontSize: scaleFont(12) },
   raiseBtnAmt: { color: '#fff', fontSize: scaleFont(14), fontWeight: 'bold' },
 
-  nextHandBtn: { backgroundColor: '#4caf50', borderRadius: scale(10), paddingVertical: scale(16), alignItems: 'center', marginTop: scale(4) },
-  nextHandText: { color: '#fff', fontSize: scaleFont(18), fontWeight: 'bold' },
   waitText: { color: '#aaa', textAlign: 'center', fontSize: scaleFont(14), marginTop: scale(8) },
 
   tournamentOverContainer: {

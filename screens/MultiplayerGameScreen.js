@@ -12,6 +12,7 @@ import { createDeck, shuffleDeck, calculateHandValue } from "../game/deck";
 import Card from "../components/Card";
 import { scale, scaleFont } from "../game/responsive";
 import GameHeader from "../components/GameHeader";
+import EndOfRoundModal from "../components/EndOfRoundModal";
 import {
   setServerListeners,
   broadcastToClients,
@@ -227,6 +228,7 @@ export default function MultiplayerGameScreen({ navigation, route }) {
   const isHost = role === "host";
 
   const [gameState, setGameState] = useState(null);
+  const [showRoundModal, setShowRoundModal] = useState(false);
   // stateRef lets network callbacks always read the latest state without stale closures
   const stateRef = useRef(null);
 
@@ -287,6 +289,10 @@ export default function MultiplayerGameScreen({ navigation, route }) {
     });
   }, []);
 
+  useEffect(() => {
+    if (gameState?.phase === "results") setShowRoundModal(true);
+  }, [gameState?.phase]);
+
   // ── Actions ──
   function handleAction(action) {
     if (isHost) {
@@ -306,6 +312,7 @@ export default function MultiplayerGameScreen({ navigation, route }) {
   }
 
   function handlePlayAgain() {
+    setShowRoundModal(false);
     applyState(dealCards(initialPlayers));
   }
 
@@ -581,20 +588,16 @@ export default function MultiplayerGameScreen({ navigation, route }) {
           );
         })}
 
-        {/* Play Again — host only, after results */}
-        {phase === "results" && isHost && (
-          <TouchableOpacity
-            style={styles.playAgainBtn}
-            onPress={handlePlayAgain}
-          >
-            <Text style={styles.playAgainText}>🔄 Play Again</Text>
-          </TouchableOpacity>
-        )}
-        {phase === "results" && !isHost && (
-          <Text style={styles.waitText}>
-            Waiting for host to deal a new hand…
-          </Text>
-        )}
+        <EndOfRoundModal
+          visible={showRoundModal}
+          title="Hand Over"
+          message=""
+          showContinue={isHost}
+          showLeave
+          onContinue={handlePlayAgain}
+          onLeave={handleQuit}
+          tableColor={BG}
+        />
       </ScrollView>
     </SafeAreaView>
   );
@@ -687,15 +690,6 @@ const styles = StyleSheet.create({
   standBtn: { backgroundColor: "#2980b9" },
   splitBtn: { backgroundColor: "#8e44ad" },
   actionBtnText: { color: "#fff", fontSize: scaleFont(16), fontWeight: "bold" },
-
-  playAgainBtn: {
-    backgroundColor: "#e94560",
-    borderRadius: scale(10),
-    paddingVertical: scale(16),
-    alignItems: "center",
-    marginTop: scale(4),
-  },
-  playAgainText: { color: "#fff", fontSize: scaleFont(18), fontWeight: "bold" },
 
   waitText: {
     color: "#aaa",

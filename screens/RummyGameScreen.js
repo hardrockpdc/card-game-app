@@ -12,6 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Card from "../components/Card";
 import Toast, { useToast } from "../components/Toast";
 import GameHeader from "../components/GameHeader";
+import EndOfRoundModal from "../components/EndOfRoundModal";
 import TutorialOverlay, { hasSeen } from "../components/TutorialOverlay";
 import { getTableTheme } from "../game/tableThemes";
 
@@ -207,6 +208,7 @@ export default function RummyGameScreen({ navigation, route }) {
   const { show: showToast, message: toastMessage, revision: toastRevision } = useToast();
   const [coinsEarned, setCoinsEarned] = useState(0);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [showRoundModal, setShowRoundModal] = useState(false);
 
   const variantLabel =
     gameState?.variantLabel || getRummyVariantLabel(variantId);
@@ -701,6 +703,11 @@ export default function RummyGameScreen({ navigation, route }) {
   }, [gameState?.winner, gameState?.tie]);
 
   useEffect(() => {
+    const isOver = gameState?.phase === "game-over" || gameState?.winner != null || gameState?.tie;
+    if (isOver) setShowRoundModal(true);
+  }, [gameState?.phase, gameState?.winner, gameState?.tie]);
+
+  useEffect(() => {
     if (variantId !== 'ginRummy') return;
     hasSeen('ginRummy').then((seen) => { if (!seen) setShowTutorial(true); });
   }, []);
@@ -751,31 +758,17 @@ export default function RummyGameScreen({ navigation, route }) {
             ))}
           </View>
 
-          {isHost ? (
-            <Pressable
-              onPress={handlePlayAgain}
-              style={({ pressed }) => [
-                styles.primaryButton,
-                pressed && styles.primaryButtonPressed,
-              ]}
-            >
-              <Text style={styles.primaryButtonText}>Play Again</Text>
-            </Pressable>
-          ) : (
-            <Text style={styles.waitText}>
-              Waiting for the host to start a new round…
-            </Text>
-          )}
-
-          <Pressable
-            onPress={() => navigation.navigate("Home")}
-            style={({ pressed }) => [
-              styles.secondaryButton,
-              pressed && styles.secondaryButtonPressed,
-            ]}
-          >
-            <Text style={styles.secondaryButtonText}>Home</Text>
-          </Pressable>
+          <EndOfRoundModal
+            visible={showRoundModal}
+            title={gameState.tie ? "🤝 It's a Tie!" : `🏆 ${winnerName} wins!`}
+            message={isSinglePlayer && gameState.winner === localPlayerIndex && coinsEarned > 0 ? `+${coinsEarned} coins!` : ""}
+            showContinue={isHost}
+            showLeave
+            isGameOver
+            onContinue={() => { setShowRoundModal(false); handlePlayAgain(); }}
+            onLeave={() => navigation.navigate("Home")}
+            tableColor={BG}
+          />
         </ScrollView>
       </SafeAreaView>
     );
