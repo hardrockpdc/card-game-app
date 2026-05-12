@@ -17,7 +17,9 @@
       "Bash(mkdir -p 'C:/Users/hardr/.claude/projects/c--Users-hardr-OneDrive-Documents-Projects-card-game-app/memory')",
       "Bash(del \"old_poker_screen.tmp\")",
       "Bash(del \"old_poker_fbbc8cc.tmp\")",
-      "Bash(npx expo *)"
+      "Bash(npx expo *)",
+      "Bash(grep -l \"GameHeader\" screens/*.js components/*.js)",
+      "Bash(grep -l \"QuitButton\" screens/*.js components/*.js)"
     ],
     "additionalDirectories": [
       "C:\\Users\\hardr\\.claude\\projects\\c--Users-hardr-OneDrive-Documents-Projects-card-game-app"
