@@ -25,6 +25,7 @@ import { addCoins } from "../game/wallet";
 import { recordWin } from "../game/profile";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import { getTableTheme } from "../game/tableThemes";
+import { scale } from "../game/responsive";
 
 const BG = getTableTheme("solitaire").table;
 
