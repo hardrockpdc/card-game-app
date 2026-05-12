@@ -591,7 +591,24 @@ export default function MultiplayerGameScreen({ navigation, route }) {
         <EndOfRoundModal
           visible={showRoundModal}
           title="Hand Over"
-          message=""
+          message={(() => {
+            const main = myPlayer?.result ?? "";
+            const split = myPlayer?.splitResult ?? "";
+            const hadSplit = myPlayer?.splitHand !== null;
+
+            if (!main) return "";
+
+            if (hadSplit) {
+              const toWord = (r) =>
+                r === "win" ? "Won" : r === "lose" ? "Lost" : "Push";
+              return `Hand 1: ${toWord(main)}  ·  Hand 2: ${toWord(split)}`;
+            }
+
+            if (main === "win") return "You won this hand!";
+            if (main === "lose") return "Dealer wins.";
+            if (main === "push") return "Push — bet returned.";
+            return "";
+          })()}
           showContinue={isHost}
           showLeave
           onContinue={handlePlayAgain}
