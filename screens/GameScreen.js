@@ -499,19 +499,6 @@ export default function GameScreen({ navigation, route }) {
     return "";
   }
 
-  const outOfCoinsModal = (
-    <EndOfRoundModal
-      visible={showGameOver}
-      title="💸 Out of Coins!"
-      message="You're out of coins. Visit your Profile to reset your balance."
-      showLeave
-      onLeave={() => {
-        setShowGameOver(false);
-        navigation.navigate("Profile");
-      }}
-    />
-  );
-
   // ── Betting screen ────────────────────────────────────────────────
   if (screenPhase === "betting") {
     return (
@@ -589,7 +576,6 @@ export default function GameScreen({ navigation, route }) {
           </TouchableOpacity>
         </ScrollView>
 
-        {outOfCoinsModal}
         <TutorialOverlay
           visible={showTutorial}
           slides={BLACKJACK_SLIDES}
@@ -747,22 +733,30 @@ export default function GameScreen({ navigation, route }) {
       ) : null}
 
       <EndOfRoundModal
-        visible={screenPhase === "result"}
-        title={statusMessage}
-        message={coinsDeltaLabel}
-        showContinue
-        showAdjustBet
+        visible={screenPhase === "result" || showGameOver}
+        title={showGameOver ? "💸 Out of Coins!" : statusMessage}
+        message={
+          showGameOver
+            ? "You're out of coins. Visit your Profile to reset your balance."
+            : coinsDeltaLabel
+        }
+        showContinue={!showGameOver}
+        showAdjustBet={!showGameOver}
         showLeave
+        leaveLabel={showGameOver ? "Go to Profile" : undefined}
         onContinue={handleContinueSameBet}
         onAdjustBet={handleAdjustBet}
         onLeave={() => {
+          if (showGameOver) {
+            setShowGameOver(false);
+            navigation.navigate("Profile");
+            return;
+          }
           clearGame(SAVE_KEY);
           navigation.navigate("Home");
         }}
         tableColor={BG}
       />
-
-      {outOfCoinsModal}
     </SafeAreaView>
   );
 }

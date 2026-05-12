@@ -1,6 +1,6 @@
-import React from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
-import { scale, scaleFont } from '../game/responsive';
+import React from "react";
+import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { scale, scaleFont } from "../game/responsive";
 
 export default function EndOfRoundModal({
   visible,
@@ -12,30 +12,44 @@ export default function EndOfRoundModal({
   onContinue,
   onAdjustBet,
   onLeave,
+  leaveLabel,
   tableColor,
   isGameOver,
 }) {
   return (
-    <Modal transparent animationType="fade" visible={!!visible} statusBarTranslucent>
+    <Modal
+      transparent
+      animationType="fade"
+      visible={!!visible}
+      statusBarTranslucent
+    >
       <View style={styles.overlay}>
-        <View style={[styles.box, tableColor ? { borderColor: tableColor } : null]}>
+        <View
+          style={[styles.box, tableColor ? { borderColor: tableColor } : null]}
+        >
           <Text style={styles.title}>{title}</Text>
           {!!message && <Text style={styles.message}>{message}</Text>}
 
           <View style={styles.buttonCol}>
             {showContinue && (
               <Pressable
-                style={({ pressed }) => [styles.primaryBtn, pressed && styles.btnPressed]}
+                style={({ pressed }) => [
+                  styles.primaryBtn,
+                  pressed && styles.btnPressed,
+                ]}
                 onPress={onContinue}
               >
                 <Text style={styles.primaryBtnText}>
-                  {isGameOver ? 'Play Again' : 'Continue'}
+                  {isGameOver ? "Play Again" : "Continue"}
                 </Text>
               </Pressable>
             )}
             {showAdjustBet && (
               <Pressable
-                style={({ pressed }) => [styles.secondaryBtn, pressed && styles.btnPressed]}
+                style={({ pressed }) => [
+                  styles.secondaryBtn,
+                  pressed && styles.btnPressed,
+                ]}
                 onPress={onAdjustBet}
               >
                 <Text style={styles.secondaryBtnText}>Adjust Bet</Text>
@@ -43,10 +57,13 @@ export default function EndOfRoundModal({
             )}
             {showLeave && (
               <Pressable
-                style={({ pressed }) => [styles.leaveBtn, pressed && styles.btnPressed]}
+                style={({ pressed }) => [
+                  styles.leaveBtn,
+                  pressed && styles.btnPressed,
+                ]}
                 onPress={onLeave}
               >
-                <Text style={styles.leaveBtnText}>Leave</Text>
+                <Text style={styles.leaveBtnText}>{leaveLabel ?? "Leave"}</Text>
               </Pressable>
             )}
           </View>
@@ -59,73 +76,73 @@ export default function EndOfRoundModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.65)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "rgba(0,0,0,0.65)",
+    alignItems: "center",
+    justifyContent: "center",
     padding: scale(24),
   },
   box: {
-    width: '100%',
+    width: "100%",
     maxWidth: scale(360),
-    backgroundColor: '#141c28',
+    backgroundColor: "#141c28",
     borderRadius: scale(22),
     borderWidth: 1.5,
-    borderColor: '#243042',
+    borderColor: "#243042",
     padding: scale(24),
-    alignItems: 'center',
+    alignItems: "center",
     gap: scale(8),
   },
   title: {
-    color: '#f5f7fb',
+    color: "#f5f7fb",
     fontSize: scaleFont(28),
-    fontWeight: '900',
-    textAlign: 'center',
+    fontWeight: "900",
+    textAlign: "center",
   },
   message: {
-    color: '#95a2b6',
+    color: "#95a2b6",
     fontSize: scaleFont(16),
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: scale(22),
   },
   buttonCol: {
-    width: '100%',
+    width: "100%",
     gap: scale(10),
     marginTop: scale(8),
   },
   primaryBtn: {
-    backgroundColor: '#7fb3ff',
+    backgroundColor: "#7fb3ff",
     borderRadius: scale(14),
     paddingVertical: scale(14),
-    alignItems: 'center',
+    alignItems: "center",
   },
   primaryBtnText: {
-    color: '#08111f',
+    color: "#08111f",
     fontSize: scaleFont(17),
-    fontWeight: '900',
+    fontWeight: "900",
   },
   secondaryBtn: {
     borderRadius: scale(14),
     borderWidth: 1.5,
-    borderColor: '#2c3750',
+    borderColor: "#2c3750",
     paddingVertical: scale(12),
-    alignItems: 'center',
+    alignItems: "center",
   },
   secondaryBtnText: {
-    color: '#c8d8f0',
+    color: "#c8d8f0",
     fontSize: scaleFont(15),
-    fontWeight: '700',
+    fontWeight: "700",
   },
   leaveBtn: {
     borderRadius: scale(14),
     borderWidth: 1.5,
-    borderColor: '#5a2020',
+    borderColor: "#5a2020",
     paddingVertical: scale(12),
-    alignItems: 'center',
+    alignItems: "center",
   },
   leaveBtnText: {
-    color: '#c07070',
+    color: "#c07070",
     fontSize: scaleFont(15),
-    fontWeight: '700',
+    fontWeight: "700",
   },
   btnPressed: {
     opacity: 0.8,
