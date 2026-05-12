@@ -7,10 +7,11 @@ import {
   TouchableOpacity,
   Alert,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { createDeck, shuffleDeck, calculateHandValue } from "../game/deck";
 import Card from "../components/Card";
 import { scale, scaleFont } from "../game/responsive";
-import QuitButton from "../components/QuitButton";
+import GameHeader from "../components/GameHeader";
 import {
   setServerListeners,
   broadcastToClients,
@@ -308,6 +309,25 @@ export default function MultiplayerGameScreen({ navigation, route }) {
     applyState(dealCards(initialPlayers));
   }
 
+  function handleQuit() {
+    if (isHost) stopServer();
+    else disconnectFromHost();
+    navigation.navigate("Home");
+  }
+
+  const menuItems = [
+    {
+      type: "restart",
+      onRestart: isHost ? handlePlayAgain : null,
+      disabled: !isHost,
+    },
+    { type: "howto", gameId: "blackjack" },
+    { type: "sound" },
+    { type: "theme" },
+    { type: "divider" },
+    { type: "quit", onQuit: handleQuit },
+  ];
+
   // ── Loading state ──
   if (!gameState) {
     return (
@@ -349,7 +369,13 @@ export default function MultiplayerGameScreen({ navigation, route }) {
   }
 
   return (
-    <View style={styles.screenRoot}>
+    <SafeAreaView style={styles.screenRoot}>
+      <GameHeader
+        gameId="blackjack"
+        title="Blackjack"
+        subtitle="Multiplayer"
+        menuItems={menuItems}
+      />
       <ScrollView contentContainerStyle={styles.container}>
         {/* Turn / phase banner */}
         <View
@@ -570,17 +596,7 @@ export default function MultiplayerGameScreen({ navigation, route }) {
           </Text>
         )}
       </ScrollView>
-      <QuitButton
-        onQuit={() => {
-          if (isHost) {
-            stopServer();
-          } else {
-            disconnectFromHost();
-          }
-          navigation.navigate("Home");
-        }}
-      />
-    </View>
+    </SafeAreaView>
   );
 }
 
