@@ -117,7 +117,13 @@ function CardSlot({
           sizeScale={sizeScale}
         />
       ) : (
-        <Text style={styles.emptyCardText} numberOfLines={1} adjustsFontSizeToFit>{label}</Text>
+        <Text
+          style={styles.emptyCardText}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+        >
+          {label}
+        </Text>
       )}
     </Pressable>
   );
@@ -155,6 +161,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
   const coinRewardedRef = useRef(false);
   const [coinsEarned, setCoinsEarned] = useState(0);
   const [showRoundModal, setShowRoundModal] = useState(false);
+  const [showStats, setShowStats] = useState(false);
   // Tracks whether the initial mount already dispatched newGameAction so the
   // restore effect (which fires after) knows if it should override it.
   const initialGameDispatched = useRef(false);
@@ -773,10 +780,23 @@ export default function SolitaireGameScreen({ navigation, route }) {
         gameId="solitaire"
         title={variant.label}
         subtitle={variant.description}
+        extraButton={
+          <Pressable
+            onPress={() => setShowStats((v) => !v)}
+            style={({ pressed }) => [
+              styles.statsToggleBtn,
+              pressed && styles.statsToggleBtnPressed,
+            ]}
+          >
+            <Text style={styles.statsToggleBtnText}>
+              {showStats ? "HIDE" : "SHOW"}
+            </Text>
+          </Pressable>
+        }
         menuItems={menuItems}
       />
       <ScrollView contentContainerStyle={styles.content}>
-        {renderStatsBar()}
+        {showStats ? renderStatsBar() : null}
         <EndOfRoundModal
           visible={showRoundModal}
           title="🏆 You Won!"
@@ -784,7 +804,10 @@ export default function SolitaireGameScreen({ navigation, route }) {
           showContinue
           showLeave
           isGameOver
-          onContinue={() => { setShowRoundModal(false); restart(); }}
+          onContinue={() => {
+            setShowRoundModal(false);
+            restart();
+          }}
           onLeave={() => {
             clearGame(solitaireSaveKey(state.variantId || routeVariantId));
             navigation.navigate("Home");
@@ -819,6 +842,27 @@ const styles = StyleSheet.create({
     paddingTop: scale(4),
     paddingBottom: scale(8),
   },
+
+  // Button shown in GameHeader to toggle the stats bar on/off.
+  statsToggleBtn: {
+    backgroundColor: "rgba(24, 33, 49, 0.95)",
+    borderWidth: 1,
+    borderColor: "#2c3750",
+    borderRadius: scale(12),
+    paddingHorizontal: scale(12),
+    paddingVertical: scale(10),
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  statsToggleBtnPressed: {
+    opacity: 0.85,
+  },
+  statsToggleBtnText: {
+    color: "#eef4ff",
+    fontSize: scale(12),
+    fontWeight: "900",
+  },
+
   spiderScrollContent: {
     paddingBottom: 2,
   },
