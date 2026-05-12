@@ -582,8 +582,18 @@ export default function PokerGameScreen({ navigation, route }) {
     navigation.navigate('Home');
   }
 
+  function handleRestart() {
+    if (saveKey) clearGame(saveKey);
+    if (aiTimerRef.current) clearTimeout(aiTimerRef.current);
+    navigation.replace('PokerVariantPicker', {
+      mode: 'singleplayer',
+      currentVariant: variant,
+      launchParams: { myName },
+    });
+  }
+
   const menuItems = [
-    { type: 'restart', disabled: true },
+    { type: 'restart', onRestart: isSinglePlayer ? handleRestart : null, disabled: !isSinglePlayer },
     { type: 'howto', gameId: 'poker' },
     { type: 'sound' },
     { type: 'theme' },
