@@ -11,7 +11,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import QuitButton from "../components/QuitButton";
+import GameHeader from "../components/GameHeader";
 import {
   createDeck,
   dealHands,
@@ -667,8 +667,34 @@ export default function WildRoundGameScreen({ navigation, route }) {
   }
 
   // ── Main game ───────────────────────────────────────────────────────────────
+  const menuItems = [
+    {
+      type: "restart",
+      onRestart: isHost ? startNewGame : null,
+      disabled: !isHost,
+    },
+    { type: "howto", gameId: "wildround" },
+    { type: "sound" },
+    { type: "theme" },
+    { type: "divider" },
+    {
+      type: "quit",
+      onQuit: () => {
+        if (isHost) stopServer();
+        else disconnectFromHost();
+        navigation.navigate("Home");
+      },
+    },
+  ];
+
   return (
     <SafeAreaView style={styles.container}>
+      <GameHeader
+        gameId="wildround"
+        title="Wild Round"
+        subtitle={isSinglePlayer ? "Single Player" : "Multiplayer"}
+        menuItems={menuItems}
+      />
       {/* Prompt box */}
       {gs.phase !== "reveal" && (
         <>
@@ -1089,16 +1115,6 @@ export default function WildRoundGameScreen({ navigation, route }) {
             </View>
           );
         })()}
-      <QuitButton
-        onQuit={() => {
-          if (isHost) {
-            stopServer();
-          } else {
-            disconnectFromHost();
-          }
-          navigation.navigate("Home");
-        }}
-      />
     </SafeAreaView>
   );
 }
