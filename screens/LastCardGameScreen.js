@@ -10,7 +10,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import QuitButton from "../components/QuitButton";
+import GameHeader from "../components/GameHeader";
 import {
   COLORS,
   createDeck,
@@ -918,8 +918,41 @@ export default function LastCardGameScreen({ navigation, route }) {
   const HAND_W = Math.min(width * 0.175, 74);
   const HAND_H = HAND_W * 1.4;
 
+  function handleQuit() {
+    if (isSinglePlayer) clearGame(SAVE_KEY_LASTCARD);
+    else if (isHost) stopServer();
+    else disconnectFromHost();
+    navigation.navigate("Home");
+  }
+
+  function handleRestart() {
+    if (isSinglePlayer) clearGame(SAVE_KEY_LASTCARD);
+    const next = buildInitialState(initialPlayers);
+    applyState(next);
+    scheduleTimeout(turnTimerRef, () => handleTurn(next), 300);
+  }
+
+  const menuItems = [
+    {
+      type: "restart",
+      onRestart: isHost ? handleRestart : null,
+      disabled: !isHost,
+    },
+    { type: "howto", gameId: "lastcard" },
+    { type: "sound" },
+    { type: "theme" },
+    { type: "divider" },
+    { type: "quit", onQuit: handleQuit },
+  ];
+
   return (
     <SafeAreaView style={styles.root}>
+      <GameHeader
+        gameId="lastcard"
+        title="Last Card"
+        subtitle={isSinglePlayer ? "Single Player" : "Multiplayer"}
+        menuItems={menuItems}
+      />
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -1112,12 +1145,6 @@ export default function LastCardGameScreen({ navigation, route }) {
           </TouchableOpacity>
         </View>
       )}
-      <QuitButton onQuit={() => {
-        if (isSinglePlayer) { clearGame(SAVE_KEY_LASTCARD); }
-        else if (isHost) { stopServer(); }
-        else { disconnectFromHost(); }
-        navigation.navigate('Home');
-      }} />
     </SafeAreaView>
   );
 }
