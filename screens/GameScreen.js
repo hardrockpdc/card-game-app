@@ -18,8 +18,8 @@ import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import { recordWin } from "../game/profile";
 import TutorialOverlay, { hasSeen } from "../components/TutorialOverlay";
 import EndOfRoundModal from "../components/EndOfRoundModal";
+import StatsStrip from "../components/StatsStrip";
 import { getTableTheme } from "../game/tableThemes";
-
 const BG = getTableTheme("blackjack").table;
 const ACCENT = getTableTheme("blackjack").accent;
 
@@ -60,6 +60,25 @@ export default function GameScreen({ navigation, route }) {
   const [coinsDelta, setCoinsDelta] = useState(0);
   const [showGameOver, setShowGameOver] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
+
+  // Casino mode streak (wins/losses in a row) — hidden in Free Play.
+  const streakRef = useRef({ type: null, count: 0 }); // type: "W" | "L" | null
+  const [streakLabel, setStreakLabel] = useState("—");
+
+  // Free Play session hands counter — hidden in Casino.
+  const handsCountRef = useRef(0);
+  const [handsCount, setHandsCount] = useState(0);
+
+  function resetStreak() {
+    streakRef.current = { type: null, count: 0 };
+    setStreakLabel("—");
+  }
+
+  function resetHandsCounter() {
+    handsCountRef.current = 0;
+    setHandsCount(0);
+  }
+
   const currentBetRef = useRef(0);
   const payoutDoneRef = useRef(false);
 
@@ -171,7 +190,28 @@ export default function GameScreen({ navigation, route }) {
     }
 
     const totalBet = hadSplit ? bet * 2 : bet;
-    setCoinsDelta(payout - totalBet);
+    const coinsDeltaNet = payout - totalBet;
+    setCoinsDelta(coinsDeltaNet);
+
+    if (isFree) {
+      handsCountRef.current += 1;
+      setHandsCount(handsCountRef.current);
+    } else {
+      // Casino streak rules:
+      // - coinsDeltaNet === 0 (push / bet returned) breaks the streak → "—"
+      // - coinsDeltaNet > 0 => win streak ("W")
+      // - coinsDeltaNet < 0 => loss streak ("L")
+      if (coinsDeltaNet === 0) {
+        resetStreak();
+      } else {
+        const nextType = coinsDeltaNet > 0 ? "W" : "L";
+        const prev = streakRef.current;
+        const nextCount = prev.type === nextType ? prev.count + 1 : 1;
+        streakRef.current = { type: nextType, count: nextCount };
+        setStreakLabel(`${nextCount}${nextType}`);
+      }
+    }
+
     if (payout > totalBet) {
       playSound("win");
       recordWin("blackjack");
@@ -397,6 +437,12 @@ export default function GameScreen({ navigation, route }) {
         return;
       }
     }
+
+    // Spec: streak resets to "—" when adjusting bet (casino mode).
+    if (!isFree) {
+      resetStreak();
+    }
+
     setCoinsDelta(0);
     setResult("");
     setSplitResult("");
@@ -408,6 +454,11 @@ export default function GameScreen({ navigation, route }) {
   // ── Restart ───────────────────────────────────────────────────────
   function handleRestart() {
     clearGame(SAVE_KEY);
+
+    // Reset session stats on restart.
+    resetStreak();
+    resetHandsCounter();
+
     if (isFree) freeCoinsRef.current = 1000;
     payoutDoneRef.current = false;
     setDeck([]);
@@ -432,6 +483,11 @@ export default function GameScreen({ navigation, route }) {
       type: "quit",
       onQuit: () => {
         clearGame(SAVE_KEY);
+
+        // Spec: reset streak/hands on quit.
+        resetStreak();
+        resetHandsCounter();
+
         navigation.navigate("Home");
       },
     },
@@ -506,8 +562,27 @@ export default function GameScreen({ navigation, route }) {
         <GameHeader
           gameId="blackjack"
           title="Blackjack"
-          subtitle={isFree ? "Free Play" : "Casino Mode"}
+          subtitle={isFree ? "Free Play" : "Casino"}
           menuItems={menuItems}
+        />
+        <StatsStrip
+          gameId="blackjack"
+          items={
+            isFree
+              ? [
+                  { label: "Mode", value: "Free Play", accent: true },
+                  { label: "Hands", value: handsCount },
+                ]
+              : [
+                  { label: "Coins", value: coins ?? "—", accent: true },
+                  { label: "Bet", value: currentBet },
+                  {
+                    label: "Streak",
+                    value: streakLabel,
+                    accent: streakRef.current.type === "W",
+                  },
+                ]
+          }
         />
         <ScrollView
           contentContainerStyle={styles.bettingContainer}
@@ -516,13 +591,6 @@ export default function GameScreen({ navigation, route }) {
           {isFree && (
             <Text style={styles.freePlayBadge}>🎮 Free Play — Play Money</Text>
           )}
-
-          <View style={styles.walletDisplay}>
-            <Text style={styles.walletLabel}>Your Balance</Text>
-            <Text style={styles.walletAmount}>
-              🪙 {coins !== null ? coins.toLocaleString() : "—"}
-            </Text>
-          </View>
 
           <Text style={styles.betLabel}>Select Your Bet</Text>
           <View style={styles.betRow}>
@@ -592,17 +660,27 @@ export default function GameScreen({ navigation, route }) {
       <GameHeader
         gameId="blackjack"
         title="Blackjack"
-        leftInfo={
-          <View style={styles.headerInfoRow}>
-            <Text style={styles.headerCoins}>
-              🪙 {coins !== null ? coins.toLocaleString() : "—"}
-            </Text>
-            {currentBet > 0 && (
-              <Text style={styles.headerBet}>Bet: {currentBet}</Text>
-            )}
-          </View>
-        }
+        subtitle={isFree ? "Free Play" : "Casino"}
         menuItems={menuItems}
+      />
+      <StatsStrip
+        gameId="blackjack"
+        items={
+          isFree
+            ? [
+                { label: "Mode", value: "Free Play", accent: true },
+                { label: "Hands", value: handsCount },
+              ]
+            : [
+                { label: "Coins", value: coins ?? "—", accent: true },
+                { label: "Bet", value: currentBet },
+                {
+                  label: "Streak",
+                  value: streakLabel,
+                  accent: streakRef.current.type === "W",
+                },
+              ]
+        }
       />
 
       <ScrollView
@@ -749,10 +827,20 @@ export default function GameScreen({ navigation, route }) {
         onLeave={() => {
           if (showGameOver) {
             setShowGameOver(false);
+
+            // Spec: reset streak/hands on quit/leave.
+            resetStreak();
+            resetHandsCounter();
+
             navigation.navigate("Profile");
             return;
           }
           clearGame(SAVE_KEY);
+
+          // Spec: reset streak/hands on quit/leave.
+          resetStreak();
+          resetHandsCounter();
+
           navigation.navigate("Home");
         }}
         tableColor={BG}
