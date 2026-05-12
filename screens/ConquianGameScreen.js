@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Card from "../components/Card";
-import QuitButton from "../components/QuitButton";
+import GameHeader from "../components/GameHeader";
 import {
   deal,
   doSelectPassCard,
@@ -645,6 +645,31 @@ export default function ConquianGameScreen({ navigation, route }) {
     );
   }
 
+  function handleQuit() {
+    if (isSinglePlayer) clearGame(SAVE_KEY_CONQUIAN);
+    else if (isHost) stopServer();
+    else disconnectFromHost();
+    navigation.navigate("Home");
+  }
+
+  function handleRestart() {
+    if (isSinglePlayer) clearGame(SAVE_KEY_CONQUIAN);
+    applyState(deal(initialPlayers));
+  }
+
+  const menuItems = [
+    {
+      type: "restart",
+      onRestart: isHost ? handleRestart : null,
+      disabled: !isHost,
+    },
+    { type: "howto", gameId: "conquian" },
+    { type: "sound" },
+    { type: "theme" },
+    { type: "divider" },
+    { type: "quit", onQuit: handleQuit },
+  ];
+
   // ─── Borrow mode overlay ──────────────────────────────────────────────────────
 
   if (borrowMode) {
@@ -883,6 +908,12 @@ export default function ConquianGameScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <GameHeader
+        gameId="conquian"
+        title="Conquian"
+        subtitle={isSinglePlayer ? "Single Player" : "Multiplayer"}
+        menuItems={menuItems}
+      />
       <ScrollView contentContainerStyle={styles.container}>
         {/* Opponents — single row across the top; cards wrap naturally */}
         <View style={styles.opponentsRow}>
@@ -1186,18 +1217,6 @@ export default function ConquianGameScreen({ navigation, route }) {
           )}
         </View>
       </ScrollView>
-      <QuitButton
-        onQuit={() => {
-          if (isSinglePlayer) {
-            clearGame(SAVE_KEY_CONQUIAN);
-          } else if (isHost) {
-            stopServer();
-          } else {
-            disconnectFromHost();
-          }
-          navigation.navigate("Home");
-        }}
-      />
     </SafeAreaView>
   );
 }
