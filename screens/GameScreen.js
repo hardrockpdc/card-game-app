@@ -742,7 +742,7 @@ export default function GameScreen({ navigation, route }) {
         }
         showContinue={!showGameOver}
         showAdjustBet={!showGameOver}
-        showLeave
+        showLeave={true}
         leaveLabel={showGameOver ? "Go to Profile" : undefined}
         onContinue={handleContinueSameBet}
         onAdjustBet={handleAdjustBet}
