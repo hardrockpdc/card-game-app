@@ -211,6 +211,7 @@ could manually edit the stored value and give themselves an arbitrary coin
 balance.
 
 **Why this is acceptable for v1.0:**
+
 - Coins are purely local — there is no server, no leaderboard, and no way
   for one player's coin total to affect another player's experience.
 - Cheating your own coin balance in a local card game has zero impact on
@@ -304,6 +305,7 @@ both explicitly for LAN-only play.
 ### Update Session (current) — Coin Economy + Betting + Save/Resume — COMPLETE ✅
 
 **Phase 1 — Coin Wallet & Economy:**
+
 - ✅ `game/wallet.js` created — getCoins, setCoins, addCoins, subtractCoins, resetCoins, getLifetimeEarned
 - ✅ `ProfileScreen.js` — coin balance display + Reset to 1000 button + confirmation
 - ✅ `HomeScreen.js` — small gold coin pill showing balance
@@ -316,12 +318,14 @@ both explicitly for LAN-only play.
 - ✅ `PokerGameScreen.js` — buy-in subtracted on start, chips = starting stack, tournament winner gets chips→coins
 
 **Phase 2 — Blackjack Betting:**
+
 - ✅ `GameScreen.js` — three-state flow (betting → playing → result), 5 bet presets (10/25/50/100/250), wallet integration, standard casino payouts, split support, Game Over modal, "Continue" / "Adjust Bet" buttons
 
 **Phase 3 — Save & Resume:**
+
 - ✅ `game/gameSaves.js` — saveGame, loadGame, clearGame, hasSave (AsyncStorage, JSON, error-safe)
 - ✅ `GameScreen.js` — auto-save during active hand, restore on resume, clear on new hand / game over
-- ✅ `SolitaireGameScreen.js` — auto-save on every move, restore via __RESTORE__ wrapper reducer, clear on win / New Game
+- ✅ `SolitaireGameScreen.js` — auto-save on every move, restore via **RESTORE** wrapper reducer, clear on win / New Game
 - ✅ `GoFishGameScreen.js` — auto-save on state change, restore via fullRef, clear on results
 - ✅ `LastCardGameScreen.js` — auto-save on state change, restore via fullRef + handleTurn re-trigger, clear on win
 - ✅ `RummyGameScreen.js` — auto-save on state change, restore via fullRef, clear on game over / Play Again
@@ -345,6 +349,7 @@ All JS-only items from the Month 3 block are done:
 - ✅ **UX2** — `components/TutorialOverlay.js` created; first-time tutorial wired into Blackjack (3 slides) and Gin Rummy (3 slides only); AsyncStorage key `@cardnight:tutorial:{gameId}` tracks seen state; overlay shows once then never again
 
 **Still to do before EAS production build:**
+
 - Manual test pass on phone (checklist provided — see above)
 - Replace silent sound WAV placeholders with real audio if desired
 - Host privacy policy at GitHub Pages URL in AboutScreen
@@ -355,9 +360,9 @@ All JS-only items from the Month 3 block are done:
 
 **Bug:** All 4 Rummy variants crashed immediately on launch.
 
-**Root cause:** Two `useEffect` calls in `screens/RummyGameScreen.js` were placed *after* the `if (!gameState) return <loading>` early return. On the first render `gameState` is null, so the early return fires and those hooks are never called. On the second render (after `initGame()` sets state) the early return is skipped and the hooks fire — changing the hook count between renders. React throws a "change in order of Hooks" error and crashes the screen.
+**Root cause:** Two `useEffect` calls in `screens/RummyGameScreen.js` were placed _after_ the `if (!gameState) return <loading>` early return. On the first render `gameState` is null, so the early return fires and those hooks are never called. On the second render (after `initGame()` sets state) the early return is skipped and the hooks fire — changing the hook count between renders. React throws a "change in order of Hooks" error and crashes the screen.
 
-**Fix:** Moved the two `useEffect` blocks (auto-save and coin reward) to *before* the `if (!gameState)` guard. Their internal null guards (`if (!fullRef.current) return` and `gameState?.winner` optional chaining) keep them safe when state is still null.
+**Fix:** Moved the two `useEffect` blocks (auto-save and coin reward) to _before_ the `if (!gameState)` guard. Their internal null guards (`if (!fullRef.current) return` and `gameState?.winner` optional chaining) keep them safe when state is still null.
 
 **⚠️ Known follow-up — ConquianGameScreen has the identical bug:** One `useEffect` at line ~603 sits after early returns at lines ~484 and ~490. Conquian appears to work currently because the first render's state initializes synchronously enough to avoid the mismatch in testing — but it is a latent crash risk. Should be fixed in a dedicated session.
 
@@ -401,7 +406,19 @@ All JS-only items from the Month 3 block are done:
 
 **Poker restart is intentionally stubbed.** Tapping Restart in Poker's hamburger menu does nothing (disabled). A future session needs to decide: restart the current tournament hand (same chips), or start a fresh tournament (new buy-in)?
 
+**N1–N13 updates (this session):**
+
+- ✅ **N1** — Last Card theme consistency: `getTableTheme("lastcard")` used for `tableColor` + `backgroundColor` (removed hardcoded `#0f0f1e`).
+- ✅ **N4** — Poker UI polish: removed the **restart** entry from Poker’s hamburger `menuItems`.
+- ✅ **N6** — Solitaire UI: restored a SHOW/HIDE toggle (via `GameHeader` `extraButton`), with **stats hidden by default** (button shows **SHOW**).
+- ✅ **N12** — Blackjack modal fix: merged the “out of coins” overlay into the single `EndOfRoundModal` flow (no overlapping modals); leave action goes to **Profile** (`leaveLabel="Go to Profile"`).
+- ✅ **N9** — Blackjack modal props: standardized `EndOfRoundModal` usage in `GameScreen` (`showLeave={true}` explicit).
+- ✅ **N2** — Multiplayer Blackjack modal: `EndOfRoundModal` message now reflects the local player result (split-aware).
+- ✅ **N3** — `EndOfRoundModal` accent bar added (tinted via `tableColor`).
+- ✅ **N13** — `GameHeader` UX: hamburger menu now closes when tapping outside the expanded menu.
+
 ### After this session
+
 1. **Run a new EAS build** so C1 permissions are active on device (Android + iOS)
 2. **Phase 5: Visual Theme Project** (paused until on better PC)
 3. **Phase 6: Publish** — Google Play + App Store
