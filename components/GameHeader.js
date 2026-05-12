@@ -18,7 +18,16 @@ export default function GameHeader({
 
   return (
     <View style={styles.headerOuter}>
-      <View style={styles.headerCard}>
+      {open && (
+        <Pressable
+          style={styles.backdrop}
+          onPress={() => setOpen(false)}
+          accessibilityRole="button"
+          accessibilityLabel="Close game menu"
+        />
+      )}
+
+      <View style={[styles.headerCard, { zIndex: 2 }]}>
         {/* ── Top row: always visible ── */}
         <View style={styles.row}>
           <View style={styles.leftZone}>
@@ -80,6 +89,16 @@ const styles = StyleSheet.create({
     width: "100%",
     paddingHorizontal: scale(14),
     paddingTop: scale(8),
+    position: "relative",
+  },
+  backdrop: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "transparent",
+    zIndex: 1,
   },
   headerCard: {
     backgroundColor: "#0F1B2D",
