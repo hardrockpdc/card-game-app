@@ -11,7 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import Card from "../components/Card";
 import Toast, { useToast } from "../components/Toast";
-import QuitButton from "../components/QuitButton";
+import GameHeader from "../components/GameHeader";
 import TutorialOverlay, { hasSeen } from "../components/TutorialOverlay";
 import { getTableTheme } from "../game/tableThemes";
 
@@ -225,6 +225,38 @@ export default function RummyGameScreen({ navigation, route }) {
     (fullRef.current?.discardPile?.length
       ? fullRef.current.discardPile[fullRef.current.discardPile.length - 1]
       : null);
+
+  function handleQuit() {
+    if (isSinglePlayer) clearGame(`@cardnight:save:rummy:${variantId}`);
+    else if (isHost) stopServer();
+    else disconnectFromHost();
+    navigation.navigate("Home");
+  }
+
+  function handleRestart() {
+    if (isSinglePlayer) clearGame(`@cardnight:save:rummy:${variantId}`);
+    const initPlayers =
+      Array.isArray(players) && players.length > 0
+        ? players
+        : [
+            { id: "host", name: myName, isAI: false },
+            { id: "ai_1", name: "Computer", isAI: true },
+          ];
+    applyState(createRummyState({ variantId, players: initPlayers, difficulty }));
+  }
+
+  const menuItems = [
+    {
+      type: "restart",
+      onRestart: isHost ? handleRestart : null,
+      disabled: !isHost,
+    },
+    { type: "howto", gameId: "rummy" },
+    { type: "sound" },
+    { type: "theme" },
+    { type: "divider" },
+    { type: "quit", onQuit: handleQuit },
+  ];
 
   function clearSelection() {
     setSelectedHandIndexes([]);
@@ -751,6 +783,12 @@ export default function RummyGameScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <GameHeader
+        gameId="rummy"
+        title={variantLabel}
+        subtitle={isSinglePlayer ? "Single Player" : "Multiplayer"}
+        menuItems={menuItems}
+      />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {renderHeaderCard(false)}
 
@@ -967,12 +1005,6 @@ export default function RummyGameScreen({ navigation, route }) {
         </View>
       </ScrollView>
       <Toast message={toastMessage} revision={toastRevision} />
-      <QuitButton onQuit={() => {
-        if (isSinglePlayer) { clearGame(`@cardnight:save:rummy:${variantId}`); }
-        else if (isHost) { stopServer(); }
-        else { disconnectFromHost(); }
-        navigation.navigate('Home');
-      }} />
       <TutorialOverlay
         visible={showTutorial}
         slides={GIN_RUMMY_SLIDES}
