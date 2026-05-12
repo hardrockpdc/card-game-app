@@ -10,7 +10,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { createDeck, shuffleDeck, calculateHandValue } from "../game/deck";
 import Card from "../components/Card";
-import QuitButton from "../components/QuitButton";
+import GameHeader from "../components/GameHeader";
 import { playSound } from "../game/sounds";
 import { scale, scaleFont } from "../game/responsive";
 import { getCoins, addCoins, subtractCoins } from "../game/wallet";
@@ -405,6 +405,38 @@ export default function GameScreen({ navigation, route }) {
     setScreenPhase("betting");
   }
 
+  // ── Restart ───────────────────────────────────────────────────────
+  function handleRestart() {
+    clearGame(SAVE_KEY);
+    if (isFree) freeCoinsRef.current = 1000;
+    payoutDoneRef.current = false;
+    setDeck([]);
+    setPlayerHand([]);
+    setSplitHand(null);
+    setActiveHand(0);
+    setDealerHand([]);
+    setGameStatus("idle");
+    setResult("");
+    setSplitResult("");
+    setCoinsDelta(0);
+    setScreenPhase("betting");
+  }
+
+  const menuItems = [
+    { type: "restart", onRestart: handleRestart },
+    { type: "howto", gameId: "blackjack" },
+    { type: "sound" },
+    { type: "theme" },
+    { type: "divider" },
+    {
+      type: "quit",
+      onQuit: () => {
+        clearGame(SAVE_KEY);
+        navigation.navigate("Home");
+      },
+    },
+  ];
+
   // ── Display values ────────────────────────────────────────────────
   const playerTotal = calculateHandValue(playerHand);
   const splitTotal = splitHand ? calculateHandValue(splitHand) : 0;
@@ -484,11 +516,16 @@ export default function GameScreen({ navigation, route }) {
   if (screenPhase === "betting") {
     return (
       <SafeAreaView style={styles.screen}>
+        <GameHeader
+          gameId="blackjack"
+          title="Blackjack"
+          subtitle={isFree ? "Free Play" : "Casino Mode"}
+          menuItems={menuItems}
+        />
         <ScrollView
           contentContainerStyle={styles.bettingContainer}
           showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.bettingTitle}>♠ Blackjack</Text>
           {isFree && (
             <Text style={styles.freePlayBadge}>🎮 Free Play — Play Money</Text>
           )}
@@ -566,13 +603,21 @@ export default function GameScreen({ navigation, route }) {
   // ── Playing / Result screen ───────────────────────────────────────
   return (
     <SafeAreaView style={styles.screen}>
-      {/* Wallet + bet bar */}
-      <View style={styles.walletBar}>
-        <Text style={styles.walletBarCoins}>
-          🪙 {coins !== null ? coins.toLocaleString() : "—"}
-        </Text>
-        <Text style={styles.walletBarBet}>Bet: {currentBet}</Text>
-      </View>
+      <GameHeader
+        gameId="blackjack"
+        title="Blackjack"
+        leftInfo={
+          <View style={styles.headerInfoRow}>
+            <Text style={styles.headerCoins}>
+              🪙 {coins !== null ? coins.toLocaleString() : "—"}
+            </Text>
+            {currentBet > 0 && (
+              <Text style={styles.headerBet}>Bet: {currentBet}</Text>
+            )}
+          </View>
+        }
+        menuItems={menuItems}
+      />
 
       <ScrollView
         style={styles.handsScroll}
@@ -718,12 +763,6 @@ export default function GameScreen({ navigation, route }) {
       />
 
       {outOfCoinsModal}
-      <QuitButton
-        onQuit={() => {
-          clearGame(SAVE_KEY);
-          navigation.navigate("Home");
-        }}
-      />
     </SafeAreaView>
   );
 }
@@ -744,12 +783,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: scale(20),
     paddingVertical: scale(24),
-  },
-  bettingTitle: {
-    color: "#ffffff",
-    fontSize: scaleFont(32),
-    fontWeight: "bold",
-    textAlign: "center",
   },
   freePlayBadge: {
     color: "#7fb3ff",
@@ -839,26 +872,18 @@ const styles = StyleSheet.create({
     color: "#aaaaaa",
   },
 
-  // ── Wallet bar (playing/result screen) ───────────────────────────
-  walletBar: {
+  // ── GameHeader leftInfo styles ────────────────────────────────────
+  headerInfoRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    alignSelf: "stretch",
-    backgroundColor: "#0a4a24",
-    borderRadius: scale(10),
-    paddingVertical: scale(8),
-    paddingHorizontal: scale(14),
-    marginBottom: scale(6),
-    borderWidth: 1,
-    borderColor: "#1a7a44",
+    gap: scale(14),
   },
-  walletBarCoins: {
+  headerCoins: {
     color: "#ffd700",
     fontSize: scaleFont(15),
     fontWeight: "bold",
   },
-  walletBarBet: {
+  headerBet: {
     color: "#b0d4b0",
     fontSize: scaleFont(14),
     fontWeight: "bold",
