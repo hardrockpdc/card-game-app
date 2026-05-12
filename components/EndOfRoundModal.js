@@ -27,6 +27,12 @@ export default function EndOfRoundModal({
         <View
           style={[styles.box, tableColor ? { borderColor: tableColor } : null]}
         >
+          <View
+            style={[
+              styles.accentBar,
+              { backgroundColor: tableColor ?? "#243042" },
+            ]}
+          />
           <Text style={styles.title}>{title}</Text>
           {!!message && <Text style={styles.message}>{message}</Text>}
 
@@ -91,6 +97,12 @@ const styles = StyleSheet.create({
     padding: scale(24),
     alignItems: "center",
     gap: scale(8),
+  },
+  accentBar: {
+    width: "45%",
+    height: scale(6),
+    borderRadius: scale(3),
+    alignSelf: "center",
   },
   title: {
     color: "#f5f7fb",
