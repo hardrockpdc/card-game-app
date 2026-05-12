@@ -10,7 +10,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import Card from "../components/Card";
-import QuitButton from "../components/QuitButton";
+import GameHeader from "../components/GameHeader";
 import {
   SPIDER_MODE_OPTIONS,
   createSolitaireState,
@@ -212,6 +212,21 @@ export default function SolitaireGameScreen({ navigation, route }) {
     clearGame(solitaireSaveKey(state.variantId || routeVariantId));
     dispatch(newGameAction(state.variantId, { spiderMode: state.spiderMode }));
   };
+
+  const menuItems = [
+    { type: "restart", onRestart: restart },
+    { type: "howto", gameId: "solitaire" },
+    { type: "sound" },
+    { type: "theme" },
+    { type: "divider" },
+    {
+      type: "quit",
+      onQuit: () => {
+        clearGame(solitaireSaveKey(state.variantId || routeVariantId));
+        navigation.navigate("Home");
+      },
+    },
+  ];
 
   const renderHeader = () => (
     <View
@@ -790,6 +805,12 @@ export default function SolitaireGameScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <GameHeader
+        gameId="solitaire"
+        title={variant.label}
+        subtitle={variant.description}
+        menuItems={menuItems}
+      />
       <ScrollView contentContainerStyle={styles.content}>
         {renderHeader()}
         {state.status === "won" && (
@@ -806,12 +827,6 @@ export default function SolitaireGameScreen({ navigation, route }) {
         {state.variantId === "pyramid" ? renderPyramid() : null}
         {state.variantId === "tripeaks" ? renderTriPeaks() : null}
       </ScrollView>
-      <QuitButton
-        onQuit={() => {
-          clearGame(solitaireSaveKey(state.variantId || routeVariantId));
-          navigation.navigate("Home");
-        }}
-      />
     </SafeAreaView>
   );
 }
