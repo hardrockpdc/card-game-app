@@ -91,7 +91,8 @@ card-game-app/
 │   ├── PokerVariantWheel.js       (simple tap-select poker variant picker UI)
 │   ├── RummyVariantWheel.js       (simple tap-select rummy variant picker UI)
 │   ├── Toast.js                   (animated pill toast + useToast hook — illegal move feedback + error sound)
-│   ├── QuitButton.js              (absolute-positioned ✕ Quit button — used by all 9 game screens)
+│   ├── GameHeader.js              (standardized dark navy header card — ☰ expands in-place; props: gameId/title/subtitle/leftInfo/extraButton/menuItems)
+│   ├── GameMenu.js                (pure item-list renderer + MenuDivider — no modal; handles: divider/sound/restart/howto/theme/quit/generic)
 │   ├── TutorialOverlay.js         (first-time tutorial modal — slide carousel, AsyncStorage seen-tracking, Skip/Got It)
 │   └── EndOfRoundModal.js         (reusable round-end modal — title, message, Continue/AdjustBet/Leave buttons, tableColor border tint)
 ├── game/
@@ -108,7 +109,7 @@ card-game-app/
 │   ├── logger.js                  (log/warn — no-ops in production builds via __DEV__)
 │   ├── profile.js                 (loadProfile, saveProfile, subscribeProfile, getDisplayName — AsyncStorage)
 │   ├── responsive.js              (scale(), scaleFont() — BASE_WIDTH 390, clamped factors)
-│   ├── sounds.js                  (initSounds/playSound — expo-audio; preloads 4 sounds on app start; graceful no-op if unavailable)
+│   ├── sounds.js                  (initSounds/playSound/getMuted/setMuted — expo-audio; preloads 4 sounds on app start; graceful no-op if unavailable)
 │   └── tableThemes.js             (TABLE_THEMES map + getTableTheme(gameId) — table/accent colors for all 8 games)
 ├── screens/
 │   ├── HomeScreen.js              (main menu)
@@ -384,6 +385,21 @@ All JS-only items from the Month 3 block are done:
 - ✅ **P5** — `components/EndOfRoundModal.js` created: reusable round-end modal with title, message, and three optional action buttons (Continue/Play Again, Adjust Bet, Leave); `tableColor` prop tints the border
 - ✅ **P6** — `EndOfRoundModal` wired into Blackjack (`GameScreen.js`): replaces inline status/coinsDelta text and the old result button row; out-of-coins modal also migrated to it
 - ✅ **P7** — `screens/BlackjackModePickerScreen.js` created: Free Play / Casino selector before entering Blackjack; `GameScreen` reads `mode` param and branches on `isFree` — free mode uses `freeCoinsRef` (starts 1000, refills when low), skips wallet calls and game saves entirely
+
+### UI Polish + Standardization Session (2026-05-12) — COMPLETE ✅
+
+8 items, all JS-only (no EAS build needed):
+
+- ✅ **R1** — `game/tableThemes.js` already complete from Month 3 Polish Session
+- ✅ **R2** — `components/GameHeader.js` created: dark navy header card, ☰ button expands in-place (accordion), props: `gameId / title / subtitle / leftInfo / extraButton / menuItems`
+- ✅ **R3** — `components/GameMenu.js` created: pure item-list renderer (`GameMenuItems` + `MenuDivider`), no modal; handles item types: divider / sound / restart / howto / theme / quit / generic fallback
+- ✅ **R4** — Sound mute toggle wired into `GameMenu.js` via `getMuted()`/`setMuted()` — works from the hamburger menu in every game
+- ✅ **R5** — `GameHeader` rolled out to all 9 game screens; `QuitButton.js` deleted; all screens now have SafeAreaView + GameHeader at top; `game/sounds.js` exports `getMuted`/`setMuted`; Solitaire `renderHeader()` collapsed Show/Hide replaced with always-visible `renderStatsBar()`
+- ✅ **R6** — `EndOfRoundModal` rolled out to all remaining 8 screens (GoFish, Conquian, Rummy, LastCard, WildRound, Solitaire, Poker per-hand, Blackjack MP); WildRound no longer navigates to `ResultsScreen` — modal handles it in-place
+- ✅ **R7** — Solitaire CardSlot empty label text overflow fix (`numberOfLines={1}` + `adjustsFontSizeToFit`, font 9→8, removed `lineHeight`); missing `scale` import added (caused crash on load)
+- ✅ **R8** — Restart per game: all screens except Poker wire `handleRestart()` into the hamburger menu; Poker restart stubbed (disabled) — wallet/buy-in complexity TBD
+
+**Poker restart is intentionally stubbed.** Tapping Restart in Poker's hamburger menu does nothing (disabled). A future session needs to decide: restart the current tournament hand (same chips), or start a fresh tournament (new buy-in)?
 
 ### After this session
 1. **Run a new EAS build** so C1 permissions are active on device (Android + iOS)
