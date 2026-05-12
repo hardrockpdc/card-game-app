@@ -1,8 +1,8 @@
-import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import React, { useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { scale, scaleFont } from "../game/responsive";
 import { getTableTheme } from "../game/tableThemes";
-import GameMenu from "./GameMenu";
+import GameMenuItems, { MenuDivider } from "./GameMenu";
 
 export default function GameHeader({
   gameId,
@@ -14,10 +14,12 @@ export default function GameHeader({
 }) {
   const theme = getTableTheme(gameId);
   const accent = theme.accent;
+  const [open, setOpen] = useState(false);
 
   return (
-    <View style={[styles.headerOuter]}>
+    <View style={styles.headerOuter}>
       <View style={styles.headerCard}>
+        {/* ── Top row: always visible ── */}
         <View style={styles.row}>
           <View style={styles.leftZone}>
             <Text style={[styles.kicker, { color: accent }]} numberOfLines={1}>
@@ -44,10 +46,30 @@ export default function GameHeader({
             <View style={styles.extraZone}>{extraButton}</View>
           ) : null}
 
-          <View style={styles.menuZone}>
-            <GameMenu menuItems={menuItems} />
-          </View>
+          <Pressable
+            onPress={() => setOpen((v) => !v)}
+            style={({ pressed }) => [
+              styles.hamburgerBtn,
+              pressed && styles.hamburgerBtnPressed,
+              open && styles.hamburgerBtnOpen,
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel={open ? "Close game menu" : "Open game menu"}
+          >
+            <Text style={styles.hamburgerText}>{open ? "✕" : "☰"}</Text>
+          </Pressable>
         </View>
+
+        {/* ── Expanded menu items ── */}
+        {open && (
+          <>
+            <MenuDivider />
+            <GameMenuItems
+              menuItems={menuItems}
+              onClose={() => setOpen(false)}
+            />
+          </>
+        )}
       </View>
     </View>
   );
@@ -64,7 +86,8 @@ const styles = StyleSheet.create({
     borderRadius: scale(16),
     borderWidth: 1,
     borderColor: "#243042",
-    padding: scale(14),
+    paddingHorizontal: scale(14),
+    paddingVertical: scale(12),
   },
   row: {
     flexDirection: "row",
@@ -89,8 +112,6 @@ const styles = StyleSheet.create({
     color: "#f5f7fb",
     fontSize: scaleFont(22),
     fontWeight: "900",
-    marginTop: scale(0),
-    marginBottom: scale(0),
   },
   subtitleText: {
     color: "#a4b1c4",
@@ -103,9 +124,29 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  menuZone: {
-    flexShrink: 0,
-    alignItems: "flex-end",
+
+  hamburgerBtn: {
+    width: scale(44),
+    height: scale(44),
+    borderRadius: scale(14),
+    backgroundColor: "rgba(20, 30, 55, 0.85)",
+    borderWidth: 1,
+    borderColor: "#334",
+    alignItems: "center",
     justifyContent: "center",
+    flexShrink: 0,
+  },
+  hamburgerBtnPressed: {
+    opacity: 0.75,
+  },
+  hamburgerBtnOpen: {
+    borderColor: "#7FB3FF",
+    backgroundColor: "rgba(30, 50, 90, 0.95)",
+  },
+  hamburgerText: {
+    color: "#ffffff",
+    fontSize: scaleFont(18),
+    fontWeight: "900",
+    lineHeight: scaleFont(20),
   },
 });

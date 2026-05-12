@@ -140,7 +140,6 @@ export default function SolitaireGameScreen({ navigation, route }) {
   const routeVariantId = route?.params?.variantId || "klondike";
   const routeSpiderMode = route?.params?.spiderMode || 4;
 
-  const [showHeaderDetails, setShowHeaderDetails] = useState(false);
   const { width } = useWindowDimensions();
   const spiderBoardWidth = Math.max(width - 28, 500);
   // Top row (Klondike): 6 equal slots across boardCard inner width
@@ -204,7 +203,6 @@ export default function SolitaireGameScreen({ navigation, route }) {
     () => getVariantOption(state.variantId),
     [state.variantId],
   );
-  const headerText = variant.description;
 
   const restart = () => {
     coinRewardedRef.current = false;
@@ -228,84 +226,43 @@ export default function SolitaireGameScreen({ navigation, route }) {
     },
   ];
 
-  const renderHeader = () => (
-    <View
-      style={[
-        styles.headerCard,
-        !showHeaderDetails && styles.headerCardCollapsed,
-      ]}
-    >
-      <Pressable
-        onPress={() => setShowHeaderDetails((value) => !value)}
-        style={({ pressed }) => [
-          styles.headerToggleRow,
-          pressed && styles.headerButtonPressed,
-        ]}
-      >
-        <View style={{ flex: 1 }}>
-          <Text style={styles.kicker}>Solitaire</Text>
-          <Text style={styles.title}>{variant.label}</Text>
-          {showHeaderDetails ? (
-            <Text style={styles.subtitle}>{headerText}</Text>
-          ) : null}
-        </View>
-
-        <Text style={styles.headerToggleText}>
-          {showHeaderDetails ? "Hide" : "Show"}
-        </Text>
-      </Pressable>
-
-      {showHeaderDetails ? (
+  const renderStatsBar = () => (
+    <View style={styles.statsBar}>
+      <View style={styles.metaPill}>
+        <Text style={styles.metaPillLabel}>Moves</Text>
+        <Text style={styles.metaPillValue}>{state.moves}</Text>
+      </View>
+      {state.variantId === "spider" ? (
         <>
-          <View style={styles.metaRow}>
-            <View style={styles.metaPill}>
-              <Text style={styles.metaPillLabel}>Moves</Text>
-              <Text style={styles.metaPillValue}>{state.moves}</Text>
-            </View>
-            {state.variantId === "spider" ? (
-              <View style={styles.metaPill}>
-                <Text style={styles.metaPillLabel}>Spider</Text>
-                <Text style={styles.metaPillValue}>
-                  {state.spiderMode}-suit
-                </Text>
-              </View>
-            ) : null}
+          <View style={styles.metaPill}>
+            <Text style={styles.metaPillLabel}>Suits</Text>
+            <Text style={styles.metaPillValue}>{state.spiderMode}</Text>
           </View>
-
-          {state.variantId === "spider" ? (
-            <View style={styles.modeBlock}>
-              <Text style={styles.modeTitle}>Spider suits</Text>
-              <View style={styles.modeRow}>
-                {SPIDER_MODE_OPTIONS.map((option) => {
-                  const selected = option.id === state.spiderMode;
-                  return (
-                    <Pressable
-                      key={option.id}
-                      onPress={() => dispatch(setSpiderModeAction(option.id))}
-                      style={({ pressed }) => [
-                        styles.modeChip,
-                        selected && styles.modeChipSelected,
-                        pressed && styles.modeChipPressed,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.modeChipText,
-                          selected && styles.modeChipTextSelected,
-                        ]}
-                      >
-                        {option.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
-          ) : null}
-
-          <Text style={styles.selectionHint}>
-            Tap cards, piles, and the stock to play.
-          </Text>
+          <View style={styles.modeRow}>
+            {SPIDER_MODE_OPTIONS.map((option) => {
+              const selected = option.id === state.spiderMode;
+              return (
+                <Pressable
+                  key={option.id}
+                  onPress={() => dispatch(setSpiderModeAction(option.id))}
+                  style={({ pressed }) => [
+                    styles.modeChip,
+                    selected && styles.modeChipSelected,
+                    pressed && styles.modeChipPressed,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.modeChipText,
+                      selected && styles.modeChipTextSelected,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
         </>
       ) : null}
     </View>
@@ -812,7 +769,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
         menuItems={menuItems}
       />
       <ScrollView contentContainerStyle={styles.content}>
-        {renderHeader()}
+        {renderStatsBar()}
         {state.status === "won" && (
           <View style={styles.winBanner}>
             <Text style={styles.winBannerTitle}>🏆 You Won!</Text>
@@ -859,36 +816,14 @@ const styles = StyleSheet.create({
     padding: 14,
     gap: 14,
   },
-  headerCard: {
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: "#243042",
-    backgroundColor: "#151a24",
-    padding: 16,
-    gap: 12,
-  },
-  headerCardCollapsed: {
-    paddingVertical: 12,
-    gap: 8,
-  },
-  headerToggleRow: {
+  statsBar: {
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  headerToggleText: {
-    color: "#f5f7fb",
-    fontSize: 13,
-    fontWeight: "900",
-    textTransform: "uppercase",
-    letterSpacing: 0.9,
-    borderWidth: 1,
-    borderColor: "#2f3c55",
-    backgroundColor: "#1d2637",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
+    gap: scale(8),
+    paddingHorizontal: scale(4),
+    paddingTop: scale(4),
+    paddingBottom: scale(8),
   },
   spiderScrollContent: {
     paddingBottom: 2,
@@ -897,55 +832,6 @@ const styles = StyleSheet.create({
     minWidth: 500,
     justifyContent: "flex-start",
     gap: 0,
-  },
-  headerTopRow: {
-    flexDirection: "row",
-    gap: 12,
-    alignItems: "flex-start",
-  },
-  headerActions: {
-    gap: 8,
-    alignItems: "flex-end",
-  },
-  kicker: {
-    color: "#7fb3ff",
-    textTransform: "uppercase",
-    letterSpacing: 1.2,
-    fontSize: 12,
-    fontWeight: "800",
-  },
-  title: {
-    color: "#f5f7fb",
-    fontSize: 30,
-    fontWeight: "900",
-    marginTop: 2,
-  },
-  subtitle: {
-    color: "#a4b1c4",
-    fontSize: 14,
-    lineHeight: 20,
-    marginTop: 6,
-  },
-  headerButton: {
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#2f3c55",
-    backgroundColor: "#1d2637",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  headerButtonPressed: {
-    opacity: 0.9,
-  },
-  headerButtonText: {
-    color: "#edf2fa",
-    fontSize: 13,
-    fontWeight: "800",
-  },
-  metaRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
   },
   metaPill: {
     flexDirection: "row",
@@ -969,14 +855,6 @@ const styles = StyleSheet.create({
     color: "#eff4fb",
     fontSize: 12,
     fontWeight: "900",
-  },
-  modeBlock: {
-    gap: 8,
-  },
-  modeTitle: {
-    color: "#dce5f2",
-    fontSize: 14,
-    fontWeight: "800",
   },
   modeRow: {
     flexDirection: "row",
@@ -1005,10 +883,6 @@ const styles = StyleSheet.create({
   },
   modeChipTextSelected: {
     color: "#eef4ff",
-  },
-  selectionHint: {
-    color: "#95a4bb",
-    fontSize: 13,
   },
   boardCard: {
     borderRadius: 22,
