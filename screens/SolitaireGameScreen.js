@@ -116,7 +116,7 @@ function CardSlot({
           sizeScale={sizeScale}
         />
       ) : (
-        <Text style={styles.emptyCardText}>{label}</Text>
+        <Text style={styles.emptyCardText} numberOfLines={1} adjustsFontSizeToFit>{label}</Text>
       )}
     </Pressable>
   );
@@ -964,8 +964,7 @@ const styles = StyleSheet.create({
   },
   emptyCardText: {
     color: "#7f8ea8",
-    fontSize: 9,
-    lineHeight: 11,
+    fontSize: 8,
     textAlign: "center",
     fontWeight: "800",
   },
