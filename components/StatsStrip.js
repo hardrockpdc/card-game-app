@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { scale, scaleFont } from "../game/responsive";
 import { getTableTheme } from "../game/tableThemes";
 
@@ -18,7 +18,7 @@ function toRgba(hex, alpha) {
 }
 
 /**
- * Single-row (wraps on narrow screens) live stats strip.
+ * Single-row live stats strip. Items share space equally and never wrap.
  *
  * Props:
  * - gameId: string (used to pull accent color from getTableTheme)
@@ -27,16 +27,11 @@ function toRgba(hex, alpha) {
 export default function StatsStrip({ gameId, items }) {
   const theme = getTableTheme(gameId);
   const accent = theme.accent;
-  const { width } = useWindowDimensions();
-
-  const itemsPerRow = width < 360 ? 2 : 3;
-  const itemBasis = Math.max(90, Math.floor(width / itemsPerRow) - scale(6));
-
   return (
     <View style={[styles.strip, { borderColor: toRgba(theme.accent, 0.12) }]}>
       <View style={styles.row}>
         {items?.map((item, idx) => {
-          const showDivider = idx % itemsPerRow !== 0;
+          const showDivider = idx !== 0;
           const valueColor = item?.accent ? accent : styles.value.color;
 
           return (
@@ -45,13 +40,15 @@ export default function StatsStrip({ gameId, items }) {
               style={[
                 styles.item,
                 showDivider ? styles.itemDivider : null,
-                { flexBasis: itemBasis, maxWidth: itemBasis },
               ]}
             >
               <Text style={styles.label} numberOfLines={1}>
                 {(item?.label ?? "").toUpperCase()}
               </Text>
-              <Text style={[styles.value, { color: valueColor }]}>
+              <Text
+                style={[styles.value, { color: valueColor }]}
+                numberOfLines={1}
+              >
                 {typeof item?.value === "number"
                   ? String(item.value)
                   : (item?.value ?? "—")}
@@ -67,7 +64,7 @@ export default function StatsStrip({ gameId, items }) {
 const styles = StyleSheet.create({
   strip: {
     width: "100%",
-    paddingHorizontal: scale(14),
+    paddingHorizontal: scale(10),
     paddingVertical: scale(6),
     marginTop: scale(6),
     borderRadius: scale(14),
@@ -76,16 +73,14 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: "row",
-    flexWrap: "wrap",
+    flexWrap: "nowrap",
     alignItems: "center",
-    justifyContent: "space-between",
-    gap: scale(4),
   },
   item: {
+    flex: 1,
+    minWidth: 0,
     paddingVertical: scale(2),
-    paddingHorizontal: scale(8),
-    flexGrow: 0,
-    flexShrink: 0,
+    paddingHorizontal: scale(6),
   },
   itemDivider: {
     borderLeftWidth: 1,
