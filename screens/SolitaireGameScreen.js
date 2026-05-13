@@ -243,42 +243,52 @@ export default function SolitaireGameScreen({ navigation, route }) {
 
   const renderStatsBar = () => (
     <View style={styles.statsBar}>
-      <View style={styles.metaPill}>
-        <Text style={styles.metaPillLabel}>Moves</Text>
-        <Text style={styles.metaPillValue}>{state.moves}</Text>
-      </View>
+      <StatsStrip
+        gameId="solitaire"
+        items={[
+          { label: "Moves", value: state.moves, accent: true },
+          state.variantId === "pyramid"
+            ? { label: "Pairs", value: state.pairs ?? 0, accent: true }
+            : null,
+          state.variantId === "tripeaks"
+            ? { label: "Combo", value: state.combo ?? 0, accent: true }
+            : null,
+          state.variantId === "spider"
+            ? {
+                label: "Runs",
+                value: state.completedRuns ?? 0,
+                accent: true,
+              }
+            : null,
+        ].filter(Boolean)}
+      />
+
       {state.variantId === "spider" ? (
-        <>
-          <View style={styles.metaPill}>
-            <Text style={styles.metaPillLabel}>Suits</Text>
-            <Text style={styles.metaPillValue}>{state.spiderMode}</Text>
-          </View>
-          <View style={styles.modeRow}>
-            {SPIDER_MODE_OPTIONS.map((option) => {
-              const selected = option.id === state.spiderMode;
-              return (
-                <Pressable
-                  key={option.id}
-                  onPress={() => dispatch(setSpiderModeAction(option.id))}
-                  style={({ pressed }) => [
-                    styles.modeChip,
-                    selected && styles.modeChipSelected,
-                    pressed && styles.modeChipPressed,
+        <View style={styles.modeRow}>
+          {SPIDER_MODE_OPTIONS.map((option) => {
+            const selected = option.id === state.spiderMode;
+            return (
+              <Pressable
+                key={option.id}
+                onPress={() => dispatch(setSpiderModeAction(option.id))}
+                style={({ pressed }) => [
+                  styles.modeChip,
+                  selected && styles.modeChipSelected,
+                  pressed && styles.modeChipPressed,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.modeChipText,
+                    selected && styles.modeChipTextSelected,
                   ]}
                 >
-                  <Text
-                    style={[
-                      styles.modeChipText,
-                      selected && styles.modeChipTextSelected,
-                    ]}
-                  >
-                    {option.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </>
+                  {option.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
       ) : null}
     </View>
   );

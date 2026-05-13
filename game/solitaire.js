@@ -1,24 +1,24 @@
-const SUITS = ['hearts', 'diamonds', 'clubs', 'spades'];
+const SUITS = ["hearts", "diamonds", "clubs", "spades"];
 
 const SUIT_SYMBOLS = {
-  hearts: '♥',
-  diamonds: '♦',
-  clubs: '♣',
-  spades: '♠',
+  hearts: "♥",
+  diamonds: "♦",
+  clubs: "♣",
+  spades: "♠",
 };
 
 const SUIT_COLORS = {
-  hearts: 'red',
-  diamonds: 'red',
-  clubs: 'black',
-  spades: 'black',
+  hearts: "red",
+  diamonds: "red",
+  clubs: "black",
+  spades: "black",
 };
 
 const RANK_LABELS = {
-  1: 'A',
-  11: 'J',
-  12: 'Q',
-  13: 'K',
+  1: "A",
+  11: "J",
+  12: "Q",
+  13: "K",
 };
 
 const PYRAMID_ROW_LENGTHS = [1, 2, 3, 4, 5, 6, 7];
@@ -26,29 +26,31 @@ const TRIPEAKS_ROW_LENGTHS = [3, 6, 9, 10];
 
 export const VARIANT_OPTIONS = [
   {
-    id: 'klondike',
-    label: 'Klondike',
-    description: 'Classic build-up solitaire with stock, tableau, and foundations.',
+    id: "klondike",
+    label: "Klondike",
+    description:
+      "Classic build-up solitaire with stock, tableau, and foundations.",
   },
   {
-    id: 'spider',
-    label: 'Spider',
-    description: 'Build descending runs and clear King-to-Ace sequences.',
+    id: "spider",
+    label: "Spider",
+    description: "Build descending runs and clear King-to-Ace sequences.",
   },
   {
-    id: 'freecell',
-    label: 'FreeCell',
-    description: 'Use free cells to organize ordered stacks and finish foundations.',
+    id: "freecell",
+    label: "FreeCell",
+    description:
+      "Use free cells to organize ordered stacks and finish foundations.",
   },
   {
-    id: 'pyramid',
-    label: 'Pyramid',
-    description: 'Remove pairs that add up to 13.',
+    id: "pyramid",
+    label: "Pyramid",
+    description: "Remove pairs that add up to 13.",
   },
   {
-    id: 'tripeaks',
-    label: 'TriPeaks',
-    description: 'Clear cards one rank away from the waste card.',
+    id: "tripeaks",
+    label: "TriPeaks",
+    description: "Clear cards one rank away from the waste card.",
   },
 ];
 
@@ -58,9 +60,9 @@ export const SPIDER_MODE_OPTIONS = [1, 2, 4].map((suitCount) => ({
 }));
 
 export const SOLITAIRE_ACTIONS = {
-  NEW_GAME: 'solitaire/newGame',
-  TAP: 'solitaire/tap',
-  SET_SPIDER_MODE: 'solitaire/setSpiderMode',
+  NEW_GAME: "solitaire/newGame",
+  TAP: "solitaire/tap",
+  SET_SPIDER_MODE: "solitaire/setSpiderMode",
 };
 
 export function newGameAction(variantId, options = {}) {
@@ -86,8 +88,10 @@ export function setSpiderModeAction(mode) {
 }
 
 function normalizeVariantId(value) {
-  const variantId = String(value || 'klondike').toLowerCase();
-  return VARIANT_OPTIONS.some((option) => option.id === variantId) ? variantId : 'klondike';
+  const variantId = String(value || "klondike").toLowerCase();
+  return VARIANT_OPTIONS.some((option) => option.id === variantId)
+    ? variantId
+    : "klondike";
 }
 
 function normalizeSpiderMode(value) {
@@ -112,7 +116,8 @@ function createCard(suit, rank, id, faceUp = false) {
 
 function cloneCard(card, overrides = {}) {
   const nextFaceUp =
-    Object.prototype.hasOwnProperty.call(overrides, 'faceUp') && overrides.faceUp != null
+    Object.prototype.hasOwnProperty.call(overrides, "faceUp") &&
+    overrides.faceUp != null
       ? overrides.faceUp
       : card.faceUp;
 
@@ -142,7 +147,12 @@ function createStandardDeck(copyId = 0) {
 
 function createSpiderDeck(mode) {
   const suitCount = normalizeSpiderMode(mode);
-  const suits = suitCount === 1 ? ['spades'] : suitCount === 2 ? ['spades', 'hearts'] : SUITS.slice();
+  const suits =
+    suitCount === 1
+      ? ["spades"]
+      : suitCount === 2
+        ? ["spades", "hearts"]
+        : SUITS.slice();
   const cards = [];
   let index = 0;
 
@@ -189,7 +199,7 @@ function sameTarget(a, b) {
 }
 
 function isRed(card) {
-  return card && (card.suit === 'hearts' || card.suit === 'diamonds');
+  return card && (card.suit === "hearts" || card.suit === "diamonds");
 }
 
 function isDescendingAlternating(sequence) {
@@ -226,7 +236,12 @@ function isDescendingSameSuit(sequence) {
   return true;
 }
 
-function sequenceFromTableau(tableau, pileIndex, cardIndex, requireSameSuit = false) {
+function sequenceFromTableau(
+  tableau,
+  pileIndex,
+  cardIndex,
+  requireSameSuit = false,
+) {
   const pile = tableau[pileIndex] || [];
   if (cardIndex < 0 || cardIndex >= pile.length) {
     return null;
@@ -237,7 +252,9 @@ function sequenceFromTableau(tableau, pileIndex, cardIndex, requireSameSuit = fa
     return null;
   }
 
-  const valid = requireSameSuit ? isDescendingSameSuit(sequence) : isDescendingAlternating(sequence);
+  const valid = requireSameSuit
+    ? isDescendingSameSuit(sequence)
+    : isDescendingAlternating(sequence);
   return valid ? sequence : null;
 }
 
@@ -314,7 +331,7 @@ function drawSpiderRow(state) {
     stock: nextStock,
     tableau: nextTableau,
     moves: state.moves + 1,
-    message: 'Dealt a Spider row.',
+    message: "Dealt a Spider row.",
   };
 }
 
@@ -326,23 +343,27 @@ function createKlondikeState() {
   for (let column = 0; column < tableau.length; column += 1) {
     for (let depth = 0; depth <= column; depth += 1) {
       tableau[column].push(
-        cloneCard(deck[index], { faceUp: depth === column })
+        cloneCard(deck[index], { faceUp: depth === column }),
       );
       index += 1;
     }
   }
 
-  const stock = deck.slice(index).map((card) => cloneCard(card, { faceUp: false }));
+  const stock = deck
+    .slice(index)
+    .map((card) => cloneCard(card, { faceUp: false }));
 
   return {
-    variantId: 'klondike',
-    variantLabel: 'Klondike',
+    variantId: "klondike",
+    variantLabel: "Klondike",
     spiderMode: 4,
     options: { spiderMode: 4 },
     selected: null,
-    status: 'playing',
-    message: 'Build foundations from Ace to King.',
+    status: "playing",
+    message: "Build foundations from Ace to King.",
     moves: 0,
+    pairs: 0,
+    combo: 0,
     stock,
     waste: [],
     foundations: [[], [], [], []],
@@ -360,23 +381,27 @@ function createSpiderState(mode = 4) {
   for (let column = 0; column < tableau.length; column += 1) {
     for (let depth = 0; depth < dealCounts[column]; depth += 1) {
       tableau[column].push(
-        cloneCard(deck[index], { faceUp: depth === dealCounts[column] - 1 })
+        cloneCard(deck[index], { faceUp: depth === dealCounts[column] - 1 }),
       );
       index += 1;
     }
   }
 
-  const stock = deck.slice(index).map((card) => cloneCard(card, { faceUp: false }));
+  const stock = deck
+    .slice(index)
+    .map((card) => cloneCard(card, { faceUp: false }));
 
   return {
-    variantId: 'spider',
-    variantLabel: 'Spider',
+    variantId: "spider",
+    variantLabel: "Spider",
     spiderMode,
     options: { spiderMode },
     selected: null,
-    status: 'playing',
+    status: "playing",
     message: `${spiderMode}-suit Spider: build same-suit runs from King to Ace.`,
     moves: 0,
+    pairs: 0,
+    combo: 0,
     stock,
     waste: [],
     completedRuns: 0,
@@ -393,14 +418,16 @@ function createFreeCellState() {
   });
 
   return {
-    variantId: 'freecell',
-    variantLabel: 'FreeCell',
+    variantId: "freecell",
+    variantLabel: "FreeCell",
     spiderMode: 4,
     options: { spiderMode: 4 },
     selected: null,
-    status: 'playing',
-    message: 'Use the free cells to organize ordered stacks.',
+    status: "playing",
+    message: "Use the free cells to organize ordered stacks.",
     moves: 0,
+    pairs: 0,
+    combo: 0,
     stock: [],
     waste: [],
     foundations: [[], [], [], []],
@@ -418,7 +445,7 @@ function syncPyramidVisibility(rows) {
 
       const exposed = isPyramidExposed(rows, rowIndex, colIndex);
       return cloneCard(card, { faceUp: exposed });
-    })
+    }),
   );
 }
 
@@ -440,7 +467,7 @@ function syncTriPeaksVisibility(rows) {
 
       const exposed = isTriPeaksExposed(rows, rowIndex, colIndex);
       return cloneCard(card, { faceUp: exposed });
-    })
+    }),
   );
 }
 
@@ -467,17 +494,20 @@ function createPyramidState() {
     pyramidRows.push(rowCards);
   }
 
-  const stock = deck.slice(index).map((card) => cloneCard(card, { faceUp: false }));
+  const stock = deck
+    .slice(index)
+    .map((card) => cloneCard(card, { faceUp: false }));
 
   return {
-    variantId: 'pyramid',
-    variantLabel: 'Pyramid',
+    variantId: "pyramid",
+    variantLabel: "Pyramid",
     spiderMode: 4,
     options: { spiderMode: 4 },
     selected: null,
-    status: 'playing',
-    message: 'Remove pairs that add up to 13.',
+    status: "playing",
+    message: "Remove pairs that add up to 13.",
     moves: 0,
+    pairs: 0,
     stock,
     waste: [],
     pyramidRows: syncPyramidVisibility(pyramidRows),
@@ -498,19 +528,25 @@ function createTriPeaksState() {
     boardRows.push(rowCards);
   }
 
-  const stock = deck.slice(index).map((card) => cloneCard(card, { faceUp: false }));
+  const stock = deck
+    .slice(index)
+    .map((card) => cloneCard(card, { faceUp: false }));
 
   return {
-    variantId: 'tripeaks',
-    variantLabel: 'TriPeaks',
+    variantId: "tripeaks",
+    variantLabel: "TriPeaks",
     spiderMode: 4,
     options: { spiderMode: 4 },
     selected: null,
-    status: 'playing',
-    message: 'Clear cards one rank away from the waste card.',
+    status: "playing",
+    message: "Clear cards one rank away from the waste card.",
     moves: 0,
     stock,
-    waste: [cloneCard(stock.length > 0 ? stock[0] : createStandardDeck(0)[0], { faceUp: true })].slice(0, 0),
+    waste: [
+      cloneCard(stock.length > 0 ? stock[0] : createStandardDeck(0)[0], {
+        faceUp: true,
+      }),
+    ].slice(0, 0),
     boardRows: syncTriPeaksVisibility(boardRows),
   };
 }
@@ -537,18 +573,21 @@ function createTriPeaksSafeState() {
     boardRows.push(rowCards);
   }
 
-  const stock = deck.slice(index).map((card) => cloneCard(card, { faceUp: false }));
+  const stock = deck
+    .slice(index)
+    .map((card) => cloneCard(card, { faceUp: false }));
   const initialDraw = drawOneFromStock(stock, []);
 
   return {
-    variantId: 'tripeaks',
-    variantLabel: 'TriPeaks',
+    variantId: "tripeaks",
+    variantLabel: "TriPeaks",
     spiderMode: 4,
     options: { spiderMode: 4 },
     selected: null,
-    status: 'playing',
-    message: 'Clear cards one rank away from the waste card.',
+    status: "playing",
+    message: "Clear cards one rank away from the waste card.",
     moves: 0,
+    combo: 0,
     stock: initialDraw.stock,
     waste: initialDraw.waste,
     boardRows: syncTriPeaksVisibility(boardRows),
@@ -558,19 +597,19 @@ function createTriPeaksSafeState() {
 function createInitialState(variantId, options = {}) {
   const normalizedVariantId = normalizeVariantId(variantId);
 
-  if (normalizedVariantId === 'spider') {
+  if (normalizedVariantId === "spider") {
     return createSpiderState(options.spiderMode);
   }
 
-  if (normalizedVariantId === 'freecell') {
+  if (normalizedVariantId === "freecell") {
     return createFreeCellState();
   }
 
-  if (normalizedVariantId === 'pyramid') {
+  if (normalizedVariantId === "pyramid") {
     return createPyramidState();
   }
 
-  if (normalizedVariantId === 'tripeaks') {
+  if (normalizedVariantId === "tripeaks") {
     return createTriPeaksSafeState();
   }
 
@@ -586,14 +625,19 @@ function moveTableauStack(tableau, sourceIndex, cardIndex, destinationIndex) {
   if (nextTableau[sourceIndex].length > 0) {
     nextTableau[sourceIndex][nextTableau[sourceIndex].length - 1] = cloneCard(
       nextTableau[sourceIndex][nextTableau[sourceIndex].length - 1],
-      { faceUp: true }
+      { faceUp: true },
     );
   }
 
   return nextTableau;
 }
 
-function moveTableauSingleToDestination(tableau, sourceIndex, cardIndex, destinationIndex) {
+function moveTableauSingleToDestination(
+  tableau,
+  sourceIndex,
+  cardIndex,
+  destinationIndex,
+) {
   const nextTableau = tableau.map((pile) => pile.slice());
   const moving = nextTableau[sourceIndex].splice(cardIndex, 1);
   nextTableau[destinationIndex] = nextTableau[destinationIndex].concat(moving);
@@ -601,7 +645,7 @@ function moveTableauSingleToDestination(tableau, sourceIndex, cardIndex, destina
   if (nextTableau[sourceIndex].length > 0) {
     nextTableau[sourceIndex][nextTableau[sourceIndex].length - 1] = cloneCard(
       nextTableau[sourceIndex][nextTableau[sourceIndex].length - 1],
-      { faceUp: true }
+      { faceUp: true },
     );
   }
 
@@ -630,7 +674,7 @@ function isBoardCleared(rows) {
 function countClearedCards(rows) {
   return rows.reduce(
     (sum, row) => sum + row.reduce((inner, card) => inner + (card ? 0 : 1), 0),
-    0
+    0,
   );
 }
 
@@ -641,61 +685,66 @@ function countCardsInFoundations(foundations) {
 function finalizeStatus(state) {
   const nextState = { ...state };
 
-  if ((state.variantId === 'klondike' || state.variantId === 'freecell') && countCardsInFoundations(state.foundations) === 52) {
+  if (
+    (state.variantId === "klondike" || state.variantId === "freecell") &&
+    countCardsInFoundations(state.foundations) === 52
+  ) {
     return {
       ...nextState,
-      status: 'won',
-      message: 'You won!',
+      status: "won",
+      message: "You won!",
       selected: null,
     };
   }
 
-  if (state.variantId === 'spider' && state.completedRuns >= 8) {
+  if (state.variantId === "spider" && state.completedRuns >= 8) {
     return {
       ...nextState,
-      status: 'won',
-      message: 'You won!',
+      status: "won",
+      message: "You won!",
       selected: null,
     };
   }
 
-  if (state.variantId === 'pyramid' && isBoardCleared(state.pyramidRows)) {
+  if (state.variantId === "pyramid" && isBoardCleared(state.pyramidRows)) {
     return {
       ...nextState,
-      status: 'won',
-      message: 'You won!',
+      status: "won",
+      message: "You won!",
       selected: null,
     };
   }
 
-  if (state.variantId === 'tripeaks' && isBoardCleared(state.boardRows)) {
+  if (state.variantId === "tripeaks" && isBoardCleared(state.boardRows)) {
     return {
       ...nextState,
-      status: 'won',
-      message: 'You won!',
+      status: "won",
+      message: "You won!",
       selected: null,
     };
   }
 
   const stuck =
-    (state.variantId === 'klondike' && !klondikeHasMoves(state)) ||
-    (state.variantId === 'spider' && state.stock.length === 0 && !spiderHasMoves(state)) ||
-    (state.variantId === 'freecell' && !freeCellHasMoves(state)) ||
-    (state.variantId === 'pyramid' && !pyramidHasMoves(state)) ||
-    (state.variantId === 'tripeaks' && !triPeaksHasMoves(state));
+    (state.variantId === "klondike" && !klondikeHasMoves(state)) ||
+    (state.variantId === "spider" &&
+      state.stock.length === 0 &&
+      !spiderHasMoves(state)) ||
+    (state.variantId === "freecell" && !freeCellHasMoves(state)) ||
+    (state.variantId === "pyramid" && !pyramidHasMoves(state)) ||
+    (state.variantId === "tripeaks" && !triPeaksHasMoves(state));
 
   if (stuck) {
     return {
       ...nextState,
-      status: 'stuck',
-      message: 'No legal moves left.',
+      status: "stuck",
+      message: "No legal moves left.",
       selected: null,
     };
   }
 
   return {
     ...nextState,
-    status: 'playing',
+    status: "playing",
   };
 }
 
@@ -706,7 +755,9 @@ function klondikeHasMoves(state) {
 
   const wasteTop = topCard(state.waste);
   if (wasteTop) {
-    if (state.foundations.some((pile) => canPlaceOnFoundation(wasteTop, pile))) {
+    if (
+      state.foundations.some((pile) => canPlaceOnFoundation(wasteTop, pile))
+    ) {
       return true;
     }
     if (state.tableau.some((pile) => canPlaceOnTableau(wasteTop, pile))) {
@@ -717,17 +768,32 @@ function klondikeHasMoves(state) {
   for (let pileIndex = 0; pileIndex < state.tableau.length; pileIndex += 1) {
     const pile = state.tableau[pileIndex];
     for (let cardIndex = 0; cardIndex < pile.length; cardIndex += 1) {
-      const sequence = sequenceFromTableau(state.tableau, pileIndex, cardIndex, false);
+      const sequence = sequenceFromTableau(
+        state.tableau,
+        pileIndex,
+        cardIndex,
+        false,
+      );
       if (!sequence) {
         continue;
       }
 
       const movingCard = sequence[0];
-      if (state.foundations.some((foundation) => canPlaceOnFoundation(movingCard, foundation))) {
+      if (
+        state.foundations.some((foundation) =>
+          canPlaceOnFoundation(movingCard, foundation),
+        )
+      ) {
         return true;
       }
 
-      if (state.tableau.some((destinationPile, destinationIndex) => destinationIndex !== pileIndex && canPlaceOnTableau(movingCard, destinationPile))) {
+      if (
+        state.tableau.some(
+          (destinationPile, destinationIndex) =>
+            destinationIndex !== pileIndex &&
+            canPlaceOnTableau(movingCard, destinationPile),
+        )
+      ) {
         return true;
       }
     }
@@ -744,13 +810,24 @@ function spiderHasMoves(state) {
   for (let pileIndex = 0; pileIndex < state.tableau.length; pileIndex += 1) {
     const pile = state.tableau[pileIndex];
     for (let cardIndex = 0; cardIndex < pile.length; cardIndex += 1) {
-      const sequence = sequenceFromTableau(state.tableau, pileIndex, cardIndex, true);
+      const sequence = sequenceFromTableau(
+        state.tableau,
+        pileIndex,
+        cardIndex,
+        true,
+      );
       if (!sequence) {
         continue;
       }
 
       const movingCard = sequence[0];
-      if (state.tableau.some((destinationPile, destinationIndex) => destinationIndex !== pileIndex && canPlaceOnSpiderTableau(movingCard, destinationPile))) {
+      if (
+        state.tableau.some(
+          (destinationPile, destinationIndex) =>
+            destinationIndex !== pileIndex &&
+            canPlaceOnSpiderTableau(movingCard, destinationPile),
+        )
+      ) {
         return true;
       }
     }
@@ -786,7 +863,11 @@ function freeCellHasMoves(state) {
     }
 
     const topCardFromTableau = pile[pile.length - 1];
-    if (state.foundations.some((foundation) => canPlaceOnFoundation(topCardFromTableau, foundation))) {
+    if (
+      state.foundations.some((foundation) =>
+        canPlaceOnFoundation(topCardFromTableau, foundation),
+      )
+    ) {
       return true;
     }
 
@@ -794,22 +875,39 @@ function freeCellHasMoves(state) {
       return true;
     }
 
-    const emptyColumns = state.tableau.filter((column) => column.length === 0).length;
+    const emptyColumns = state.tableau.filter(
+      (column) => column.length === 0,
+    ).length;
     const emptyFreecells = state.freecells.filter((cell) => !cell).length;
     const maxMovable = (emptyFreecells + 1) * Math.pow(2, emptyColumns);
 
     for (let cardIndex = firstFaceUp; cardIndex < pile.length; cardIndex += 1) {
-      const sequence = sequenceFromTableau(state.tableau, pileIndex, cardIndex, false);
+      const sequence = sequenceFromTableau(
+        state.tableau,
+        pileIndex,
+        cardIndex,
+        false,
+      );
       if (!sequence || sequence.length > maxMovable) {
         continue;
       }
 
       const movingCard = sequence[0];
-      if (state.foundations.some((foundation) => canPlaceOnFoundation(movingCard, foundation))) {
+      if (
+        state.foundations.some((foundation) =>
+          canPlaceOnFoundation(movingCard, foundation),
+        )
+      ) {
         return true;
       }
 
-      if (state.tableau.some((destinationPile, destinationIndex) => destinationIndex !== pileIndex && canPlaceOnTableau(movingCard, destinationPile))) {
+      if (
+        state.tableau.some(
+          (destinationPile, destinationIndex) =>
+            destinationIndex !== pileIndex &&
+            canPlaceOnTableau(movingCard, destinationPile),
+        )
+      ) {
         return true;
       }
     }
@@ -894,60 +992,88 @@ function klondikeMoveFromSelected(state, target) {
     return state;
   }
 
-  if (selected.type === 'waste') {
+  if (selected.type === "waste") {
     const movingCard = topCard(state.waste);
     if (!movingCard) {
       return state;
     }
 
-    if (target.type === 'foundation' && canPlaceOnFoundation(movingCard, state.foundations[target.index])) {
+    if (
+      target.type === "foundation" &&
+      canPlaceOnFoundation(movingCard, state.foundations[target.index])
+    ) {
       return finalizeStatus({
         ...state,
         selected: null,
         moves: state.moves + 1,
         waste: state.waste.slice(0, -1),
         foundations: state.foundations.map((pile, index) =>
-          index === target.index ? pile.concat(movingCard) : pile.slice()
+          index === target.index ? pile.concat(movingCard) : pile.slice(),
         ),
-        message: 'Moved a card to a foundation.',
+        message: "Moved a card to a foundation.",
       });
     }
 
-    if (target.type === 'tableau' && target.index !== selected.index && canPlaceOnTableau(movingCard, state.tableau[target.index])) {
+    if (
+      target.type === "tableau" &&
+      target.index !== selected.index &&
+      canPlaceOnTableau(movingCard, state.tableau[target.index])
+    ) {
       return finalizeStatus({
         ...state,
         selected: null,
         moves: state.moves + 1,
         waste: state.waste.slice(0, -1),
         tableau: state.tableau.map((pile, index) =>
-          index === target.index ? pile.concat(movingCard) : pile.slice()
+          index === target.index ? pile.concat(movingCard) : pile.slice(),
         ),
-        message: 'Moved a card to the tableau.',
+        message: "Moved a card to the tableau.",
       });
     }
 
     return state;
   }
 
-  if (selected.type === 'tableau') {
-    const sequence = sequenceFromTableau(state.tableau, selected.index, selected.cardIndex, false);
+  if (selected.type === "tableau") {
+    const sequence = sequenceFromTableau(
+      state.tableau,
+      selected.index,
+      selected.cardIndex,
+      false,
+    );
     if (!sequence) {
       return state;
     }
 
     const movingCard = sequence[0];
 
-    if (target.type === 'foundation' && sequence.length === 1 && canPlaceOnFoundation(movingCard, state.foundations[target.index])) {
-      const nextTableau = moveTableauSingleToDestination(state.tableau, selected.index, selected.cardIndex, selected.index);
-      const sourcePile = state.tableau[selected.index].slice(0, selected.cardIndex);
+    if (
+      target.type === "foundation" &&
+      sequence.length === 1 &&
+      canPlaceOnFoundation(movingCard, state.foundations[target.index])
+    ) {
+      const nextTableau = moveTableauSingleToDestination(
+        state.tableau,
+        selected.index,
+        selected.cardIndex,
+        selected.index,
+      );
+      const sourcePile = state.tableau[selected.index].slice(
+        0,
+        selected.cardIndex,
+      );
       const finalizedTableau = state.tableau.map((pile, index) =>
-        index === selected.index ? sourcePile : pile.slice()
+        index === selected.index ? sourcePile : pile.slice(),
       );
 
       if (finalizedTableau[selected.index].length > 0) {
-        finalizedTableau[selected.index][finalizedTableau[selected.index].length - 1] = cloneCard(
-          finalizedTableau[selected.index][finalizedTableau[selected.index].length - 1],
-          { faceUp: true }
+        finalizedTableau[selected.index][
+          finalizedTableau[selected.index].length - 1
+        ] = cloneCard(
+          finalizedTableau[selected.index][
+            finalizedTableau[selected.index].length - 1
+          ],
+          { faceUp: true },
         );
       }
 
@@ -957,20 +1083,29 @@ function klondikeMoveFromSelected(state, target) {
         moves: state.moves + 1,
         tableau: finalizedTableau,
         foundations: state.foundations.map((pile, index) =>
-          index === target.index ? pile.concat(movingCard) : pile.slice()
+          index === target.index ? pile.concat(movingCard) : pile.slice(),
         ),
-        message: 'Moved a card to a foundation.',
+        message: "Moved a card to a foundation.",
       });
     }
 
-    if (target.type === 'tableau' && target.index !== selected.index && canPlaceOnTableau(movingCard, state.tableau[target.index])) {
-      const nextTableau = moveTableauStack(state.tableau, selected.index, selected.cardIndex, target.index);
+    if (
+      target.type === "tableau" &&
+      target.index !== selected.index &&
+      canPlaceOnTableau(movingCard, state.tableau[target.index])
+    ) {
+      const nextTableau = moveTableauStack(
+        state.tableau,
+        selected.index,
+        selected.cardIndex,
+        target.index,
+      );
       return finalizeStatus({
         ...state,
         selected: null,
         moves: state.moves + 1,
         tableau: nextTableau,
-        message: 'Moved a stack.',
+        message: "Moved a stack.",
       });
     }
   }
@@ -979,7 +1114,7 @@ function klondikeMoveFromSelected(state, target) {
 }
 
 function handleKlondikeTap(state, target) {
-  if (target.type === 'stock') {
+  if (target.type === "stock") {
     const drawn = drawOneFromStock(state.stock, state.waste);
     return finalizeStatus({
       ...state,
@@ -987,7 +1122,7 @@ function handleKlondikeTap(state, target) {
       moves: state.moves + 1,
       stock: drawn.stock,
       waste: drawn.waste,
-      message: drawn.drawn ? 'Drew a card.' : 'No cards left in stock.',
+      message: drawn.drawn ? "Drew a card." : "No cards left in stock.",
     });
   }
 
@@ -1000,22 +1135,37 @@ function handleKlondikeTap(state, target) {
     return moved;
   }
 
-  if (target.type === 'waste' && topCard(state.waste)) {
-    return setSelected(state, { type: 'waste' });
+  if (target.type === "waste" && topCard(state.waste)) {
+    return setSelected(state, { type: "waste" });
   }
 
-  if (target.type === 'tableau') {
+  if (target.type === "tableau") {
     const pile = state.tableau[target.index] || [];
-    const cardIndex = typeof target.cardIndex === 'number' ? target.cardIndex : pile.findIndex((card) => card.faceUp);
+    const cardIndex =
+      typeof target.cardIndex === "number"
+        ? target.cardIndex
+        : pile.findIndex((card) => card.faceUp);
     if (cardIndex >= 0) {
-      const sequence = sequenceFromTableau(state.tableau, target.index, cardIndex, false);
+      const sequence = sequenceFromTableau(
+        state.tableau,
+        target.index,
+        cardIndex,
+        false,
+      );
       if (sequence) {
-        return setSelected(state, { type: 'tableau', index: target.index, cardIndex });
+        return setSelected(state, {
+          type: "tableau",
+          index: target.index,
+          cardIndex,
+        });
       }
     }
   }
 
-  if (target.type === 'foundation' && topCard(state.foundations[target.index])) {
+  if (
+    target.type === "foundation" &&
+    topCard(state.foundations[target.index])
+  ) {
     return setSelected(state, target);
   }
 
@@ -1030,7 +1180,10 @@ function spiderResolveCompletedRuns(state) {
 
     while (nextPile.length >= 13) {
       const tail = nextPile.slice(nextPile.length - 13);
-      const complete = isDescendingSameSuit(tail) && tail[0].rank === 13 && tail[tail.length - 1].rank === 1;
+      const complete =
+        isDescendingSameSuit(tail) &&
+        tail[0].rank === 13 &&
+        tail[tail.length - 1].rank === 1;
       if (!complete) {
         break;
       }
@@ -1040,7 +1193,9 @@ function spiderResolveCompletedRuns(state) {
     }
 
     if (nextPile.length > 0) {
-      nextPile[nextPile.length - 1] = cloneCard(nextPile[nextPile.length - 1], { faceUp: true });
+      nextPile[nextPile.length - 1] = cloneCard(nextPile[nextPile.length - 1], {
+        faceUp: true,
+      });
     }
 
     return nextPile;
@@ -1054,20 +1209,31 @@ function spiderResolveCompletedRuns(state) {
 }
 
 function handleSpiderTap(state, target) {
-  if (target.type === 'stock') {
+  if (target.type === "stock") {
     const dealt = drawSpiderRow(state);
-    return finalizeStatus(spiderResolveCompletedRuns({
-      ...dealt,
-      selected: null,
-    }));
+    return finalizeStatus(
+      spiderResolveCompletedRuns({
+        ...dealt,
+        selected: null,
+      }),
+    );
   }
 
   if (sameTarget(state.selected, target)) {
     return clearSelection(state);
   }
 
-  if (state.selected && state.selected.type === 'tableau' && target.type === 'tableau') {
-    const sequence = sequenceFromTableau(state.tableau, state.selected.index, state.selected.cardIndex, true);
+  if (
+    state.selected &&
+    state.selected.type === "tableau" &&
+    target.type === "tableau"
+  ) {
+    const sequence = sequenceFromTableau(
+      state.tableau,
+      state.selected.index,
+      state.selected.cardIndex,
+      true,
+    );
     if (!sequence) {
       return state;
     }
@@ -1089,26 +1255,37 @@ function handleSpiderTap(state, target) {
       return pile.slice();
     });
 
-    return finalizeStatus(spiderResolveCompletedRuns({
-      ...state,
-      selected: null,
-      moves: state.moves + 1,
-      tableau: nextTableau,
-      message: 'Moved a Spider run.',
-    }));
+    return finalizeStatus(
+      spiderResolveCompletedRuns({
+        ...state,
+        selected: null,
+        moves: state.moves + 1,
+        tableau: nextTableau,
+        message: "Moved a Spider run.",
+      }),
+    );
   }
 
-  if (target.type === 'tableau') {
+  if (target.type === "tableau") {
     const pile = state.tableau[target.index] || [];
     const cardIndex =
-      typeof target.cardIndex === 'number'
+      typeof target.cardIndex === "number"
         ? target.cardIndex
         : pile.findIndex((card) => card.faceUp);
 
     if (cardIndex >= 0) {
-      const sequence = sequenceFromTableau(state.tableau, target.index, cardIndex, true);
+      const sequence = sequenceFromTableau(
+        state.tableau,
+        target.index,
+        cardIndex,
+        true,
+      );
       if (sequence) {
-        return setSelected(state, { type: 'tableau', index: target.index, cardIndex });
+        return setSelected(state, {
+          type: "tableau",
+          index: target.index,
+          cardIndex,
+        });
       }
     }
   }
@@ -1122,13 +1299,16 @@ function moveFreeCellSelectedToTarget(state, target) {
     return state;
   }
 
-  if (selected.type === 'freecell') {
+  if (selected.type === "freecell") {
     const movingCard = state.freecells[selected.index];
     if (!movingCard) {
       return state;
     }
 
-    if (target.type === 'foundation' && canPlaceOnFoundation(movingCard, state.foundations[target.index])) {
+    if (
+      target.type === "foundation" &&
+      canPlaceOnFoundation(movingCard, state.foundations[target.index])
+    ) {
       const nextFreecells = state.freecells.slice();
       nextFreecells[selected.index] = null;
 
@@ -1138,13 +1318,16 @@ function moveFreeCellSelectedToTarget(state, target) {
         moves: state.moves + 1,
         freecells: nextFreecells,
         foundations: state.foundations.map((pile, index) =>
-          index === target.index ? pile.concat(movingCard) : pile.slice()
+          index === target.index ? pile.concat(movingCard) : pile.slice(),
         ),
-        message: 'Moved a card to a foundation.',
+        message: "Moved a card to a foundation.",
       });
     }
 
-    if (target.type === 'tableau' && canPlaceOnTableau(movingCard, state.tableau[target.index])) {
+    if (
+      target.type === "tableau" &&
+      canPlaceOnTableau(movingCard, state.tableau[target.index])
+    ) {
       const nextFreecells = state.freecells.slice();
       nextFreecells[selected.index] = null;
 
@@ -1154,41 +1337,55 @@ function moveFreeCellSelectedToTarget(state, target) {
         moves: state.moves + 1,
         freecells: nextFreecells,
         tableau: state.tableau.map((pile, index) =>
-          index === target.index ? pile.concat(movingCard) : pile.slice()
+          index === target.index ? pile.concat(movingCard) : pile.slice(),
         ),
-        message: 'Moved a card from a free cell.',
+        message: "Moved a card from a free cell.",
       });
     }
   }
 
-  if (selected.type === 'tableau') {
-    const sequence = sequenceFromTableau(state.tableau, selected.index, selected.cardIndex, false);
+  if (selected.type === "tableau") {
+    const sequence = sequenceFromTableau(
+      state.tableau,
+      selected.index,
+      selected.cardIndex,
+      false,
+    );
     if (!sequence) {
       return state;
     }
 
     const movingCard = sequence[0];
     const emptyFreecells = state.freecells.filter((cell) => !cell).length;
-    const emptyColumns = state.tableau.filter((pile) => pile.length === 0).length;
+    const emptyColumns = state.tableau.filter(
+      (pile) => pile.length === 0,
+    ).length;
     const maxMovable = (emptyFreecells + 1) * Math.pow(2, emptyColumns);
 
     if (sequence.length > maxMovable) {
       return state;
     }
 
-    if (target.type === 'freecell' && sequence.length === 1 && !state.freecells[target.index]) {
+    if (
+      target.type === "freecell" &&
+      sequence.length === 1 &&
+      !state.freecells[target.index]
+    ) {
       const nextFreecells = state.freecells.slice();
       nextFreecells[target.index] = movingCard;
 
       const nextTableau = state.tableau.map((pile, index) =>
-        index === selected.index ? pile.slice(0, selected.cardIndex) : pile.slice()
+        index === selected.index
+          ? pile.slice(0, selected.cardIndex)
+          : pile.slice(),
       );
 
       if (nextTableau[selected.index].length > 0) {
-        nextTableau[selected.index][nextTableau[selected.index].length - 1] = cloneCard(
-          nextTableau[selected.index][nextTableau[selected.index].length - 1],
-          { faceUp: true }
-        );
+        nextTableau[selected.index][nextTableau[selected.index].length - 1] =
+          cloneCard(
+            nextTableau[selected.index][nextTableau[selected.index].length - 1],
+            { faceUp: true },
+          );
       }
 
       return finalizeStatus({
@@ -1197,20 +1394,27 @@ function moveFreeCellSelectedToTarget(state, target) {
         moves: state.moves + 1,
         freecells: nextFreecells,
         tableau: nextTableau,
-        message: 'Moved a card to a free cell.',
+        message: "Moved a card to a free cell.",
       });
     }
 
-    if (target.type === 'foundation' && sequence.length === 1 && canPlaceOnFoundation(movingCard, state.foundations[target.index])) {
+    if (
+      target.type === "foundation" &&
+      sequence.length === 1 &&
+      canPlaceOnFoundation(movingCard, state.foundations[target.index])
+    ) {
       const nextTableau = state.tableau.map((pile, index) =>
-        index === selected.index ? pile.slice(0, selected.cardIndex) : pile.slice()
+        index === selected.index
+          ? pile.slice(0, selected.cardIndex)
+          : pile.slice(),
       );
 
       if (nextTableau[selected.index].length > 0) {
-        nextTableau[selected.index][nextTableau[selected.index].length - 1] = cloneCard(
-          nextTableau[selected.index][nextTableau[selected.index].length - 1],
-          { faceUp: true }
-        );
+        nextTableau[selected.index][nextTableau[selected.index].length - 1] =
+          cloneCard(
+            nextTableau[selected.index][nextTableau[selected.index].length - 1],
+            { faceUp: true },
+          );
       }
 
       return finalizeStatus({
@@ -1218,14 +1422,18 @@ function moveFreeCellSelectedToTarget(state, target) {
         selected: null,
         moves: state.moves + 1,
         foundations: state.foundations.map((pile, index) =>
-          index === target.index ? pile.concat(movingCard) : pile.slice()
+          index === target.index ? pile.concat(movingCard) : pile.slice(),
         ),
         tableau: nextTableau,
-        message: 'Moved a card to a foundation.',
+        message: "Moved a card to a foundation.",
       });
     }
 
-    if (target.type === 'tableau' && target.index !== selected.index && canPlaceOnTableau(movingCard, state.tableau[target.index])) {
+    if (
+      target.type === "tableau" &&
+      target.index !== selected.index &&
+      canPlaceOnTableau(movingCard, state.tableau[target.index])
+    ) {
       const nextTableau = state.tableau.map((pile, index) => {
         if (index === selected.index) {
           return pile.slice(0, selected.cardIndex);
@@ -1239,10 +1447,11 @@ function moveFreeCellSelectedToTarget(state, target) {
       });
 
       if (nextTableau[selected.index].length > 0) {
-        nextTableau[selected.index][nextTableau[selected.index].length - 1] = cloneCard(
-          nextTableau[selected.index][nextTableau[selected.index].length - 1],
-          { faceUp: true }
-        );
+        nextTableau[selected.index][nextTableau[selected.index].length - 1] =
+          cloneCard(
+            nextTableau[selected.index][nextTableau[selected.index].length - 1],
+            { faceUp: true },
+          );
       }
 
       return finalizeStatus({
@@ -1250,7 +1459,7 @@ function moveFreeCellSelectedToTarget(state, target) {
         selected: null,
         moves: state.moves + 1,
         tableau: nextTableau,
-        message: 'Moved a sequence.',
+        message: "Moved a sequence.",
       });
     }
   }
@@ -1268,26 +1477,38 @@ function handleFreeCellTap(state, target) {
     return moved;
   }
 
-  if (target.type === 'freecell' && state.freecells[target.index]) {
-    return setSelected(state, { type: 'freecell', index: target.index });
+  if (target.type === "freecell" && state.freecells[target.index]) {
+    return setSelected(state, { type: "freecell", index: target.index });
   }
 
-  if (target.type === 'tableau') {
+  if (target.type === "tableau") {
     const pile = state.tableau[target.index] || [];
     const cardIndex =
-      typeof target.cardIndex === 'number'
+      typeof target.cardIndex === "number"
         ? target.cardIndex
         : pile.findIndex((card) => card.faceUp);
 
     if (cardIndex >= 0) {
-      const sequence = sequenceFromTableau(state.tableau, target.index, cardIndex, false);
+      const sequence = sequenceFromTableau(
+        state.tableau,
+        target.index,
+        cardIndex,
+        false,
+      );
       if (sequence) {
-        return setSelected(state, { type: 'tableau', index: target.index, cardIndex });
+        return setSelected(state, {
+          type: "tableau",
+          index: target.index,
+          cardIndex,
+        });
       }
     }
   }
 
-  if (target.type === 'foundation' && topCard(state.foundations[target.index])) {
+  if (
+    target.type === "foundation" &&
+    topCard(state.foundations[target.index])
+  ) {
     return setSelected(state, target);
   }
 
@@ -1295,7 +1516,7 @@ function handleFreeCellTap(state, target) {
 }
 
 function handlePyramidTap(state, target) {
-  if (target.type === 'stock') {
+  if (target.type === "stock") {
     const draw = drawOneFromStock(state.stock, state.waste);
     return finalizeStatus({
       ...state,
@@ -1303,7 +1524,7 @@ function handlePyramidTap(state, target) {
       moves: state.moves + 1,
       stock: draw.stock,
       waste: draw.waste,
-      message: draw.drawn ? 'Drew a card.' : 'No cards left in stock.',
+      message: draw.drawn ? "Drew a card." : "No cards left in stock.",
     });
   }
 
@@ -1311,15 +1532,17 @@ function handlePyramidTap(state, target) {
     return clearSelection(state);
   }
 
-  if (target.type === 'waste') {
+  if (target.type === "waste") {
     if (topCard(state.waste)) {
-      return setSelected(state, { type: 'waste' });
+      return setSelected(state, { type: "waste" });
     }
     return state;
   }
 
-  if (target.type === 'pyramid') {
-    const card = state.pyramidRows[target.row] && state.pyramidRows[target.row][target.col];
+  if (target.type === "pyramid") {
+    const card =
+      state.pyramidRows[target.row] &&
+      state.pyramidRows[target.row][target.col];
     if (!card || !card.faceUp) {
       return state;
     }
@@ -1334,7 +1557,8 @@ function handlePyramidTap(state, target) {
         moves: state.moves + 1,
         pyramidRows: nextRows,
         waste: state.waste.slice(0, -1),
-        message: 'Removed a pair.',
+        pairs: (state.pairs ?? 0) + 1,
+        message: "Removed a pair.",
       });
     }
 
@@ -1345,11 +1569,16 @@ function handlePyramidTap(state, target) {
         selected: null,
         moves: state.moves + 1,
         pyramidRows: nextRows,
-        message: 'Removed a king.',
+        message: "Removed a king.",
       });
     }
 
-    if (state.selected && state.selected.type === 'waste' && wasteTop && card.rank + wasteTop.rank === 13) {
+    if (
+      state.selected &&
+      state.selected.type === "waste" &&
+      wasteTop &&
+      card.rank + wasteTop.rank === 13
+    ) {
       const nextRows = removePyramidCards(state.pyramidRows, target);
       return finalizeStatus({
         ...state,
@@ -1357,7 +1586,8 @@ function handlePyramidTap(state, target) {
         moves: state.moves + 1,
         pyramidRows: nextRows,
         waste: state.waste.slice(0, -1),
-        message: 'Removed a pair.',
+        pairs: (state.pairs ?? 0) + 1,
+        message: "Removed a pair.",
       });
     }
 
@@ -1368,15 +1598,16 @@ function handlePyramidTap(state, target) {
 }
 
 function handleTriPeaksTap(state, target) {
-  if (target.type === 'stock') {
+  if (target.type === "stock") {
     const draw = drawOneFromStock(state.stock, state.waste);
     return finalizeStatus({
       ...state,
       selected: null,
       moves: state.moves + 1,
+      combo: 0,
       stock: draw.stock,
       waste: draw.waste,
-      message: draw.drawn ? 'Drew a card.' : 'No cards left in stock.',
+      message: draw.drawn ? "Drew a card." : "No cards left in stock.",
     });
   }
 
@@ -1384,15 +1615,16 @@ function handleTriPeaksTap(state, target) {
     return clearSelection(state);
   }
 
-  if (target.type === 'waste') {
+  if (target.type === "waste") {
     if (topCard(state.waste)) {
-      return setSelected(state, { type: 'waste' });
+      return setSelected(state, { type: "waste" });
     }
     return state;
   }
 
-  if (target.type === 'tripeaks') {
-    const card = state.boardRows[target.row] && state.boardRows[target.row][target.col];
+  if (target.type === "tripeaks") {
+    const card =
+      state.boardRows[target.row] && state.boardRows[target.row][target.col];
     if (!card || !card.faceUp) {
       return state;
     }
@@ -1401,14 +1633,19 @@ function handleTriPeaksTap(state, target) {
     const legal = wasteTop && Math.abs(card.rank - wasteTop.rank) === 1;
 
     if (legal) {
-      const nextRows = removeTriPeaksCard(state.boardRows, target.row, target.col);
+      const nextRows = removeTriPeaksCard(
+        state.boardRows,
+        target.row,
+        target.col,
+      );
       return finalizeStatus({
         ...state,
         selected: null,
         moves: state.moves + 1,
         boardRows: nextRows,
         waste: state.waste.concat(cloneCard(card, { faceUp: true })),
-        message: 'Cleared a card.',
+        combo: (state.combo ?? 0) + 1,
+        message: "Cleared a card.",
       });
     }
 
@@ -1424,7 +1661,10 @@ export function createSolitaireState(variantId, options = {}) {
 
 export function getVariantOption(variantId) {
   const normalizedVariantId = normalizeVariantId(variantId);
-  return VARIANT_OPTIONS.find((option) => option.id === normalizedVariantId) || VARIANT_OPTIONS[0];
+  return (
+    VARIANT_OPTIONS.find((option) => option.id === normalizedVariantId) ||
+    VARIANT_OPTIONS[0]
+  );
 }
 
 export function getTopCard(pile) {
@@ -1433,10 +1673,10 @@ export function getTopCard(pile) {
 
 export function getCardDisplayLabel(card) {
   if (!card) {
-    return '';
+    return "";
   }
 
-  return `${card.rankLabel || card.rank}${card.symbol || ''}`;
+  return `${card.rankLabel || card.rank}${card.symbol || ""}`;
 }
 
 export function getSelectedIsTarget(state, target) {
@@ -1457,31 +1697,39 @@ export function getSpiderModeOptions() {
 
 export function solitaireReducer(state, action) {
   if (!state) {
-    return createInitialState(action && action.variantId, action && action.options);
+    return createInitialState(
+      action && action.variantId,
+      action && action.options,
+    );
   }
 
   switch (action && action.type) {
     case SOLITAIRE_ACTIONS.NEW_GAME:
-      return createInitialState(action.variantId || state.variantId, action.options || state.options || { spiderMode: state.spiderMode });
+      return createInitialState(
+        action.variantId || state.variantId,
+        action.options || state.options || { spiderMode: state.spiderMode },
+      );
 
     case SOLITAIRE_ACTIONS.SET_SPIDER_MODE:
-      if (state.variantId !== 'spider') {
+      if (state.variantId !== "spider") {
         return state;
       }
-      return createInitialState('spider', { spiderMode: normalizeSpiderMode(action.mode) });
+      return createInitialState("spider", {
+        spiderMode: normalizeSpiderMode(action.mode),
+      });
 
     case SOLITAIRE_ACTIONS.TAP: {
       let nextState = state;
 
-      if (state.variantId === 'klondike') {
+      if (state.variantId === "klondike") {
         nextState = handleKlondikeTap(state, action.target);
-      } else if (state.variantId === 'spider') {
+      } else if (state.variantId === "spider") {
         nextState = handleSpiderTap(state, action.target);
-      } else if (state.variantId === 'freecell') {
+      } else if (state.variantId === "freecell") {
         nextState = handleFreeCellTap(state, action.target);
-      } else if (state.variantId === 'pyramid') {
+      } else if (state.variantId === "pyramid") {
         nextState = handlePyramidTap(state, action.target);
-      } else if (state.variantId === 'tripeaks') {
+      } else if (state.variantId === "tripeaks") {
         nextState = handleTriPeaksTap(state, action.target);
       }
 
@@ -1501,7 +1749,10 @@ export function isCardRed(card) {
 }
 
 export function isKlondikeCardMoveLegal(card, foundationPile, tableauPile) {
-  return canPlaceOnFoundation(card, foundationPile) || canPlaceOnTableau(card, tableauPile);
+  return (
+    canPlaceOnFoundation(card, foundationPile) ||
+    canPlaceOnTableau(card, tableauPile)
+  );
 }
 
 export function isSpiderCardMoveLegal(card, tableauPile) {
@@ -1509,7 +1760,10 @@ export function isSpiderCardMoveLegal(card, tableauPile) {
 }
 
 export function isFreeCellCardMoveLegal(card, foundationPile, tableauPile) {
-  return canPlaceOnFoundation(card, foundationPile) || canPlaceOnTableau(card, tableauPile);
+  return (
+    canPlaceOnFoundation(card, foundationPile) ||
+    canPlaceOnTableau(card, tableauPile)
+  );
 }
 
 export function isPyramidBoardExposed(rows, rowIndex, colIndex) {
