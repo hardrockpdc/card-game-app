@@ -13,6 +13,7 @@ import Card from "../components/Card";
 import Toast, { useToast } from "../components/Toast";
 import GameHeader from "../components/GameHeader";
 import EndOfRoundModal from "../components/EndOfRoundModal";
+import StatsStrip from "../components/StatsStrip";
 import TutorialOverlay, { hasSeen } from "../components/TutorialOverlay";
 import { getTableTheme } from "../game/tableThemes";
 
@@ -41,18 +42,18 @@ const {
 
 const GIN_RUMMY_SLIDES = [
   {
-    emoji: '🃏',
-    title: 'Form Melds',
-    body: 'Build sets (3 cards of the same rank) or runs (3+ cards of the same suit in order).',
+    emoji: "🃏",
+    title: "Form Melds",
+    body: "Build sets (3 cards of the same rank) or runs (3+ cards of the same suit in order).",
   },
   {
-    emoji: '🔄',
-    title: 'Draw & Discard',
-    body: 'Each turn: draw a card from the stock or discard pile, then discard one from your hand.',
+    emoji: "🔄",
+    title: "Draw & Discard",
+    body: "Each turn: draw a card from the stock or discard pile, then discard one from your hand.",
   },
   {
-    emoji: '🏆',
-    title: 'Knock or Go Gin',
+    emoji: "🏆",
+    title: "Knock or Go Gin",
     body: 'Knock when your unmelded cards total 10 or less. Get all 10 cards into melds for "Gin" — worth 25 bonus points!',
   },
 ];
@@ -205,7 +206,11 @@ export default function RummyGameScreen({ navigation, route }) {
   const fullRef = useRef(null);
   const aiTimerRef = useRef(null);
   const coinRewardedRef = useRef(false);
-  const { show: showToast, message: toastMessage, revision: toastRevision } = useToast();
+  const {
+    show: showToast,
+    message: toastMessage,
+    revision: toastRevision,
+  } = useToast();
   const [coinsEarned, setCoinsEarned] = useState(0);
   const [showTutorial, setShowTutorial] = useState(false);
   const [showRoundModal, setShowRoundModal] = useState(false);
@@ -244,7 +249,9 @@ export default function RummyGameScreen({ navigation, route }) {
             { id: "host", name: myName, isAI: false },
             { id: "ai_1", name: "Computer", isAI: true },
           ];
-    applyState(createRummyState({ variantId, players: initPlayers, difficulty }));
+    applyState(
+      createRummyState({ variantId, players: initPlayers, difficulty }),
+    );
   }
 
   const menuItems = [
@@ -383,7 +390,9 @@ export default function RummyGameScreen({ navigation, route }) {
           return;
         }
       }
-      applyState(createRummyState({ variantId, players: initialPlayers, difficulty }));
+      applyState(
+        createRummyState({ variantId, players: initialPlayers, difficulty }),
+      );
     }
     initGame();
 
@@ -599,10 +608,8 @@ export default function RummyGameScreen({ navigation, route }) {
       return;
     }
 
-    dispatchAction(
-      "lay-meld",
-      { cardIndexes: selectedHandIndexes },
-      () => showToast("Invalid meld — cards must form a valid set or run"),
+    dispatchAction("lay-meld", { cardIndexes: selectedHandIndexes }, () =>
+      showToast("Invalid meld — cards must form a valid set or run"),
     );
   }
 
@@ -623,10 +630,8 @@ export default function RummyGameScreen({ navigation, route }) {
       return;
     }
 
-    dispatchAction(
-      "discard-card",
-      { cardIndex: selectedHandIndexes[0] },
-      () => showToast("Draw a card before discarding"),
+    dispatchAction("discard-card", { cardIndex: selectedHandIndexes[0] }, () =>
+      showToast("Draw a card before discarding"),
     );
   }
 
@@ -635,7 +640,9 @@ export default function RummyGameScreen({ navigation, route }) {
       return;
     }
 
-    dispatchAction("knock", {}, () => showToast("Can't knock yet — deadwood too high"));
+    dispatchAction("knock", {}, () =>
+      showToast("Can't knock yet — deadwood too high"),
+    );
   }
 
   function handlePlayAgain() {
@@ -680,7 +687,10 @@ export default function RummyGameScreen({ navigation, route }) {
   useEffect(() => {
     if (!isSinglePlayer || !fullRef.current) return;
     const key = `@cardnight:save:rummy:${variantId}`;
-    const isOver = gameState?.phase === "game-over" || gameState?.winner != null || gameState?.tie;
+    const isOver =
+      gameState?.phase === "game-over" ||
+      gameState?.winner != null ||
+      gameState?.tie;
     if (isOver) {
       clearGame(key);
       return;
@@ -690,7 +700,10 @@ export default function RummyGameScreen({ navigation, route }) {
 
   useEffect(() => {
     if (!isSinglePlayer) return;
-    const isWon = gameState?.winner != null && !gameState?.tie && gameState.winner === localPlayerIndex;
+    const isWon =
+      gameState?.winner != null &&
+      !gameState?.tie &&
+      gameState.winner === localPlayerIndex;
     if (isWon && !coinRewardedRef.current) {
       coinRewardedRef.current = true;
       addCoins(500).then(() => setCoinsEarned(500));
@@ -703,13 +716,18 @@ export default function RummyGameScreen({ navigation, route }) {
   }, [gameState?.winner, gameState?.tie]);
 
   useEffect(() => {
-    const isOver = gameState?.phase === "game-over" || gameState?.winner != null || gameState?.tie;
+    const isOver =
+      gameState?.phase === "game-over" ||
+      gameState?.winner != null ||
+      gameState?.tie;
     if (isOver) setShowRoundModal(true);
   }, [gameState?.phase, gameState?.winner, gameState?.tie]);
 
   useEffect(() => {
-    if (variantId !== 'ginRummy') return;
-    hasSeen('ginRummy').then((seen) => { if (!seen) setShowTutorial(true); });
+    if (variantId !== "ginRummy") return;
+    hasSeen("ginRummy").then((seen) => {
+      if (!seen) setShowTutorial(true);
+    });
   }, []);
 
   if (!gameState) {
@@ -737,9 +755,11 @@ export default function RummyGameScreen({ navigation, route }) {
         <ScrollView contentContainerStyle={styles.scrollContent}>
           {renderHeaderCard(true)}
 
-          {isSinglePlayer && gameState.winner === localPlayerIndex && coinsEarned > 0 && (
-            <Text style={styles.coinsEarnedText}>+{coinsEarned} coins!</Text>
-          )}
+          {isSinglePlayer &&
+            gameState.winner === localPlayerIndex &&
+            coinsEarned > 0 && (
+              <Text style={styles.coinsEarnedText}>+{coinsEarned} coins!</Text>
+            )}
 
           <View style={styles.resultsCard}>
             <Text style={styles.sectionTitle}>Final Scores</Text>
@@ -761,11 +781,20 @@ export default function RummyGameScreen({ navigation, route }) {
           <EndOfRoundModal
             visible={showRoundModal}
             title={gameState.tie ? "🤝 It's a Tie!" : `🏆 ${winnerName} wins!`}
-            message={isSinglePlayer && gameState.winner === localPlayerIndex && coinsEarned > 0 ? `+${coinsEarned} coins!` : ""}
+            message={
+              isSinglePlayer &&
+              gameState.winner === localPlayerIndex &&
+              coinsEarned > 0
+                ? `+${coinsEarned} coins!`
+                : ""
+            }
             showContinue={isHost}
             showLeave
             isGameOver
-            onContinue={() => { setShowRoundModal(false); handlePlayAgain(); }}
+            onContinue={() => {
+              setShowRoundModal(false);
+              handlePlayAgain();
+            }}
             onLeave={() => navigation.navigate("Home")}
             tableColor={BG}
           />
@@ -781,6 +810,14 @@ export default function RummyGameScreen({ navigation, route }) {
         title={variantLabel}
         subtitle={isSinglePlayer ? "Single Player" : "Multiplayer"}
         menuItems={menuItems}
+      />
+      <StatsStrip
+        gameId="rummy"
+        items={[
+          { label: "Phase", value: currentPhase },
+          { label: "Round", value: gameState?.roundNumber ?? 1 },
+          { label: "Deadwood", value: myDeadwood, accent: true },
+        ]}
       />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {renderHeaderCard(false)}
