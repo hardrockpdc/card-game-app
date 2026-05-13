@@ -423,6 +423,23 @@ All JS-only items from the Month 3 block are done:
 2. **Phase 5: Visual Theme Project** (paused until on better PC)
 3. **Phase 6: Publish** — Google Play + App Store
 
+### S-series StatsStrip (S1–S10) — COMPLETE ✅
+
+- ✅ **S1** — `components/StatsStrip.js` created: reusable responsive stats bar (label/value items, accent support)
+- ✅ **S2** — Blackjack StatsStrip: Coins/Bet/Streak with wallet values merged
+- ✅ **S3** — Multiplayer Blackjack StatsStrip: Players / Hand / Status (accent) inserted immediately after `GameHeader` in `screens/MultiplayerGameScreen.js`
+  - Added `handNumber` counter to the multiplayer broadcast state (increments on Play Again)
+- ✅ **S4** — Solitaire StatsStrip: Moves/Time/Stock + variant-specific stats (SHOW/HIDE toggle removed)
+- ✅ **S5** — Poker StatsStrip: Chips/Pot/Blinds/Hand
+- ✅ **S6** — Rummy StatsStrip: Round/Score/Cards/Stock
+- ✅ **S7** — Conquián StatsStrip: Hand/Melded/Stock/Phase
+- ✅ **S8** — Go Fish StatsStrip: Pairs/Cards/Deck/Turn
+- ✅ **S9** — Last Card StatsStrip: Phase/Turn/Draw (committed; treat as done per session notes)
+- ✅ **S10** — Wild Round StatsStrip: Score/Round/Judge/To Win inserted immediately after `GameHeader` in `screens/WildRoundGameScreen.js`
+  - Added `roundNumber` to the multiplayer public state, initialized to **1**, incremented when host taps **Next Round**
+
+Phone checks passed for **S10** (Wild Round) and **S3** (Multiplayer Blackjack): “all good”.
+
 ## 💡 Important Reminders
 
 ### Daily workflow
