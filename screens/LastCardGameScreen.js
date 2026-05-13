@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import GameHeader from "../components/GameHeader";
 import EndOfRoundModal from "../components/EndOfRoundModal";
+import StatsStrip from "../components/StatsStrip";
 import {
   COLORS,
   createDeck,
@@ -961,6 +962,29 @@ export default function LastCardGameScreen({ navigation, route }) {
         title="Last Card"
         subtitle={isSinglePlayer ? "Single Player" : "Multiplayer"}
         menuItems={menuItems}
+      />
+      <StatsStrip
+        gameId="lastcard"
+        items={[
+          {
+            label: "Phase",
+            value:
+              phase === "colorPicker"
+                ? "Color Pick"
+                : phase === "gameOver"
+                  ? "Game Over"
+                  : "Playing",
+          },
+          {
+            label: "Turn",
+            value:
+              gameState?.currentTurn && gameState?.players
+                ? (gameState.players.find((p) => p.id === gameState.currentTurn)
+                    ?.name ?? "—")
+                : "—",
+          },
+          { label: "Draw", value: gameState?.drawPileCount ?? 0, accent: true },
+        ]}
       />
       <ScrollView
         horizontal
