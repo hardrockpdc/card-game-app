@@ -109,18 +109,52 @@ function RummyVariantPickerScreen({ navigation, route }) {
       await promptIfSaved({
         saveKey: "@cardnight:save:rummy:conquian",
         gameName: "Conquián",
-        onFresh: () => navigation.navigate("ConquianGame", { ...launchPayload, role: "singleplayer", myName: playerName, players, difficulty, resumeFromSave: false }),
-        onResume: () => navigation.navigate("ConquianGame", { ...launchPayload, role: "singleplayer", myName: playerName, players, difficulty, resumeFromSave: true }),
+        onFresh: () =>
+          navigation.navigate("ConquianGame", {
+            ...launchPayload,
+            role: "singleplayer",
+            myName: playerName,
+            players,
+            difficulty,
+            resumeFromSave: false,
+          }),
+        onResume: () =>
+          navigation.navigate("ConquianGame", {
+            ...launchPayload,
+            role: "singleplayer",
+            myName: playerName,
+            players,
+            difficulty,
+            resumeFromSave: true,
+          }),
       });
       return;
     }
 
-    const variantLabel = SINGLE_PLAYER_RUMMY_OPTIONS.find((o) => o.value === selectedVariant)?.label ?? "Rummy";
+    const variantLabel =
+      SINGLE_PLAYER_RUMMY_OPTIONS.find((o) => o.value === selectedVariant)
+        ?.label ?? "Rummy";
     await promptIfSaved({
       saveKey: `@cardnight:save:rummy:${selectedVariant}`,
       gameName: variantLabel,
-      onFresh: () => navigation.navigate("RummyGame", { ...launchPayload, players, difficulty, variantId: selectedVariant, variant: selectedVariant, resumeFromSave: false }),
-      onResume: () => navigation.navigate("RummyGame", { ...launchPayload, players, difficulty, variantId: selectedVariant, variant: selectedVariant, resumeFromSave: true }),
+      onFresh: () =>
+        navigation.navigate("RummyGame", {
+          ...launchPayload,
+          players,
+          difficulty,
+          variantId: selectedVariant,
+          variant: selectedVariant,
+          resumeFromSave: false,
+        }),
+      onResume: () =>
+        navigation.navigate("RummyGame", {
+          ...launchPayload,
+          players,
+          difficulty,
+          variantId: selectedVariant,
+          variant: selectedVariant,
+          resumeFromSave: true,
+        }),
     });
   };
 

@@ -154,6 +154,7 @@ Store, because Expo Go's permissions aren't the same as a published app's.
 **Where:** `app.json`
 
 **Fix:** Add to `app.json`:
+
 ```json
 "android": {
   "permissions": [
@@ -166,6 +167,7 @@ Store, because Expo Go's permissions aren't the same as a published app's.
 ```
 
 Also need iOS local network description (App Store will reject without it):
+
 ```json
 "ios": {
   "infoPlist": {
@@ -189,6 +191,7 @@ photos), even for opt-in/local use.
 
 **Fix:** Need a privacy policy hosted somewhere. Free options: GitHub Pages,
 your own domain, even a Notion page made public. Should state:
+
 - No data collection
 - Photos stay on device
 - No analytics
@@ -203,6 +206,7 @@ your own domain, even a Notion page made public. Should state:
 defaults. Default icons get auto-rejected.
 
 **Fix:** Need:
+
 - iOS icon: 1024×1024 PNG (no transparency)
 - Android adaptive icon: 432×432 foreground PNG with safe zone
 - Splash screen image
@@ -244,10 +248,12 @@ multiplayer?).
 
 **Fix:** Before launch, add a protocol version field to your network messages
 so older/newer clients can detect mismatches:
+
 ```javascript
 // In every message
 { type: "JOIN", protocolVersion: 1, name: "..." }
 ```
+
 Reject connections from mismatched versions with a friendly "please update"
 message.
 
@@ -266,8 +272,8 @@ from refactors.
 
 ### H2. PROJECT_NOTES.md describes old Card.js architecture
 
-**Problem:** Notes say *"Card.js — uses cardTheme.js, subscribes to live
-changes via `useEffect`"* — but you actually moved to context. Future devs
+**Problem:** Notes say _"Card.js — uses cardTheme.js, subscribes to live
+changes via `useEffect`"_ — but you actually moved to context. Future devs
 (or future Claude Code sessions) will be misled.
 
 **Fix:** Update PROJECT_NOTES.md to reflect: `Card.js — uses ThemeContext via
@@ -286,6 +292,7 @@ Add `protocolVersion` to every network message and check it on receive.
 ### H4. No graceful handling when `loadProfile` fails on app launch
 
 **Problem:** In `App.js`:
+
 ```javascript
 loadProfile().then((profile) => {
   if (profile?.cardTheme) {
@@ -293,6 +300,7 @@ loadProfile().then((profile) => {
   }
 });
 ```
+
 No `.catch()`. If AsyncStorage is corrupt, the unhandled promise rejection
 silently swallows. Theme stays default. No user feedback.
 
@@ -377,7 +385,7 @@ easier.
 
 ### M2. `App.js` still imports every screen statically
 
-**Why:** Lazy-loading screens isn't urgent — your app doesn't *have* to do it
+**Why:** Lazy-loading screens isn't urgent — your app doesn't _have_ to do it
 — but as you add more games, startup time will keep creeping up.
 
 **Fix when you have time:** Use `React.lazy()` with `<Suspense>` for game
@@ -407,9 +415,11 @@ entry point. Right now it's halfway between.
 them). Slight perf hit + potential info leakage in crash reports.
 
 **Fix:** Use a logger helper:
+
 ```javascript
 const log = __DEV__ ? console.log : () => {};
 ```
+
 Replace all `console.log` with `log`. Easy find-and-replace.
 
 ---
@@ -464,9 +474,9 @@ it's stopped on lobby unmount only.
 `SolitaireVariantPickerScreen.js`, `PokerVariantPickerScreen.js`,
 `GameSetupScreen.js`.
 
-**The fix from your own UPDATE_PROMPT.md:** *"To avoid copy-pasting the modal
+**The fix from your own UPDATE_PROMPT.md:** _"To avoid copy-pasting the modal
 logic across many screens, it's worth creating a small helper hook or
-component — for example `useResumePrompt(gameKey, gameName)`."*
+component — for example `useResumePrompt(gameKey, gameName)`."_
 
 This wasn't done yet. Now that you have 5+ screens with this code copy-pasted,
 it's worth doing.
@@ -507,9 +517,11 @@ major version jumps don't break the compress script.
 ### L3. `wildroundCards.json` has tone field but it's used inconsistently
 
 **Problem:** "mature" filter logic in `wildround.js`:
+
 ```javascript
 const filter = tone === "mature" ? () => true : (c) => c.tone === "family";
 ```
+
 Means "mature mode" includes BOTH family and mature. Subtle thing but worth
 a comment in the code so a future reader doesn't mistake "mature mode" for
 "mature only."
@@ -546,6 +558,7 @@ if (game.id === "poker") { ... }
 if (game.id === "solitaire") { ... }
 // etc.
 ```
+
 Could be cleaner as a lookup table. Minor.
 
 ---
@@ -674,6 +687,7 @@ CAROUSEL_GAMES, add to HowToPlayScreen GAMES, possibly add VariantPicker, add
 to PROJECT_NOTES.
 
 **Fix:** Centralize game registration:
+
 ```javascript
 // game/registry.js
 export const GAMES = [
@@ -690,6 +704,7 @@ export const GAMES = [
   },
 ];
 ```
+
 Every other file imports from here. Adding a new game becomes "edit one file."
 
 ---
@@ -724,7 +739,7 @@ no fallback. Could randomize or fall back to the next available port.
 ### S5. Wallet/profile/save data has no migration path
 
 If you change the schema in v1.1, existing v1.0 users hit JSON.parse errors
-and lose data. There's *some* fallback in profile.js (`normalizeProfile`)
+and lose data. There's _some_ fallback in profile.js (`normalizeProfile`)
 but no version field.
 
 **Fix:** Add `schemaVersion: 1` to all stored data, write migrations for
@@ -740,10 +755,13 @@ through items.
 ## Session Log
 
 ### Session 1 — [Date]
-*Items completed:*
+
+_Items completed:_
+
 - [ ] (none yet — fill in as you go)
 
-*Notes:*
+_Notes:_
+
 - (any context worth remembering)
 
 ---

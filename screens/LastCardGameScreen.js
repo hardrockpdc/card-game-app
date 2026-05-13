@@ -967,7 +967,11 @@ export default function LastCardGameScreen({ navigation, route }) {
         gameId="lastcard"
         items={[
           { label: "Cards", value: myCards.length, accent: true },
-          { label: "Deck", value: gameState?.drawPileCount ?? 0, accent: false },
+          {
+            label: "Deck",
+            value: gameState?.drawPileCount ?? 0,
+            accent: false,
+          },
           {
             label: "Direction",
             value:

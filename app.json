@@ -11,17 +11,13 @@
       "resizeMode": "contain",
       "backgroundColor": "#1a1a2e"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.pedro.cardgameapp",
       "infoPlist": {
         "NSLocalNetworkUsageDescription": "Card Night uses your local network to find and connect to games on the same Wi-Fi.",
-        "NSBonjourServices": [
-          "_cardnight._tcp"
-        ]
+        "NSBonjourServices": ["_cardnight._tcp"]
       }
     },
     "android": {
@@ -46,8 +42,6 @@
       }
     },
     "owner": "hardrockpdc",
-    "plugins": [
-      "expo-audio"
-    ]
+    "plugins": ["expo-audio"]
   }
 }

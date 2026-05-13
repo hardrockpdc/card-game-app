@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React from "react";
+import { View, Text, StyleSheet, ScrollView } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function SettingsScreen() {
   return (
@@ -16,25 +16,25 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: "#1a1a2e",
   },
   container: {
     flexGrow: 1,
-    backgroundColor: '#1a1a2e',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#1a1a2e",
+    alignItems: "center",
+    justifyContent: "center",
     padding: 24,
   },
   title: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 28,
-    fontWeight: 'bold',
-    textAlign: 'center',
+    fontWeight: "bold",
+    textAlign: "center",
     marginBottom: 16,
   },
   placeholder: {
-    color: '#b0b0c0',
+    color: "#b0b0c0",
     fontSize: 16,
-    textAlign: 'center',
+    textAlign: "center",
   },
 });

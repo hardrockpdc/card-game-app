@@ -48,7 +48,9 @@ export default function GameMenuItems({ menuItems, onClose }) {
               disabled={item?.disabled}
             >
               <Text style={styles.menuIcon}>{muted ? "🔇" : "🔊"}</Text>
-              <Text style={styles.menuLabel}>Sound: {muted ? "Off" : "On"}</Text>
+              <Text style={styles.menuLabel}>
+                Sound: {muted ? "Off" : "On"}
+              </Text>
             </Pressable>
           );
         }
@@ -95,7 +97,9 @@ export default function GameMenuItems({ menuItems, onClose }) {
               key={key}
               onPress={() => {
                 if (isFunction(onClose)) onClose();
-                const params = item?.gameId ? { gameId: item.gameId } : undefined;
+                const params = item?.gameId
+                  ? { gameId: item.gameId }
+                  : undefined;
                 navigation.navigate("HowToPlay", params);
               }}
               style={({ pressed }) => [

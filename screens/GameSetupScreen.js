@@ -114,13 +114,23 @@ export default function GameSetupScreen({ navigation, route }) {
     }
 
     const saveKey =
-      gameId === "goFish" ? "@cardnight:save:gofish" : "@cardnight:save:lastcard";
+      gameId === "goFish"
+        ? "@cardnight:save:gofish"
+        : "@cardnight:save:lastcard";
 
     await promptIfSaved({
       saveKey,
       gameName,
-      onFresh: () => navigation.navigate(screenName, { ...launchParams, resumeFromSave: false }),
-      onResume: () => navigation.navigate(screenName, { ...launchParams, resumeFromSave: true }),
+      onFresh: () =>
+        navigation.navigate(screenName, {
+          ...launchParams,
+          resumeFromSave: false,
+        }),
+      onResume: () =>
+        navigation.navigate(screenName, {
+          ...launchParams,
+          resumeFromSave: true,
+        }),
     });
   }
 

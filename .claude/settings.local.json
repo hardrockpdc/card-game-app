@@ -19,7 +19,10 @@
       "Bash(del \"old_poker_fbbc8cc.tmp\")",
       "Bash(npx expo *)",
       "Bash(grep -l \"GameHeader\" screens/*.js components/*.js)",
-      "Bash(grep -l \"QuitButton\" screens/*.js components/*.js)"
+      "Bash(grep -l \"QuitButton\" screens/*.js components/*.js)",
+      "Bash(node -e \"const p = require\\('./package.json'\\); console.log\\('prettier in deps:', p.dependencies?.prettier || 'no'\\); console.log\\('prettier in devDeps:', p.devDependencies?.prettier || 'no'\\);\")",
+      "Bash(npm install *)",
+      "Bash(npx prettier *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\hardr\\.claude\\projects\\c--Users-hardr-OneDrive-Documents-Projects-card-game-app"

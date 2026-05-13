@@ -1,30 +1,30 @@
-const SUITS = ['hearts', 'diamonds', 'clubs', 'spades'];
+const SUITS = ["hearts", "diamonds", "clubs", "spades"];
 const SUIT_SYMBOLS = {
-  hearts: '♥',
-  diamonds: '♦',
-  clubs: '♣',
-  spades: '♠',
+  hearts: "♥",
+  diamonds: "♦",
+  clubs: "♣",
+  spades: "♠",
 };
 
 const RANKS = [
-  { label: '2', value: 2 },
-  { label: '3', value: 3 },
-  { label: '4', value: 4 },
-  { label: '5', value: 5 },
-  { label: '6', value: 6 },
-  { label: '7', value: 7 },
-  { label: '8', value: 8 },
-  { label: '9', value: 9 },
-  { label: '10', value: 10 },
-  { label: 'J', value: 11 },
-  { label: 'Q', value: 12 },
-  { label: 'K', value: 13 },
-  { label: 'A', value: 14 },
+  { label: "2", value: 2 },
+  { label: "3", value: 3 },
+  { label: "4", value: 4 },
+  { label: "5", value: 5 },
+  { label: "6", value: 6 },
+  { label: "7", value: 7 },
+  { label: "8", value: 8 },
+  { label: "9", value: 9 },
+  { label: "10", value: 10 },
+  { label: "J", value: 11 },
+  { label: "Q", value: 12 },
+  { label: "K", value: 13 },
+  { label: "A", value: 14 },
 ];
 
 export const POKER_VARIANTS = {
   texasHoldem: {
-    key: 'texasHoldem',
+    key: "texasHoldem",
     label: "Texas Hold'em",
     holeCardCount: 2,
     communityCardCount: 5,
@@ -34,8 +34,8 @@ export const POKER_VARIANTS = {
     communityRevealCounts: [0, 3, 4, 5],
   },
   omaha: {
-    key: 'omaha',
-    label: 'Omaha',
+    key: "omaha",
+    label: "Omaha",
     holeCardCount: 4,
     communityCardCount: 5,
     usesCommunityCards: true,
@@ -44,8 +44,8 @@ export const POKER_VARIANTS = {
     communityRevealCounts: [0, 3, 4, 5],
   },
   fiveCardDraw: {
-    key: 'fiveCardDraw',
-    label: 'Five Card Draw',
+    key: "fiveCardDraw",
+    label: "Five Card Draw",
     holeCardCount: 5,
     communityCardCount: 0,
     usesCommunityCards: false,
@@ -54,8 +54,8 @@ export const POKER_VARIANTS = {
     communityRevealCounts: [0],
   },
   sevenCardStud: {
-    key: 'sevenCardStud',
-    label: 'Seven Card Stud',
+    key: "sevenCardStud",
+    label: "Seven Card Stud",
     holeCardCount: 7,
     communityCardCount: 0,
     usesCommunityCards: false,
@@ -79,7 +79,7 @@ export function createStandardDeck() {
         rank: rank.label,
         value: rank.value,
         suit,
-        color: suit === 'hearts' || suit === 'diamonds' ? 'red' : 'black',
+        color: suit === "hearts" || suit === "diamonds" ? "red" : "black",
         symbol: `${rank.label}${SUIT_SYMBOLS[suit]}`,
       });
     }
@@ -103,7 +103,7 @@ export function shuffleDeck(deck = createStandardDeck()) {
 
 export function formatPokerCard(card) {
   if (!card) {
-    return '';
+    return "";
   }
 
   if (card.symbol) {
@@ -113,18 +113,18 @@ export function formatPokerCard(card) {
   const rank = getCardValue(card);
   const suit = getCardSuit(card);
   const displayRank = getRankLabel(rank);
-  const suitSymbol = SUIT_SYMBOLS[suit] ?? '';
+  const suitSymbol = SUIT_SYMBOLS[suit] ?? "";
   return `${displayRank}${suitSymbol}`;
 }
 
 export function getRankLabel(value) {
   const found = RANKS.find((rank) => rank.value === value);
-  return found ? found.label : String(value ?? '');
+  return found ? found.label : String(value ?? "");
 }
 
 export function getCardSuit(card) {
   if (!card) {
-    return '';
+    return "";
   }
 
   const rawSuit =
@@ -133,7 +133,7 @@ export function getCardSuit(card) {
     card.cardSuit ??
     card.suitName ??
     card.metadata?.suit ??
-    '';
+    "";
 
   return String(rawSuit).toLowerCase();
 }
@@ -143,11 +143,11 @@ export function getCardValue(card) {
     return 0;
   }
 
-  if (typeof card.value === 'number' && Number.isFinite(card.value)) {
+  if (typeof card.value === "number" && Number.isFinite(card.value)) {
     return card.value;
   }
 
-  if (typeof card.rank === 'number' && Number.isFinite(card.rank)) {
+  if (typeof card.rank === "number" && Number.isFinite(card.rank)) {
     return card.rank;
   }
 
@@ -167,32 +167,34 @@ export function getCardValue(card) {
       continue;
     }
 
-    const raw = String(candidate).toUpperCase().replace(/[^0-9AJQKT]/g, '');
+    const raw = String(candidate)
+      .toUpperCase()
+      .replace(/[^0-9AJQKT]/g, "");
     if (!raw) {
       continue;
     }
 
-    if (raw.startsWith('10')) {
+    if (raw.startsWith("10")) {
       return 10;
     }
 
-    if (raw.includes('A')) {
+    if (raw.includes("A")) {
       return 14;
     }
 
-    if (raw.includes('K')) {
+    if (raw.includes("K")) {
       return 13;
     }
 
-    if (raw.includes('Q')) {
+    if (raw.includes("Q")) {
       return 12;
     }
 
-    if (raw.includes('J')) {
+    if (raw.includes("J")) {
       return 11;
     }
 
-    if (raw.includes('T')) {
+    if (raw.includes("T")) {
       return 10;
     }
 
@@ -240,7 +242,13 @@ function getStraightHighFromCards(cards) {
     }
   }
 
-  if (valueSet.has(14) && valueSet.has(5) && valueSet.has(4) && valueSet.has(3) && valueSet.has(2)) {
+  if (
+    valueSet.has(14) &&
+    valueSet.has(5) &&
+    valueSet.has(4) &&
+    valueSet.has(3) &&
+    valueSet.has(2)
+  ) {
     return 5;
   }
 
@@ -250,14 +258,23 @@ function getStraightHighFromCards(cards) {
 function buildStraightCards(cards, straightHigh) {
   const sortedCards = sortCardsDescending(cards);
   const neededRanks =
-    straightHigh === 5 ? [5, 4, 3, 2, 14] : [straightHigh, straightHigh - 1, straightHigh - 2, straightHigh - 3, straightHigh - 4];
+    straightHigh === 5
+      ? [5, 4, 3, 2, 14]
+      : [
+          straightHigh,
+          straightHigh - 1,
+          straightHigh - 2,
+          straightHigh - 3,
+          straightHigh - 4,
+        ];
 
   const usedIndexes = new Set();
   const orderedCards = [];
 
   for (const neededRank of neededRanks) {
     const cardIndex = sortedCards.findIndex(
-      (card, index) => !usedIndexes.has(index) && getCardValue(card) === neededRank
+      (card, index) =>
+        !usedIndexes.has(index) && getCardValue(card) === neededRank,
     );
 
     if (cardIndex !== -1) {
@@ -351,7 +368,9 @@ export function evaluateFiveCardHand(cards) {
 
   const groupData = [...counts.entries()]
     .map(([value, count]) => ({ value, count }))
-    .sort((left, right) => right.count - left.count || right.value - left.value);
+    .sort(
+      (left, right) => right.count - left.count || right.value - left.value,
+    );
 
   const isFlush = suits.every((suit) => suit === suits[0]);
   const straightHigh = getStraightHighFromCards(sortedCards);
@@ -360,7 +379,7 @@ export function evaluateFiveCardHand(cards) {
   if (isFlush && isStraight) {
     return {
       category: 8,
-      name: 'Straight Flush',
+      name: "Straight Flush",
       score: [8, straightHigh],
       cards: buildStraightCards(sortedCards, straightHigh),
     };
@@ -371,9 +390,12 @@ export function evaluateFiveCardHand(cards) {
     const kicker = buildKickerCards(sortedCards, [quadValue], 1)[0] ?? null;
     return {
       category: 7,
-      name: 'Four of a Kind',
+      name: "Four of a Kind",
       score: [7, quadValue, getCardValue(kicker)],
-      cards: [...buildRepeatedValueCards(sortedCards, quadValue, 4), kicker].filter(Boolean),
+      cards: [
+        ...buildRepeatedValueCards(sortedCards, quadValue, 4),
+        kicker,
+      ].filter(Boolean),
     };
   }
 
@@ -382,7 +404,7 @@ export function evaluateFiveCardHand(cards) {
     const pairValue = groupData[1].value;
     return {
       category: 6,
-      name: 'Full House',
+      name: "Full House",
       score: [6, tripsValue, pairValue],
       cards: [
         ...buildRepeatedValueCards(sortedCards, tripsValue, 3),
@@ -394,7 +416,7 @@ export function evaluateFiveCardHand(cards) {
   if (isFlush) {
     return {
       category: 5,
-      name: 'Flush',
+      name: "Flush",
       score: [5, ...values],
       cards: sortedCards,
     };
@@ -403,7 +425,7 @@ export function evaluateFiveCardHand(cards) {
   if (isStraight) {
     return {
       category: 4,
-      name: 'Straight',
+      name: "Straight",
       score: [4, straightHigh],
       cards: buildStraightCards(sortedCards, straightHigh),
     };
@@ -414,19 +436,23 @@ export function evaluateFiveCardHand(cards) {
     const kickers = buildKickerCards(sortedCards, [tripsValue], 2);
     return {
       category: 3,
-      name: 'Three of a Kind',
+      name: "Three of a Kind",
       score: [3, tripsValue, ...kickers.map((card) => getCardValue(card))],
-      cards: [...buildRepeatedValueCards(sortedCards, tripsValue, 3), ...kickers],
+      cards: [
+        ...buildRepeatedValueCards(sortedCards, tripsValue, 3),
+        ...kickers,
+      ],
     };
   }
 
   if (groupData[0]?.count === 2 && groupData[1]?.count === 2) {
     const highPair = Math.max(groupData[0].value, groupData[1].value);
     const lowPair = Math.min(groupData[0].value, groupData[1].value);
-    const kicker = buildKickerCards(sortedCards, [highPair, lowPair], 1)[0] ?? null;
+    const kicker =
+      buildKickerCards(sortedCards, [highPair, lowPair], 1)[0] ?? null;
     return {
       category: 2,
-      name: 'Two Pair',
+      name: "Two Pair",
       score: [2, highPair, lowPair, getCardValue(kicker)],
       cards: [
         ...buildRepeatedValueCards(sortedCards, highPair, 2),
@@ -441,15 +467,18 @@ export function evaluateFiveCardHand(cards) {
     const kickers = buildKickerCards(sortedCards, [pairValue], 3);
     return {
       category: 1,
-      name: 'One Pair',
+      name: "One Pair",
       score: [1, pairValue, ...kickers.map((card) => getCardValue(card))],
-      cards: [...buildRepeatedValueCards(sortedCards, pairValue, 2), ...kickers],
+      cards: [
+        ...buildRepeatedValueCards(sortedCards, pairValue, 2),
+        ...kickers,
+      ],
     };
   }
 
   return {
     category: 0,
-    name: 'High Card',
+    name: "High Card",
     score: [0, ...values],
     cards: sortedCards,
   };
@@ -503,13 +532,13 @@ export function getBestFiveCardHand(cards) {
 }
 
 export function evaluatePokerVariantHand({
-  variant = 'texasHoldem',
+  variant = "texasHoldem",
   holeCards = [],
   communityCards = [],
 }) {
   const config = getPokerVariantConfig(variant);
 
-  if (config.key === 'omaha') {
+  if (config.key === "omaha") {
     if (holeCards.length < 4 || communityCards.length < 5) {
       return null;
     }
@@ -522,7 +551,10 @@ export function evaluatePokerVariantHand({
       for (const boardCombo of boardCombos) {
         const evaluated = evaluateFiveCardHand([...holeCombo, ...boardCombo]);
 
-        if (!bestHand || comparePokerScores(evaluated.score, bestHand.score) > 0) {
+        if (
+          !bestHand ||
+          comparePokerScores(evaluated.score, bestHand.score) > 0
+        ) {
           bestHand = evaluated;
         }
       }
@@ -537,7 +569,7 @@ export function evaluatePokerVariantHand({
     return null;
   }
 
-  if (config.key === 'fiveCardDraw') {
+  if (config.key === "fiveCardDraw") {
     return evaluateFiveCardHand(allCards.slice(0, 5));
   }
 
@@ -545,7 +577,7 @@ export function evaluatePokerVariantHand({
 }
 
 export function dealPokerVariantHands({
-  variant = 'texasHoldem',
+  variant = "texasHoldem",
   players = [],
   deck = shuffleDeck(),
 }) {
@@ -557,7 +589,11 @@ export function dealPokerVariantHands({
   }));
 
   for (let round = 0; round < config.holeCardCount; round += 1) {
-    for (let playerIndex = 0; playerIndex < dealtPlayers.length; playerIndex += 1) {
+    for (
+      let playerIndex = 0;
+      playerIndex < dealtPlayers.length;
+      playerIndex += 1
+    ) {
       if (workingDeck.length === 0) {
         break;
       }
@@ -569,7 +605,11 @@ export function dealPokerVariantHands({
   const communityCards = [];
 
   if (config.usesCommunityCards) {
-    for (let cardIndex = 0; cardIndex < config.communityCardCount; cardIndex += 1) {
+    for (
+      let cardIndex = 0;
+      cardIndex < config.communityCardCount;
+      cardIndex += 1
+    ) {
       if (workingDeck.length === 0) {
         break;
       }
@@ -585,9 +625,15 @@ export function dealPokerVariantHands({
   };
 }
 
-export function drawReplacementCards(hand = [], discardIndexes = [], deck = []) {
+export function drawReplacementCards(
+  hand = [],
+  discardIndexes = [],
+  deck = [],
+) {
   const discardSet = new Set(
-    discardIndexes.filter((index) => Number.isInteger(index) && index >= 0 && index < hand.length)
+    discardIndexes.filter(
+      (index) => Number.isInteger(index) && index >= 0 && index < hand.length,
+    ),
   );
 
   const keptCards = hand.filter((_, index) => !discardSet.has(index));
@@ -600,7 +646,7 @@ export function drawReplacementCards(hand = [], discardIndexes = [], deck = []) 
   };
 }
 
-export function chooseFiveCardDrawDiscards(cards = [], difficulty = 'medium') {
+export function chooseFiveCardDrawDiscards(cards = [], difficulty = "medium") {
   const sortedCards = sortCardsDescending(cards);
   const rankGroups = new Map();
   const suitGroups = new Map();
@@ -623,7 +669,9 @@ export function chooseFiveCardDrawDiscards(cards = [], difficulty = 'medium') {
   const duplicateGroups = [...rankGroups.entries()]
     .map(([value, indexes]) => ({ value, indexes, count: indexes.length }))
     .filter((group) => group.count >= 2)
-    .sort((left, right) => right.count - left.count || right.value - left.value);
+    .sort(
+      (left, right) => right.count - left.count || right.value - left.value,
+    );
 
   const keepIndexes = new Set();
 
@@ -632,10 +680,16 @@ export function chooseFiveCardDrawDiscards(cards = [], difficulty = 'medium') {
       group.indexes.forEach((index) => keepIndexes.add(index));
     });
 
-    const extraKeepCount = difficulty === 'hard' ? 2 : difficulty === 'medium' ? 1 : 0;
-    const targetKeepCount = Math.min(cards.length, keepIndexes.size + extraKeepCount);
+    const extraKeepCount =
+      difficulty === "hard" ? 2 : difficulty === "medium" ? 1 : 0;
+    const targetKeepCount = Math.min(
+      cards.length,
+      keepIndexes.size + extraKeepCount,
+    );
     for (const card of sortedCards) {
-      const cardIndex = cards.findIndex((candidate, index) => candidate === card && !keepIndexes.has(index));
+      const cardIndex = cards.findIndex(
+        (candidate, index) => candidate === card && !keepIndexes.has(index),
+      );
       if (cardIndex !== -1) {
         keepIndexes.add(cardIndex);
       }
@@ -657,9 +711,11 @@ export function chooseFiveCardDrawDiscards(cards = [], difficulty = 'medium') {
     flushDrawGroup.indexes.forEach((index) => keepIndexes.add(index));
   }
 
-  const keepCount = difficulty === 'hard' ? 4 : difficulty === 'medium' ? 3 : 2;
+  const keepCount = difficulty === "hard" ? 4 : difficulty === "medium" ? 3 : 2;
   for (const card of sortedCards) {
-    const cardIndex = cards.findIndex((candidate, index) => candidate === card && !keepIndexes.has(index));
+    const cardIndex = cards.findIndex(
+      (candidate, index) => candidate === card && !keepIndexes.has(index),
+    );
     if (cardIndex !== -1) {
       keepIndexes.add(cardIndex);
     }
@@ -676,8 +732,8 @@ export function chooseFiveCardDrawDiscards(cards = [], difficulty = 'medium') {
 
 export function getPokerHandLabel(result) {
   if (!result) {
-    return 'No hand';
+    return "No hand";
   }
 
-  return result.name ?? 'Unknown hand';
+  return result.name ?? "Unknown hand";
 }

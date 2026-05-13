@@ -5,7 +5,11 @@ import { getTableTheme } from "../game/tableThemes";
 
 function toRgba(hex, alpha) {
   let h = hex.replace("#", "");
-  if (h.length === 3) h = h.split("").map(c => c + c).join("");
+  if (h.length === 3)
+    h = h
+      .split("")
+      .map((c) => c + c)
+      .join("");
   if (h.length === 8) h = h.substring(0, 6);
   const r = parseInt(h.substring(0, 2), 16);
   const g = parseInt(h.substring(2, 4), 16);

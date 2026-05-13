@@ -27,16 +27,16 @@ A new party card game for the Card Night app, mechanically inspired by Cards Aga
 
 ## Game Configuration
 
-| Setting | Value |
-|---|---|
-| Game type | Party / Judge-style |
-| Players | 3 minimum, 8 maximum |
-| Hand size | 10 answer cards per player |
-| Win condition | First to 10 points |
-| Card content | One tagged JSON file with `tone: 'family' \| 'mature'` |
-| Tone toggle | Host picks at lobby (Family or Mature) |
-| Mature mode | Includes BOTH family + mature cards (bigger pool) |
-| Family mode | Family-only cards |
+| Setting       | Value                                                  |
+| ------------- | ------------------------------------------------------ |
+| Game type     | Party / Judge-style                                    |
+| Players       | 3 minimum, 8 maximum                                   |
+| Hand size     | 10 answer cards per player                             |
+| Win condition | First to 10 points                                     |
+| Card content  | One tagged JSON file with `tone: 'family' \| 'mature'` |
+| Tone toggle   | Host picks at lobby (Family or Mature)                 |
+| Mature mode   | Includes BOTH family + mature cards (bigger pool)      |
+| Family mode   | Family-only cards                                      |
 
 ## Card Structure
 
@@ -45,23 +45,40 @@ Single tagged JSON file at `game/wildroundCards.json`:
 ```json
 {
   "prompts": [
-    { "id": "p001", "text": "Why am I crying right now?", "tone": "family", "source": "original" },
-    { "id": "p002", "text": "The next viral trend is ___", "tone": "family", "source": "cc0" }
+    {
+      "id": "p001",
+      "text": "Why am I crying right now?",
+      "tone": "family",
+      "source": "original"
+    },
+    {
+      "id": "p002",
+      "text": "The next viral trend is ___",
+      "tone": "family",
+      "source": "cc0"
+    }
   ],
   "answers": [
-    { "id": "a001", "text": "A surprise birthday cake on fire", "tone": "family", "source": "original" },
+    {
+      "id": "a001",
+      "text": "A surprise birthday cake on fire",
+      "tone": "family",
+      "source": "original"
+    },
     { "id": "a002", "text": "...", "tone": "mature", "source": "cc0" }
   ]
 }
 ```
 
 **Field meanings:**
+
 - `id` — unique identifier (e.g. `p001` for prompts, `a001` for answers)
 - `text` — the actual card text (questions or `___` blanks)
 - `tone` — `"family"` or `"mature"` for the toggle filter
 - `source` — `"original"`, `"cc0"`, or `"user"` (for tracking)
 
 **Prompt formats allowed:**
+
 - Question style: `"Why am I crying right now?"`
 - Single-blank style: `"The next viral trend is ___"`
 - (Multi-blank style is NOT supported in v1)
@@ -73,6 +90,7 @@ Single tagged JSON file at `game/wildroundCards.json`:
 ## Game Flow (Round-by-Round)
 
 ### Setup (start of each game)
+
 - 1. Deal 10 answer cards to each player
 - 2. Pick a starting Judge (random for first game; rotates clockwise after that)
 - 3. Skip the "Initial Card Pass" — that's a Conquián-only thing, not used here
@@ -135,11 +153,13 @@ Single tagged JSON file at `game/wildroundCards.json`:
 ## UI Requirements
 
 ### Lobby additions
+
 - Wild Round option in game selector
 - **3-player minimum** check — Start Game button disabled with message "Wild Round needs at least 3 players" if fewer
 - **Tone toggle** — visible only when Wild Round is selected (Family / Mature)
 
 ### In-game player view (non-judge)
+
 - **Top:** Active prompt (large, centered)
 - **Top right:** Player scores (`Pedro 3/10`, `Maria 5/10`, etc.)
 - **Middle:** "Judge is choosing prompt..." or "Waiting for submissions..." status text
@@ -148,21 +168,25 @@ Single tagged JSON file at `game/wildroundCards.json`:
 - After submit: cards greyed out, "Submitted! Waiting for others..." message
 
 ### In-game judge view (during skip phase)
+
 - **Top:** Prompt 1 (large)
 - **Two buttons:** "Keep this prompt" / "Skip and draw new"
 - After choosing: prompt locks in, other players see it
 
 ### In-game judge view (during judging phase)
+
 - **Top:** Active prompt
 - **Center:** Swipeable carousel of submissions (cards anonymous, no names)
 - **Tap a card to select winner** → confirmation prompt → reveal phase
 
 ### Reveal phase view (everyone)
+
 - **Winning card** displayed prominently with submitter name + "+1 point"
 - **Other submissions** shown below with submitter names
 - **"Next Round"** button (host-only? or anyone? see implementation note)
 
 ### Game-over view
+
 - **Winner announcement** (large)
 - **Final scoreboard**
 - **"Play Again"** and **"Back to Lobby"** buttons
@@ -186,10 +210,12 @@ Follow the existing pattern from other games:
 A hidden interface to manage cards without touching code.
 
 **Access pattern:**
+
 - Long-press the app version number 5 times in Settings, OR
 - Hardcoded check: if player name = "PedroAdmin" or similar, show editor button
 
 **Editor features:**
+
 - View all cards (filterable by tone, type)
 - Add new card: pick type (prompt/answer), pick tone (family/mature), enter text
 - Edit existing card text
@@ -197,6 +223,7 @@ A hidden interface to manage cards without touching code.
 - Save changes to `wildroundCards.json` (file stored on device for now; later we could make it sync)
 
 **Technical note:**
+
 - React Native can't easily write to bundled JSON in production builds, so the editor likely needs to use AsyncStorage as an "overlay" — bundled cards + user-added/edited cards merged at runtime. Claude Code will figure out the best pattern.
 
 ## AI Behavior (Single-Player Mode)
@@ -209,6 +236,7 @@ A hidden interface to manage cards without touching code.
 ## Phased Build Plan (Sequential — Each Phase Tested Before Next)
 
 ### Phase A: Card Data + Game Logic
+
 - Create `game/wildroundCards.json` with ~20 placeholder cards (mix of family + mature, prompts + answers)
 - Build `game/wildround.js` with pure functions:
   - `createDeck(tone)` — returns filtered card pool
@@ -221,6 +249,7 @@ A hidden interface to manage cards without touching code.
 - **Goal: prove the rules work without UI**
 
 ### Phase B: Single-player UI (vs. simple AI)
+
 - Build `screens/WildRoundGameScreen.js` with all UI per spec
 - AI players auto-submit random cards
 - AI judge picks randomly
@@ -229,6 +258,7 @@ A hidden interface to manage cards without touching code.
 - **Goal: visual confirmation the game flows well**
 
 ### Phase C: Multiplayer
+
 - Wire up host/client networking using existing patterns
 - Each phone shows their hand privately via `PRIVATE_HAND`
 - Host orchestrates rounds and broadcasts public state
@@ -238,6 +268,7 @@ A hidden interface to manage cards without touching code.
 - **Goal: full multiplayer Wild Round**
 
 ### Phase D: Admin Card Editor
+
 - Hidden access pattern (long-press app version 5x or similar)
 - Form: type / tone / text
 - View list of existing cards (filterable)
@@ -246,6 +277,7 @@ A hidden interface to manage cards without touching code.
 - **Goal: Pedro can add/edit cards without code**
 
 ### Phase E: Real Content
+
 - Find CC0 sources (no CAH official cards due to NC license)
 - Bulk-add ~80 prompts + 280 answers from CC0 + originals
 - Total ~100 prompts + ~300 answers
@@ -254,6 +286,7 @@ A hidden interface to manage cards without touching code.
 - **Goal: launch-ready content**
 
 ### Phase F: Polish (later)
+
 - Animations (cards flying to center, winner reveal flourish)
 - Sounds (card flip, point earned, victory)
 - Better card visuals (background colors per tone, font polish)

@@ -230,7 +230,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
 
   useEffect(() => {
     if (state.moves === 0 || state.status === "won") return;
-    const id = setInterval(() => setElapsed(e => e + 1), 1000);
+    const id = setInterval(() => setElapsed((e) => e + 1), 1000);
     return () => clearInterval(id);
   }, [state.moves, state.status]);
 
@@ -268,16 +268,16 @@ export default function SolitaireGameScreen({ navigation, route }) {
       vid === "klondike" || vid === "spider"
         ? { label: "Stock", value: state.stock?.length ?? 0, accent: false }
         : vid === "freecell"
-        ? {
-            label: "Free Cells",
-            value: (state.freecells || []).filter((c) => !c).length,
-            accent: false,
-          }
-        : vid === "pyramid"
-        ? { label: "Pairs", value: state.pairs ?? 0, accent: false }
-        : vid === "tripeaks"
-        ? { label: "Combo", value: state.combo ?? 0, accent: false }
-        : null;
+          ? {
+              label: "Free Cells",
+              value: (state.freecells || []).filter((c) => !c).length,
+              accent: false,
+            }
+          : vid === "pyramid"
+            ? { label: "Pairs", value: state.pairs ?? 0, accent: false }
+            : vid === "tripeaks"
+              ? { label: "Combo", value: state.combo ?? 0, accent: false }
+              : null;
 
     const items = [
       { label: "Moves", value: state.moves, accent: true },

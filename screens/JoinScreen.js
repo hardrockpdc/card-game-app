@@ -341,7 +341,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   joinBtnDisabled: { opacity: 0.5 },
-  joinBtnText: { color: "#ffffff", fontSize: scaleFont(15), fontWeight: "bold" },
+  joinBtnText: {
+    color: "#ffffff",
+    fontSize: scaleFont(15),
+    fontWeight: "bold",
+  },
   separator: {
     height: 1,
     backgroundColor: "#1a1a2e",

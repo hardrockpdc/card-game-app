@@ -1,7 +1,7 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const KEY_COINS = '@cardnight:wallet:coins';
-const KEY_LIFETIME = '@cardnight:wallet:lifetime_earned';
+const KEY_COINS = "@cardnight:wallet:coins";
+const KEY_LIFETIME = "@cardnight:wallet:lifetime_earned";
 const STARTING_BALANCE = 1000;
 
 export async function getCoins() {
@@ -26,7 +26,10 @@ export async function addCoins(amount) {
   // Track lifetime total — only goes up, never resets with the balance.
   const rawLifetime = await AsyncStorage.getItem(KEY_LIFETIME);
   const lifetime = rawLifetime === null ? 0 : parseInt(rawLifetime, 10);
-  await AsyncStorage.setItem(KEY_LIFETIME, String(lifetime + Math.floor(amount)));
+  await AsyncStorage.setItem(
+    KEY_LIFETIME,
+    String(lifetime + Math.floor(amount)),
+  );
   return next;
 }
 

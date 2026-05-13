@@ -72,7 +72,7 @@ function PokerVariantPickerScreen({ navigation, route }) {
         // If the previously selected buy-in is now unaffordable, reset to 100.
         setBuyIn((prev) => (c >= prev ? prev : 100));
       });
-    }, [])
+    }, []),
   );
 
   useEffect(() => {
@@ -131,7 +131,8 @@ function PokerVariantPickerScreen({ navigation, route }) {
     const players = buildPlayers(launchPayload.myName ?? playerName, aiCount);
     const saveKey = `@cardnight:save:poker:${selectedVariant}`;
     const variantLabel =
-      POKER_VARIANT_OPTIONS.find((o) => o.value === selectedVariant)?.label ?? "Poker";
+      POKER_VARIANT_OPTIONS.find((o) => o.value === selectedVariant)?.label ??
+      "Poker";
     const navParams = {
       ...launchPayload,
       role: "singleplayer",
@@ -144,8 +145,16 @@ function PokerVariantPickerScreen({ navigation, route }) {
     await promptIfSaved({
       saveKey,
       gameName: variantLabel,
-      onFresh: () => navigation.navigate("PokerGame", { ...navParams, resumeFromSave: false }),
-      onResume: () => navigation.navigate("PokerGame", { ...navParams, resumeFromSave: true }),
+      onFresh: () =>
+        navigation.navigate("PokerGame", {
+          ...navParams,
+          resumeFromSave: false,
+        }),
+      onResume: () =>
+        navigation.navigate("PokerGame", {
+          ...navParams,
+          resumeFromSave: true,
+        }),
       extraMessage: "Note: starting fresh will use a new buy-in.",
     });
   };
@@ -177,7 +186,9 @@ function PokerVariantPickerScreen({ navigation, route }) {
             {coinsLoaded && (
               <View style={styles.walletRow}>
                 <Text style={styles.settingsLabel}>Your Balance</Text>
-                <Text style={styles.walletBalance}>🪙 {coins.toLocaleString()}</Text>
+                <Text style={styles.walletBalance}>
+                  🪙 {coins.toLocaleString()}
+                </Text>
               </View>
             )}
 
@@ -189,7 +200,9 @@ function PokerVariantPickerScreen({ navigation, route }) {
                 return (
                   <Pressable
                     key={amount}
-                    onPress={() => { if (isAffordable) setBuyIn(amount); }}
+                    onPress={() => {
+                      if (isAffordable) setBuyIn(amount);
+                    }}
                     disabled={!isAffordable}
                     style={({ pressed }) => [
                       styles.buyInButton,
@@ -214,7 +227,8 @@ function PokerVariantPickerScreen({ navigation, route }) {
 
             {coinsLoaded && coins < 100 && (
               <Text style={styles.noCoinsWarning}>
-                You need at least 🪙 100 to play. Visit your Profile to reset your coins.
+                You need at least 🪙 100 to play. Visit your Profile to reset
+                your coins.
               </Text>
             )}
 

@@ -1,19 +1,31 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
-  View, Text, Image, TouchableOpacity, FlatList,
-  StyleSheet, useWindowDimensions,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+  View,
+  Text,
+  Image,
+  TouchableOpacity,
+  FlatList,
+  StyleSheet,
+  useWindowDimensions,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import {
-  THEMES_LIST, getThemePreviewImage, setTheme, getTheme, subscribe,
-} from '../game/cardTheme';
+  THEMES_LIST,
+  getThemePreviewImage,
+  setTheme,
+  getTheme,
+  subscribe,
+} from "../game/cardTheme";
 
 export default function CardThemeScreen() {
   const { width, height } = useWindowDimensions();
 
   const [activeTheme, setActiveTheme] = useState(getTheme());
-  const [currentIndex, setCurrentIndex] = useState(
-    () => Math.max(0, THEMES_LIST.findIndex(([key]) => key === getTheme()))
+  const [currentIndex, setCurrentIndex] = useState(() =>
+    Math.max(
+      0,
+      THEMES_LIST.findIndex(([key]) => key === getTheme()),
+    ),
   );
   const [confirmed, setConfirmed] = useState(false);
 
@@ -21,10 +33,15 @@ export default function CardThemeScreen() {
   const confirmTimer = useRef(null);
 
   // Stay in sync if another screen changes the theme
-  useEffect(() => subscribe(id => setActiveTheme(id)), []);
+  useEffect(() => subscribe((id) => setActiveTheme(id)), []);
 
   // Clean up timer on unmount
-  useEffect(() => () => { if (confirmTimer.current) clearTimeout(confirmTimer.current); }, []);
+  useEffect(
+    () => () => {
+      if (confirmTimer.current) clearTimeout(confirmTimer.current);
+    },
+    [],
+  );
 
   function handleApply() {
     const [key] = THEMES_LIST[currentIndex];
@@ -51,14 +68,13 @@ export default function CardThemeScreen() {
   const isCurrentActive = currentKey === activeTheme;
 
   function buttonLabel() {
-    if (confirmed) return 'Theme applied! ✓';
-    if (isCurrentActive) return 'Active Theme';
-    return 'Use This Theme';
+    if (confirmed) return "Theme applied! ✓";
+    if (isCurrentActive) return "Active Theme";
+    return "Use This Theme";
   }
 
   return (
     <SafeAreaView style={styles.safe}>
-
       {/* Swipeable pages */}
       <FlatList
         ref={flatListRef}
@@ -70,7 +86,11 @@ export default function CardThemeScreen() {
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
         initialScrollIndex={currentIndex}
-        getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
+        getItemLayout={(_, index) => ({
+          length: width,
+          offset: width * index,
+          index,
+        })}
         renderItem={({ item: [key, theme] }) => (
           <View style={[styles.page, { width }]}>
             <Text style={styles.themeName}>{theme.name}</Text>
@@ -78,7 +98,10 @@ export default function CardThemeScreen() {
             <View style={styles.previewWrapper}>
               <Image
                 source={getThemePreviewImage(key)}
-                style={[styles.previewCard, { width: previewWidth, height: previewHeight }]}
+                style={[
+                  styles.previewCard,
+                  { width: previewWidth, height: previewHeight },
+                ]}
                 resizeMode="contain"
               />
               {activeTheme === key && (
@@ -96,7 +119,10 @@ export default function CardThemeScreen() {
       {/* Dot indicators */}
       <View style={styles.dotsRow}>
         {THEMES_LIST.map((_, i) => (
-          <View key={i} style={[styles.dot, i === currentIndex && styles.dotActive]} />
+          <View
+            key={i}
+            style={[styles.dot, i === currentIndex && styles.dotActive]}
+          />
         ))}
       </View>
 
@@ -105,7 +131,7 @@ export default function CardThemeScreen() {
         <TouchableOpacity
           style={[
             styles.applyBtn,
-            (isCurrentActive && !confirmed) && styles.applyBtnDimmed,
+            isCurrentActive && !confirmed && styles.applyBtnDimmed,
             confirmed && styles.applyBtnConfirmed,
           ]}
           onPress={handleApply}
@@ -114,7 +140,6 @@ export default function CardThemeScreen() {
           <Text style={styles.applyBtnText}>{buttonLabel()}</Text>
         </TouchableOpacity>
       </View>
-
     </SafeAreaView>
   );
 }
@@ -122,61 +147,61 @@ export default function CardThemeScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: "#1a1a2e",
   },
   page: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 24,
     paddingTop: 16,
     paddingBottom: 8,
   },
   themeName: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 32,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 24,
     letterSpacing: 1,
   },
   previewWrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   previewCard: {
     borderRadius: 12,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.5,
     shadowRadius: 12,
     elevation: 12,
   },
   activeBadge: {
-    position: 'absolute',
+    position: "absolute",
     bottom: -14,
-    backgroundColor: '#4caf50',
+    backgroundColor: "#4caf50",
     paddingHorizontal: 20,
     paddingVertical: 6,
     borderRadius: 20,
-    shadowColor: '#4caf50',
+    shadowColor: "#4caf50",
     shadowOpacity: 0.6,
     shadowRadius: 6,
     elevation: 6,
   },
   activeBadgeText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   swipeHint: {
-    color: '#444',
+    color: "#444",
     fontSize: 13,
     marginTop: 32,
   },
   dotsRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     gap: 10,
     paddingVertical: 14,
   },
@@ -184,11 +209,11 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#334',
+    backgroundColor: "#334",
   },
   dotActive: {
     width: 22,
-    backgroundColor: '#e94560',
+    backgroundColor: "#e94560",
     borderRadius: 4,
   },
   bottomArea: {
@@ -196,20 +221,20 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   applyBtn: {
-    backgroundColor: '#e94560',
+    backgroundColor: "#e94560",
     borderRadius: 12,
     paddingVertical: 16,
-    alignItems: 'center',
+    alignItems: "center",
   },
   applyBtnDimmed: {
-    backgroundColor: '#3a1a2a',
+    backgroundColor: "#3a1a2a",
   },
   applyBtnConfirmed: {
-    backgroundColor: '#4caf50',
+    backgroundColor: "#4caf50",
   },
   applyBtnText: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
 });

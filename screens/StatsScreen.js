@@ -1,18 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import { scale, scaleFont } from '../game/responsive';
-import { loadProfile } from '../game/profile';
-import { getLifetimeEarned } from '../game/wallet';
+import React, { useState, useEffect } from "react";
+import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+} from "react-native";
+import { scale, scaleFont } from "../game/responsive";
+import { loadProfile } from "../game/profile";
+import { getLifetimeEarned } from "../game/wallet";
 
 const GAME_LABELS = {
-  blackjack: 'Blackjack',
-  solitaire: 'Solitaire',
-  gofish: 'Go Fish',
-  lastcard: 'Last Card',
-  rummy: 'Rummy',
-  conquian: 'Conquián',
-  poker: 'Poker',
+  blackjack: "Blackjack",
+  solitaire: "Solitaire",
+  gofish: "Go Fish",
+  lastcard: "Last Card",
+  rummy: "Rummy",
+  conquian: "Conquián",
+  poker: "Poker",
 };
 
 export default function StatsScreen({ navigation }) {
@@ -71,7 +77,12 @@ export default function StatsScreen({ navigation }) {
               {gameRows.map((row) => (
                 <View key={row.id} style={styles.tableRow}>
                   <Text style={styles.gameLabel}>{row.label}</Text>
-                  <Text style={[styles.winCount, row.wins > 0 && styles.winCountActive]}>
+                  <Text
+                    style={[
+                      styles.winCount,
+                      row.wins > 0 && styles.winCountActive,
+                    ]}
+                  >
                     {row.wins}
                   </Text>
                 </View>
@@ -100,103 +111,103 @@ export default function StatsScreen({ navigation }) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: "#1a1a2e",
   },
   container: {
     flexGrow: 1,
-    alignItems: 'center',
+    alignItems: "center",
     padding: scale(24),
     paddingTop: scale(32),
   },
   title: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: scaleFont(28),
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: scale(24),
   },
   loading: {
-    color: '#b0b0c0',
+    color: "#b0b0c0",
     fontSize: scaleFont(15),
     marginTop: scale(40),
   },
   summaryRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: scale(12),
-    width: '100%',
+    width: "100%",
     maxWidth: 400,
     marginBottom: scale(24),
   },
   summaryCard: {
     flex: 1,
-    backgroundColor: '#16213e',
+    backgroundColor: "#16213e",
     borderRadius: scale(14),
     borderWidth: 1,
-    borderColor: '#2a2a4a',
+    borderColor: "#2a2a4a",
     padding: scale(16),
-    alignItems: 'center',
+    alignItems: "center",
   },
   summaryValue: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: scaleFont(28),
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: scale(4),
   },
   coinValue: {
     fontSize: scaleFont(22),
-    color: '#ffd700',
+    color: "#ffd700",
   },
   summaryLabel: {
-    color: '#888898',
+    color: "#888898",
     fontSize: scaleFont(11),
-    textAlign: 'center',
-    textTransform: 'uppercase',
+    textAlign: "center",
+    textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   table: {
-    width: '100%',
+    width: "100%",
     maxWidth: 400,
-    backgroundColor: '#16213e',
+    backgroundColor: "#16213e",
     borderRadius: scale(14),
     borderWidth: 1,
-    borderColor: '#2a2a4a',
-    overflow: 'hidden',
+    borderColor: "#2a2a4a",
+    overflow: "hidden",
     marginBottom: scale(20),
   },
   tableHeader: {
-    color: '#888898',
+    color: "#888898",
     fontSize: scaleFont(11),
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     letterSpacing: 1,
     padding: scale(14),
     paddingBottom: scale(10),
     borderBottomWidth: 1,
-    borderBottomColor: '#2a2a4a',
+    borderBottomColor: "#2a2a4a",
   },
   tableRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: scale(14),
     paddingVertical: scale(12),
     borderBottomWidth: 1,
-    borderBottomColor: '#22223a',
+    borderBottomColor: "#22223a",
   },
   gameLabel: {
-    color: '#c0c0d4',
+    color: "#c0c0d4",
     fontSize: scaleFont(15),
   },
   winCount: {
-    color: '#666680',
+    color: "#666680",
     fontSize: scaleFont(16),
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   winCountActive: {
-    color: '#4ade80',
+    color: "#4ade80",
   },
   emptyHint: {
-    color: '#666680',
+    color: "#666680",
     fontSize: scaleFont(13),
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: scale(16),
   },
   backBtn: {
@@ -205,11 +216,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(32),
     borderRadius: scale(10),
     borderWidth: 1.5,
-    borderColor: '#4a4a6a',
+    borderColor: "#4a4a6a",
   },
   backBtnText: {
-    color: '#b0b0c0',
+    color: "#b0b0c0",
     fontSize: scaleFont(16),
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

@@ -1,10 +1,24 @@
 // This file handles creating and shuffling a deck of cards.
 
 // The 4 suits in a standard deck
-const SUITS = ['♠', '♥', '♦', '♣'];
+const SUITS = ["♠", "♥", "♦", "♣"];
 
 // The 13 ranks in a standard deck
-const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+const RANKS = [
+  "A",
+  "2",
+  "3",
+  "4",
+  "5",
+  "6",
+  "7",
+  "8",
+  "9",
+  "10",
+  "J",
+  "Q",
+  "K",
+];
 
 // Creates a fresh 52-card deck
 // Each card is an object like { rank: 'A', suit: '♠', id: 'A♠' }
@@ -39,10 +53,10 @@ export function calculateHandValue(hand) {
   let aces = 0;
 
   for (const card of hand) {
-    if (card.rank === 'A') {
+    if (card.rank === "A") {
       aces++;
       total += 11;
-    } else if (['J', 'Q', 'K'].includes(card.rank)) {
+    } else if (["J", "Q", "K"].includes(card.rank)) {
       total += 10;
     } else {
       total += parseInt(card.rank);

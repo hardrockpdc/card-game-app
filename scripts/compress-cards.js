@@ -45,8 +45,13 @@ if (process.argv.includes("--restore")) {
     const backupFolder = path.join(BACKUP_DIR, folder);
     const destFolder = path.join(ASSETS_DIR, folder);
     if (!fs.existsSync(backupFolder)) continue;
-    for (const file of fs.readdirSync(backupFolder).filter((f) => f.endsWith(".png"))) {
-      fs.copyFileSync(path.join(backupFolder, file), path.join(destFolder, file));
+    for (const file of fs
+      .readdirSync(backupFolder)
+      .filter((f) => f.endsWith(".png"))) {
+      fs.copyFileSync(
+        path.join(backupFolder, file),
+        path.join(destFolder, file),
+      );
       restored++;
     }
   }
@@ -73,7 +78,9 @@ async function main() {
     allFiles.push(...pngs);
   }
 
-  console.log(`Found ${allFiles.length} PNG files across ${THEME_FOLDERS.length} theme folders.\n`);
+  console.log(
+    `Found ${allFiles.length} PNG files across ${THEME_FOLDERS.length} theme folders.\n`,
+  );
 
   // Report current sizes
   let totalBefore = 0;
@@ -84,8 +91,12 @@ async function main() {
   // Detect if we're starting from originals or from the previous (bloated) run
   const avgKB = totalBefore / allFiles.length / 1024;
   if (avgKB > 15) {
-    console.log(`NOTE: Current files appear to be the larger RGBA version from the first run.`);
-    console.log(`This script will restore from backup first, then re-compress correctly.\n`);
+    console.log(
+      `NOTE: Current files appear to be the larger RGBA version from the first run.`,
+    );
+    console.log(
+      `This script will restore from backup first, then re-compress correctly.\n`,
+    );
     // Auto-restore from backup
     console.log("Restoring originals from backup...");
     let restored = 0;
@@ -105,8 +116,12 @@ async function main() {
     }
   }
 
-  console.log(`On-disk size before: ${(totalBefore / 1024 / 1024).toFixed(2)} MB`);
-  console.log(`Decoded RAM before (est.): ${((allFiles.length * 300 * 420 * 4) / 1024 / 1024).toFixed(0)} MB worst-case\n`);
+  console.log(
+    `On-disk size before: ${(totalBefore / 1024 / 1024).toFixed(2)} MB`,
+  );
+  console.log(
+    `Decoded RAM before (est.): ${((allFiles.length * 300 * 420 * 4) / 1024 / 1024).toFixed(0)} MB worst-case\n`,
+  );
 
   // Create / refresh backup
   console.log(`Saving backup to assets/_card_originals_backup/ ...`);
@@ -122,16 +137,18 @@ async function main() {
   console.log(`Backup ready.\n`);
 
   // Resize + re-encode as palette PNG
-  console.log(`Resizing ${allFiles.length} images to ${TARGET_WIDTH}×${TARGET_HEIGHT} px (indexed-color palette)...\n`);
+  console.log(
+    `Resizing ${allFiles.length} images to ${TARGET_WIDTH}×${TARGET_HEIGHT} px (indexed-color palette)...\n`,
+  );
   let done = 0;
   for (const { fullPath } of allFiles) {
     await sharp(fullPath)
       .resize(TARGET_WIDTH, TARGET_HEIGHT, { fit: "fill" })
       .png({
-        palette: true,       // indexed-color (like the originals) — keeps file size small
-        quality: 100,        // max quality within the palette
+        palette: true, // indexed-color (like the originals) — keeps file size small
+        quality: 100, // max quality within the palette
         compressionLevel: 9, // max zlib compression
-        dither: 1.0,         // smooth color transitions
+        dither: 1.0, // smooth color transitions
       })
       .toFile(fullPath + ".tmp");
 
@@ -148,15 +165,28 @@ async function main() {
     totalAfter += fs.statSync(fullPath).size;
   }
 
-  const diskSavingsPct = (((totalBefore - totalAfter) / totalBefore) * 100).toFixed(0);
-  const ramAfterMB = ((allFiles.length * TARGET_WIDTH * TARGET_HEIGHT * 4) / 1024 / 1024).toFixed(0);
+  const diskSavingsPct = (
+    ((totalBefore - totalAfter) / totalBefore) *
+    100
+  ).toFixed(0);
+  const ramAfterMB = (
+    (allFiles.length * TARGET_WIDTH * TARGET_HEIGHT * 4) /
+    1024 /
+    1024
+  ).toFixed(0);
 
   console.log(`\n=== Done! ===`);
-  console.log(`On-disk:  ${(totalAfter / 1024 / 1024).toFixed(2)} MB  (was ${(totalBefore / 1024 / 1024).toFixed(2)} MB — ${diskSavingsPct}% savings)`);
-  console.log(`Decoded RAM after (est.): ${ramAfterMB} MB worst-case  (was 206 MB)`);
+  console.log(
+    `On-disk:  ${(totalAfter / 1024 / 1024).toFixed(2)} MB  (was ${(totalBefore / 1024 / 1024).toFixed(2)} MB — ${diskSavingsPct}% savings)`,
+  );
+  console.log(
+    `Decoded RAM after (est.): ${ramAfterMB} MB worst-case  (was 206 MB)`,
+  );
   console.log(`\nOriginals backed up to: assets/_card_originals_backup/`);
   console.log(`To undo everything: node scripts/compress-cards.js --restore`);
-  console.log(`\nNext step: run your app and spot-check a few cards look right visually.`);
+  console.log(
+    `\nNext step: run your app and spot-check a few cards look right visually.`,
+  );
 }
 
 main().catch((err) => {

@@ -1,11 +1,17 @@
-import React from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import { scale, scaleFont } from '../game/responsive';
+import React from "react";
+import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+} from "react-native";
+import { scale, scaleFont } from "../game/responsive";
 
 export default function ResultsScreen({ navigation, route }) {
   const {
-    gameName = 'Game Over',
+    gameName = "Game Over",
     headline,
     isLocalWin = false,
     scores = [],
@@ -14,15 +20,15 @@ export default function ResultsScreen({ navigation, route }) {
     playAgainParams = null,
   } = route.params ?? {};
 
-  const emoji = isLocalWin ? '🏆' : '🎉';
-  const displayHeadline = headline ?? (isLocalWin ? 'You win!' : 'Game Over');
+  const emoji = isLocalWin ? "🏆" : "🎉";
+  const displayHeadline = headline ?? (isLocalWin ? "You win!" : "Game Over");
 
   function handlePlayAgain() {
     navigation.replace(playAgainRoute, playAgainParams ?? {});
   }
 
   function handleHome() {
-    navigation.navigate('Home');
+    navigation.navigate("Home");
   }
 
   return (
@@ -43,11 +49,25 @@ export default function ResultsScreen({ navigation, route }) {
           <View style={styles.scoreboard}>
             <Text style={styles.scoreboardTitle}>Final Scores</Text>
             {scores.map((entry, i) => (
-              <View key={i} style={[styles.scoreRow, entry.isWinner && styles.winnerRow]}>
-                <Text style={[styles.scoreName, entry.isWinner && styles.winnerText]}>
-                  {entry.isWinner ? '🏆 ' : '      '}{entry.name}
+              <View
+                key={i}
+                style={[styles.scoreRow, entry.isWinner && styles.winnerRow]}
+              >
+                <Text
+                  style={[
+                    styles.scoreName,
+                    entry.isWinner && styles.winnerText,
+                  ]}
+                >
+                  {entry.isWinner ? "🏆 " : "      "}
+                  {entry.name}
                 </Text>
-                <Text style={[styles.scoreValue, entry.isWinner && styles.winnerText]}>
+                <Text
+                  style={[
+                    styles.scoreValue,
+                    entry.isWinner && styles.winnerText,
+                  ]}
+                >
                   {entry.score}
                 </Text>
               </View>
@@ -72,118 +92,118 @@ export default function ResultsScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: "#1a1a2e",
   },
   container: {
     flexGrow: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     padding: scale(28),
   },
   emoji: {
     fontSize: scaleFont(64),
     marginBottom: scale(8),
-    textAlign: 'center',
+    textAlign: "center",
   },
   gameName: {
-    color: '#b0b0c0',
+    color: "#b0b0c0",
     fontSize: scaleFont(13),
     letterSpacing: 2,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     marginBottom: scale(6),
-    textAlign: 'center',
+    textAlign: "center",
   },
   headline: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: scaleFont(30),
-    fontWeight: 'bold',
-    textAlign: 'center',
+    fontWeight: "bold",
+    textAlign: "center",
     marginBottom: scale(22),
   },
   coinsBadge: {
-    backgroundColor: '#1a4a10',
+    backgroundColor: "#1a4a10",
     borderRadius: scale(999),
     borderWidth: 1.5,
-    borderColor: '#ffd700',
+    borderColor: "#ffd700",
     paddingHorizontal: scale(20),
     paddingVertical: scale(8),
     marginBottom: scale(22),
   },
   coinsText: {
-    color: '#ffd700',
+    color: "#ffd700",
     fontSize: scaleFont(18),
-    fontWeight: 'bold',
-    textAlign: 'center',
+    fontWeight: "bold",
+    textAlign: "center",
   },
   scoreboard: {
-    width: '100%',
+    width: "100%",
     maxWidth: 400,
-    backgroundColor: '#16213e',
+    backgroundColor: "#16213e",
     borderRadius: scale(14),
     borderWidth: 1,
-    borderColor: '#2a2a4a',
+    borderColor: "#2a2a4a",
     padding: scale(16),
     marginBottom: scale(28),
   },
   scoreboardTitle: {
-    color: '#b0b0c0',
+    color: "#b0b0c0",
     fontSize: scaleFont(11),
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     letterSpacing: 1.5,
     marginBottom: scale(12),
-    textAlign: 'center',
+    textAlign: "center",
   },
   scoreRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: scale(8),
     paddingHorizontal: scale(8),
     borderRadius: scale(8),
   },
   winnerRow: {
-    backgroundColor: '#1a3a10',
+    backgroundColor: "#1a3a10",
   },
   scoreName: {
-    color: '#c0c0d0',
+    color: "#c0c0d0",
     fontSize: scaleFont(15),
-    fontWeight: '600',
+    fontWeight: "600",
     flex: 1,
   },
   winnerText: {
-    color: '#4ade80',
+    color: "#4ade80",
   },
   scoreValue: {
-    color: '#b0b0c0',
+    color: "#b0b0c0",
     fontSize: scaleFont(15),
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   primaryBtn: {
-    width: '100%',
+    width: "100%",
     maxWidth: 380,
-    backgroundColor: '#e94560',
+    backgroundColor: "#e94560",
     borderRadius: scale(12),
     paddingVertical: scale(16),
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: scale(12),
   },
   primaryBtnText: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: scaleFont(17),
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   secondaryBtn: {
-    width: '100%',
+    width: "100%",
     maxWidth: 380,
     borderRadius: scale(12),
     borderWidth: 1.5,
-    borderColor: '#4a4a6a',
+    borderColor: "#4a4a6a",
     paddingVertical: scale(14),
-    alignItems: 'center',
+    alignItems: "center",
   },
   secondaryBtnText: {
-    color: '#b0b0c0',
+    color: "#b0b0c0",
     fontSize: scaleFont(16),
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

@@ -91,14 +91,18 @@ export function stopServer() {
 
 export function broadcastToClients(message) {
   if (IS_WEB) return;
-  const data = JSON.stringify({ ...message, protocolVersion: PROTOCOL_VERSION }) + "\n";
+  const data =
+    JSON.stringify({ ...message, protocolVersion: PROTOCOL_VERSION }) + "\n";
   clients.forEach((socket) => socket.write(data));
 }
 
 export function sendToClient(clientId, message) {
   if (IS_WEB) return;
   const socket = clients.get(clientId);
-  if (socket) socket.write(JSON.stringify({ ...message, protocolVersion: PROTOCOL_VERSION }) + "\n");
+  if (socket)
+    socket.write(
+      JSON.stringify({ ...message, protocolVersion: PROTOCOL_VERSION }) + "\n",
+    );
 }
 
 export function getClientCount() {
@@ -180,7 +184,10 @@ export function connectToHost(ip, callbacks) {
 
 export function sendToHost(message) {
   if (IS_WEB) return;
-  if (clientSocket) clientSocket.write(JSON.stringify({ ...message, protocolVersion: PROTOCOL_VERSION }) + "\n");
+  if (clientSocket)
+    clientSocket.write(
+      JSON.stringify({ ...message, protocolVersion: PROTOCOL_VERSION }) + "\n",
+    );
 }
 
 export function disconnectFromHost() {
@@ -209,9 +216,7 @@ export function startBroadcasting(hostName, hostIp) {
   const subnetBroadcast =
     parts.length === 4 ? `${parts[0]}.${parts[1]}.${parts[2]}.255` : null;
 
-  log(
-    `[Broadcast] Starting — hostIp: ${hostIp}, subnet: ${subnetBroadcast}`,
-  );
+  log(`[Broadcast] Starting — hostIp: ${hostIp}, subnet: ${subnetBroadcast}`);
 
   broadcastSocket = UdpSocket.createSocket({ type: "udp4" });
 
@@ -220,7 +225,11 @@ export function startBroadcasting(hostName, hostIp) {
     log("[Broadcast] Socket ready");
 
     const payload = new TextEncoder().encode(
-      JSON.stringify({ type: "CARD_GAME", name: hostName, protocolVersion: PROTOCOL_VERSION }),
+      JSON.stringify({
+        type: "CARD_GAME",
+        name: hostName,
+        protocolVersion: PROTOCOL_VERSION,
+      }),
     );
 
     const sendTo = (addr) => {
@@ -231,8 +240,7 @@ export function startBroadcasting(hostName, hostIp) {
         DISCOVERY_PORT,
         addr,
         (err) => {
-          if (err)
-            log(`[Broadcast] send error (${addr}):`, err.message);
+          if (err) log(`[Broadcast] send error (${addr}):`, err.message);
         },
       );
     };
@@ -281,7 +289,10 @@ export function startDiscovery(onGameFound) {
   discoverySocket.on("message", (data, rinfo) => {
     try {
       const msg = JSON.parse(data.toString());
-      if (msg.type === "CARD_GAME" && msg.protocolVersion === PROTOCOL_VERSION) {
+      if (
+        msg.type === "CARD_GAME" &&
+        msg.protocolVersion === PROTOCOL_VERSION
+      ) {
         onGameFound({ name: msg.name, ip: rinfo.address });
       }
     } catch (_) {}

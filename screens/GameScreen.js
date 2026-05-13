@@ -573,8 +573,8 @@ export default function GameScreen({ navigation, route }) {
               label: "Bet",
               value:
                 screenPhase === "betting"
-                  ? selectedBet ?? "—"
-                  : currentBet ?? "—",
+                  ? (selectedBet ?? "—")
+                  : (currentBet ?? "—"),
             },
             {
               label: "Streak",

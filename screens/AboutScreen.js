@@ -1,12 +1,20 @@
-import React from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Linking } from 'react-native';
-import { scale, scaleFont } from '../game/responsive';
-import appJson from '../app.json';
+import React from "react";
+import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Linking,
+} from "react-native";
+import { scale, scaleFont } from "../game/responsive";
+import appJson from "../app.json";
 
 const VERSION = appJson.expo.version;
 const YEAR = new Date().getFullYear();
-const PRIVACY_POLICY_URL = 'https://hardrockpdc.github.io/card-game-app/privacy';
+const PRIVACY_POLICY_URL =
+  "https://hardrockpdc.github.io/card-game-app/privacy";
 
 export default function AboutScreen({ navigation }) {
   return (
@@ -17,9 +25,9 @@ export default function AboutScreen({ navigation }) {
         <Text style={styles.version}>Version {VERSION}</Text>
 
         <Text style={styles.description}>
-          A local multiplayer card game collection for friends and family.
-          Play Blackjack, Rummy, Go Fish, Poker, Solitaire, Conquián,
-          Last Card, and Wild Round — all offline, no internet required.
+          A local multiplayer card game collection for friends and family. Play
+          Blackjack, Rummy, Go Fish, Poker, Solitaire, Conquián, Last Card, and
+          Wild Round — all offline, no internet required.
         </Text>
 
         <View style={styles.divider} />
@@ -62,11 +70,11 @@ export default function AboutScreen({ navigation }) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: "#1a1a2e",
   },
   container: {
     flexGrow: 1,
-    alignItems: 'center',
+    alignItems: "center",
     padding: scale(28),
     paddingTop: scale(40),
   },
@@ -75,63 +83,63 @@ const styles = StyleSheet.create({
     marginBottom: scale(8),
   },
   appName: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: scaleFont(32),
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: scale(4),
   },
   version: {
-    color: '#b0b0c0',
+    color: "#b0b0c0",
     fontSize: scaleFont(14),
     marginBottom: scale(24),
   },
   description: {
-    color: '#c0c0d4',
+    color: "#c0c0d4",
     fontSize: scaleFont(15),
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: scale(22),
     marginBottom: scale(24),
     maxWidth: 380,
   },
   divider: {
-    width: '100%',
+    width: "100%",
     maxWidth: 380,
     height: 1,
-    backgroundColor: '#2a2a44',
+    backgroundColor: "#2a2a44",
     marginVertical: scale(16),
   },
   row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
     maxWidth: 380,
     paddingVertical: scale(10),
     paddingHorizontal: scale(4),
   },
   rowLabel: {
-    color: '#888898',
+    color: "#888898",
     fontSize: scaleFont(14),
   },
   rowValue: {
-    color: '#e0e0f0',
+    color: "#e0e0f0",
     fontSize: scaleFont(14),
-    fontWeight: '600',
+    fontWeight: "600",
   },
   linkRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    width: '100%',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%",
     maxWidth: 380,
     paddingVertical: scale(14),
     paddingHorizontal: scale(4),
   },
   linkText: {
-    color: '#8888ff',
+    color: "#8888ff",
     fontSize: scaleFont(15),
   },
   linkArrow: {
-    color: '#8888ff',
+    color: "#8888ff",
     fontSize: scaleFont(18),
   },
   backBtn: {
@@ -140,11 +148,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(32),
     borderRadius: scale(10),
     borderWidth: 1.5,
-    borderColor: '#4a4a6a',
+    borderColor: "#4a4a6a",
   },
   backBtnText: {
-    color: '#b0b0c0',
+    color: "#b0b0c0",
     fontSize: scaleFont(16),
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

@@ -10,16 +10,16 @@ Built into Card Night alongside the existing 5 games. Follows the same multiplay
 
 ## Game Configuration
 
-| Setting | Value |
-|---|---|
-| Players | 2–8 |
-| Starting hand | 7 cards |
-| Win condition | First to empty hand |
-| Turn direction | Clockwise (Reverse card flips it) |
-| Draw rule | Keep drawing until you can play |
-| Draw pile empty | Shuffle discard pile → new draw pile |
-| AI | Single difficulty level |
-| "Last Card!" call | No penalty rule — just play it out |
+| Setting           | Value                                |
+| ----------------- | ------------------------------------ |
+| Players           | 2–8                                  |
+| Starting hand     | 7 cards                              |
+| Win condition     | First to empty hand                  |
+| Turn direction    | Clockwise (Reverse card flips it)    |
+| Draw rule         | Keep drawing until you can play      |
+| Draw pile empty   | Shuffle discard pile → new draw pile |
+| AI                | Single difficulty level              |
+| "Last Card!" call | No penalty rule — just play it out   |
 
 ---
 
@@ -27,24 +27,26 @@ Built into Card Night alongside the existing 5 games. Follows the same multiplay
 
 **Total: 108 cards**
 
-| Card | Per Color | × Colors | Total |
-|---|---|---|---|
-| 0 | 1 | × 4 | 4 |
-| 1–9 | 2 each | × 4 | 72 |
-| Skip | 2 | × 4 | 8 |
-| Reverse | 2 | × 4 | 8 |
-| Draw 2 | 2 | × 4 | 8 |
-| Wild | — | — | 4 |
-| Wild Draw 4 | — | — | 4 |
-| **Total** | | | **108** |
+| Card        | Per Color | × Colors | Total   |
+| ----------- | --------- | -------- | ------- |
+| 0           | 1         | × 4      | 4       |
+| 1–9         | 2 each    | × 4      | 72      |
+| Skip        | 2         | × 4      | 8       |
+| Reverse     | 2         | × 4      | 8       |
+| Draw 2      | 2         | × 4      | 8       |
+| Wild        | —         | —        | 4       |
+| Wild Draw 4 | —         | —        | 4       |
+| **Total**   |           |          | **108** |
 
 ### Colors
+
 - 🟢 **OD Green** `#556B2F`
 - 🔴 **Crimson** `#B92841`
 - 🩵 **Turquoise** `#40E0D0`
 - 🟠 **Coral** `#FF7F50`
 
 ### Card Image Files
+
 Stored in `assets/cards_lastcard/`. Naming convention:
 
 ```
@@ -62,26 +64,31 @@ Card back:      card_back.png
 ## Action Cards — Rules
 
 ### Skip ⊘
+
 - Next player in turn order loses their turn entirely.
 - They draw nothing — they just sit out that turn.
 - Play continues to the player after them.
 
 ### Reverse ⟲
+
 - Flips the turn direction.
 - If going clockwise → now counterclockwise, and vice versa.
 - In a 2-player game: acts like a Skip (play returns to the same player).
 
 ### Draw 2 (+2)
+
 - Next player must draw 2 cards AND loses their turn.
 - Cannot be blocked or stacked (no Draw 2 chaining).
 - If the draw pile doesn't have enough cards, reshuffle discard first.
 
 ### Wild
+
 - Player who plays it chooses any color.
 - Chosen color becomes the new active color.
 - Next player must match that color OR play another Wild.
 
 ### Wild Draw 4 (+4)
+
 - Player who plays it chooses any color.
 - Next player must draw 4 cards AND loses their turn.
 - **Legal restriction:** Should only be played when the player has no card matching the current color. In digital play, this is enforced automatically — the game will only allow Wild Draw 4 if no color match exists in hand.
@@ -158,10 +165,12 @@ If the draw pile AND discard pile are both empty and no player can play (extreme
 - No dismiss — must pick a color to continue
 
 ### Active Player Indicator
+
 - Highlight the current player's name/avatar in the top bar
 - Show a countdown or "YOUR TURN" banner when it's the local player's turn
 
 ### Card Highlighting
+
 - Playable cards: full brightness
 - Unplayable cards: dimmed to ~40% opacity
 - Tapping an unplayable card: subtle shake + no action
@@ -173,12 +182,14 @@ If the draw pile AND discard pile are both empty and no player can play (extreme
 Follows the standard Card Night host/client pattern:
 
 **Host runs all logic:**
+
 - Full game state in `fullRef`
 - Validates all plays server-side
 - Broadcasts `GAME_STATE` (public) after every action
 - Sends `PRIVATE_HAND` to each player individually
 
 **Public state includes:**
+
 - Draw pile count (not contents)
 - Discard pile top card
 - All player names + card counts
@@ -188,9 +199,11 @@ Follows the standard Card Night host/client pattern:
 - Any pending action (e.g. next player must draw 2)
 
 **Private state includes:**
+
 - Player's own hand (card details)
 
 **Client actions (sent to host):**
+
 ```
 PLAY_CARD    { cardId }
 DRAW_CARD    { }
@@ -198,6 +211,7 @@ CHOOSE_COLOR { color }   ← after Wild
 ```
 
 **Host broadcasts:**
+
 ```
 GAME_STATE   { public state }
 PRIVATE_HAND { cards[] }
@@ -211,6 +225,7 @@ GAME_OVER    { winner }
 AI plays a simple but reasonable strategy:
 
 **Card selection priority (in order):**
+
 1. Play a Wild Draw 4 if it's legal AND opponent has ≤ 2 cards
 2. Play a Draw 2 if opponent has ≤ 3 cards
 3. Play a Skip or Reverse if opponent has ≤ 3 cards
@@ -222,6 +237,7 @@ AI plays a simple but reasonable strategy:
 **AI turn delay:** 1.0–1.5 seconds (so humans can see what's happening)
 
 **Color picker (AI Wild):**
+
 - Always picks the color it has the most cards of in remaining hand
 - Tiebreak: random
 
@@ -230,6 +246,7 @@ AI plays a simple but reasonable strategy:
 ## Single Player Setup
 
 Added to `SinglePlayerSetupScreen.js`:
+
 - Game: Last Card
 - Player count selector: 2–8 (includes AI opponents)
 - AI fills remaining slots (e.g. 1 human + 3 AI = 4 players)
@@ -240,6 +257,7 @@ Added to `SinglePlayerSetupScreen.js`:
 ## Project Integration
 
 ### New Files
+
 ```
 game/lastCard.js                   ← pure game logic, no React
 screens/LastCardGameScreen.js      ← single + multiplayer UI
@@ -247,6 +265,7 @@ assets/cards_lastcard/             ← 109 card images (already generated ✅)
 ```
 
 ### Modified Files
+
 ```
 screens/SinglePlayerSetupScreen.js ← add Last Card to game list
 screens/LobbyScreen.js             ← add Last Card to game selector
@@ -255,6 +274,7 @@ PROJECT_NOTES.md                   ← update after build
 ```
 
 ### Minimum player count
+
 2 players (no minimum enforced in Lobby beyond the standard 2)
 
 ---
@@ -262,6 +282,7 @@ PROJECT_NOTES.md                   ← update after build
 ## Phased Build Plan
 
 ### Phase A — Game Logic
+
 - `game/lastCard.js` with pure functions:
   - `createDeck()` — builds shuffled 108-card deck
   - `dealHands(players, handSize)` — deals 7 cards each
@@ -273,6 +294,7 @@ PROJECT_NOTES.md                   ← update after build
   - `getAIMove(state, playerId)` — returns card to play + chosen color
 
 ### Phase B — Single Player UI
+
 - `screens/LastCardGameScreen.js`
 - Full game loop working vs AI
 - Color picker overlay
@@ -280,6 +302,7 @@ PROJECT_NOTES.md                   ← update after build
 - Win screen
 
 ### Phase C — Multiplayer
+
 - Wire host/client networking
 - Add to Lobby game selector
 - Test on both phones with 2+ players
@@ -288,23 +311,23 @@ PROJECT_NOTES.md                   ← update after build
 
 ## Known Edge Cases to Handle
 
-| Edge Case | Resolution |
-|---|---|
-| Wild Draw 4 played illegally (has color match) | Block in UI — button disabled |
-| Draw pile runs out mid-draw | Reshuffle discard, continue drawing |
-| Both piles empty | Declare draw |
-| 2-player Reverse | Treat as Skip |
-| Player disconnects mid-game | Host removes player, game continues |
-| AI plays Wild Draw 4 on last card | Valid win — AI empties hand |
+| Edge Case                                      | Resolution                          |
+| ---------------------------------------------- | ----------------------------------- |
+| Wild Draw 4 played illegally (has color match) | Block in UI — button disabled       |
+| Draw pile runs out mid-draw                    | Reshuffle discard, continue drawing |
+| Both piles empty                               | Declare draw                        |
+| 2-player Reverse                               | Treat as Skip                       |
+| Player disconnects mid-game                    | Host removes player, game continues |
+| AI plays Wild Draw 4 on last card              | Valid win — AI empties hand         |
 
 ---
 
 ## Asset Summary
 
-| Asset | Status |
-|---|---|
+| Asset                  | Status                                     |
+| ---------------------- | ------------------------------------------ |
 | Card images (109 PNGs) | ✅ Generated — in `assets/cards_lastcard/` |
-| Card back | ✅ Generated |
-| Game logic file | 🔜 Phase A |
-| Game screen | 🔜 Phase B |
-| Multiplayer | 🔜 Phase C |
+| Card back              | ✅ Generated                               |
+| Game logic file        | 🔜 Phase A                                 |
+| Game screen            | 🔜 Phase B                                 |
+| Multiplayer            | 🔜 Phase C                                 |

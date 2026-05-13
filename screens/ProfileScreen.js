@@ -107,7 +107,7 @@ export default function ProfileScreen({ navigation, route }) {
   useFocusEffect(
     useCallback(() => {
       getCoins().then(setCoins);
-    }, [])
+    }, []),
   );
 
   async function handleResetCoins() {
@@ -124,7 +124,7 @@ export default function ProfileScreen({ navigation, route }) {
             setCoins(1000);
           },
         },
-      ]
+      ],
     );
   }
 
@@ -485,14 +485,14 @@ export default function ProfileScreen({ navigation, route }) {
             <Text style={styles.sectionLabel}>More</Text>
             <TouchableOpacity
               style={styles.moreRow}
-              onPress={() => navigation.navigate('Stats')}
+              onPress={() => navigation.navigate("Stats")}
             >
               <Text style={styles.moreRowText}>📊 Stats</Text>
               <Text style={styles.moreRowArrow}>›</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.moreRow, styles.moreRowLast]}
-              onPress={() => navigation.navigate('About')}
+              onPress={() => navigation.navigate("About")}
             >
               <Text style={styles.moreRowText}>ℹ️ About Card Night</Text>
               <Text style={styles.moreRowArrow}>›</Text>
