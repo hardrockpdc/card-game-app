@@ -476,7 +476,6 @@ export default function GameScreen({ navigation, route }) {
   const menuItems = [
     { type: "restart", onRestart: handleRestart },
     { type: "howto", gameId: "blackjack" },
-    { type: "sound" },
     { type: "theme" },
     { type: "divider" },
     {

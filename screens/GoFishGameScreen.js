@@ -463,7 +463,6 @@ export default function GoFishGameScreen({ navigation, route }) {
       ? [{ type: "saveexit", onSaveExit: handleSaveAndExit }]
       : []),
     { type: "howto", gameId: "gofish" },
-    { type: "sound" },
     { type: "theme" },
     { type: "divider" },
     { type: "quit", onQuit: handleQuit },

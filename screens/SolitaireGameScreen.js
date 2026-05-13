@@ -255,7 +255,6 @@ export default function SolitaireGameScreen({ navigation, route }) {
     { type: "restart", onRestart: restart },
     { type: "saveexit", onSaveExit: handleSaveAndExit },
     { type: "howto", gameId: "solitaire" },
-    { type: "sound" },
     { type: "theme" },
     { type: "divider" },
     {

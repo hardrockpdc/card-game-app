@@ -333,7 +333,6 @@ export default function MultiplayerGameScreen({ navigation, route }) {
       disabled: !isHost,
     },
     { type: "howto", gameId: "blackjack" },
-    { type: "sound" },
     { type: "theme" },
     { type: "divider" },
     { type: "quit", onQuit: handleQuit },

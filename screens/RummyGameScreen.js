@@ -279,7 +279,6 @@ export default function RummyGameScreen({ navigation, route }) {
       ? [{ type: "saveexit", onSaveExit: handleSaveAndExit }]
       : []),
     { type: "howto", gameId: "rummy" },
-    { type: "sound" },
     { type: "theme" },
     { type: "divider" },
     { type: "quit", onQuit: handleQuit },

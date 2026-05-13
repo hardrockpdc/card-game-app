@@ -857,7 +857,6 @@ export default function PokerGameScreen({ navigation, route }) {
       ? [{ type: "saveexit", onSaveExit: handleSaveAndExit }]
       : []),
     { type: "howto", gameId: "poker" },
-    { type: "sound" },
     { type: "theme" },
     { type: "divider" },
     { type: "quit", onQuit: handleQuit },

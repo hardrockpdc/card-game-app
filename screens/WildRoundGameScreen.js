@@ -658,7 +658,6 @@ export default function WildRoundGameScreen({ navigation, route }) {
       disabled: !isHost,
     },
     { type: "howto", gameId: "wildround" },
-    { type: "sound" },
     { type: "theme" },
     { type: "divider" },
     {
