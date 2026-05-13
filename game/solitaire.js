@@ -63,6 +63,7 @@ export const SOLITAIRE_ACTIONS = {
   NEW_GAME: "solitaire/newGame",
   TAP: "solitaire/tap",
   SET_SPIDER_MODE: "solitaire/setSpiderMode",
+  UNDO: "solitaire/undo",
 };
 
 export function newGameAction(variantId, options = {}) {
@@ -78,6 +79,10 @@ export function tapAction(target) {
     type: SOLITAIRE_ACTIONS.TAP,
     target,
   };
+}
+
+export function undoAction() {
+  return { type: SOLITAIRE_ACTIONS.UNDO };
 }
 
 export function setSpiderModeAction(mode) {
@@ -368,6 +373,7 @@ function createKlondikeState() {
     waste: [],
     foundations: [[], [], [], []],
     tableau,
+    history: [],
   };
 }
 
@@ -406,6 +412,7 @@ function createSpiderState(mode = 4) {
     waste: [],
     completedRuns: 0,
     tableau,
+    history: [],
   };
 }
 
@@ -433,6 +440,7 @@ function createFreeCellState() {
     foundations: [[], [], [], []],
     freecells: [null, null, null, null],
     tableau,
+    history: [],
   };
 }
 
@@ -511,6 +519,7 @@ function createPyramidState() {
     stock,
     waste: [],
     pyramidRows: syncPyramidVisibility(pyramidRows),
+    history: [],
   };
 }
 
@@ -591,6 +600,7 @@ function createTriPeaksSafeState() {
     stock: initialDraw.stock,
     waste: initialDraw.waste,
     boardRows: syncTriPeaksVisibility(boardRows),
+    history: [],
   };
 }
 
@@ -1718,6 +1728,15 @@ export function solitaireReducer(state, action) {
         spiderMode: normalizeSpiderMode(action.mode),
       });
 
+    case SOLITAIRE_ACTIONS.UNDO: {
+      if (!state.history || state.history.length === 0) return state;
+      const prevSnap = state.history[state.history.length - 1];
+      return {
+        ...prevSnap,
+        history: state.history.slice(0, -1),
+      };
+    }
+
     case SOLITAIRE_ACTIONS.TAP: {
       let nextState = state;
 
@@ -1733,10 +1752,23 @@ export function solitaireReducer(state, action) {
         nextState = handleTriPeaksTap(state, action.target);
       }
 
-      return finalizeStatus({
+      const next = finalizeStatus({
         ...nextState,
         options: nextState.options || { spiderMode: nextState.spiderMode || 4 },
       });
+
+      // Only record undo history when moves actually changed (not selection-only taps)
+      if (next.moves === state.moves && next.pairs === state.pairs) return next;
+
+      // On win, clear history (can't undo past winning)
+      if (next.status === "won") return { ...next, history: [] };
+
+      // Push a history-free snapshot of current state
+      const { history: _h, ...prevForHistory } = state;
+      return {
+        ...next,
+        history: [...(state.history || []), prevForHistory],
+      };
     }
 
     default:

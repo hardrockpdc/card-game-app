@@ -22,6 +22,7 @@ import {
   setSpiderModeAction,
   solitaireReducer,
   tapAction,
+  undoAction,
 } from "../game/solitaire";
 import { addCoins } from "../game/wallet";
 import { recordWin } from "../game/profile";
@@ -260,6 +261,11 @@ export default function SolitaireGameScreen({ navigation, route }) {
   };
 
   const menuItems = [
+    {
+      type: "undo",
+      onUndo: () => dispatch(undoAction()),
+      disabled: !state.history || state.history.length === 0,
+    },
     { type: "restart", onRestart: restart },
     { type: "saveexit", onSaveExit: handleSaveAndExit },
     { type: "howto", gameId: "solitaire" },

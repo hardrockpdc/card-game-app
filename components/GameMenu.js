@@ -55,6 +55,28 @@ export default function GameMenuItems({ menuItems, onClose }) {
           );
         }
 
+        if (item?.type === "undo") {
+          return (
+            <Pressable
+              key={key}
+              onPress={() => {
+                if (!isFunction(item?.onUndo)) return;
+                if (isFunction(onClose)) onClose();
+                item.onUndo();
+              }}
+              style={({ pressed }) => [
+                styles.menuRow,
+                pressed && !item?.disabled && styles.menuRowPressed,
+                item?.disabled && styles.menuRowDisabled,
+              ]}
+              disabled={!isFunction(item?.onUndo) || item?.disabled}
+            >
+              <Text style={styles.menuIcon}>↩️</Text>
+              <Text style={styles.menuLabel}>Undo</Text>
+            </Pressable>
+          );
+        }
+
         if (item?.type === "restart") {
           return (
             <Pressable
