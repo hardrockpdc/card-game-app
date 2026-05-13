@@ -162,7 +162,6 @@ export default function SolitaireGameScreen({ navigation, route }) {
   const coinRewardedRef = useRef(false);
   const [coinsEarned, setCoinsEarned] = useState(0);
   const [showRoundModal, setShowRoundModal] = useState(false);
-  const [showStats, setShowStats] = useState(false);
   // Tracks whether the initial mount already dispatched newGameAction so the
   // restore effect (which fires after) knows if it should override it.
   const initialGameDispatched = useRef(false);
@@ -791,23 +790,10 @@ export default function SolitaireGameScreen({ navigation, route }) {
         gameId="solitaire"
         title={variant.label}
         subtitle={variant.description}
-        extraButton={
-          <Pressable
-            onPress={() => setShowStats((v) => !v)}
-            style={({ pressed }) => [
-              styles.statsToggleBtn,
-              pressed && styles.statsToggleBtnPressed,
-            ]}
-          >
-            <Text style={styles.statsToggleBtnText}>
-              {showStats ? "HIDE" : "SHOW"}
-            </Text>
-          </Pressable>
-        }
         menuItems={menuItems}
       />
       <ScrollView contentContainerStyle={styles.content}>
-        {showStats ? renderStatsBar() : null}
+        {renderStatsBar()}
         <EndOfRoundModal
           visible={showRoundModal}
           title="🏆 You Won!"
@@ -852,26 +838,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(4),
     paddingTop: scale(4),
     paddingBottom: scale(8),
-  },
-
-  // Button shown in GameHeader to toggle the stats bar on/off.
-  statsToggleBtn: {
-    backgroundColor: "rgba(24, 33, 49, 0.95)",
-    borderWidth: 1,
-    borderColor: "#2c3750",
-    borderRadius: scale(12),
-    paddingHorizontal: scale(12),
-    paddingVertical: scale(10),
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  statsToggleBtnPressed: {
-    opacity: 0.85,
-  },
-  statsToggleBtnText: {
-    color: "#eef4ff",
-    fontSize: scale(12),
-    fontWeight: "900",
   },
 
   spiderScrollContent: {
