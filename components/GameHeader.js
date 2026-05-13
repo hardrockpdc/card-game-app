@@ -4,6 +4,17 @@ import { scale, scaleFont } from "../game/responsive";
 import { getTableTheme } from "../game/tableThemes";
 import GameMenuItems, { MenuDivider } from "./GameMenu";
 
+const KICKER_LABELS = {
+  blackjack: "BLACKJACK",
+  gofish: "GO FISH",
+  poker: "POKER",
+  conquian: "CONQUIAN",
+  rummy: "RUMMY",
+  solitaire: "SOLITAIRE",
+  lastcard: "LAST CARD",
+  wildround: "WILD ROUND",
+};
+
 export default function GameHeader({
   gameId,
   title,
@@ -32,7 +43,7 @@ export default function GameHeader({
         <View style={styles.row}>
           <View style={styles.leftZone}>
             <Text style={[styles.kicker, { color: accent }]} numberOfLines={1}>
-              {title?.toUpperCase?.() ?? ""}
+              {KICKER_LABELS[gameId] ?? gameId?.toUpperCase?.() ?? ""}
             </Text>
 
             {leftInfo ? (

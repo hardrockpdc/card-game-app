@@ -819,7 +819,6 @@ export default function SolitaireGameScreen({ navigation, route }) {
       <GameHeader
         gameId="solitaire"
         title={variant.label}
-        subtitle={variant.description}
         menuItems={menuItems}
       />
       <ScrollView contentContainerStyle={styles.content}>
