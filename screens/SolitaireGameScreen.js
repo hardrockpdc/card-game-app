@@ -246,8 +246,14 @@ export default function SolitaireGameScreen({ navigation, route }) {
     dispatch(newGameAction(state.variantId, { spiderMode: state.spiderMode }));
   };
 
+  const handleSaveAndExit = () => {
+    saveGame(solitaireSaveKey(state.variantId || routeVariantId), { state });
+    navigation.navigate("Home");
+  };
+
   const menuItems = [
     { type: "restart", onRestart: restart },
+    { type: "saveexit", onSaveExit: handleSaveAndExit },
     { type: "howto", gameId: "solitaire" },
     { type: "sound" },
     { type: "theme" },
