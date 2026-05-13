@@ -227,6 +227,12 @@ export default function SolitaireGameScreen({ navigation, route }) {
     if (state.status === "won") setShowRoundModal(true);
   }, [state.status]);
 
+  useEffect(() => {
+    if (state.moves === 0 || state.status === "won") return;
+    const id = setInterval(() => setElapsed(e => e + 1), 1000);
+    return () => clearInterval(id);
+  }, [state.moves, state.status]);
+
   const variant = useMemo(
     () => getVariantOption(state.variantId),
     [state.variantId],
@@ -235,6 +241,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
   const restart = () => {
     coinRewardedRef.current = false;
     setCoinsEarned(0);
+    setElapsed(0);
     clearGame(solitaireSaveKey(state.variantId || routeVariantId));
     dispatch(newGameAction(state.variantId, { spiderMode: state.spiderMode }));
   };
@@ -254,57 +261,66 @@ export default function SolitaireGameScreen({ navigation, route }) {
     },
   ];
 
-  const renderStatsBar = () => (
-    <View style={styles.statsBar}>
-      <StatsStrip
-        gameId="solitaire"
-        items={[
-          { label: "Moves", value: state.moves, accent: true },
-          state.variantId === "pyramid"
-            ? { label: "Pairs", value: state.pairs ?? 0, accent: true }
-            : null,
-          state.variantId === "tripeaks"
-            ? { label: "Combo", value: state.combo ?? 0, accent: true }
-            : null,
-          state.variantId === "spider"
-            ? {
-                label: "Runs",
-                value: state.completedRuns ?? 0,
-                accent: true,
-              }
-            : null,
-        ].filter(Boolean)}
-      />
+  const renderStatsBar = () => {
+    const vid = state.variantId;
+    const thirdItem =
+      vid === "klondike" || vid === "spider"
+        ? { label: "Stock", value: state.stock?.length ?? 0, accent: false }
+        : vid === "freecell"
+        ? {
+            label: "Free Cells",
+            value: (state.freecells || []).filter((c) => !c).length,
+            accent: false,
+          }
+        : vid === "pyramid"
+        ? { label: "Pairs", value: state.pairs ?? 0, accent: false }
+        : vid === "tripeaks"
+        ? { label: "Combo", value: state.combo ?? 0, accent: false }
+        : null;
 
-      {state.variantId === "spider" ? (
-        <View style={styles.modeRow}>
-          {SPIDER_MODE_OPTIONS.map((option) => {
-            const selected = option.id === state.spiderMode;
-            return (
-              <Pressable
-                key={option.id}
-                onPress={() => dispatch(setSpiderModeAction(option.id))}
-                style={({ pressed }) => [
-                  styles.modeChip,
-                  selected && styles.modeChipSelected,
-                  pressed && styles.modeChipPressed,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.modeChipText,
-                    selected && styles.modeChipTextSelected,
+    const items = [
+      { label: "Moves", value: state.moves, accent: true },
+      { label: "Time", value: formatTime(elapsed), accent: false },
+      thirdItem,
+      vid === "spider"
+        ? { label: "Runs", value: state.completedRuns ?? 0, accent: false }
+        : null,
+    ].filter(Boolean);
+
+    return (
+      <View style={styles.statsBar}>
+        <StatsStrip gameId="solitaire" items={items} />
+
+        {vid === "spider" ? (
+          <View style={styles.modeRow}>
+            {SPIDER_MODE_OPTIONS.map((option) => {
+              const selected = option.id === state.spiderMode;
+              return (
+                <Pressable
+                  key={option.id}
+                  onPress={() => dispatch(setSpiderModeAction(option.id))}
+                  style={({ pressed }) => [
+                    styles.modeChip,
+                    selected && styles.modeChipSelected,
+                    pressed && styles.modeChipPressed,
                   ]}
                 >
-                  {option.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      ) : null}
-    </View>
-  );
+                  <Text
+                    style={[
+                      styles.modeChipText,
+                      selected && styles.modeChipTextSelected,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : null}
+      </View>
+    );
+  };
 
   const renderKlondike = () => {
     const wasteTop = getTopCard(state.waste);
