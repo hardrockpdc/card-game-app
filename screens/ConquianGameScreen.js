@@ -11,6 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Card from "../components/Card";
 import GameHeader from "../components/GameHeader";
 import EndOfRoundModal from "../components/EndOfRoundModal";
+import StatsStrip from "../components/StatsStrip";
 import {
   deal,
   doSelectPassCard,
@@ -894,12 +895,25 @@ export default function ConquianGameScreen({ navigation, route }) {
 
         <EndOfRoundModal
           visible={showRoundModal}
-          title={tie ? "🤝 It's a Tie!" : iWon ? "🏆 You Win!" : `👑 ${winner?.name} Wins!`}
-          message={iWon && isSinglePlayer && coinsEarned > 0 ? `+${coinsEarned} coins!` : ""}
+          title={
+            tie
+              ? "🤝 It's a Tie!"
+              : iWon
+                ? "🏆 You Win!"
+                : `👑 ${winner?.name} Wins!`
+          }
+          message={
+            iWon && isSinglePlayer && coinsEarned > 0
+              ? `+${coinsEarned} coins!`
+              : ""
+          }
           showContinue={isHost}
           showLeave
           isGameOver
-          onContinue={() => { setShowRoundModal(false); handlePlayAgain(); }}
+          onContinue={() => {
+            setShowRoundModal(false);
+            handlePlayAgain();
+          }}
           onLeave={() => navigation.navigate("Home")}
           tableColor={BG}
         />
@@ -916,6 +930,28 @@ export default function ConquianGameScreen({ navigation, route }) {
         title="Conquian"
         subtitle={isSinglePlayer ? "Single Player" : "Multiplayer"}
         menuItems={menuItems}
+      />
+      <StatsStrip
+        gameId="conquian"
+        items={[
+          {
+            label: "Phase",
+            value:
+              phase === "initialPass"
+                ? "Initial Pass"
+                : phase === "playing"
+                  ? "Playing"
+                  : phase === "results"
+                    ? "Results"
+                    : phase,
+          },
+          { label: "Turn", value: turnPhase ?? "—" },
+          {
+            label: "Melded",
+            value: `${myMelded}/${winTarget}`,
+            accent: true,
+          },
+        ]}
       />
       <ScrollView contentContainerStyle={styles.container}>
         {/* Opponents — single row across the top; cards wrap naturally */}
