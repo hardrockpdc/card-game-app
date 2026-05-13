@@ -174,6 +174,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
   const coinRewardedRef = useRef(false);
   const [coinsEarned, setCoinsEarned] = useState(0);
   const [showRoundModal, setShowRoundModal] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
   // Tracks whether the initial mount already dispatched newGameAction so the
   // restore effect (which fires after) knows if it should override it.
   const initialGameDispatched = useRef(false);
@@ -183,6 +184,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
     dispatch(newGameAction(routeVariantId, { spiderMode: routeSpiderMode }));
     coinRewardedRef.current = false;
     setCoinsEarned(0);
+    setElapsed(0);
   }, [routeVariantId, routeSpiderMode]);
 
   // Restore saved game on initial mount (fires after newGameAction effect above).
