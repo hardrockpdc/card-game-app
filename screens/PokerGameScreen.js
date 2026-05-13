@@ -875,9 +875,10 @@ export default function PokerGameScreen({ navigation, route }) {
       <StatsStrip
         gameId="poker"
         items={[
-          { label: "Phase", value: phaseLabel[phase] ?? phase },
-          { label: "Pot", value: pot, accent: true },
-          { label: "Bet", value: currentBet },
+          { label: "Chips", value: myChips, accent: true },
+          { label: "Pot", value: pot },
+          { label: "Blinds", value: `${SMALL_BLIND}/${BIG_BLIND}` },
+          { label: "Hand", value: phaseLabel[phase] ?? phase },
         ]}
       />
       <ScrollView contentContainerStyle={styles.container}>

@@ -223,10 +223,17 @@ export default function RummyGameScreen({ navigation, route }) {
   const isMyTurn = currentPlayerIndex === localPlayerIndex;
   const currentPhase = gameState?.phase || "draw";
   const statusMessage = gameState?.statusMessage || "Loading…";
-  const myMelds = (gameState?.melds || []).filter(
-    (meld) => Number.isInteger(meld?.owner) && meld.owner === localPlayerIndex,
-  );
-  const myDeadwood = calculateRummyDeadwood(myHand, myMelds);
+  const myMelds = useMemo(() => {
+    return (gameState?.melds || []).filter(
+      (meld) =>
+        Number.isInteger(meld?.owner) && meld.owner === localPlayerIndex,
+    );
+  }, [gameState?.melds, localPlayerIndex]);
+
+  const myDeadwood = useMemo(() => {
+    return calculateRummyDeadwood(myHand, myMelds);
+  }, [myHand, myMelds]);
+
   const discardTop =
     gameState?.discardTop ||
     (fullRef.current?.discardPile?.length

@@ -567,22 +567,21 @@ export default function GameScreen({ navigation, route }) {
         />
         <StatsStrip
           gameId="blackjack"
-          items={
-            isFree
-              ? [
-                  { label: "Mode", value: "Free Play", accent: true },
-                  { label: "Hands", value: handsCount },
-                ]
-              : [
-                  { label: "Coins", value: coins ?? "—", accent: true },
-                  { label: "Bet", value: currentBet },
-                  {
-                    label: "Streak",
-                    value: streakLabel,
-                    accent: streakRef.current.type === "W",
-                  },
-                ]
-          }
+          items={[
+            { label: "Coins", value: coins ?? "—", accent: true },
+            {
+              label: "Bet",
+              value:
+                screenPhase === "betting"
+                  ? selectedBet ?? "—"
+                  : currentBet ?? "—",
+            },
+            {
+              label: "Streak",
+              value: isFree ? "—" : streakLabel,
+              accent: !isFree && streakRef.current.type === "W",
+            },
+          ]}
         />
         <ScrollView
           contentContainerStyle={styles.bettingContainer}

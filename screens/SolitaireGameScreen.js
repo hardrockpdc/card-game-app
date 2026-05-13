@@ -174,6 +174,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
   const coinRewardedRef = useRef(false);
   const [coinsEarned, setCoinsEarned] = useState(0);
   const [showRoundModal, setShowRoundModal] = useState(false);
+  const [showStatsBar, setShowStatsBar] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   // Tracks whether the initial mount already dispatched newGameAction so the
   // restore effect (which fires after) knows if it should override it.
@@ -820,10 +821,25 @@ export default function SolitaireGameScreen({ navigation, route }) {
         gameId="solitaire"
         title={variant.label}
         subtitle={variant.description}
+        extraButton={
+          <Pressable
+            onPress={() => setShowStatsBar((v) => !v)}
+            style={({ pressed }) => [
+              styles.statsToggleBtn,
+              pressed && styles.statsToggleBtnPressed,
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel={showStatsBar ? "Hide stats" : "Show stats"}
+          >
+            <Text style={styles.statsToggleText}>
+              {showStatsBar ? "HIDE" : "SHOW"}
+            </Text>
+          </Pressable>
+        }
         menuItems={menuItems}
       />
       <ScrollView contentContainerStyle={styles.content}>
-        {renderStatsBar()}
+        {showStatsBar ? renderStatsBar() : null}
         <EndOfRoundModal
           visible={showRoundModal}
           title="🏆 You Won!"

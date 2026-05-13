@@ -32,7 +32,7 @@ export default function StatsStrip({ gameId, items }) {
     <View style={[styles.strip, { borderColor: toRgba(theme.accent, 0.12) }]}>
       <View style={styles.row}>
         {items?.map((item, idx) => {
-          const isFirst = idx === 0;
+          const isRowFirst = idx % itemsPerRow === 0;
           const valueColor = item?.accent ? accent : styles.value.color;
 
           return (
@@ -40,7 +40,7 @@ export default function StatsStrip({ gameId, items }) {
               key={`${item?.label ?? "item"}-${idx}`}
               style={[
                 styles.item,
-                !isFirst ? styles.itemDivider : null,
+                !isRowFirst ? styles.itemDivider : null,
                 { flexBasis: itemBasis, maxWidth: itemBasis },
               ]}
             >
