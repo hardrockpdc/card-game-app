@@ -184,7 +184,9 @@ export default function SolitaireGameScreen({ navigation, route }) {
     dispatch(newGameAction(routeVariantId, { spiderMode: routeSpiderMode }));
     coinRewardedRef.current = false;
     setCoinsEarned(0);
-    setElapsed(0);
+    if (!route?.params?.resumeFromSave) {
+      setElapsed(0);
+    }
   }, [routeVariantId, routeSpiderMode]);
 
   // Restore saved game on initial mount (fires after newGameAction effect above).
@@ -194,6 +196,9 @@ export default function SolitaireGameScreen({ navigation, route }) {
       const saved = await loadGame(solitaireSaveKey(routeVariantId));
       if (saved?.state) {
         dispatch({ type: "__RESTORE__", payload: saved.state });
+        if (typeof saved.elapsed === "number") {
+          setElapsed(saved.elapsed);
+        }
         coinRewardedRef.current = false;
         setCoinsEarned(0);
       }
@@ -208,8 +213,8 @@ export default function SolitaireGameScreen({ navigation, route }) {
       clearGame(key);
       return;
     }
-    saveGame(key, { state });
-  }, [state]);
+    saveGame(key, { state: { ...state, history: undefined }, elapsed });
+  }, [state, elapsed]);
 
   useEffect(() => {
     if (state.status === "won" && !coinRewardedRef.current) {
@@ -247,7 +252,10 @@ export default function SolitaireGameScreen({ navigation, route }) {
   };
 
   const handleSaveAndExit = () => {
-    saveGame(solitaireSaveKey(state.variantId || routeVariantId), { state });
+    saveGame(solitaireSaveKey(state.variantId || routeVariantId), {
+      state: { ...state, history: undefined },
+      elapsed,
+    });
     navigation.navigate("Home");
   };
 
