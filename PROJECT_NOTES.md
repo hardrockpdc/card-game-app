@@ -426,7 +426,7 @@ All JS-only items from the Month 3 block are done:
 - ✅ Single commit: `chore: prettier sweep (formatting only, no logic changes)`
 - ✅ Pushed to GitHub, up to date with `origin/main`
 
-**⚠️ Known regression to fix next session:** `SolitaireGameScreen.js` has a `showStatsBar` useState + SHOW/HIDE toggle that was supposed to be removed in S-N1. The toggle got re-added (under a slightly different variable name) by a later auto-commit. Needs one clean removal pass before the StatsStrip work is final.
+**✅ Regression resolved (2026-05-12):** `showStatsBar` useState + SHOW/HIDE toggle fully removed from `SolitaireGameScreen.js`. StatsStrip is now always visible, matching all other game screens.
 
 ### After this session
 
