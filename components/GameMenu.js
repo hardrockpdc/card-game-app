@@ -91,6 +91,28 @@ export default function GameMenuItems({ menuItems, onClose }) {
           );
         }
 
+        if (item?.type === "saveexit") {
+          return (
+            <Pressable
+              key={key}
+              onPress={() => {
+                if (!isFunction(item?.onSaveExit)) return;
+                if (isFunction(onClose)) onClose();
+                item.onSaveExit();
+              }}
+              style={({ pressed }) => [
+                styles.menuRow,
+                pressed && !item?.disabled && styles.menuRowPressed,
+                item?.disabled && styles.menuRowDisabled,
+              ]}
+              disabled={!isFunction(item?.onSaveExit) || item?.disabled}
+            >
+              <Text style={styles.menuIcon}>💾</Text>
+              <Text style={styles.menuLabel}>{"Save & Exit"}</Text>
+            </Pressable>
+          );
+        }
+
         if (item?.type === "howto") {
           return (
             <Pressable
