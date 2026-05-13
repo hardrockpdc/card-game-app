@@ -428,11 +428,38 @@ All JS-only items from the Month 3 block are done:
 
 **✅ Regression resolved (2026-05-12):** `showStatsBar` useState + SHOW/HIDE toggle fully removed from `SolitaireGameScreen.js`. StatsStrip is now always visible, matching all other game screens.
 
+### Save & Exit Feature (2026-05-12) — COMPLETE ✅
+
+JS-only, no EAS rebuild needed. "Save & Exit" added to the ☰ hamburger menu on all single-player game screens except Blackjack and WildRound.
+
+**How it works:**
+- **Save & Exit** → saves current state immediately + navigates to Home (save is kept)
+- **Quit Game** → clears the save + navigates to Home (progress abandoned — unchanged)
+- **Restart Game** → clears the save + starts a fresh round (unchanged)
+
+On next entry to the game, the existing "Game in Progress?" resume prompt appears automatically.
+
+**Wired into (6 screens):**
+- ✅ `SolitaireGameScreen.js` — saves `{ state }` with key `@cardnight:save:solitaire:${variantId}`
+- ✅ `RummyGameScreen.js` — saves `{ fullState: fullRef.current }` with key `@cardnight:save:rummy:${variantId}`; single-player only (hidden in multiplayer)
+- ✅ `ConquianGameScreen.js` — saves `{ fullState: fullRef.current }` with key `@cardnight:save:rummy:conquian`; single-player only
+- ✅ `GoFishGameScreen.js` — saves `{ fullState: fullRef.current }` with key `@cardnight:save:gofish`; AI history included in save; single-player only
+- ✅ `LastCardGameScreen.js` — saves `{ fullState: fullRef.current }` with key `@cardnight:save:lastcard`; play direction + active color included; single-player only
+- ✅ `PokerGameScreen.js` — saves `{ fullState: fullRef.current }` with key `@cardnight:save:poker:${variant}`; full tournament state (chips, blinds, hand, pot) included; single-player only
+
+**Skipped / deferred:**
+- ❌ `GameScreen.js` (Blackjack) — skipped by design; no mid-hand save concept
+- ❌ `MultiplayerGameScreen.js` — multiplayer doesn't save; skipped by design
+- ❌ `WildRoundGameScreen.js` — **no save/resume system exists** for WildRound. Adding Save & Exit requires first building the full auto-save + resume prompt layer. Deferred to a future session.
+
+**GameMenu.js change:** New `saveexit` item type added. Renders 💾 icon + "Save & Exit" label. No confirmation dialog (low-risk action). Disabled if `onSaveExit` callback is missing.
+
 ### After this session
 
 1. **Run a new EAS build** so C1 permissions are active on device (Android + iOS)
-2. **Phase 5: Visual Theme Project** (paused until on better PC)
-3. **Phase 6: Publish** — Google Play + App Store
+2. **WildRound save/resume** — add auto-save + resume prompt + Save & Exit (deferred from Save & Exit session)
+3. **Phase 5: Visual Theme Project** (paused until on better PC)
+4. **Phase 6: Publish** — Google Play + App Store
 
 ### S-series StatsStrip (S1–S10) — COMPLETE ✅
 
