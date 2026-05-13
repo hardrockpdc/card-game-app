@@ -29,7 +29,7 @@ export default function StatsStrip({ gameId, items }) {
   const itemBasis = Math.max(90, Math.floor(width / itemsPerRow) - scale(6));
 
   return (
-    <View style={[styles.strip, { borderColor: `${theme.accent}20` }]}>
+    <View style={[styles.strip, { borderColor: toRgba(theme.accent, 0.12) }]}>
       <View style={styles.row}>
         {items?.map((item, idx) => {
           const isFirst = idx === 0;
