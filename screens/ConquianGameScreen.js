@@ -935,6 +935,16 @@ export default function ConquianGameScreen({ navigation, route }) {
         gameId="conquian"
         items={[
           {
+            label: "Hand",
+            value: myHand?.length ?? 0,
+          },
+          {
+            label: "Melded",
+            value: `${myMelded}/${winTarget}`,
+            accent: true,
+          },
+          { label: "Stock", value: stockSize ?? 0 },
+          {
             label: "Phase",
             value:
               phase === "initialPass"
@@ -944,12 +954,6 @@ export default function ConquianGameScreen({ navigation, route }) {
                   : phase === "results"
                     ? "Results"
                     : phase,
-          },
-          { label: "Turn", value: turnPhase ?? "—" },
-          {
-            label: "Melded",
-            value: `${myMelded}/${winTarget}`,
-            accent: true,
           },
         ]}
       />

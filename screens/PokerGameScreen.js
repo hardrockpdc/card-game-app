@@ -30,7 +30,7 @@ import { getTableTheme } from "../game/tableThemes";
 
 const BG = getTableTheme("poker").table;
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// ─── Constants ───────────────────────────────────────────────────────────────
 
 const STARTING_CHIPS = 500;
 const SMALL_BLIND = 10;
@@ -535,7 +535,7 @@ function pokerAIAction(state, pid, difficulty) {
   return doCall(state);
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── Component ───────────────────────────────────────────────────────────────
 
 export default function PokerGameScreen({ navigation, route }) {
   const {
