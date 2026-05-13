@@ -417,6 +417,17 @@ All JS-only items from the Month 3 block are done:
 - ✅ **N3** — `EndOfRoundModal` accent bar added (tinted via `tableColor`).
 - ✅ **N13** — `GameHeader` UX: hamburger menu now closes when tapping outside the expanded menu.
 
+### Prettier Formatting Sweep (2026-05-12) — COMPLETE ✅
+
+- ✅ `prettier@3.8.3` installed as a dev dependency
+- ✅ `.prettierrc.json` created: double quotes, trailing commas, 2-space indent, 80-char print width
+- ✅ `.prettierignore` created: excludes `node_modules/`, `assets/`, `android/`, `ios/`, lock files
+- ✅ 49 files reformatted (formatting only — no logic changes)
+- ✅ Single commit: `chore: prettier sweep (formatting only, no logic changes)`
+- ✅ Pushed to GitHub, up to date with `origin/main`
+
+**⚠️ Known regression to fix next session:** `SolitaireGameScreen.js` has a `showStatsBar` useState + SHOW/HIDE toggle that was supposed to be removed in S-N1. The toggle got re-added (under a slightly different variable name) by a later auto-commit. Needs one clean removal pass before the StatsStrip work is final.
+
 ### After this session
 
 1. **Run a new EAS build** so C1 permissions are active on device (Android + iOS)
