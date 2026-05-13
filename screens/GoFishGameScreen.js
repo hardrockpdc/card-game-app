@@ -447,12 +447,21 @@ export default function GoFishGameScreen({ navigation, route }) {
     applyState(dealGoFish(initialPlayers));
   }
 
+  function handleSaveAndExit() {
+    if (!isSinglePlayer || !fullRef.current) return;
+    saveGame(SAVE_KEY_GOFISH, { fullState: fullRef.current });
+    navigation.navigate("Home");
+  }
+
   const menuItems = [
     {
       type: "restart",
       onRestart: isHost ? handleRestart : null,
       disabled: !isHost,
     },
+    ...(isSinglePlayer
+      ? [{ type: "saveexit", onSaveExit: handleSaveAndExit }]
+      : []),
     { type: "howto", gameId: "gofish" },
     { type: "sound" },
     { type: "theme" },
