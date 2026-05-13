@@ -172,11 +172,20 @@ react-native-udp: ^4.1.7
 
 ## 🎨 Visual Style
 
-- Dark navy background (`#1a1a2e`)
+- Dark navy background (`#1a1a2e`) on menu screens (Home, Profile,
+  Setup, Variant Pickers, Lobby, Stats, About)
 - Red/pink accent (`#e94560`) for primary buttons
-- Dark green card table (`#0d5c2e`) on game screens
+- **Per-game table colors via `game/tableThemes.js`** — each game has
+  its own immersive table color + accent color:
+  - Blackjack/Poker: forest green `#35654D`, gold accent `#FFD700`
+  - Solitaire: casino blue `#01889F`, pale blue accent `#7FB3FF`
+  - Rummy/Conquian: crimson `#B22222`, cream accent `#FFE4B5`
+  - Go Fish: ocean blue `#0D6E8C`, pale aqua accent `#A8E6FF`
+  - Last Card/Wild Round: dark navy `#1a1a2e`, red-pink accent `#e94560`
 - Cards use PNG image assets (see Card Themes below)
 - Hidden/face-down card uses each theme's `card_back.png`
+- Game screens use standardized `GameHeader` + `StatsStrip` + ☰ menu
+  pattern across all 9 games
 
 ## 🃏 Card Themes
 
@@ -302,7 +311,7 @@ both explicitly for LAN-only play.
 
 ## 🔮 Next Steps When We Resume
 
-### Update Session (current) — Coin Economy + Betting + Save/Resume — COMPLETE ✅
+### Foundation Sessions (2026 early-mid) — Coin Economy + Betting + Save/Resume — COMPLETE ✅
 
 **Phase 1 — Coin Wallet & Economy:**
 
@@ -350,11 +359,18 @@ All JS-only items from the Month 3 block are done:
 
 **Still to do before EAS production build:**
 
-- Manual test pass on phone (checklist provided — see above)
-- Replace silent sound WAV placeholders with real audio if desired
-- Host privacy policy at GitHub Pages URL in AboutScreen
+- Manual test pass on phone — every game × every variant × single +
+  multiplayer (Pedro handling ongoing as features are added)
+- Replace silent sound WAV placeholders with real audio — DEFERRED
+  (sound menu item temporarily removed; will revisit when real audio is
+  sourced)
+- Host privacy policy at GitHub Pages URL in `AboutScreen` (Pedro handling)
 - Final app icons and splash screen (Pedro handling)
-- EAS production build (ask first — see EAS Build Walkthrough below)
+- WildRound save/resume — add auto-save + resume prompt + Save & Exit
+  (currently the only single-player game without this feature)
+- Poker Restart — decide whether to restart current tournament or start
+  fresh tournament, then un-stub the menu item
+- EAS production build (Pedro is currently 2-3 months out from publishing)
 
 ### Rummy Crash Fix
 
@@ -364,7 +380,7 @@ All JS-only items from the Month 3 block are done:
 
 **Fix:** Moved the two `useEffect` blocks (auto-save and coin reward) to _before_ the `if (!gameState)` guard. Their internal null guards (`if (!fullRef.current) return` and `gameState?.winner` optional chaining) keep them safe when state is still null.
 
-**⚠️ Known follow-up — ConquianGameScreen has the identical bug:** One `useEffect` at line ~603 sits after early returns at lines ~484 and ~490. Conquian appears to work currently because the first render's state initializes synchronously enough to avoid the mismatch in testing — but it is a latent crash risk. Should be fixed in a dedicated session.
+**✅ Conquián fix follow-up (resolved 2026-05-12):** The same hooks-after-early-return pattern was identified in `ConquianGameScreen` and verified to be fixed during the N1-N13 cleanup session. Conquián now uses GameHeader + EndOfRoundModal correctly and has no remaining hooks-order issues.
 
 ### Pre-Publish Prep Session (Month 1 block — 2026-05-09)
 
@@ -427,6 +443,32 @@ All JS-only items from the Month 3 block are done:
 - ✅ Pushed to GitHub, up to date with `origin/main`
 
 **✅ Regression resolved (2026-05-12):** `showStatsBar` useState + SHOW/HIDE toggle fully removed from `SolitaireGameScreen.js`. StatsStrip is now always visible, matching all other game screens.
+
+### Stats Strip Rollout Session (2026-05-12) — COMPLETE ✅
+
+JS-only, no EAS rebuild needed. Added a unified live-stats strip below
+the GameHeader on every game screen. Stats are always visible (no toggle).
+
+- ✅ **S1** — `components/StatsStrip.js` created: single-row stats strip
+  with label/value items, accent color from `getTableTheme(gameId)`,
+  responsive layout (items fit on one row across screen widths)
+- ✅ **S2** — Blackjack: Coins / Bet / Streak (wallet info MERGED into
+  strip, no separate wallet bar); Free Play mode shows Mode / Hands
+- ✅ **S3** — Multiplayer Blackjack: Players / Hand / Status
+- ✅ **S4** — Solitaire: Moves / Time + variant-specific (Stock for
+  Klondike/Spider, Free Cells for FreeCell, Pairs for Pyramid, Combo for
+  TriPeaks). Timer starts on first move, stops on win. SHOW/HIDE toggle
+  fully removed — stats always visible.
+- ✅ **S5** — Poker: Chips / Pot / Blinds / Hand
+- ✅ **S6** — Rummy: Round / Cards / Deadwood (accent) / Stock
+- ✅ **S7** — Conquián: Hand / Melded / Stock / Phase
+- ✅ **S8** — Go Fish: Pairs / Cards / Deck / Turn
+- ✅ **S9** — Last Card: Cards / Deck / Direction / Turn
+- ✅ **S10** — Wild Round: Score / Round / Judge / To Win
+
+Follow-up fixes (same session): StatsStrip wrap bug fixed (items now
+always fit on one row, no responsive wrap to 2 rows on narrow phones);
+hex alpha helper added (`toRgba()`) for safe accent color tinting.
 
 ### Visual & UX Polish Session (2026-05-13) — COMPLETE ✅
 
