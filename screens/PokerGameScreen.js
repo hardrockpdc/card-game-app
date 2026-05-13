@@ -843,10 +843,19 @@ export default function PokerGameScreen({ navigation, route }) {
     });
   }
 
+  function handleSaveAndExit() {
+    if (!saveKey || !fullRef.current) return;
+    saveGame(saveKey, { fullState: fullRef.current });
+    navigation.navigate("Home");
+  }
+
   // NOTE: Restart is omitted for Poker — tournament restart logic
   // (same chips vs new buy-in?) is unresolved. Future: re-add when
   // decided.
   const menuItems = [
+    ...(isSinglePlayer && saveKey
+      ? [{ type: "saveexit", onSaveExit: handleSaveAndExit }]
+      : []),
     { type: "howto", gameId: "poker" },
     { type: "sound" },
     { type: "theme" },
