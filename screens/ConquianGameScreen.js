@@ -664,12 +664,21 @@ export default function ConquianGameScreen({ navigation, route }) {
     applyState(deal(initialPlayers));
   }
 
+  function handleSaveAndExit() {
+    if (!isSinglePlayer || !fullRef.current) return;
+    saveGame(SAVE_KEY_CONQUIAN, { fullState: fullRef.current });
+    navigation.navigate("Home");
+  }
+
   const menuItems = [
     {
       type: "restart",
       onRestart: isHost ? handleRestart : null,
       disabled: !isHost,
     },
+    ...(isSinglePlayer
+      ? [{ type: "saveexit", onSaveExit: handleSaveAndExit }]
+      : []),
     { type: "howto", gameId: "conquian" },
     { type: "sound" },
     { type: "theme" },
