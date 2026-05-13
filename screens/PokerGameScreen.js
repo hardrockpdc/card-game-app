@@ -16,6 +16,7 @@ import Card from "../components/Card";
 import { scale, scaleFont } from "../game/responsive";
 import GameHeader from "../components/GameHeader";
 import EndOfRoundModal from "../components/EndOfRoundModal";
+import StatsStrip from "../components/StatsStrip";
 import {
   setServerListeners,
   broadcastToClients,
@@ -870,6 +871,14 @@ export default function PokerGameScreen({ navigation, route }) {
           </View>
         }
         menuItems={menuItems}
+      />
+      <StatsStrip
+        gameId="poker"
+        items={[
+          { label: "Phase", value: phaseLabel[phase] ?? phase },
+          { label: "Pot", value: pot, accent: true },
+          { label: "Bet", value: currentBet },
+        ]}
       />
       <ScrollView contentContainerStyle={styles.container}>
         {/* Banner */}
