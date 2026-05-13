@@ -13,6 +13,7 @@ import Card from "../components/Card";
 import { scale, scaleFont } from "../game/responsive";
 import GameHeader from "../components/GameHeader";
 import EndOfRoundModal from "../components/EndOfRoundModal";
+import StatsStrip from "../components/StatsStrip";
 import {
   setServerListeners,
   broadcastToClients,
@@ -27,7 +28,7 @@ const BG = getTableTheme("blackjack").table;
 
 // ─── Pure game-logic helpers (no React, easy to test) ────────────────────────
 
-function dealCards(playerList) {
+function dealCards(playerList, handNumber = 1) {
   const deck = shuffleDeck(createDeck());
   const n = playerList.length;
 
@@ -50,6 +51,7 @@ function dealCards(playerList) {
 
   return {
     deck: deck.slice(n * 2 + 2),
+    handNumber,
     phase: "playing", // 'playing' | 'results'
     currentPlayerIndex: 0,
     currentHandSlot: "main", // 'main' | 'split'
@@ -209,6 +211,7 @@ function toBroadcast(state) {
     phase: state.phase,
     currentPlayerIndex: state.currentPlayerIndex,
     currentHandSlot: state.currentHandSlot,
+    handNumber: state.handNumber,
     players: state.players,
     dealer: {
       hand: state.dealer.hand.map((c, i) =>
@@ -312,8 +315,9 @@ export default function MultiplayerGameScreen({ navigation, route }) {
   }
 
   function handlePlayAgain() {
+    const nextHandNumber = (gameState?.handNumber ?? 1) + 1;
     setShowRoundModal(false);
-    applyState(dealCards(initialPlayers));
+    applyState(dealCards(initialPlayers, nextHandNumber));
   }
 
   function handleQuit() {
@@ -365,6 +369,16 @@ export default function MultiplayerGameScreen({ navigation, route }) {
     myPlayer?.hand?.length === 2 &&
     myPlayer?.hand?.[0]?.rank === myPlayer?.hand?.[1]?.rank;
 
+  const playersCount = players.length;
+  const handNumber = gameState?.handNumber ?? 1;
+
+  let statusText = "Waiting";
+  if (phase === "playing") {
+    statusText = isMyTurn ? "Your turn" : "Waiting";
+  } else if (phase === "results") {
+    statusText = "Dealer playing";
+  }
+
   function resultColor(r) {
     return r === "win" ? "#4caf50" : r === "lose" ? "#e94560" : "#ffd700";
   }
@@ -382,6 +396,14 @@ export default function MultiplayerGameScreen({ navigation, route }) {
         title="Blackjack"
         subtitle="Multiplayer"
         menuItems={menuItems}
+      />
+      <StatsStrip
+        gameId="blackjack"
+        items={[
+          { label: "Players", value: playersCount },
+          { label: "Hand", value: handNumber },
+          { label: "Status", value: statusText, accent: true },
+        ]}
       />
       <ScrollView contentContainerStyle={styles.container}>
         {/* Turn / phase banner */}
