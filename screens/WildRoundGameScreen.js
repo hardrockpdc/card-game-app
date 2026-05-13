@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import GameHeader from "../components/GameHeader";
 import EndOfRoundModal from "../components/EndOfRoundModal";
+import StatsStrip from "../components/StatsStrip";
 import {
   createDeck,
   dealHands,
@@ -51,6 +52,7 @@ function toPublic(state) {
     tone: state.tone,
     phase: state.phase,
     judgeIndex: state.judgeIndex,
+    roundNumber: state.roundNumber,
     promptSkipped: state.promptSkipped,
     currentPrompt: state.phase === "judgeSkip" ? null : state.currentPrompt,
     players: state.players.map((p) => ({
@@ -323,6 +325,7 @@ export default function WildRoundGameScreen({ navigation, route }) {
       ...s,
       phase: "judgeSkip",
       judgeIndex: nextJudgeIndex,
+      roundNumber: (s.roundNumber ?? 1) + 1,
       currentPrompt: prompt,
       promptDeck,
       promptSkipped: false,
@@ -347,6 +350,7 @@ export default function WildRoundGameScreen({ navigation, route }) {
     applyState({
       tone: gameTone,
       phase: "judgeSkip",
+      roundNumber: 1,
       players,
       judgeIndex,
       promptDeck,
@@ -674,6 +678,27 @@ export default function WildRoundGameScreen({ navigation, route }) {
         title="Wild Round"
         subtitle={isSinglePlayer ? "Single Player" : "Multiplayer"}
         menuItems={menuItems}
+      />
+      <StatsStrip
+        gameId="wildround"
+        items={[
+          {
+            label: "Score",
+            value:
+              gs.players.find((p) => String(p.id) === String(myPid))?.score ??
+              0,
+            accent: true,
+          },
+          { label: "Round", value: gs.roundNumber ?? 1 },
+          { label: "Judge", value: gs.players?.[gs.judgeIndex]?.name ?? "—" },
+          {
+            label: "To Win",
+            value:
+              WIN_SCORE -
+              (gs.players.find((p) => String(p.id) === String(myPid))?.score ??
+                0),
+          },
+        ]}
       />
       {/* Prompt box */}
       {gs.phase !== "reveal" && (
@@ -1103,7 +1128,10 @@ export default function WildRoundGameScreen({ navigation, route }) {
         showContinue={isHost}
         showLeave
         isGameOver
-        onContinue={() => { setShowRoundModal(false); startNewGame(); }}
+        onContinue={() => {
+          setShowRoundModal(false);
+          startNewGame();
+        }}
         onLeave={() => {
           if (isHost) stopServer();
           else disconnectFromHost();
