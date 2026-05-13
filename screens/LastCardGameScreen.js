@@ -966,14 +966,17 @@ export default function LastCardGameScreen({ navigation, route }) {
       <StatsStrip
         gameId="lastcard"
         items={[
+          { label: "Cards", value: myCards.length, accent: true },
+          { label: "Deck", value: gameState?.drawPileCount ?? 0, accent: false },
           {
-            label: "Phase",
+            label: "Direction",
             value:
-              phase === "colorPicker"
-                ? "Color Pick"
-                : phase === "gameOver"
-                  ? "Game Over"
-                  : "Playing",
+              gameState?.turnDirection === "clockwise"
+                ? "→"
+                : gameState?.turnDirection === "counterclockwise"
+                  ? "←"
+                  : "—",
+            accent: false,
           },
           {
             label: "Turn",
@@ -982,8 +985,8 @@ export default function LastCardGameScreen({ navigation, route }) {
                 ? (gameState.players.find((p) => p.id === gameState.currentTurn)
                     ?.name ?? "—")
                 : "—",
+            accent: false,
           },
-          { label: "Draw", value: gameState?.drawPileCount ?? 0, accent: true },
         ]}
       />
       <ScrollView
