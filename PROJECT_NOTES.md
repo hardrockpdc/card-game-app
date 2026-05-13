@@ -398,7 +398,7 @@ All JS-only items from the Month 3 block are done:
 - ✅ **R1** — `game/tableThemes.js` already complete from Month 3 Polish Session
 - ✅ **R2** — `components/GameHeader.js` created: dark navy header card, ☰ button expands in-place (accordion), props: `gameId / title / subtitle / leftInfo / extraButton / menuItems`
 - ✅ **R3** — `components/GameMenu.js` created: pure item-list renderer (`GameMenuItems` + `MenuDivider`), no modal; handles item types: divider / sound / restart / howto / theme / quit / generic fallback
-- ✅ **R4** — Sound mute toggle wired into `GameMenu.js` via `getMuted()`/`setMuted()` — works from the hamburger menu in every game
+- ✅ **R4** — Sound infrastructure wired (`game/sounds.js`, `getMuted`/`setMuted`). **Note:** Sound menu item was later removed from all 9 game screens (see 2026-05-13 session below) because no actual gameplay audio is hooked up yet. The infrastructure in `sounds.js` is preserved for future use.
 - ✅ **R5** — `GameHeader` rolled out to all 9 game screens; `QuitButton.js` deleted; all screens now have SafeAreaView + GameHeader at top; `game/sounds.js` exports `getMuted`/`setMuted`; Solitaire `renderHeader()` collapsed Show/Hide replaced with always-visible `renderStatsBar()`
 - ✅ **R6** — `EndOfRoundModal` rolled out to all remaining 8 screens (GoFish, Conquian, Rummy, LastCard, WildRound, Solitaire, Poker per-hand, Blackjack MP); WildRound no longer navigates to `ResultsScreen` — modal handles it in-place
 - ✅ **R7** — Solitaire CardSlot empty label text overflow fix (`numberOfLines={1}` + `adjustsFontSizeToFit`, font 9→8, removed `lineHeight`); missing `scale` import added (caused crash on load)
@@ -410,7 +410,7 @@ All JS-only items from the Month 3 block are done:
 
 - ✅ **N1** — Last Card theme consistency: `getTableTheme("lastcard")` used for `tableColor` + `backgroundColor` (removed hardcoded `#0f0f1e`).
 - ✅ **N4** — Poker UI polish: removed the **restart** entry from Poker’s hamburger `menuItems`.
-- ✅ **N6** — Solitaire UI: restored a SHOW/HIDE toggle (via `GameHeader` `extraButton`), with **stats hidden by default** (button shows **SHOW**).
+- ~~**N6** — Solitaire UI: restored a SHOW/HIDE toggle~~ **SUPERSEDED:** The SHOW/HIDE toggle was fully removed in the "Regression resolved 2026-05-12" fix. Solitaire StatsStrip is always visible, matching all other game screens.
 - ✅ **N12** — Blackjack modal fix: merged the “out of coins” overlay into the single `EndOfRoundModal` flow (no overlapping modals); leave action goes to **Profile** (`leaveLabel="Go to Profile"`).
 - ✅ **N9** — Blackjack modal props: standardized `EndOfRoundModal` usage in `GameScreen` (`showLeave={true}` explicit).
 - ✅ **N2** — Multiplayer Blackjack modal: `EndOfRoundModal` message now reflects the local player result (split-aware).
@@ -427,6 +427,19 @@ All JS-only items from the Month 3 block are done:
 - ✅ Pushed to GitHub, up to date with `origin/main`
 
 **✅ Regression resolved (2026-05-12):** `showStatsBar` useState + SHOW/HIDE toggle fully removed from `SolitaireGameScreen.js`. StatsStrip is now always visible, matching all other game screens.
+
+### Visual & UX Polish Session (2026-05-13) — COMPLETE ✅
+
+JS-only, no EAS rebuild needed. 3 items:
+
+- ✅ **ITEM 1** — Sound menu item removed from all 9 game screens (`GameScreen`, `MultiplayerGameScreen`, `SolitaireGameScreen`, `RummyGameScreen`, `ConquianGameScreen`, `GoFishGameScreen`, `PokerGameScreen`, `LastCardGameScreen`, `WildRoundGameScreen`). No gameplay audio is wired yet — a toggle that toggles nothing is confusing. `game/sounds.js` infrastructure kept intact for future audio work.
+
+- ✅ **ITEM 2** — Solitaire timer persists through Save & Exit and resume. `elapsed` is now included in every save payload (`{ state, elapsed }`). On resume, `setElapsed(saved.elapsed)` restores the clock. Initial mount skips `setElapsed(0)` when `resumeFromSave` is true. Undo history is stripped from the save payload (`history: undefined`) to keep save files small.
+
+- ✅ **ITEM 3** — Solitaire Undo added. Access via ☰ → Undo (↩️). Unlimited depth in-session; history resets on Save & Exit / resume (not saved to disk).
+  - `game/solitaire.js`: `SOLITAIRE_ACTIONS.UNDO` + `undoAction()` export. `history: []` added to all 5 variant initial states. Reducer pushes a history-free snapshot on each real move (when `moves` or `pairs` increments); pops on UNDO. History cleared on win.
+  - `components/GameMenu.js`: new `undo` item type (↩️ icon, greyed out when no history).
+  - `screens/SolitaireGameScreen.js`: `undoAction` imported; undo item added to `menuItems` above restart; `disabled` when `state.history` is empty.
 
 ### Save & Exit Feature (2026-05-12) — COMPLETE ✅
 
