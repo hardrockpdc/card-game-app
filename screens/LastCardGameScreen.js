@@ -942,12 +942,21 @@ export default function LastCardGameScreen({ navigation, route }) {
     scheduleTimeout(turnTimerRef, () => handleTurn(next), 300);
   }
 
+  function handleSaveAndExit() {
+    if (!isSinglePlayer || !fullRef.current) return;
+    saveGame(SAVE_KEY_LASTCARD, { fullState: fullRef.current });
+    navigation.navigate("Home");
+  }
+
   const menuItems = [
     {
       type: "restart",
       onRestart: isHost ? handleRestart : null,
       disabled: !isHost,
     },
+    ...(isSinglePlayer
+      ? [{ type: "saveexit", onSaveExit: handleSaveAndExit }]
+      : []),
     { type: "howto", gameId: "lastcard" },
     { type: "sound" },
     { type: "theme" },
