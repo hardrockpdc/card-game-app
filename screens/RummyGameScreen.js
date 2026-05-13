@@ -261,12 +261,23 @@ export default function RummyGameScreen({ navigation, route }) {
     );
   }
 
+  function handleSaveAndExit() {
+    if (!isSinglePlayer || !fullRef.current) return;
+    saveGame(`@cardnight:save:rummy:${variantId}`, {
+      fullState: fullRef.current,
+    });
+    navigation.navigate("Home");
+  }
+
   const menuItems = [
     {
       type: "restart",
       onRestart: isHost ? handleRestart : null,
       disabled: !isHost,
     },
+    ...(isSinglePlayer
+      ? [{ type: "saveexit", onSaveExit: handleSaveAndExit }]
+      : []),
     { type: "howto", gameId: "rummy" },
     { type: "sound" },
     { type: "theme" },
