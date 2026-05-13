@@ -145,6 +145,18 @@ function StockSlot({ label, onPress, disabled = false, style }) {
   );
 }
 
+function formatTime(seconds) {
+  if (seconds >= 3600) {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  }
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
 export default function SolitaireGameScreen({ navigation, route }) {
   const routeVariantId = route?.params?.variantId || "klondike";
   const routeSpiderMode = route?.params?.spiderMode || 4;
