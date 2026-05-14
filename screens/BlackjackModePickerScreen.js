@@ -7,17 +7,13 @@ import { scale, scaleFont } from "../game/responsive";
 const MODES = [
   {
     id: "free",
-    emoji: "🎮",
     label: "Free Play",
-    description:
-      "Practice with play money. No coins wagered — play as long as you like.",
+    description: "Practice mode. No coins won or lost.",
   },
   {
     id: "casino",
-    emoji: "🪙",
     label: "Casino",
-    description:
-      "Wager your coin balance. Win big or bust — real stakes, real rewards.",
+    description: "Bet coins to win big payouts.",
   },
 ];
 
@@ -44,38 +40,32 @@ export default function BlackjackModePickerScreen({ navigation }) {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Blackjack</Text>
-        <Text style={styles.subtitle}>
-          Choose your mode, then start a hand.
-        </Text>
 
         <View style={styles.panel}>
-          <View style={styles.modeRow}>
-            {MODES.map((m) => {
-              const selected = m.id === mode;
-              return (
-                <Pressable
-                  key={m.id}
-                  onPress={() => setMode(m.id)}
-                  style={({ pressed }) => [
-                    styles.modeCard,
-                    selected && styles.modeCardSelected,
-                    pressed && styles.modeCardPressed,
+          {MODES.map((m) => {
+            const selected = m.id === mode;
+            return (
+              <Pressable
+                key={m.id}
+                onPress={() => setMode(m.id)}
+                style={({ pressed }) => [
+                  styles.modeCard,
+                  selected && styles.modeCardSelected,
+                  pressed && styles.modeCardPressed,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.modeLabel,
+                    selected && styles.modeLabelSelected,
                   ]}
                 >
-                  <Text style={styles.modeEmoji}>{m.emoji}</Text>
-                  <Text
-                    style={[
-                      styles.modeLabel,
-                      selected && styles.modeLabelSelected,
-                    ]}
-                  >
-                    {m.label}
-                  </Text>
-                  <Text style={styles.modeDescription}>{m.description}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
+                  {m.label}
+                </Text>
+                <Text style={styles.modeDescription}>{m.description}</Text>
+              </Pressable>
+            );
+          })}
 
           <Pressable
             onPress={startGame}
@@ -107,60 +97,46 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     textAlign: "center",
   },
-  subtitle: {
-    color: "#95a2b6",
-    fontSize: scaleFont(15),
-    lineHeight: scale(21),
-    textAlign: "center",
-  },
   panel: {
     borderRadius: scale(22),
     borderWidth: 1,
     borderColor: "#243042",
     backgroundColor: "#151a24",
     padding: scale(16),
-    gap: scale(16),
-  },
-  modeRow: {
-    flexDirection: "row",
     gap: scale(10),
   },
   modeCard: {
-    flex: 1,
     borderRadius: scale(16),
     borderWidth: 1.5,
     borderColor: "#2c3750",
-    backgroundColor: "#182131",
-    padding: scale(14),
-    gap: scale(6),
-    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.02)",
+    paddingHorizontal: scale(16),
+    paddingVertical: scale(14),
+    gap: scale(4),
   },
   modeCardSelected: {
     borderColor: "#77aef7",
-    backgroundColor: "#1b2d47",
+    backgroundColor: "rgba(119, 174, 247, 0.12)",
   },
   modeCardPressed: {
     opacity: 0.85,
   },
-  modeEmoji: {
-    fontSize: scaleFont(30),
-  },
   modeLabel: {
-    color: "#c8d8f0",
-    fontSize: scaleFont(15),
-    fontWeight: "800",
-    textAlign: "center",
+    color: "#a7b3c9",
+    fontSize: scaleFont(17),
+    fontWeight: "700",
+    letterSpacing: 0.2,
   },
   modeLabelSelected: {
-    color: "#eef4ff",
+    color: "#f4f7fb",
   },
   modeDescription: {
     color: "#6a7d96",
-    fontSize: scaleFont(12),
-    textAlign: "center",
-    lineHeight: scale(17),
+    fontSize: scaleFont(13),
+    lineHeight: scale(18),
   },
   playButton: {
+    marginTop: scale(6),
     borderRadius: scale(16),
     backgroundColor: "#77aef7",
     alignItems: "center",
