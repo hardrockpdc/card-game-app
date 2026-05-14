@@ -3,6 +3,14 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 const DEFAULT_ACCENT_COLOR = "#E94560";
 
+function hexToRgba(hex, alpha) {
+  const clean = hex.replace("#", "");
+  const r = parseInt(clean.slice(0, 2), 16);
+  const g = parseInt(clean.slice(2, 4), 16);
+  const b = parseInt(clean.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 function getOptionValue(option) {
   return option?.value ?? option?.id ?? "";
 }
@@ -18,6 +26,8 @@ function VariantPicker({
   style,
   accentColor = DEFAULT_ACCENT_COLOR,
 }) {
+  const selectedBg = hexToRgba(accentColor, 0.12);
+
   return (
     <View style={[styles.container, style]}>
       {options.map((option) => {
@@ -36,7 +46,7 @@ function VariantPicker({
               pressed && styles.optionPressed,
               isSelected && {
                 borderColor: accentColor,
-                backgroundColor: "rgba(233, 69, 96, 0.12)",
+                backgroundColor: selectedBg,
               },
             ]}
           >
