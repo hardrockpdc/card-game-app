@@ -234,6 +234,8 @@ export default function MultiplayerGameScreen({ navigation, route }) {
   const [showRoundModal, setShowRoundModal] = useState(false);
   // stateRef lets network callbacks always read the latest state without stale closures
   const stateRef = useRef(null);
+  // currentPlayersRef holds the live player list — updates when someone disconnects
+  const currentPlayersRef = useRef(initialPlayers);
 
   function applyState(newState) {
     stateRef.current = newState;
@@ -266,6 +268,10 @@ export default function MultiplayerGameScreen({ navigation, route }) {
         applyState(newState);
       },
       onClientLeft: ({ id }) => {
+        // Keep the live player list in sync so Play Again deals to the right people
+        currentPlayersRef.current = currentPlayersRef.current.filter(
+          (p) => String(p.id) !== String(id)
+        );
         // Auto-stand a disconnected player so the game can continue
         const state = stateRef.current;
         if (!state || state.phase !== "playing") return;
@@ -317,7 +323,7 @@ export default function MultiplayerGameScreen({ navigation, route }) {
   function handlePlayAgain() {
     const nextHandNumber = (gameState?.handNumber ?? 1) + 1;
     setShowRoundModal(false);
-    applyState(dealCards(initialPlayers, nextHandNumber));
+    applyState(dealCards(currentPlayersRef.current, nextHandNumber));
   }
 
   function handleQuit() {
