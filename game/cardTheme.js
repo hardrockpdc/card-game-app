@@ -2,8 +2,6 @@
 // React Native require() paths must be static literals — dynamic paths
 // are not supported. Every image for every theme is listed explicitly.
 
-import { updateProfile } from "./profile";
-
 // ─── Rank / suit key maps ─────────────────────────────────────────────────────
 
 const RANK_KEY = { A: "a", J: "j", Q: "q", K: "k" };
@@ -520,7 +518,6 @@ export function setTheme(key) {
   if (!ALL_IMAGES[key]) return;
   _active = key;
   _listeners.forEach((fn) => fn(key));
-  updateProfile({ cardTheme: key }).catch(() => {});
 }
 
 export function subscribe(fn) {

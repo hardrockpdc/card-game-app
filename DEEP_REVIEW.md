@@ -19,7 +19,7 @@
 ## ✅ Progress Tracker
 
 ### 🔴 Critical (CR-1 through CR-6)
-- [ ] **CR-1** — Break circular import: cardTheme.js ↔ profile.js
+- [x] ~~**CR-1**~~ — Break circular import: cardTheme.js ↔ profile.js
 - [ ] **CR-2** — MultiplayerGameScreen re-uses stale `initialPlayers` for redeals
 - [ ] **CR-3** — LobbyScreen useEffect dependency issues
 - [ ] **CR-4** — Solitaire restore vs new-game race on mount (visible flash)

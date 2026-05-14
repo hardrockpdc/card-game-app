@@ -16,6 +16,7 @@ import {
   getTheme,
   subscribe,
 } from "../game/cardTheme";
+import { updateProfile } from "../game/profile";
 
 export default function CardThemeScreen() {
   const { width, height } = useWindowDimensions();
@@ -46,6 +47,7 @@ export default function CardThemeScreen() {
   function handleApply() {
     const [key] = THEMES_LIST[currentIndex];
     setTheme(key);
+    updateProfile({ cardTheme: key }).catch(() => {});
     setActiveTheme(key);
     setConfirmed(true);
     if (confirmTimer.current) clearTimeout(confirmTimer.current);
