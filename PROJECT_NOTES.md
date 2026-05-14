@@ -509,6 +509,40 @@ On next entry to the game, the existing "Game in Progress?" resume prompt appear
 
 **GameMenu.js change:** New `saveexit` item type added. Renders 💾 icon + "Save & Exit" label. No confirmation dialog (low-risk action). Disabled if `onSaveExit` callback is missing.
 
+### Visual + UX Standardization Session (2026-05-13) — COMPLETE ✅
+
+JS-only, no EAS rebuild needed. All picker screens brought to a shared visual contract.
+
+**Shared visual contract applied to all pickers:**
+- Dark navy backdrop (`#0f1115`)
+- Game name as large centered title
+- All selectors inside one rounded panel card
+- Variant cards: vertical stack, blue accent border + tinted background when selected
+- AI Opponents + Difficulty: pill button rows with section labels (uppercase, muted)
+- Start Game button: blue (`#77aef7`), dark text (`#08111f`), full-width, bold
+
+**Items completed:**
+
+- ✅ **ITEM 1** — `components/VariantPicker.js`: selected background now uses `hexToRgba(accentColor, 0.12)` instead of hardcoded red tint. Fixes selected card fill for all pickers.
+
+- ✅ **ITEM 4** — `screens/BlackjackModePickerScreen.js`: Free Play / Casino cards now stack vertically (same as all other pickers). Descriptions updated to spec ("Practice mode. No coins won or lost." / "Bet coins to win big payouts."). Emoji removed for cleaner look.
+
+- ✅ **ITEM 2** — `screens/RummyVariantPickerScreen.js`: Title → "Rummy"; Start Game button → blue; section label → "AI Opponents"; Conquián locks AI count to 1 with a note ("Conquián is 1v1"); "Current selection" summary card removed; all selectors inside panel card.
+
+- ✅ **ITEM 3** — `screens/PokerVariantPickerScreen.js`: Title → "Poker"; Start Game button → blue; section label → "AI Opponents"; buy-in moved inside the panel (below Difficulty, above Start Game); "Current selection" summary card removed.
+
+- ✅ **ITEM 5** — `screens/GoFishPickerScreen.js` created: single variant card "Go Fish" + AI Opponents selector (1-3) + Difficulty selector. Reads profile name. Passes `role/myName/players/difficulty/resumeFromSave` to `GoFishGame`. Registered in App.js as route `"GoFishPicker"` (headerShown: false).
+
+- ✅ **ITEM 6** — `screens/SinglePlayerSetupScreen.js`: Go Fish now routes to `GoFishPicker` instead of `GameSetup`. Both the Play button and tapping the carousel card tile open the new picker. Last Card still uses `GameSetup` (unchanged).
+
+- ✅ **ITEM 7 (verify only)** — `screens/GameSetupScreen.js`: No changes made. After Go Fish migration it serves only Last Card. Last Card still needs difficulty + AI count (1–7 stepper). Kept as-is.
+
+**What was NOT changed:**
+- `GameSetupScreen.js` — still serves Last Card only; preserved as-is
+- `RummyVariantPickerScreen` lobby mode — title/button stay as-is for the lobby flow
+- `PokerVariantPickerScreen` lobby mode — same
+- Wild Round, Last Card — excluded from this session per Pedro's earlier request
+
 ### After this session
 
 1. **Run a new EAS build** so C1 permissions are active on device (Android + iOS)
