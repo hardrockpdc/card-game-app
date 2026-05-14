@@ -105,7 +105,7 @@ export default function App() {
               <Stack.Screen
                 name="BlackjackModePicker"
                 component={BlackjackModePickerScreen}
-                options={{ headerShown: false }}
+                options={{ title: "Blackjack" }}
               />
               <Stack.Screen
                 name="Game"
@@ -195,7 +195,7 @@ export default function App() {
               <Stack.Screen
                 name="GoFishPicker"
                 component={GoFishPickerScreen}
-                options={{ headerShown: false }}
+                options={{ title: "Go Fish" }}
               />
               <Stack.Screen
                 name="CardThemes"

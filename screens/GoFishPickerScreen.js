@@ -80,8 +80,6 @@ export default function GoFishPickerScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Go Fish</Text>
-
         <View style={styles.panel}>
           <VariantPicker
             value="gofish"
@@ -172,12 +170,6 @@ const styles = StyleSheet.create({
   content: {
     padding: scale(18),
     gap: scale(14),
-  },
-  title: {
-    color: "#f5f7fb",
-    fontSize: scaleFont(34),
-    fontWeight: "900",
-    textAlign: "center",
   },
   panel: {
     borderRadius: scale(22),
