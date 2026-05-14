@@ -470,6 +470,8 @@ export default function WildRoundGameScreen({ navigation, route }) {
   }, [gameState?.phase]);
 
   // ── AI automation (singleplayer only) ──────────────────────────────────────
+  const aiPhase = gameState?.phase;
+  const aiJudgeIndex = gameState?.judgeIndex;
   useEffect(() => {
     if (!isSinglePlayer || !gameState) return;
     const s = fullRef.current;
@@ -547,7 +549,7 @@ export default function WildRoundGameScreen({ navigation, route }) {
       }, 1500);
       return () => clearTimeout(t);
     }
-  }, [gameState?.phase, gameState?.judgeIndex]);
+  }, [aiPhase, aiJudgeIndex]);
 
   // ── Handlers ────────────────────────────────────────────────────────────────
   function handleKeepPrompt() {

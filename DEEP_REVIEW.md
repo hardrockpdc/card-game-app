@@ -21,21 +21,21 @@
 ### 🔴 Critical (CR-1 through CR-6)
 - [x] ~~**CR-1**~~ — Break circular import: cardTheme.js ↔ profile.js
 - [x] ~~**CR-2**~~ — MultiplayerGameScreen re-uses stale `initialPlayers` for redeals
-- [ ] **CR-3** — LobbyScreen useEffect dependency issues
+- [x] ~~**CR-3** — LobbyScreen useEffect dependency issues~~
 - [ ] **CR-4** — Solitaire restore vs new-game race on mount (visible flash)
-- [ ] **CR-5** — Document setServerListeners/setClientListeners last-write-wins behavior
+- [x] ~~**CR-5** — Document setServerListeners/setClientListeners last-write-wins behavior~~
 - [ ] **CR-6** — Rummy uses CommonJS while everything else uses ES modules
 
 ### 🟠 High (HI-1 through HI-10)
 - [x] ~~**HI-1** — cardTheme subscribe() return value~~ ✅ (verified correct, no action needed)
 - [ ] **HI-2** — wallet.js getCoins crashes on corrupted storage
 - [ ] **HI-3** — addCoins/subtractCoins race condition (no atomicity)
-- [ ] **HI-4** — App.js loadProfile().then() missing .catch
+- [x] ~~**HI-4** — App.js loadProfile().then() missing .catch~~
 - [ ] **HI-5** — Network message field shape inconsistencies
-- [ ] **HI-6** — LastCard scheduleTimeout might not cancel previous timer
-- [ ] **HI-7** — WildRound AI effect deps brittle
+- [x] ~~**HI-6** — LastCard scheduleTimeout might not cancel previous timer~~
+- [x] ~~**HI-7** — WildRound AI effect deps brittle~~
 - [x] ~~**HI-8** — LobbyScreen aiPlayersRef pattern~~ ✅ (verified correct)
-- [ ] **HI-9** — JoinScreen clearInterval(null) cosmetic cleanup
+- [x] ~~**HI-9** — JoinScreen clearInterval(null) cosmetic cleanup~~
 - [ ] **HI-10** — Solitaire clearGame fires redundantly after win
 
 ### 🟡 Medium (M-1 through M-11)

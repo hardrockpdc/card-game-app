@@ -18,6 +18,12 @@ let nextClientId = 1;
 
 // Mutable listener object — any screen can call setServerListeners() to take over.
 // Using a wrapper object so the socket closures always reference the latest version.
+//
+// NOTE: Only one screen can listen at a time. Calling setServerListeners() replaces
+// the previous listeners entirely (last-write-wins). If two screens are briefly
+// mounted at the same time during navigation, the second will silently take over
+// and the first will stop receiving messages. If you need multiple listeners,
+// refactor to an array-based subscription model.
 let serverListeners = {};
 
 export function setServerListeners(listeners) {
@@ -127,6 +133,9 @@ let clientSocket = null;
 
 // Mutable listener object — connectToHost sets the initial one,
 // then LobbyScreen calls setClientListeners() to take over.
+//
+// NOTE: Same last-write-wins contract as setServerListeners — only one screen
+// can listen at a time.
 let clientListeners = {};
 
 export function setClientListeners(listeners) {

@@ -82,8 +82,8 @@ export default function JoinScreen({ navigation }) {
 
   function cleanup() {
     stopDiscovery();
-    clearInterval(staleRef.current);
-    clearTimeout(timeoutRef.current);
+    if (staleRef.current) clearInterval(staleRef.current);
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
     disconnectFromHost();
   }
 

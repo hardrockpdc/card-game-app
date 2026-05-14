@@ -349,7 +349,10 @@ export default function LastCardGameScreen({ navigation, route }) {
 
   function scheduleTimeout(ref, fn, ms) {
     if (ref.current) clearTimeout(ref.current);
-    ref.current = setTimeout(fn, ms);
+    ref.current = setTimeout(() => {
+      ref.current = null;
+      fn();
+    }, ms);
   }
 
   function triggerShake(cardId) {

@@ -196,17 +196,19 @@ export default function LobbyScreen({ navigation, route }) {
     return () => stopBroadcasting();
   }, []);
 
+  const incomingPokerVariant = route.params?.selectedPokerVariant;
   useEffect(() => {
-    if (route.params?.selectedPokerVariant) {
-      setSelectedPokerVariant(route.params.selectedPokerVariant);
+    if (incomingPokerVariant) {
+      setSelectedPokerVariant(incomingPokerVariant);
     }
-  }, [route.params?.selectedPokerVariant]);
+  }, [incomingPokerVariant]);
 
+  const incomingRummyVariant = route.params?.selectedRummyVariant;
   useEffect(() => {
-    if (route.params?.selectedRummyVariant) {
-      setSelectedRummyVariant(route.params.selectedRummyVariant);
+    if (incomingRummyVariant) {
+      setSelectedRummyVariant(incomingRummyVariant);
     }
-  }, [route.params?.selectedRummyVariant]);
+  }, [incomingRummyVariant]);
 
   // ─── CLIENT setup ──────────────────────────────────────────────────────────
   useEffect(() => {

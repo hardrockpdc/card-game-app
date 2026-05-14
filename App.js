@@ -47,11 +47,15 @@ const Stack = createNativeStackNavigator();
 
 export default function App() {
   useEffect(() => {
-    loadProfile().then((profile) => {
-      if (profile?.cardTheme) {
-        setTheme(profile.cardTheme);
-      }
-    });
+    loadProfile()
+      .then((profile) => {
+        if (profile?.cardTheme) {
+          setTheme(profile.cardTheme);
+        }
+      })
+      .catch((err) => {
+        console.warn("Failed to load profile theme:", err);
+      });
     initSounds();
   }, []);
 
