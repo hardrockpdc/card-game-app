@@ -173,6 +173,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
     createSolitaireState(routeVariantId, { spiderMode: routeSpiderMode }),
   );
   const coinRewardedRef = useRef(false);
+  const wonClearedRef = useRef(false);
   const [coinsEarned, setCoinsEarned] = useState(0);
   const [showRoundModal, setShowRoundModal] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -181,13 +182,14 @@ export default function SolitaireGameScreen({ navigation, route }) {
   const initialGameDispatched = useRef(false);
 
   useEffect(() => {
+    // CR-4: If we're resuming a saved game, skip the fresh deal entirely.
+    // The restore effect below will load the saved state instead.
+    if (route?.params?.resumeFromSave) return;
     initialGameDispatched.current = true;
     dispatch(newGameAction(routeVariantId, { spiderMode: routeSpiderMode }));
     coinRewardedRef.current = false;
     setCoinsEarned(0);
-    if (!route?.params?.resumeFromSave) {
-      setElapsed(0);
-    }
+    setElapsed(0);
   }, [routeVariantId, routeSpiderMode]);
 
   // Restore saved game on initial mount (fires after newGameAction effect above).
@@ -207,13 +209,17 @@ export default function SolitaireGameScreen({ navigation, route }) {
     checkResume();
   }, []);
 
-  // Auto-save after every move; clear save on win.
+  // Auto-save after every move; clear save on win (only once per win).
   useEffect(() => {
     const key = solitaireSaveKey(state.variantId || routeVariantId);
     if (state.status === "won") {
-      clearGame(key);
+      if (!wonClearedRef.current) {
+        wonClearedRef.current = true;
+        clearGame(key);
+      }
       return;
     }
+    wonClearedRef.current = false;
     saveGame(key, { state: { ...state, history: undefined }, elapsed });
   }, [state, elapsed]);
 
