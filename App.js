@@ -26,6 +26,7 @@ import HowToPlayScreen from "./screens/HowToPlayScreen";
 import WildRoundGameScreen from "./screens/WildRoundGameScreen";
 import LastCardGameScreen from "./screens/LastCardGameScreen";
 import GameSetupScreen from "./screens/GameSetupScreen";
+import GoFishPickerScreen from "./screens/GoFishPickerScreen";
 import CardThemeScreen from "./screens/CardThemeScreen";
 import MultiplayerMenuScreen from "./screens/MultiplayerMenuScreen";
 import ProfileScreen from "./screens/ProfileScreen";
@@ -190,6 +191,11 @@ export default function App() {
                 name="GameSetup"
                 component={GameSetupScreen}
                 options={{ title: "Game Setup" }}
+              />
+              <Stack.Screen
+                name="GoFishPicker"
+                component={GoFishPickerScreen}
+                options={{ headerShown: false }}
               />
               <Stack.Screen
                 name="CardThemes"
