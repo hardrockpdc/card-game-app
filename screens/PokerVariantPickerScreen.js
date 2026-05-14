@@ -33,9 +33,9 @@ function getModeCopy(mode) {
   }
 
   return {
-    title: "Pick Your Poker Variant",
-    subtitle: "Choose the rules for this poker game before you start.",
-    buttonLabel: "Start Poker Game",
+    title: "Poker",
+    subtitle: "Pick a variant, then start a new game.",
+    buttonLabel: "Start Game",
   };
 }
 
@@ -105,11 +105,7 @@ function PokerVariantPickerScreen({ navigation, route }) {
   }, []);
 
   const modeCopy = useMemo(() => getModeCopy(mode), [mode]);
-  const selectedLabel =
-    POKER_VARIANT_OPTIONS.find((option) => option.value === selectedVariant)
-      ?.label ?? "";
   const isLobby = mode === "lobby";
-  // Coins loaded and player can afford the minimum buy-in.
   const coinsLoaded = coins !== null;
   const canAffordMin = !coinsLoaded || coins >= 100;
   const canPlay = isLobby || canAffordMin;
@@ -165,149 +161,143 @@ function PokerVariantPickerScreen({ navigation, route }) {
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.playerPill}>
-          <Text style={styles.playerPillText}>Playing as {playerName}</Text>
-        </View>
-
-        <View style={styles.header}>
-          <Text style={styles.title}>{modeCopy.title}</Text>
+        <Text style={styles.title}>{modeCopy.title}</Text>
+        {modeCopy.subtitle ? (
           <Text style={styles.subtitle}>{modeCopy.subtitle}</Text>
-        </View>
+        ) : null}
 
-        <View style={styles.wheelCard}>
+        <View style={styles.panel}>
           <PokerVariantWheel
             value={selectedVariant}
             onChange={setSelectedVariant}
           />
-        </View>
 
-        {!isLobby ? (
-          <View style={styles.settingsCard}>
-            {coinsLoaded && (
-              <View style={styles.walletRow}>
-                <Text style={styles.settingsLabel}>Your Balance</Text>
-                <Text style={styles.walletBalance}>
-                  🪙 {coins.toLocaleString()}
-                </Text>
+          {!isLobby ? (
+            <>
+              <View style={styles.sectionBlock}>
+                <Text style={styles.sectionLabel}>AI Opponents</Text>
+                <View style={styles.pillRow}>
+                  {[1, 2, 3].map((count) => (
+                    <Pressable
+                      key={count}
+                      onPress={() => setAiCount(count)}
+                      style={({ pressed }) => [
+                        styles.pill,
+                        aiCount === count && styles.pillSelected,
+                        pressed && styles.pillPressed,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.pillText,
+                          aiCount === count && styles.pillTextSelected,
+                        ]}
+                      >
+                        {count}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
               </View>
-            )}
 
-            <Text style={styles.settingsLabel}>Buy-In</Text>
-            <View style={styles.buyInRow}>
-              {[100, 250, 500, 1000].map((amount) => {
-                const isSelected = buyIn === amount;
-                const isAffordable = !coinsLoaded || coins >= amount;
-                return (
-                  <Pressable
-                    key={amount}
-                    onPress={() => {
-                      if (isAffordable) setBuyIn(amount);
-                    }}
-                    disabled={!isAffordable}
-                    style={({ pressed }) => [
-                      styles.buyInButton,
-                      isSelected && styles.buyInButtonSelected,
-                      !isAffordable && styles.buyInButtonDisabled,
-                      pressed && isAffordable && styles.buttonPressed,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.buyInButtonText,
-                        isSelected && styles.buyInButtonTextSelected,
-                        !isAffordable && styles.buyInButtonTextDisabled,
-                      ]}
-                    >
-                      🪙 {amount}
+              <View style={styles.sectionBlock}>
+                <Text style={styles.sectionLabel}>Difficulty</Text>
+                <View style={styles.pillRow}>
+                  {[
+                    { id: "easy", label: "Easy" },
+                    { id: "medium", label: "Medium" },
+                    { id: "hard", label: "Hard" },
+                  ].map((option) => {
+                    const selected = option.id === difficulty;
+
+                    return (
+                      <Pressable
+                        key={option.id}
+                        onPress={() => setDifficulty(option.id)}
+                        style={({ pressed }) => [
+                          styles.pill,
+                          selected && styles.pillSelected,
+                          pressed && styles.pillPressed,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.pillText,
+                            selected && styles.pillTextSelected,
+                          ]}
+                        >
+                          {option.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+
+              <View style={styles.sectionBlock}>
+                <View style={styles.buyInHeader}>
+                  <Text style={styles.sectionLabel}>Buy-In</Text>
+                  {coinsLoaded ? (
+                    <Text style={styles.walletBalance}>
+                      🪙 {coins.toLocaleString()}
                     </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            {coinsLoaded && coins < 100 && (
-              <Text style={styles.noCoinsWarning}>
-                You need at least 🪙 100 to play. Visit your Profile to reset
-                your coins.
-              </Text>
-            )}
-
-            <Text style={styles.settingsLabel}>Computer Opponents</Text>
-            <View style={styles.countRow}>
-              {[1, 2, 3].map((count) => (
-                <Pressable
-                  key={count}
-                  onPress={() => setAiCount(count)}
-                  style={({ pressed }) => [
-                    styles.countButton,
-                    aiCount === count && styles.countButtonSelected,
-                    pressed && styles.buttonPressed,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.countButtonText,
-                      aiCount === count && styles.countButtonTextSelected,
-                    ]}
-                  >
-                    {count}
+                  ) : null}
+                </View>
+                <View style={styles.pillRow}>
+                  {[100, 250, 500, 1000].map((amount) => {
+                    const isSelected = buyIn === amount;
+                    const isAffordable = !coinsLoaded || coins >= amount;
+                    return (
+                      <Pressable
+                        key={amount}
+                        onPress={() => {
+                          if (isAffordable) setBuyIn(amount);
+                        }}
+                        disabled={!isAffordable}
+                        style={({ pressed }) => [
+                          styles.pill,
+                          isSelected && styles.buyInPillSelected,
+                          !isAffordable && styles.pillDisabled,
+                          pressed && isAffordable && styles.pillPressed,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.pillText,
+                            isSelected && styles.buyInPillTextSelected,
+                            !isAffordable && styles.pillTextDisabled,
+                          ]}
+                        >
+                          🪙 {amount}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+                {coinsLoaded && coins < 100 ? (
+                  <Text style={styles.noCoinsWarning}>
+                    You need at least 🪙 100 to play. Visit your Profile to
+                    reset your coins.
                   </Text>
-                </Pressable>
-              ))}
-            </View>
+                ) : null}
+              </View>
+            </>
+          ) : null}
 
-            <Text style={styles.settingsLabel}>Difficulty</Text>
-            <View style={styles.difficultyRow}>
-              {[
-                { id: "easy", label: "Easy" },
-                { id: "medium", label: "Medium" },
-                { id: "hard", label: "Hard" },
-              ].map((option) => {
-                const selected = option.id === difficulty;
-
-                return (
-                  <Pressable
-                    key={option.id}
-                    onPress={() => setDifficulty(option.id)}
-                    style={({ pressed }) => [
-                      styles.difficultyButton,
-                      selected && styles.difficultyButtonSelected,
-                      pressed && styles.buttonPressed,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.difficultyButtonText,
-                        selected && styles.difficultyButtonTextSelected,
-                      ]}
-                    >
-                      {option.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-        ) : null}
-
-        <View style={styles.selectionSummary}>
-          <Text style={styles.selectionLabel}>Current selection</Text>
-          <Text style={styles.selectionValue}>{selectedLabel}</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={modeCopy.buttonLabel}
+            onPress={canPlay ? handleContinue : undefined}
+            disabled={!canPlay}
+            style={({ pressed }) => [
+              styles.playButton,
+              !canPlay && styles.playButtonDisabled,
+              canPlay && pressed && styles.playButtonPressed,
+            ]}
+          >
+            <Text style={styles.playButtonText}>{modeCopy.buttonLabel}</Text>
+          </Pressable>
         </View>
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={modeCopy.buttonLabel}
-          onPress={canPlay ? handleContinue : undefined}
-          disabled={!canPlay}
-          style={({ pressed }) => [
-            styles.button,
-            !canPlay && styles.buttonDisabled,
-            canPlay && pressed && styles.buttonPressed,
-          ]}
-        >
-          <Text style={styles.buttonText}>{modeCopy.buttonLabel}</Text>
-        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
@@ -316,157 +306,50 @@ function PokerVariantPickerScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#07111F",
+    backgroundColor: "#0f1115",
   },
   container: {
-    flexGrow: 1,
-    paddingHorizontal: scale(20),
-    paddingTop: scale(16),
-    paddingBottom: scale(24),
-    backgroundColor: "#07111F",
-  },
-  playerPill: {
-    backgroundColor: "#16213e",
-    borderRadius: scale(999),
-    borderWidth: 1.5,
-    borderColor: "#334",
-    alignSelf: "center",
-    paddingHorizontal: scale(16),
-    paddingVertical: scale(8),
-    marginBottom: scale(18),
-  },
-  playerPillText: {
-    color: "#ffffff",
-    fontSize: scaleFont(13),
-    fontWeight: "bold",
-  },
-  header: {
-    marginBottom: scale(20),
+    padding: scale(18),
+    gap: scale(14),
   },
   title: {
-    color: "#F4F7FB",
-    fontSize: scaleFont(28),
-    fontWeight: "800",
-    letterSpacing: 0.2,
+    color: "#f5f7fb",
+    fontSize: scaleFont(34),
+    fontWeight: "900",
+    textAlign: "center",
   },
   subtitle: {
-    marginTop: scale(8),
-    color: "#A7B3C9",
+    color: "#95a2b6",
     fontSize: scaleFont(15),
     lineHeight: scale(21),
+    textAlign: "center",
   },
-  wheelCard: {
-    marginBottom: scale(18),
-  },
-  settingsCard: {
-    marginBottom: scale(18),
-    paddingVertical: scale(14),
-    paddingHorizontal: scale(16),
-    borderRadius: scale(18),
+  panel: {
+    borderRadius: scale(22),
     borderWidth: 1,
-    borderColor: "#24344D",
-    backgroundColor: "#0B1320",
-    gap: scale(12),
+    borderColor: "#243042",
+    backgroundColor: "#151a24",
+    padding: scale(16),
+    gap: scale(16),
   },
-  settingsLabel: {
-    color: "#A7B3C9",
-    fontSize: scaleFont(12),
+  sectionBlock: {
+    gap: scale(8),
+  },
+  sectionLabel: {
+    color: "#95a2b6",
+    fontSize: scaleFont(11),
     fontWeight: "700",
     textTransform: "uppercase",
-    letterSpacing: 1,
+    letterSpacing: 1.2,
   },
-  countRow: {
-    flexDirection: "row",
-    gap: scale(10),
-  },
-  countButton: {
-    flex: 1,
-    minHeight: scale(50),
-    borderRadius: scale(16),
-    borderWidth: 1.5,
-    borderColor: "#2c3750",
-    backgroundColor: "#182131",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  countButtonSelected: {
-    borderColor: "#77aef7",
-    backgroundColor: "#21314a",
-  },
-  countButtonText: {
-    color: "#d3dcec",
-    fontSize: scaleFont(16),
-    fontWeight: "800",
-  },
-  countButtonTextSelected: {
-    color: "#eef4ff",
-  },
-  difficultyRow: {
+  pillRow: {
     flexDirection: "row",
     gap: scale(8),
   },
-  difficultyButton: {
+  pill: {
     flex: 1,
     minHeight: scale(48),
-    borderRadius: scale(14),
-    borderWidth: 1.5,
-    borderColor: "#2c3750",
-    backgroundColor: "#182131",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  difficultyButtonSelected: {
-    borderColor: "#77aef7",
-    backgroundColor: "#21314a",
-  },
-  difficultyButtonText: {
-    color: "#d3dcec",
-    fontSize: scaleFont(12),
-    fontWeight: "800",
-  },
-  difficultyButtonTextSelected: {
-    color: "#eef4ff",
-  },
-  selectionSummary: {
-    marginBottom: scale(20),
-    paddingVertical: scale(14),
-    paddingHorizontal: scale(16),
-    borderRadius: scale(18),
-    borderWidth: 1,
-    borderColor: "#24344D",
-    backgroundColor: "#0B1320",
-  },
-  selectionLabel: {
-    color: "#A7B3C9",
-    fontSize: scaleFont(12),
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-  },
-  selectionValue: {
-    marginTop: scale(8),
-    color: "#F4F7FB",
-    fontSize: scaleFont(18),
-    fontWeight: "700",
-  },
-  walletRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  walletBalance: {
-    color: "#ffd700",
-    fontSize: scaleFont(16),
-    fontWeight: "800",
-  },
-  buyInRow: {
-    flexDirection: "row",
-    gap: scale(8),
-  },
-  buyInButton: {
-    flex: 1,
-    minHeight: scale(48),
-    borderRadius: scale(14),
+    borderRadius: scale(999),
     borderWidth: 1.5,
     borderColor: "#2c3750",
     backgroundColor: "#182131",
@@ -474,23 +357,43 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: scale(4),
   },
-  buyInButtonSelected: {
+  pillSelected: {
+    borderColor: "#77aef7",
+    backgroundColor: "#21314a",
+  },
+  pillPressed: {
+    opacity: 0.88,
+  },
+  pillDisabled: {
+    opacity: 0.35,
+  },
+  pillText: {
+    color: "#d3dcec",
+    fontSize: scaleFont(13),
+    fontWeight: "800",
+  },
+  pillTextSelected: {
+    color: "#eef4ff",
+  },
+  pillTextDisabled: {
+    color: "#555",
+  },
+  buyInHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  walletBalance: {
+    color: "#ffd700",
+    fontSize: scaleFont(14),
+    fontWeight: "800",
+  },
+  buyInPillSelected: {
     borderColor: "#ffd700",
     backgroundColor: "#2a2a10",
   },
-  buyInButtonDisabled: {
-    opacity: 0.35,
-  },
-  buyInButtonText: {
-    color: "#d3dcec",
-    fontSize: scaleFont(12),
-    fontWeight: "800",
-  },
-  buyInButtonTextSelected: {
+  buyInPillTextSelected: {
     color: "#ffd700",
-  },
-  buyInButtonTextDisabled: {
-    color: "#555",
   },
   noCoinsWarning: {
     color: "#e94560",
@@ -498,34 +401,24 @@ const styles = StyleSheet.create({
     lineHeight: scale(18),
     textAlign: "center",
   },
-  button: {
-    marginTop: "auto",
-    minHeight: scale(54),
-    borderRadius: scale(18),
+  playButton: {
+    borderRadius: scale(16),
+    backgroundColor: "#77aef7",
     alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#C1121F",
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+    paddingVertical: scale(14),
+    marginTop: scale(4),
   },
-  buttonDisabled: {
+  playButtonDisabled: {
     backgroundColor: "#444",
     opacity: 0.7,
-    shadowOpacity: 0,
-    elevation: 0,
   },
-  buttonPressed: {
-    opacity: 0.88,
-    transform: [{ scale: 0.99 }],
+  playButtonPressed: {
+    opacity: 0.92,
   },
-  buttonText: {
-    color: "#FFFFFF",
-    fontSize: scaleFont(17),
-    fontWeight: "800",
-    letterSpacing: 0.4,
+  playButtonText: {
+    color: "#08111f",
+    fontSize: scaleFont(16),
+    fontWeight: "900",
   },
 });
 
