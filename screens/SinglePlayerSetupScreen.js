@@ -253,7 +253,12 @@ export default function SinglePlayerSetupScreen({ navigation }) {
       return;
     }
 
-    if (game.id === "goFish" || game.id === "lastCard") {
+    if (game.id === "goFish") {
+      navigation.navigate("GoFishPicker");
+      return;
+    }
+
+    if (game.id === "lastCard") {
       openGameSetup();
       return;
     }
@@ -317,6 +322,7 @@ export default function SinglePlayerSetupScreen({ navigation }) {
             const isPoker = item.id === "poker";
             const isSolitaire = item.id === "solitaire";
             const isRummy = item.id === "rummy";
+            const isGoFish = item.id === "goFish";
 
             return (
               <TouchableOpacity
@@ -329,7 +335,9 @@ export default function SinglePlayerSetupScreen({ navigation }) {
                       ? openSolitaireVariantPicker
                       : isRummy
                         ? openRummyVariantPicker
-                        : undefined
+                        : isGoFish
+                          ? () => navigation.navigate("GoFishPicker")
+                          : undefined
                 }
               >
                 <View
