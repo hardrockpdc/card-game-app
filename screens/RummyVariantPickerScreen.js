@@ -34,9 +34,9 @@ function getModeCopy(mode) {
   }
 
   return {
-    title: "Pick Your Rummy Variant",
-    subtitle: "Choose the rules for this Rummy game before you start.",
-    buttonLabel: "Start Rummy Game",
+    title: "Rummy",
+    subtitle: "Pick a variant, then start a new game.",
+    buttonLabel: "Start Game",
   };
 }
 
@@ -49,12 +49,6 @@ function buildPlayers(playerName, aiCount) {
       isAI: true,
     })),
   ];
-}
-
-function getSelectedLabel(selectedVariant, options) {
-  const found = options.find((option) => option.value === selectedVariant);
-
-  return found?.label || getRummyVariantLabel(selectedVariant);
 }
 
 function RummyVariantPickerScreen({ navigation, route }) {
@@ -70,23 +64,18 @@ function RummyVariantPickerScreen({ navigation, route }) {
   const [difficulty, setDifficulty] = useState("medium");
   const promptIfSaved = useResumePrompt();
 
+  const isConquian = selectedVariant === "conquian";
+
   useEffect(() => {
     setSelectedVariant(getInitialVariant(currentVariant, pickerOptions));
   }, [currentVariant, pickerOptions]);
 
+  // Conquián is 1v1 — collapse AI count to 1
+  useEffect(() => {
+    if (isConquian) setAiCount(1);
+  }, [isConquian]);
+
   const modeCopy = useMemo(() => getModeCopy(mode), [mode]);
-
-  const selectedLabel = useMemo(
-    () => getSelectedLabel(selectedVariant, pickerOptions),
-    [selectedVariant, pickerOptions],
-  );
-
-  const continueLabel =
-    mode === "lobby"
-      ? modeCopy.buttonLabel
-      : selectedVariant === "conquian"
-        ? "Start Conquián Game"
-        : modeCopy.buttonLabel;
 
   const handleContinue = async () => {
     if (mode === "lobby") {
@@ -158,99 +147,117 @@ function RummyVariantPickerScreen({ navigation, route }) {
     });
   };
 
+  const isSinglePlayer = mode !== "lobby";
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <Text style={styles.title}>{modeCopy.title}</Text>
+        <Text style={styles.title}>{modeCopy.title}</Text>
+        {modeCopy.subtitle ? (
           <Text style={styles.subtitle}>{modeCopy.subtitle}</Text>
-        </View>
+        ) : null}
 
-        <View style={styles.wheelCard}>
+        <View style={styles.panel}>
           <RummyVariantWheel
             value={selectedVariant}
             onChange={setSelectedVariant}
             options={pickerOptions}
           />
+
+          {isSinglePlayer ? (
+            <>
+              <View style={styles.sectionBlock}>
+                <Text style={styles.sectionLabel}>AI Opponents</Text>
+                {isConquian ? (
+                  <>
+                    <View style={styles.pillRow}>
+                      <View style={[styles.pill, styles.pillSelected]}>
+                        <Text style={[styles.pillText, styles.pillTextSelected]}>
+                          1
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={styles.constraintNote}>
+                      Conquián is 1v1 — only one opponent.
+                    </Text>
+                  </>
+                ) : (
+                  <View style={styles.pillRow}>
+                    {[1, 2, 3].map((count) => (
+                      <Pressable
+                        key={count}
+                        onPress={() => setAiCount(count)}
+                        style={({ pressed }) => [
+                          styles.pill,
+                          aiCount === count && styles.pillSelected,
+                          pressed && styles.pillPressed,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.pillText,
+                            aiCount === count && styles.pillTextSelected,
+                          ]}
+                        >
+                          {count}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
+              </View>
+
+              <View style={styles.sectionBlock}>
+                <Text style={styles.sectionLabel}>Difficulty</Text>
+                <View style={styles.pillRow}>
+                  {[
+                    { id: "easy", label: "Easy" },
+                    { id: "medium", label: "Medium" },
+                    { id: "hard", label: "Hard" },
+                  ].map((option) => {
+                    const selected = option.id === difficulty;
+
+                    return (
+                      <Pressable
+                        key={option.id}
+                        onPress={() => setDifficulty(option.id)}
+                        style={({ pressed }) => [
+                          styles.pill,
+                          selected && styles.pillSelected,
+                          pressed && styles.pillPressed,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.pillText,
+                            selected && styles.pillTextSelected,
+                          ]}
+                        >
+                          {option.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            </>
+          ) : null}
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={modeCopy.buttonLabel}
+            onPress={handleContinue}
+            style={({ pressed }) => [
+              styles.playButton,
+              pressed && styles.playButtonPressed,
+            ]}
+          >
+            <Text style={styles.playButtonText}>{modeCopy.buttonLabel}</Text>
+          </Pressable>
         </View>
-
-        <View style={styles.settingsCard}>
-          <Text style={styles.settingsLabel}>Computer Opponents</Text>
-          <View style={styles.countRow}>
-            {[1, 2, 3].map((count) => (
-              <Pressable
-                key={count}
-                onPress={() => setAiCount(count)}
-                style={({ pressed }) => [
-                  styles.countButton,
-                  aiCount === count && styles.countButtonSelected,
-                  pressed && styles.buttonPressed,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.countButtonText,
-                    aiCount === count && styles.countButtonTextSelected,
-                  ]}
-                >
-                  {count}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-
-          <Text style={styles.settingsLabel}>Difficulty</Text>
-          <View style={styles.difficultyRow}>
-            {[
-              { id: "easy", label: "Easy" },
-              { id: "medium", label: "Medium" },
-              { id: "hard", label: "Hard" },
-            ].map((option) => {
-              const selected = option.id === difficulty;
-
-              return (
-                <Pressable
-                  key={option.id}
-                  onPress={() => setDifficulty(option.id)}
-                  style={({ pressed }) => [
-                    styles.difficultyButton,
-                    selected && styles.difficultyButtonSelected,
-                    pressed && styles.buttonPressed,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.difficultyButtonText,
-                      selected && styles.difficultyButtonTextSelected,
-                    ]}
-                  >
-                    {option.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-
-        <View style={styles.selectionSummary}>
-          <Text style={styles.selectionLabel}>Current selection</Text>
-          <Text style={styles.selectionValue}>{selectedLabel}</Text>
-        </View>
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={continueLabel}
-          onPress={handleContinue}
-          style={({ pressed }) => [
-            styles.button,
-            pressed && styles.buttonPressed,
-          ]}
-        >
-          <Text style={styles.buttonText}>{continueLabel}</Text>
-        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
@@ -259,146 +266,90 @@ function RummyVariantPickerScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#07111F",
+    backgroundColor: "#0f1115",
   },
   container: {
-    flexGrow: 1,
-    paddingHorizontal: scale(20),
-    paddingTop: scale(16),
-    paddingBottom: scale(24),
-    backgroundColor: "#07111F",
-  },
-  header: {
-    marginBottom: scale(20),
+    padding: scale(18),
+    gap: scale(14),
   },
   title: {
-    color: "#F4F7FB",
-    fontSize: scaleFont(28),
-    fontWeight: "800",
-    letterSpacing: 0.2,
+    color: "#f5f7fb",
+    fontSize: scaleFont(34),
+    fontWeight: "900",
+    textAlign: "center",
   },
   subtitle: {
-    marginTop: scale(8),
-    color: "#A7B3C9",
+    color: "#95a2b6",
     fontSize: scaleFont(15),
     lineHeight: scale(21),
+    textAlign: "center",
   },
-  wheelCard: {
-    marginBottom: scale(18),
-  },
-  settingsCard: {
-    marginBottom: scale(18),
-    paddingVertical: scale(14),
-    paddingHorizontal: scale(16),
-    borderRadius: scale(18),
+  panel: {
+    borderRadius: scale(22),
     borderWidth: 1,
-    borderColor: "#24344D",
-    backgroundColor: "#0B1320",
-    gap: scale(12),
+    borderColor: "#243042",
+    backgroundColor: "#151a24",
+    padding: scale(16),
+    gap: scale(16),
   },
-  settingsLabel: {
-    color: "#A7B3C9",
-    fontSize: scaleFont(12),
+  sectionBlock: {
+    gap: scale(8),
+  },
+  sectionLabel: {
+    color: "#95a2b6",
+    fontSize: scaleFont(11),
     fontWeight: "700",
     textTransform: "uppercase",
-    letterSpacing: 1,
+    letterSpacing: 1.2,
   },
-  countRow: {
-    flexDirection: "row",
-    gap: scale(10),
-  },
-  countButton: {
-    flex: 1,
-    minHeight: scale(50),
-    borderRadius: scale(16),
-    borderWidth: 1.5,
-    borderColor: "#2c3750",
-    backgroundColor: "#182131",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  countButtonSelected: {
-    borderColor: "#77aef7",
-    backgroundColor: "#21314a",
-  },
-  countButtonText: {
-    color: "#d3dcec",
-    fontSize: scaleFont(16),
-    fontWeight: "800",
-  },
-  countButtonTextSelected: {
-    color: "#eef4ff",
-  },
-  difficultyRow: {
+  pillRow: {
     flexDirection: "row",
     gap: scale(8),
   },
-  difficultyButton: {
+  pill: {
     flex: 1,
     minHeight: scale(48),
-    borderRadius: scale(14),
+    borderRadius: scale(999),
     borderWidth: 1.5,
     borderColor: "#2c3750",
     backgroundColor: "#182131",
     alignItems: "center",
     justifyContent: "center",
   },
-  difficultyButtonSelected: {
+  pillSelected: {
     borderColor: "#77aef7",
     backgroundColor: "#21314a",
   },
-  difficultyButtonText: {
+  pillPressed: {
+    opacity: 0.88,
+  },
+  pillText: {
     color: "#d3dcec",
-    fontSize: scaleFont(12),
+    fontSize: scaleFont(14),
     fontWeight: "800",
   },
-  difficultyButtonTextSelected: {
+  pillTextSelected: {
     color: "#eef4ff",
   },
-  selectionSummary: {
-    marginBottom: scale(20),
-    paddingVertical: scale(14),
-    paddingHorizontal: scale(16),
-    borderRadius: scale(18),
-    borderWidth: 1,
-    borderColor: "#24344D",
-    backgroundColor: "#0B1320",
-  },
-  selectionLabel: {
-    color: "#A7B3C9",
+  constraintNote: {
+    color: "#6a7d96",
     fontSize: scaleFont(12),
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 1,
+    lineHeight: scale(17),
   },
-  selectionValue: {
-    marginTop: scale(8),
-    color: "#F4F7FB",
-    fontSize: scaleFont(18),
-    fontWeight: "700",
-  },
-  button: {
-    marginTop: "auto",
-    minHeight: scale(54),
-    borderRadius: scale(18),
+  playButton: {
+    borderRadius: scale(16),
+    backgroundColor: "#77aef7",
     alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#C1121F",
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+    paddingVertical: scale(14),
+    marginTop: scale(4),
   },
-  buttonPressed: {
-    opacity: 0.88,
-    transform: [{ scale: 0.99 }],
+  playButtonPressed: {
+    opacity: 0.92,
   },
-  buttonText: {
-    color: "#FFFFFF",
-    fontSize: scaleFont(17),
-    fontWeight: "800",
-    letterSpacing: 0.4,
+  playButtonText: {
+    color: "#08111f",
+    fontSize: scaleFont(16),
+    fontWeight: "900",
   },
 });
 
