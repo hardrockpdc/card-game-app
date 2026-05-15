@@ -1,6 +1,6 @@
-const { createDeck, shuffleDeck } = require("./deck");
+import { createDeck, shuffleDeck } from "./deck";
 
-const RUMMY_VARIANTS = {
+export const RUMMY_VARIANTS = {
   ginRummy: {
     id: "ginRummy",
     label: "Gin Rummy",
@@ -59,7 +59,7 @@ const RUMMY_VARIANTS = {
   },
 };
 
-const RUMMY_VARIANT_OPTIONS = [
+export const RUMMY_VARIANT_OPTIONS = [
   {
     value: "ginRummy",
     label: "Gin Rummy",
@@ -89,25 +89,25 @@ const RUMMY_VARIANT_PLAYER_LIMITS = {
   canasta: { minPlayers: 2, maxPlayers: 4 },
 };
 
-function getRummyVariantPlayerLimits(variantId = "ginRummy") {
+export function getRummyVariantPlayerLimits(variantId = "ginRummy") {
   return (
     RUMMY_VARIANT_PLAYER_LIMITS[variantId] ||
     RUMMY_VARIANT_PLAYER_LIMITS.ginRummy
   );
 }
 
-function getRummyVariantConfig(variantId = "ginRummy") {
+export function getRummyVariantConfig(variantId = "ginRummy") {
   return RUMMY_VARIANTS[variantId] || RUMMY_VARIANTS.ginRummy;
 }
 
-function getRummyVariantOptions() {
+export function getRummyVariantOptions() {
   return RUMMY_VARIANT_OPTIONS.map((variant) => ({
     label: variant.label,
     value: variant.value,
   }));
 }
 
-function getRummyVariantLabel(variantId = "ginRummy") {
+export function getRummyVariantLabel(variantId = "ginRummy") {
   return getRummyVariantConfig(variantId).label;
 }
 
@@ -197,7 +197,7 @@ function getDeadwoodValue(card) {
   return value > 10 ? 10 : value;
 }
 
-function getCardDisplayLabel(card) {
+export function getCardDisplayLabel(card) {
   if (!card) {
     return "";
   }
@@ -460,11 +460,11 @@ function getRummyMeldType(cards) {
   return null;
 }
 
-function isValidRummyMeld(cards) {
+export function isValidRummyMeld(cards) {
   return getRummyMeldType(cards) != null;
 }
 
-function canExtendRummyMeld(meld, card) {
+export function canExtendRummyMeld(meld, card) {
   const cards = getMeldCards(meld);
   if (!cards.length || !card) {
     return false;
@@ -479,7 +479,7 @@ function isPureRun(cards) {
   );
 }
 
-function calculateRummyDeadwood(hand, melds) {
+export function calculateRummyDeadwood(hand, melds) {
   if (!Array.isArray(hand) || !hand.length) {
     return 0;
   }
@@ -913,7 +913,7 @@ function chooseDiscardCardIndex(hand) {
   return chosenIndex;
 }
 
-function createRummyState({
+export function createRummyState({
   variantId = "ginRummy",
   players = [],
   difficulty = "normal",
@@ -966,7 +966,7 @@ function createRummyState({
   };
 }
 
-function rummyAiChooseMove(state, pid, difficulty = "normal") {
+export function rummyAiChooseMove(state, pid, difficulty = "normal") {
   if (!state || !Array.isArray(state.hands)) {
     return { type: "draw-card" };
   }
@@ -1018,7 +1018,7 @@ function normalizeActionType(type) {
   return type;
 }
 
-function rummyReducer(state, action = {}) {
+export function rummyReducer(state, action = {}) {
   if (
     !state ||
     typeof state !== "object" ||
@@ -1195,7 +1195,7 @@ function rummyReducer(state, action = {}) {
   return nextState;
 }
 
-function getRummyScoreSummary(state, pid) {
+export function getRummyScoreSummary(state, pid) {
   const hand = (state && state.hands && state.hands[pid]) || [];
   const playerMelds = getPlayerMelds(state && state.melds, pid);
   const config = getRummyVariantConfig(state && state.variantId);
@@ -1221,20 +1221,3 @@ function getRummyScoreSummary(state, pid) {
     ),
   };
 }
-
-module.exports = {
-  RUMMY_VARIANTS,
-  RUMMY_VARIANT_OPTIONS,
-  getRummyVariantConfig,
-  getRummyVariantOptions,
-  getRummyVariantPlayerLimits,
-  createRummyState,
-  rummyReducer,
-  getRummyVariantLabel,
-  getCardDisplayLabel,
-  isValidRummyMeld,
-  canExtendRummyMeld,
-  calculateRummyDeadwood,
-  getRummyScoreSummary,
-  rummyAiChooseMove,
-};

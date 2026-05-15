@@ -16,8 +16,6 @@ import EndOfRoundModal from "../components/EndOfRoundModal";
 import StatsStrip from "../components/StatsStrip";
 import TutorialOverlay, { hasSeen } from "../components/TutorialOverlay";
 import { getTableTheme } from "../game/tableThemes";
-
-const BG = getTableTheme("rummy").table;
 import { scale, scaleFont } from "../game/responsive";
 import { addCoins } from "../game/wallet";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
@@ -31,14 +29,15 @@ import {
   stopServer,
   disconnectFromHost,
 } from "../game/GameNetwork";
-
-const {
+import {
   createRummyState,
   rummyReducer,
   rummyAiChooseMove,
   getRummyVariantLabel,
   calculateRummyDeadwood,
-} = require("../game/rummy");
+} from "../game/rummy";
+
+const BG = getTableTheme("rummy").table;
 
 const GIN_RUMMY_SLIDES = [
   {

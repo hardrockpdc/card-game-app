@@ -24,7 +24,7 @@
 - [x] ~~**CR-3** — LobbyScreen useEffect dependency issues~~
 - [x] ~~**CR-4** — Solitaire restore vs new-game race on mount (visible flash)~~
 - [x] ~~**CR-5** — Document setServerListeners/setClientListeners last-write-wins behavior~~
-- [ ] **CR-6** — Rummy uses CommonJS while everything else uses ES modules
+- [x] ~~**CR-6** — Rummy uses CommonJS while everything else uses ES modules~~
 
 ### 🟠 High (HI-1 through HI-10)
 - [x] ~~**HI-1** — cardTheme subscribe() return value~~ ✅ (verified correct, no action needed)
@@ -48,7 +48,7 @@
 - [ ] **M-7** — LobbyScreen handler closure stale-state risk
 - [ ] **M-8** — Centralize magic numbers into config file
 - [ ] **M-9** — Move multiplayer Blackjack logic to game/blackjack.js
-- [ ] **M-10** — Standardize import/require (rolls up with CR-6)
+- [x] ~~**M-10** — Standardize import/require (resolved by CR-6)~~
 - [ ] **M-11** — getDefaultProfile fresh-object inconsistency
 
 ### 🟢 Low (L-1 through L-12)

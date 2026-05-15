@@ -19,11 +19,10 @@ import {
   startBroadcasting,
   stopBroadcasting,
 } from "../game/GameNetwork";
-
-const {
+import {
   getRummyVariantLabel,
   getRummyVariantPlayerLimits,
-} = require("../game/rummy");
+} from "../game/rummy";
 
 const GAMES = [
   {
