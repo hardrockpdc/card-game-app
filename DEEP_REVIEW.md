@@ -52,16 +52,16 @@
 - [ ] **M-11** — getDefaultProfile fresh-object inconsistency
 
 ### 🟢 Low (L-1 through L-12)
-- [ ] **L-1** — Add comment to index.js (auto-generated note)
-- [ ] **L-2** — Audit package.json for unused web deps (fbjs, react-dom, react-native-web)
-- [ ] **L-3** — Verify wildround.js has no top-level test code running at import
+- [x] ~~**L-1** — Add comment to index.js (auto-generated note)~~
+- [ ] **L-2** — Audit package.json for unused web deps (fbjs, react-dom, react-native-web) — AUDITED: no direct imports in source; "web" script present (`expo start --web`). Deps are likely needed for web target. User to decide on removal.
+- [x] ~~**L-3** — Verify wildround.js has no top-level test code running at import — CONFIRMED dormant: runTests() is exported but never called anywhere in committed code.~~
 - [ ] **L-4** — Resolve Conquian's half-state in RummyVariantPicker (matches old M3)
-- [ ] **L-5** — Decide: keep or remove Settings/Results dead routes (matches old M6/M7)
-- [ ] **L-6** — Style object memoization (skip for v1)
+- [x] ~~**L-5** — Decide: keep or remove Settings/Results dead routes — DECIDED: keep both. Results is used by WildRound game-over navigation. Settings is a placeholder for future settings.~~
+- [x] ~~**L-6** — Style object memoization — SKIPPED for v1 per review note. Not worth the complexity.~~
 - [ ] **L-7** — Auto-stop UDP broadcast after game starts (matches old M8)
 - [ ] **L-8** — Standardize String(id) vs raw id comparisons
 - [ ] **L-9** — ProfileScreen + CardThemeScreen double subscription
-- [ ] **L-10** — gameSaves.js silent catches → add warn logging
+- [x] ~~**L-10** — gameSaves.js silent catches → add warn logging~~
 - [ ] **L-11** — Verify lastCard.js action functions are pure
 - [ ] **L-12** — Standardize SafeAreaView / KeyboardAvoidingView usage
 
