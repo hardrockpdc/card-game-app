@@ -934,22 +934,22 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
     minHeight: scale(96),
     borderRadius: scale(14),
-    backgroundColor: ACCENT,
+    backgroundColor: "#cc2222",
     alignItems: "center",
     justifyContent: "center",
     marginTop: scale(4),
   },
   dealButtonDisabled: {
-    backgroundColor: "#444",
-    opacity: 0.8,
+    backgroundColor: "#0f1a2c",
+    opacity: 1,
   },
   dealButtonText: {
-    color: "#08111f",
+    color: "#ffffff",
     fontSize: scaleFont(18),
     fontWeight: "bold",
   },
   dealButtonTextDisabled: {
-    color: "#aaaaaa",
+    color: "#ffffff",
   },
 
   // ── GameHeader leftInfo styles ────────────────────────────────────
