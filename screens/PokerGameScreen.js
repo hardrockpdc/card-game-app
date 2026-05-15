@@ -545,6 +545,7 @@ export default function PokerGameScreen({ navigation, route }) {
     difficulty = "medium",
     buyIn,
     variant,
+    freePlay = false,
   } = route.params;
   const isSinglePlayer = role === "singleplayer";
   const isHost = role === "host" || isSinglePlayer;
@@ -636,8 +637,8 @@ export default function PokerGameScreen({ navigation, route }) {
         }
       }
       applyState(initDeal(initialPlayers, 0, null, startingChips));
-      // Deduct the buy-in from the wallet when a single-player tournament starts.
-      if (isSinglePlayer && buyIn) {
+      // Deduct the buy-in from the wallet when a single-player casino tournament starts.
+      if (isSinglePlayer && buyIn && !freePlay) {
         subtractCoins(buyIn);
       }
     }
@@ -716,7 +717,8 @@ export default function PokerGameScreen({ navigation, route }) {
             if (
               winner &&
               String(winner.id) === "host" &&
-              !coinRewardedRef.current
+              !coinRewardedRef.current &&
+              !freePlay
             ) {
               coinRewardedRef.current = true;
               const wonChips = chipsRef.current["host"] ?? 0;

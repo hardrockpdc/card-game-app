@@ -62,6 +62,7 @@ function PokerVariantPickerScreen({ navigation, route }) {
   const [difficulty, setDifficulty] = useState("medium");
   const [coins, setCoins] = useState(null);
   const [buyIn, setBuyIn] = useState(100);
+  const [freePlay, setFreePlay] = useState(false);
   const promptIfSaved = useResumePrompt();
 
   // Refresh wallet balance each time this screen comes into focus.
@@ -108,7 +109,7 @@ function PokerVariantPickerScreen({ navigation, route }) {
   const isLobby = mode === "lobby";
   const coinsLoaded = coins !== null;
   const canAffordMin = !coinsLoaded || coins >= 100;
-  const canPlay = isLobby || canAffordMin;
+  const canPlay = isLobby || freePlay || canAffordMin;
 
   const handleContinue = async () => {
     if (isLobby) {
@@ -137,6 +138,7 @@ function PokerVariantPickerScreen({ navigation, route }) {
       difficulty,
       variant: selectedVariant,
       buyIn,
+      freePlay,
     };
     await promptIfSaved({
       saveKey,
@@ -235,6 +237,53 @@ function PokerVariantPickerScreen({ navigation, route }) {
               </View>
 
               <View style={styles.sectionBlock}>
+                <Text style={styles.sectionLabel}>Play Mode</Text>
+                {[
+                  {
+                    id: "free",
+                    label: "Free Play",
+                    description: "Practice mode. No coins won or lost.",
+                  },
+                  {
+                    id: "casino",
+                    label: "Casino Play",
+                    description: "Buy-in deducted. Winnings added to wallet.",
+                  },
+                ].map((m) => {
+                  const selected = m.id === "free" ? freePlay : !freePlay;
+                  return (
+                    <Pressable
+                      key={m.id}
+                      onPress={() => setFreePlay(m.id === "free")}
+                      style={({ pressed }) => [
+                        styles.modeCard,
+                        selected && styles.modeCardSelected,
+                        pressed && styles.modeCardPressed,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.modeLabel,
+                          selected && styles.modeLabelSelected,
+                        ]}
+                      >
+                        {m.label}
+                      </Text>
+                      <Text style={styles.modeDescription}>
+                        {m.description}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              <View
+                style={[
+                  styles.sectionBlock,
+                  freePlay && styles.sectionDisabled,
+                ]}
+                pointerEvents={freePlay ? "none" : "auto"}
+              >
                 <View style={styles.buyInHeader}>
                   <Text style={styles.sectionLabel}>Buy-In</Text>
                   {coinsLoaded ? (
@@ -264,17 +313,18 @@ function PokerVariantPickerScreen({ navigation, route }) {
                         <Text
                           style={[
                             styles.pillText,
+                            styles.buyInChipText,
                             isSelected && styles.buyInPillTextSelected,
                             !isAffordable && styles.pillTextDisabled,
                           ]}
                         >
-                          🪙 {amount}
+                          {amount}
                         </Text>
                       </Pressable>
                     );
                   })}
                 </View>
-                {coinsLoaded && coins < 100 ? (
+                {!freePlay && coinsLoaded && coins < 100 ? (
                   <Text style={styles.noCoinsWarning}>
                     You need at least 🪙 100 to play. Visit your Profile to
                     reset your coins.
@@ -400,6 +450,42 @@ const styles = StyleSheet.create({
     fontSize: scaleFont(13),
     lineHeight: scale(18),
     textAlign: "center",
+  },
+  buyInChipText: {
+    fontSize: scaleFont(11),
+  },
+  sectionDisabled: {
+    opacity: 0.35,
+  },
+  modeCard: {
+    borderRadius: scale(16),
+    borderWidth: 1.5,
+    borderColor: "#2c3750",
+    backgroundColor: "rgba(255,255,255,0.02)",
+    paddingHorizontal: scale(16),
+    paddingVertical: scale(14),
+    gap: scale(4),
+  },
+  modeCardSelected: {
+    borderColor: "#77aef7",
+    backgroundColor: "rgba(119, 174, 247, 0.12)",
+  },
+  modeCardPressed: {
+    opacity: 0.85,
+  },
+  modeLabel: {
+    color: "#a7b3c9",
+    fontSize: scaleFont(17),
+    fontWeight: "700",
+    letterSpacing: 0.2,
+  },
+  modeLabelSelected: {
+    color: "#f4f7fb",
+  },
+  modeDescription: {
+    color: "#6a7d96",
+    fontSize: scaleFont(13),
+    lineHeight: scale(18),
   },
   playButton: {
     borderRadius: scale(16),
