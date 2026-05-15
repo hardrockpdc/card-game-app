@@ -226,43 +226,48 @@ export default function ProfileScreen({ navigation, route }) {
       return;
     }
 
-    const permissionResult =
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
+    try {
+      const permissionResult =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-    if (!permissionResult.granted) {
-      Alert.alert(
-        "Photo permission needed",
-        "Please allow access to your photo library to choose a picture.",
+      if (!permissionResult.granted) {
+        Alert.alert(
+          "Photo permission needed",
+          "Please allow access to your photo library to choose a picture.",
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: [ImagePicker.MediaType.Images],
+        allowsEditing: false,
+        quality: 1,
+      });
+
+      if (result.canceled || !result.assets?.length) {
+        return;
+      }
+
+      const asset = result.assets[0];
+      const croppedUri = await cropImageToSquareAsync(
+        asset.uri,
+        asset.width,
+        asset.height,
       );
-      return;
+
+      await persistProfile({
+        ...profile,
+        name: nameDraft.trim() || profile.name || "",
+        photoType: "custom",
+        photoValue: croppedUri,
+      });
+
+      setShowPhotoActions(false);
+      setShowAvatarGrid(false);
+    } catch (err) {
+      console.warn("[ProfileScreen] handlePickFromLibrary error:", err);
+      Alert.alert("Error", "Could not open photo library. Please try again.");
     }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaType.Images,
-      allowsEditing: false,
-      quality: 1,
-    });
-
-    if (result.canceled || !result.assets?.length) {
-      return;
-    }
-
-    const asset = result.assets[0];
-    const croppedUri = await cropImageToSquareAsync(
-      asset.uri,
-      asset.width,
-      asset.height,
-    );
-
-    await persistProfile({
-      ...profile,
-      name: nameDraft.trim() || profile.name || "",
-      photoType: "custom",
-      photoValue: croppedUri,
-    });
-
-    setShowPhotoActions(false);
-    setShowAvatarGrid(false);
   }
 
   async function handleTakePhoto() {
@@ -270,41 +275,47 @@ export default function ProfileScreen({ navigation, route }) {
       return;
     }
 
-    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+    try {
+      const permissionResult =
+        await ImagePicker.requestCameraPermissionsAsync();
 
-    if (!permissionResult.granted) {
-      Alert.alert(
-        "Camera permission needed",
-        "Please allow camera access to take a photo for your profile.",
+      if (!permissionResult.granted) {
+        Alert.alert(
+          "Camera permission needed",
+          "Please allow camera access to take a photo for your profile.",
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: false,
+        quality: 1,
+      });
+
+      if (result.canceled || !result.assets?.length) {
+        return;
+      }
+
+      const asset = result.assets[0];
+      const croppedUri = await cropImageToSquareAsync(
+        asset.uri,
+        asset.width,
+        asset.height,
       );
-      return;
+
+      await persistProfile({
+        ...profile,
+        name: nameDraft.trim() || profile.name || "",
+        photoType: "custom",
+        photoValue: croppedUri,
+      });
+
+      setShowPhotoActions(false);
+      setShowAvatarGrid(false);
+    } catch (err) {
+      console.warn("[ProfileScreen] handleTakePhoto error:", err);
+      Alert.alert("Error", "Could not open camera. Please try again.");
     }
-
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: false,
-      quality: 1,
-    });
-
-    if (result.canceled || !result.assets?.length) {
-      return;
-    }
-
-    const asset = result.assets[0];
-    const croppedUri = await cropImageToSquareAsync(
-      asset.uri,
-      asset.width,
-      asset.height,
-    );
-
-    await persistProfile({
-      ...profile,
-      name: nameDraft.trim() || profile.name || "",
-      photoType: "custom",
-      photoValue: croppedUri,
-    });
-
-    setShowPhotoActions(false);
-    setShowAvatarGrid(false);
   }
 
   function handlePhotoPress() {
