@@ -13,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import GameHeader from "../components/GameHeader";
 import EndOfRoundModal from "../components/EndOfRoundModal";
 import StatsStrip from "../components/StatsStrip";
+import YourTurnBanner from "../components/YourTurnBanner";
 import {
   COLORS,
   createDeck,
@@ -301,7 +302,10 @@ export default function LastCardGameScreen({ navigation, route }) {
   const aiTimerRef = useRef(null);
   const turnTimerRef = useRef(null);
   const colorTimerRef = useRef(null);
+  const yourTurnTimerRef = useRef(null);
+  const prevTurnRef = useRef(null);
   const [gameState, setGameState] = useState(null);
+  const [showYourTurnBanner, setShowYourTurnBanner] = useState(false);
   const [myHand, setMyHand] = useState([]);
   const [statusMsg, setStatusMsg] = useState("Dealing...");
   const [phase, setPhase] = useState("playing");
@@ -318,6 +322,7 @@ export default function LastCardGameScreen({ navigation, route }) {
       if (aiTimerRef.current) clearTimeout(aiTimerRef.current);
       if (turnTimerRef.current) clearTimeout(turnTimerRef.current);
       if (colorTimerRef.current) clearTimeout(colorTimerRef.current);
+      if (yourTurnTimerRef.current) clearTimeout(yourTurnTimerRef.current);
     },
     [],
   );
@@ -346,6 +351,16 @@ export default function LastCardGameScreen({ navigation, route }) {
     if (!isSinglePlayer || !fullRef.current) return;
     saveGame(SAVE_KEY_LASTCARD, { fullState: fullRef.current });
   }, [gameState]);
+
+  // Show "Your Turn!" banner whenever the turn transitions to the local player.
+  useEffect(() => {
+    const currentTurn = gameState?.currentTurn;
+    if (currentTurn === myPid && prevTurnRef.current !== myPid && phase === "playing") {
+      setShowYourTurnBanner(true);
+      scheduleTimeout(yourTurnTimerRef, () => setShowYourTurnBanner(false), 1500);
+    }
+    prevTurnRef.current = currentTurn;
+  }, [gameState?.currentTurn]);
 
   function scheduleTimeout(ref, fn, ms) {
     if (ref.current) clearTimeout(ref.current);
@@ -1174,6 +1189,8 @@ export default function LastCardGameScreen({ navigation, route }) {
           </View>
         </View>
       )}
+
+      <YourTurnBanner visible={showYourTurnBanner} />
 
       <EndOfRoundModal
         visible={showRoundModal}
