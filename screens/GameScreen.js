@@ -1038,9 +1038,11 @@ const styles = StyleSheet.create({
     gap: scale(10),
   },
   button: {
-    paddingVertical: scale(15),
+    minHeight: scale(52),
     paddingHorizontal: scale(40),
     borderRadius: scale(10),
+    justifyContent: "center",
+    alignItems: "center",
   },
   hitButton: {
     backgroundColor: "#e94560",

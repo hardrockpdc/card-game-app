@@ -726,9 +726,10 @@ const styles = StyleSheet.create({
   actionRow: { flexDirection: "row", marginTop: scale(12), gap: scale(10) },
   actionBtn: {
     flex: 1,
-    paddingVertical: scale(14),
+    minHeight: scale(50),
     borderRadius: scale(8),
     alignItems: "center",
+    justifyContent: "center",
   },
   hitBtn: { backgroundColor: "#e94560" },
   standBtn: { backgroundColor: "#2980b9" },
