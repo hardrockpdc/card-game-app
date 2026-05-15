@@ -563,7 +563,7 @@ export default function GoFishGameScreen({ navigation, route }) {
                 {String(p.id) === String(myPlayer?.id) ? " (you)" : ""}
               </Text>
               <Text style={styles.infoValue}>
-                {books[String(p.id)]?.length ?? 0} 📚
+                {books[String(p.id)]?.length ?? 0}
               </Text>
               <Text style={styles.infoSub}>
                 {handSizes[String(p.id)] ?? 0} cards
