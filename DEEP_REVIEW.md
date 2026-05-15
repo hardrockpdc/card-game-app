@@ -53,7 +53,7 @@
 
 ### 🟢 Low (L-1 through L-12)
 - [x] ~~**L-1** — Add comment to index.js (auto-generated note)~~
-- [ ] **L-2** — Audit package.json for unused web deps (fbjs, react-dom, react-native-web) — AUDITED: no direct imports in source; "web" script present (`expo start --web`). Deps are likely needed for web target. User to decide on removal.
+- [x] ~~**L-2** — Audit package.json for unused web deps — AUDITED: kept all three. `expo start --web` script makes them dev-only conveniences. No source files import them directly. Negligible cost; removal would only matter if dropping web target entirely.~~
 - [x] ~~**L-3** — Verify wildround.js has no top-level test code running at import — CONFIRMED dormant: runTests() is exported but never called anywhere in committed code.~~
 - [ ] **L-4** — Resolve Conquian's half-state in RummyVariantPicker (matches old M3)
 - [x] ~~**L-5** — Decide: keep or remove Settings/Results dead routes — DECIDED: keep both. Results is used by WildRound game-over navigation. Settings is a placeholder for future settings.~~
