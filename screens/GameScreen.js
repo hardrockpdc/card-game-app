@@ -924,7 +924,7 @@ const styles = StyleSheet.create({
   },
   betButtonText: {
     color: "#e0e0e0",
-    fontSize: scaleFont(15),
+    fontSize: scaleFont(13),
     fontWeight: "bold",
   },
   betButtonTextSelected: {
@@ -945,7 +945,7 @@ const styles = StyleSheet.create({
   },
   dealButtonText: {
     color: "#08111f",
-    fontSize: scaleFont(23),
+    fontSize: scaleFont(18),
     fontWeight: "bold",
   },
   dealButtonTextDisabled: {
@@ -1056,7 +1056,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "#ffffff",
-    fontSize: scaleFont(18),
+    fontSize: scaleFont(15),
     fontWeight: "bold",
   },
 });

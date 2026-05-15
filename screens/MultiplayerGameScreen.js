@@ -733,7 +733,7 @@ const styles = StyleSheet.create({
   hitBtn: { backgroundColor: "#e94560" },
   standBtn: { backgroundColor: "#2980b9" },
   splitBtn: { backgroundColor: "#8e44ad" },
-  actionBtnText: { color: "#fff", fontSize: scaleFont(16), fontWeight: "bold" },
+  actionBtnText: { color: "#fff", fontSize: scaleFont(14), fontWeight: "bold" },
 
   waitText: {
     color: "#aaa",

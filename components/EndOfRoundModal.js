@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     color: "#08111f",
-    fontSize: scaleFont(17),
+    fontSize: scaleFont(15),
     fontWeight: "900",
   },
   secondaryBtn: {
@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
   },
   secondaryBtnText: {
     color: "#c8d8f0",
-    fontSize: scaleFont(15),
+    fontSize: scaleFont(13),
     fontWeight: "700",
   },
   leaveBtn: {
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
   },
   leaveBtnText: {
     color: "#c07070",
-    fontSize: scaleFont(15),
+    fontSize: scaleFont(13),
     fontWeight: "700",
   },
   btnPressed: {
