@@ -931,7 +931,7 @@ const styles = StyleSheet.create({
     color: "#ffd700",
   },
   dealButton: {
-    width: "100%",
+    alignSelf: "stretch",
     minHeight: scale(96),
     borderRadius: scale(14),
     backgroundColor: ACCENT,
@@ -945,7 +945,7 @@ const styles = StyleSheet.create({
   },
   dealButtonText: {
     color: "#08111f",
-    fontSize: scaleFont(14),
+    fontSize: scaleFont(18),
     fontWeight: "bold",
   },
   dealButtonTextDisabled: {
