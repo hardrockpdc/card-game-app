@@ -907,7 +907,7 @@ const styles = StyleSheet.create({
   },
   betButton: {
     flex: 1,
-    minHeight: scale(52),
+    minHeight: scale(68),
     borderRadius: scale(12),
     borderWidth: 1.5,
     borderColor: "#1a7a44",
@@ -932,7 +932,7 @@ const styles = StyleSheet.create({
   },
   dealButton: {
     width: "100%",
-    minHeight: scale(78),
+    minHeight: scale(96),
     borderRadius: scale(14),
     backgroundColor: ACCENT,
     alignItems: "center",
@@ -1038,7 +1038,7 @@ const styles = StyleSheet.create({
     gap: scale(10),
   },
   button: {
-    minHeight: scale(52),
+    minHeight: scale(68),
     paddingHorizontal: scale(40),
     borderRadius: scale(10),
     justifyContent: "center",

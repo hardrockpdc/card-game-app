@@ -726,7 +726,7 @@ const styles = StyleSheet.create({
   actionRow: { flexDirection: "row", marginTop: scale(12), gap: scale(10) },
   actionBtn: {
     flex: 1,
-    minHeight: scale(50),
+    minHeight: scale(66),
     borderRadius: scale(8),
     alignItems: "center",
     justifyContent: "center",

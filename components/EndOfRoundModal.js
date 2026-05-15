@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
   primaryBtn: {
     backgroundColor: "#7fb3ff",
     borderRadius: scale(14),
-    paddingVertical: scale(14),
+    paddingVertical: scale(20),
     alignItems: "center",
   },
   primaryBtnText: {
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
     borderRadius: scale(14),
     borderWidth: 1.5,
     borderColor: "#2c3750",
-    paddingVertical: scale(12),
+    paddingVertical: scale(18),
     alignItems: "center",
   },
   secondaryBtnText: {
@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
     borderRadius: scale(14),
     borderWidth: 1.5,
     borderColor: "#5a2020",
-    paddingVertical: scale(12),
+    paddingVertical: scale(18),
     alignItems: "center",
   },
   leaveBtnText: {
