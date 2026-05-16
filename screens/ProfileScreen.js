@@ -231,15 +231,22 @@ export default function ProfileScreen({ navigation, route }) {
         await ImagePicker.requestMediaLibraryPermissionsAsync();
 
       if (!permissionResult.granted) {
-        Alert.alert(
-          "Photo permission needed",
-          "Please allow access to your photo library to choose a picture.",
-        );
+        if (permissionResult.canAskAgain === false) {
+          Alert.alert(
+            "Photo access required",
+            "Photo library access is required. Please enable it in your device Settings > Apps > Card Night > Permissions.",
+          );
+        } else {
+          Alert.alert(
+            "Photo permission needed",
+            "Please allow access to your photo library to choose a picture.",
+          );
+        }
         return;
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: [ImagePicker.MediaType.Images],
+        mediaTypes: ["images"],
         allowsEditing: false,
         quality: 1,
       });
@@ -265,7 +272,7 @@ export default function ProfileScreen({ navigation, route }) {
       setShowPhotoActions(false);
       setShowAvatarGrid(false);
     } catch (err) {
-      console.warn("[ProfileScreen] handlePickFromLibrary error:", err);
+      console.error("[ProfileScreen] handlePickFromLibrary error:", err?.message, err?.code, err);
       Alert.alert("Error", "Could not open photo library. Please try again.");
     }
   }
