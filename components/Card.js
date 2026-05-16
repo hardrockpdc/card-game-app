@@ -28,10 +28,15 @@ function Card({ rank, suit, faceDown, small = false, sizeScale = 1 }) {
   const source = faceDown ? getCardBackImage() : getCardImage(rank, suit);
   if (!source) return null;
 
+  const a11yLabel = faceDown ? "Face down card" : `${rank} of ${suit}`;
+
   return (
     <Image
       source={source}
       style={{ width: w, height: h, margin: m, borderRadius: r }}
+      accessible={true}
+      accessibilityRole="image"
+      accessibilityLabel={a11yLabel}
     />
   );
 }

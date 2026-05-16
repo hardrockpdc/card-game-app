@@ -42,6 +42,8 @@ export default function MultiplayerMenuScreen({ navigation }) {
               },
             ]}
             disabled
+            accessibilityRole="button"
+            accessibilityLabel="Host Online (not available yet)"
             accessibilityState={{ disabled: true }}
           >
             <View style={styles.buttonTextRow}>
@@ -66,6 +68,8 @@ export default function MultiplayerMenuScreen({ navigation }) {
               },
             ]}
             disabled
+            accessibilityRole="button"
+            accessibilityLabel="Join Online (not available yet)"
             accessibilityState={{ disabled: true }}
           >
             <View style={styles.buttonTextRow}>
@@ -90,6 +94,9 @@ export default function MultiplayerMenuScreen({ navigation }) {
               },
             ]}
             onPress={() => navigation.navigate("HostSetup")}
+            accessibilityRole="button"
+            accessibilityLabel="Host Local"
+            accessibilityHint="Start hosting a game on your Wi-Fi network"
           >
             <Text
               style={[styles.primaryButtonText, { fontSize: buttonTextSize }]}
@@ -107,6 +114,9 @@ export default function MultiplayerMenuScreen({ navigation }) {
               },
             ]}
             onPress={() => navigation.navigate("Join")}
+            accessibilityRole="button"
+            accessibilityLabel="Join Local"
+            accessibilityHint="Look for games being hosted on your Wi-Fi network"
           >
             <Text
               style={[styles.secondaryButtonText, { fontSize: buttonTextSize }]}
@@ -118,6 +128,8 @@ export default function MultiplayerMenuScreen({ navigation }) {
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
+            accessibilityRole="button"
+            accessibilityLabel="Back"
           >
             <Text style={styles.backButtonText}>Back</Text>
           </TouchableOpacity>

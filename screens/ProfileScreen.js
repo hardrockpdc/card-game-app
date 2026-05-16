@@ -381,6 +381,8 @@ export default function ProfileScreen({ navigation, route }) {
           <TouchableOpacity
             style={styles.photoButton}
             onPress={handlePhotoPress}
+            accessibilityRole="button"
+            accessibilityLabel="Change profile photo"
           >
             {renderPhotoContent()}
           </TouchableOpacity>
@@ -392,6 +394,8 @@ export default function ProfileScreen({ navigation, route }) {
               <TouchableOpacity
                 style={styles.actionBtn}
                 onPress={() => setShowAvatarGrid((current) => !current)}
+                accessibilityRole="button"
+                accessibilityLabel="Choose an avatar"
               >
                 <Text style={styles.actionBtnText}>Choose Avatar</Text>
               </TouchableOpacity>
@@ -399,6 +403,8 @@ export default function ProfileScreen({ navigation, route }) {
               <TouchableOpacity
                 style={styles.actionBtn}
                 onPress={handleTakePhoto}
+                accessibilityRole="button"
+                accessibilityLabel="Take a new photo"
               >
                 <Text style={styles.actionBtnText}>Take Photo</Text>
               </TouchableOpacity>
@@ -406,6 +412,8 @@ export default function ProfileScreen({ navigation, route }) {
               <TouchableOpacity
                 style={styles.actionBtn}
                 onPress={handlePickFromLibrary}
+                accessibilityRole="button"
+                accessibilityLabel="Pick a photo from your library"
               >
                 <Text style={styles.actionBtnText}>
                   Choose from Camera Roll
@@ -459,6 +467,8 @@ export default function ProfileScreen({ navigation, route }) {
               style={[styles.saveBtn, isSaving && styles.saveBtnDisabled]}
               onPress={handleSaveName}
               disabled={isSaving}
+              accessibilityRole="button"
+              accessibilityLabel="Save name"
             >
               <Text style={styles.saveBtnText}>
                 {isSaving ? "Saving…" : "Save Name"}
@@ -478,6 +488,8 @@ export default function ProfileScreen({ navigation, route }) {
               <TouchableOpacity
                 style={styles.themeBtn}
                 onPress={() => navigation.navigate("CardThemes")}
+                accessibilityRole="button"
+                accessibilityLabel="Change card theme"
               >
                 <Text style={styles.themeBtnText}>Open</Text>
               </TouchableOpacity>
@@ -493,6 +505,8 @@ export default function ProfileScreen({ navigation, route }) {
               <TouchableOpacity
                 style={styles.resetBtn}
                 onPress={handleResetCoins}
+                accessibilityRole="button"
+                accessibilityLabel="Reset coins to 1000"
               >
                 <Text style={styles.resetBtnText}>Reset to 1000</Text>
               </TouchableOpacity>
@@ -504,6 +518,8 @@ export default function ProfileScreen({ navigation, route }) {
             <TouchableOpacity
               style={styles.moreRow}
               onPress={() => navigation.navigate("Stats")}
+              accessibilityRole="button"
+              accessibilityLabel="Stats"
             >
               <Text style={styles.moreRowText}>📊 Stats</Text>
               <Text style={styles.moreRowArrow}>›</Text>
@@ -511,6 +527,8 @@ export default function ProfileScreen({ navigation, route }) {
             <TouchableOpacity
               style={[styles.moreRow, styles.moreRowLast]}
               onPress={() => navigation.navigate("About")}
+              accessibilityRole="button"
+              accessibilityLabel="About Card Night"
             >
               <Text style={styles.moreRowText}>ℹ️ About Card Night</Text>
               <Text style={styles.moreRowArrow}>›</Text>
@@ -520,6 +538,8 @@ export default function ProfileScreen({ navigation, route }) {
           <TouchableOpacity
             style={styles.backBtn}
             onPress={() => navigation.goBack()}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
           >
             <Text style={styles.backBtnText}>
               {hasName ? "Back to Home" : "Stay here until your name is saved"}

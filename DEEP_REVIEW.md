@@ -26,7 +26,7 @@
 - [x] ~~**LAUNCH-3** — App.js uses raw console.warn (not logger)~~
 - [x] ~~**LAUNCH-4** — ErrorBoundary uses raw console.error (not logger)~~
 - [x] ~~**LAUNCH-5** — Privacy policy URL placeholder still in AboutScreen~~
-- [ ] **LAUNCH-6** — Sound infrastructure ships unused (placeholder WAVs in bundle)
+- [x] ~~**LAUNCH-6** — Sound infrastructure ships unused — DECIDED: keep as-is for v1. Cost is negligible (~4 tiny WAV files), infrastructure ready for future audio. Revisit when real audio is sourced.~~
 - [x] ~~**LAUNCH-7** — Duplicate Bonjour service entry in iOS infoPlist~~
 
 ### 🐛 BUGS (potential crashes, incorrect behavior)
@@ -46,8 +46,8 @@
 
 ### ♿ ACCESSIBILITY (Apple/Google care about this)
 
-- [ ] **ACC-1** — HomeScreen buttons lack accessibilityLabel/Role
-- [ ] **ACC-2** — Card components have no accessibility info
+- [x] ~~**ACC-1** — partial: lobby/menu/setup screens done. In-game action buttons still pending (becomes ACC-3 future work).~~
+- [x] ~~**ACC-2** — Card components have no accessibility info~~
 - [ ] **ACC-3** — Many in-game action buttons lack accessibility props
 - [ ] **ACC-4** — Color-only state indication (turn highlights, valid melds)
 - [ ] **ACC-5** — Text contrast on muted labels (`#666680` on dark)

@@ -46,6 +46,8 @@ export default function GameMenuItems({ menuItems, onClose }) {
                 item?.disabled && styles.menuRowDisabled,
               ]}
               disabled={item?.disabled}
+              accessibilityRole="button"
+              accessibilityLabel={muted ? "Turn sound on" : "Turn sound off"}
             >
               <Text style={styles.menuIcon}>{muted ? "🔇" : "🔊"}</Text>
               <Text style={styles.menuLabel}>
@@ -70,6 +72,8 @@ export default function GameMenuItems({ menuItems, onClose }) {
                 item?.disabled && styles.menuRowDisabled,
               ]}
               disabled={!isFunction(item?.onUndo) || item?.disabled}
+              accessibilityRole="button"
+              accessibilityLabel="Undo last move"
             >
               <Text style={styles.menuIcon}>↩️</Text>
               <Text style={styles.menuLabel}>Undo</Text>
@@ -106,6 +110,8 @@ export default function GameMenuItems({ menuItems, onClose }) {
                 item?.disabled && styles.menuRowDisabled,
               ]}
               disabled={!isFunction(item?.onRestart) || item?.disabled}
+              accessibilityRole="button"
+              accessibilityLabel="Restart game"
             >
               <Text style={styles.menuIcon}>🔄</Text>
               <Text style={styles.menuLabel}>Restart Game</Text>
@@ -128,6 +134,8 @@ export default function GameMenuItems({ menuItems, onClose }) {
                 item?.disabled && styles.menuRowDisabled,
               ]}
               disabled={!isFunction(item?.onSaveExit) || item?.disabled}
+              accessibilityRole="button"
+              accessibilityLabel="Save game and exit to home"
             >
               <Text style={styles.menuIcon}>💾</Text>
               <Text style={styles.menuLabel}>{"Save & Exit"}</Text>
@@ -152,6 +160,8 @@ export default function GameMenuItems({ menuItems, onClose }) {
                 item?.disabled && styles.menuRowDisabled,
               ]}
               disabled={item?.disabled}
+              accessibilityRole="button"
+              accessibilityLabel="View how to play"
             >
               <Text style={styles.menuIcon}>📖</Text>
               <Text style={styles.menuLabel}>How to Play</Text>
@@ -173,6 +183,8 @@ export default function GameMenuItems({ menuItems, onClose }) {
                 item?.disabled && styles.menuRowDisabled,
               ]}
               disabled={item?.disabled}
+              accessibilityRole="button"
+              accessibilityLabel="Change card theme"
             >
               <Text style={styles.menuIcon}>🎨</Text>
               <Text style={styles.menuLabel}>Card Theme</Text>
@@ -209,6 +221,8 @@ export default function GameMenuItems({ menuItems, onClose }) {
                 item?.disabled && styles.menuRowDisabled,
               ]}
               disabled={!isFunction(item?.onQuit) || item?.disabled}
+              accessibilityRole="button"
+              accessibilityLabel="Quit game"
             >
               <Text style={styles.menuIcon}>❌</Text>
               <Text style={styles.menuLabel}>Quit Game</Text>
@@ -234,6 +248,8 @@ export default function GameMenuItems({ menuItems, onClose }) {
               item?.disabled && styles.menuRowDisabled,
             ]}
             disabled={!isFunction(onPress) || item?.disabled}
+            accessibilityRole="button"
+            accessibilityLabel={label}
           >
             <Text style={styles.menuIcon}>{icon}</Text>
             <Text style={styles.menuLabel}>{label}</Text>

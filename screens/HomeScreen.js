@@ -132,6 +132,10 @@ export default function HomeScreen({ navigation }) {
               },
             ]}
             onPress={goToSinglePlayer}
+            accessibilityRole="button"
+            accessibilityLabel="Single Player"
+            accessibilityHint={!profileHasName ? "Set up your profile first to enable this button" : "Opens single-player game setup"}
+            accessibilityState={{ disabled: !profileHasName }}
           >
             <Text
               style={[
@@ -158,6 +162,9 @@ export default function HomeScreen({ navigation }) {
               },
             ]}
             onPress={goToMultiplayer}
+            accessibilityRole="button"
+            accessibilityLabel="Multiplayer"
+            accessibilityHint="Opens the multiplayer menu"
           >
             <Text
               style={[styles.primaryButtonText, { fontSize: buttonTextSize }]}
@@ -175,6 +182,9 @@ export default function HomeScreen({ navigation }) {
               },
             ]}
             onPress={goToProfile}
+            accessibilityRole="button"
+            accessibilityLabel="Profile"
+            accessibilityHint="Open your profile to edit your name, photo, and card theme"
           >
             <Text
               style={[styles.profileButtonText, { fontSize: buttonTextSize }]}
@@ -187,6 +197,8 @@ export default function HomeScreen({ navigation }) {
             <TouchableOpacity
               style={styles.bottomLink}
               onPress={() => navigation.navigate("HowToPlay")}
+              accessibilityRole="button"
+              accessibilityLabel="How to Play"
             >
               <Text style={styles.linkText}>📖 How to Play</Text>
             </TouchableOpacity>

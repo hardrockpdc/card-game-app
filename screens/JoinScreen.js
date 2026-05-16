@@ -185,6 +185,8 @@ export default function JoinScreen({ navigation }) {
                   ]}
                   onPress={() => handleJoin(item.ip)}
                   disabled={isConnecting}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Join ${item.name}'s game`}
                 >
                   {thisConnecting ? (
                     <ActivityIndicator color="#ffffff" size="small" />
@@ -207,6 +209,8 @@ export default function JoinScreen({ navigation }) {
           setErrorMsg("");
         }}
         disabled={isConnecting}
+        accessibilityRole="button"
+        accessibilityLabel={showManual ? "Hide manual IP entry" : "Show manual IP entry"}
       >
         <Text style={styles.manualToggleText}>
           {showManual ? "▲ Hide manual entry" : "▼ Enter IP manually"}
@@ -234,6 +238,8 @@ export default function JoinScreen({ navigation }) {
             ]}
             onPress={() => handleJoin(manualIp)}
             disabled={!manualIp.trim() || isConnecting}
+            accessibilityRole="button"
+            accessibilityLabel="Join game by IP address"
           >
             {isConnecting && connectingIp === manualIp.trim() ? (
               <ActivityIndicator color="#ffffff" size="small" />
