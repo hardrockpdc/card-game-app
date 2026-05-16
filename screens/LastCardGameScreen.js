@@ -1079,7 +1079,7 @@ export default function LastCardGameScreen({ navigation, route }) {
                 ]}
                 numberOfLines={1}
               >
-                {p.name}
+                {isActive ? "▶ " : ""}{p.name}
               </Text>
               <Text style={styles.opponentCount}>{p.cardCount}</Text>
             </View>

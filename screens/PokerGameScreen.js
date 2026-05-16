@@ -991,6 +991,8 @@ export default function PokerGameScreen({ navigation, route }) {
             >
               <View style={styles.playerTop}>
                 <Text style={styles.playerName}>
+                  {isCurrent ? "▶ " : ""}
+                  {isWinner ? "🏆 " : ""}
                   {idx === dealerIdx ? "🎩 " : ""}
                   {p.name}
                   {isMe ? " (you)" : ""}

@@ -909,7 +909,7 @@ export default function RummyGameScreen({ navigation, route }) {
                     index === currentPlayerIndex && styles.playerChipNameActive,
                   ]}
                 >
-                  {player.name}
+                  {index === currentPlayerIndex ? "▶ " : ""}{player.name}
                 </Text>
                 <Text style={styles.playerChipMeta}>
                   {player.handCount ?? 0} cards • {player.score ?? 0} pts

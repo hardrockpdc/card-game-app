@@ -49,7 +49,7 @@
 - [x] ~~**ACC-1** — partial: lobby/menu/setup screens done. In-game action buttons still pending (becomes ACC-3 future work).~~
 - [x] ~~**ACC-2** — Card components have no accessibility info~~
 - [ ] **ACC-3** — Many in-game action buttons lack accessibility props
-- [ ] **ACC-4** — Color-only state indication (turn highlights, valid melds)
+- [x] ~~**ACC-4** — Color-only state indication (turn highlights, valid melds)~~
 - [x] ~~**ACC-5** — Text contrast on muted labels (`#666680` on dark)~~
 
 ### 🎨 UX POLISH
@@ -1496,7 +1496,7 @@ If you want a suggested path:
 ### Post-launch (v1.1)
 
 16. PERF-1 + PERF-2 + CQ-5 + CQ-6 (image / theme loading) — 60 min
-17. ACC-4 (color-only state) — 30 min
+17. ~~ACC-4 (color-only state) — done~~
 18. CQ-1 (useMultiplayerGame hook) — 3-4 hrs
 19. CQ-2 (game registry) — 2 hrs
 
