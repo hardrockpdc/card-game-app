@@ -32,9 +32,9 @@
 ### 🐛 BUGS (potential crashes, incorrect behavior)
 
 - [x] ~~**BUG-1** — useResumePrompt button order is dangerous~~
-- [ ] **BUG-2** — recordWin has the same race condition as the old HI-3
-- [ ] **BUG-3** — getDefaultProfile returns a fresh object on every call
-- [ ] **BUG-4** — Solitaire `__RESTORE__` action loses unsaved state if you reload mid-game
+- [x] ~~**BUG-2** — recordWin has the same race condition as the old HI-3~~
+- [x] ~~**BUG-3** — getDefaultProfile returns a fresh object on every call~~
+- [x] ~~**BUG-4** — Solitaire `__RESTORE__` action loses unsaved state if you reload mid-game~~
 - [x] ~~**BUG-5** — UDP broadcast keeps running after game starts~~
 
 ### ⚡ PERFORMANCE
@@ -55,7 +55,7 @@
 ### 🎨 UX POLISH
 
 - [ ] **UX-1** — "Start New" is labeled `destructive` (red) but is on the right
-- [ ] **UX-2** — Profile photo button has no hit feedback
+- [x] ~~**UX-2** — Profile photo button has no hit feedback~~
 - [x] ~~**UX-3** — Loading states use hardcoded `#e94560` spinner everywhere~~
 - [ ] **UX-4** — Resume prompt destroys saves with no second confirmation
 - [x] ~~**UX-5** — No "back" handling on Android hardware back button~~

@@ -182,21 +182,11 @@ export default function SolitaireGameScreen({ navigation, route }) {
   // restore effect (which fires after) knows if it should override it.
   const initialGameDispatched = useRef(false);
 
+  // BUG-4: Unified mount effect — always check for a saved game first,
+  // regardless of resumeFromSave. Prevents hot-reload from clobbering
+  // an in-progress game with a fresh deal.
   useEffect(() => {
-    // CR-4: If we're resuming a saved game, skip the fresh deal entirely.
-    // The restore effect below will load the saved state instead.
-    if (route?.params?.resumeFromSave) return;
-    initialGameDispatched.current = true;
-    dispatch(newGameAction(routeVariantId, { spiderMode: routeSpiderMode }));
-    coinRewardedRef.current = false;
-    setCoinsEarned(0);
-    setElapsed(0);
-  }, [routeVariantId, routeSpiderMode]);
-
-  // Restore saved game on initial mount (fires after newGameAction effect above).
-  useEffect(() => {
-    async function checkResume() {
-      if (!route?.params?.resumeFromSave) return;
+    async function init() {
       const saved = await loadGame(solitaireSaveKey(routeVariantId));
       if (saved?.state) {
         dispatch({ type: "__RESTORE__", payload: saved.state });
@@ -205,10 +195,16 @@ export default function SolitaireGameScreen({ navigation, route }) {
         }
         coinRewardedRef.current = false;
         setCoinsEarned(0);
+        return;
       }
+      initialGameDispatched.current = true;
+      dispatch(newGameAction(routeVariantId, { spiderMode: routeSpiderMode }));
+      coinRewardedRef.current = false;
+      setCoinsEarned(0);
+      setElapsed(0);
     }
-    checkResume();
-  }, []);
+    init();
+  }, [routeVariantId, routeSpiderMode]);
 
   // Auto-save after every move; clear save on win (only once per win).
   useEffect(() => {

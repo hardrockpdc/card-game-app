@@ -4,6 +4,7 @@ import {
   View,
   Text,
   TouchableOpacity,
+  Pressable,
   StyleSheet,
   ScrollView,
   TextInput,
@@ -22,6 +23,7 @@ import {
   subscribeProfile,
 } from "../game/profile";
 import { getCoins, resetCoins as resetWalletCoins } from "../game/wallet";
+import { warn } from "../game/logger";
 import { scale, scaleFont } from "../game/responsive";
 
 const AVATAR_CHOICES = [
@@ -272,7 +274,7 @@ export default function ProfileScreen({ navigation, route }) {
       setShowPhotoActions(false);
       setShowAvatarGrid(false);
     } catch (err) {
-      console.error("[ProfileScreen] handlePickFromLibrary error:", err?.message, err?.code, err);
+      warn("[ProfileScreen] handlePickFromLibrary error:", err?.message, err?.code, err);
       Alert.alert("Error", "Could not open photo library. Please try again.");
     }
   }
@@ -320,7 +322,7 @@ export default function ProfileScreen({ navigation, route }) {
       setShowPhotoActions(false);
       setShowAvatarGrid(false);
     } catch (err) {
-      console.warn("[ProfileScreen] handleTakePhoto error:", err);
+      warn("[ProfileScreen] handleTakePhoto error:", err);
       Alert.alert("Error", "Could not open camera. Please try again.");
     }
   }
@@ -378,14 +380,17 @@ export default function ProfileScreen({ navigation, route }) {
             </View>
           )}
 
-          <TouchableOpacity
-            style={styles.photoButton}
+          <Pressable
             onPress={handlePhotoPress}
+            style={({ pressed }) => [
+              styles.photoButton,
+              pressed && { opacity: 0.7, transform: [{ scale: 0.97 }] },
+            ]}
             accessibilityRole="button"
             accessibilityLabel="Change profile photo"
           >
             {renderPhotoContent()}
-          </TouchableOpacity>
+          </Pressable>
 
           <Text style={styles.photoHint}>Tap your photo to change it</Text>
 

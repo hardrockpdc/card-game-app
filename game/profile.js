@@ -12,7 +12,16 @@ const DEFAULT_PROFILE = {
 };
 
 let cachedProfile = null;
+let cachedDefault = null;
 const listeners = new Set();
+
+// BUG-2: Serialize profile writes so concurrent recordWin / updateProfile calls
+// don't stomp on each other. Same pattern as game/wallet.js enqueue.
+let profileQueue = Promise.resolve();
+function enqueue(fn) {
+  profileQueue = profileQueue.then(fn, fn);
+  return profileQueue;
+}
 
 function normalizeProfile(profile) {
   const safeProfile = profile || {};
@@ -49,7 +58,12 @@ function notifyProfileListeners(profile) {
 }
 
 export function getDefaultProfile() {
-  return { ...DEFAULT_PROFILE, stats: {} };
+  // BUG-3: Cache the default object so repeated calls return the same
+  // reference (lets memoized components skip unnecessary re-renders).
+  if (!cachedDefault) {
+    cachedDefault = { ...DEFAULT_PROFILE, stats: {} };
+  }
+  return cachedDefault;
 }
 
 export function getCachedProfile() {
@@ -104,16 +118,20 @@ export async function saveProfile(profile) {
 }
 
 export async function updateProfile(updates) {
-  const currentProfile = await loadProfile();
-  return saveProfile({ ...currentProfile, ...updates });
+  return enqueue(async () => {
+    const currentProfile = await loadProfile();
+    return saveProfile({ ...currentProfile, ...updates });
+  });
 }
 
 export async function recordWin(gameId) {
-  const profile = await loadProfile();
-  const stats = { ...profile.stats };
-  const entry = stats[gameId] || { wins: 0 };
-  stats[gameId] = { wins: entry.wins + 1 };
-  await saveProfile({ ...profile, stats });
+  return enqueue(async () => {
+    const profile = await loadProfile();
+    const stats = { ...profile.stats };
+    const entry = stats[gameId] || { wins: 0 };
+    stats[gameId] = { wins: entry.wins + 1 };
+    await saveProfile({ ...profile, stats });
+  });
 }
 
 export function subscribeProfile(listener) {
