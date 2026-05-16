@@ -24,7 +24,8 @@
       "Bash(npm install *)",
       "Bash(npx prettier *)",
       "Skill(pedro-card-night-style)",
-      "Skill(pedro-card-night-style:*)"
+      "Skill(pedro-card-night-style:*)",
+      "Bash(node -e \"const j=require\\('./app.json'\\); const p=j.expo.android.permissions; console.log\\('Android permissions count:', p.length\\); console.log\\(p\\); const ios=j.expo.ios.infoPlist; console.log\\('iOS infoPlist keys:', Object.keys\\(ios\\)\\); console.log\\('Bonjour count:', ios.NSBonjourServices.length\\);\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\hardr\\.claude\\projects\\c--Users-hardr-OneDrive-Documents-Projects-card-game-app"
