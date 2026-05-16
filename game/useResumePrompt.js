@@ -13,17 +13,23 @@ export function useResumePrompt() {
       const body = extraMessage
         ? `You have a saved ${gameName} game. Continue or start fresh?\n\n${extraMessage}`
         : `You have a saved ${gameName} game. Continue or start fresh?`;
-      Alert.alert("Game in Progress", body, [
-        {
-          text: "Start New",
-          style: "destructive",
-          onPress: async () => {
-            await clearGame(saveKey);
-            onFresh();
+      Alert.alert(
+        "Game in Progress",
+        body,
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Continue Saved", onPress: onResume },
+          {
+            text: "Start New (Erase Save)",
+            style: "destructive",
+            onPress: async () => {
+              await clearGame(saveKey);
+              onFresh();
+            },
           },
-        },
-        { text: "Continue", onPress: onResume },
-      ]);
+        ],
+        { cancelable: true }
+      );
     },
     [],
   );

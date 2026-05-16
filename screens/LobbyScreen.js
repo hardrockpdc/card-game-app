@@ -334,6 +334,8 @@ export default function LobbyScreen({ navigation, route }) {
           }
         : {};
 
+    // BUG-5: stop UDP broadcast so other phones don't see a phantom game
+    stopBroadcasting();
     broadcastToClients({
       type: "START_GAME",
       players,

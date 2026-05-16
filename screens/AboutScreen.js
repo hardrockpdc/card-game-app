@@ -13,8 +13,7 @@ import appJson from "../app.json";
 
 const VERSION = appJson.expo.version;
 const YEAR = new Date().getFullYear();
-const PRIVACY_POLICY_URL =
-  "https://hardrockpdc.github.io/card-game-app/privacy";
+const PRIVACY_POLICY_URL = "https://hardrockpdc.github.io/card-game-app/privacy.html";
 
 export default function AboutScreen({ navigation }) {
   return (

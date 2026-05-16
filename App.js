@@ -34,6 +34,7 @@ import AboutScreen from "./screens/AboutScreen";
 import StatsScreen from "./screens/StatsScreen";
 import { loadProfile } from "./game/profile";
 import { setTheme } from "./game/cardTheme";
+import { warn } from "./game/logger";
 import { initSounds } from "./game/sounds";
 import { ThemeProvider } from "./game/ThemeContext";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -54,7 +55,7 @@ export default function App() {
         }
       })
       .catch((err) => {
-        console.warn("Failed to load profile theme:", err);
+        warn("Failed to load profile theme:", err);
       });
     initSounds();
   }, []);

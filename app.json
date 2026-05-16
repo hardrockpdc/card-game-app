@@ -19,8 +19,9 @@
       "bundleIdentifier": "com.pedro.cardgameapp",
       "infoPlist": {
         "NSLocalNetworkUsageDescription": "Card Night uses your local network to find and connect to games on the same Wi-Fi.",
+        "NSCameraUsageDescription": "Card Night uses your camera only when you choose to take a profile photo. Photos are stored on your device.",
+        "NSPhotoLibraryUsageDescription": "Card Night uses your photo library only when you choose to pick a profile photo. Photos are stored on your device.",
         "NSBonjourServices": [
-          "_cardnight._tcp",
           "_cardnight._tcp"
         ]
       }
@@ -38,18 +39,7 @@
         "android.permission.INTERNET",
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS",
-        "android.permission.NEARBY_WIFI_DEVICES",
-        "android.permission.ACCESS_NETWORK_STATE",
-        "android.permission.ACCESS_WIFI_STATE",
-        "android.permission.INTERNET",
-        "android.permission.READ_MEDIA_IMAGES",
-        "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS"
+        "android.permission.CAMERA"
       ]
     },
     "web": {

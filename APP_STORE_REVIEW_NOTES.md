@@ -41,7 +41,7 @@ NO DATA COLLECTION:
 - No analytics or crash-reporting SDKs
 - No ads or ad SDKs
 - No data ever leaves the device or the local network
-- Privacy policy: [INSERT YOUR PRIVACY POLICY URL HERE]
+- Privacy policy: https://hardrockpdc.github.io/card-game-app/privacy.html
 
 CONTENT:
 All card games use standard playing card rules. Wild Round (the party game
@@ -68,14 +68,14 @@ To test without a second device: tap "Single Player" → "Blackjack" and play
 a hand. All single-player modes work fully offline.
 
 No data collection. No ads. No login required.
-Privacy policy: [INSERT YOUR PRIVACY POLICY URL HERE]
+Privacy policy: https://hardrockpdc.github.io/card-game-app/privacy.html
 ```
 
 ---
 
 ## Before Submitting — Checklist
 
-- [ ] Replace `[INSERT YOUR PRIVACY POLICY URL HERE]` with your actual URL in both sections above
+- [x] Privacy policy URL set to https://hardrockpdc.github.io/card-game-app/privacy.html (host the file separately)
 - [ ] Confirm the demo flow (Single Player → Blackjack → bet + deal) works on a fresh install
 - [ ] Verify camera permission dialog shows the correct description from app.json
 - [ ] Confirm the local network permission dialog (iOS) shows on first multiplayer attempt

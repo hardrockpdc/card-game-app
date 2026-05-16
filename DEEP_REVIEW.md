@@ -21,21 +21,21 @@
 
 ### 🚨 LAUNCH-BLOCKING (must fix before App Store / Google Play submission)
 
-- [ ] **LAUNCH-1** — Duplicate Android permissions in app.json
-- [ ] **LAUNCH-2** — Missing iOS camera & microphone permission descriptions
-- [ ] **LAUNCH-3** — App.js uses raw console.warn (not logger)
-- [ ] **LAUNCH-4** — ErrorBoundary uses raw console.error (not logger)
-- [ ] **LAUNCH-5** — Privacy policy URL placeholder still in AboutScreen
+- [x] ~~**LAUNCH-1** — Duplicate Android permissions in app.json~~
+- [x] ~~**LAUNCH-2** — Missing iOS camera & microphone permission descriptions~~
+- [x] ~~**LAUNCH-3** — App.js uses raw console.warn (not logger)~~
+- [x] ~~**LAUNCH-4** — ErrorBoundary uses raw console.error (not logger)~~
+- [x] ~~**LAUNCH-5** — Privacy policy URL placeholder still in AboutScreen~~
 - [ ] **LAUNCH-6** — Sound infrastructure ships unused (placeholder WAVs in bundle)
-- [ ] **LAUNCH-7** — Duplicate Bonjour service entry in iOS infoPlist
+- [x] ~~**LAUNCH-7** — Duplicate Bonjour service entry in iOS infoPlist~~
 
 ### 🐛 BUGS (potential crashes, incorrect behavior)
 
-- [ ] **BUG-1** — useResumePrompt button order is dangerous
+- [x] ~~**BUG-1** — useResumePrompt button order is dangerous~~
 - [ ] **BUG-2** — recordWin has the same race condition as the old HI-3
 - [ ] **BUG-3** — getDefaultProfile returns a fresh object on every call
 - [ ] **BUG-4** — Solitaire `__RESTORE__` action loses unsaved state if you reload mid-game
-- [ ] **BUG-5** — UDP broadcast keeps running after game starts
+- [x] ~~**BUG-5** — UDP broadcast keeps running after game starts~~
 
 ### ⚡ PERFORMANCE
 

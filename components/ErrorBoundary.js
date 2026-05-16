@@ -1,5 +1,6 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { warn } from "../game/logger";
 
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -12,8 +13,8 @@ export default class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, info) {
-    console.error("[ErrorBoundary] Uncaught error:", error);
-    console.error("[ErrorBoundary] Component stack:", info.componentStack);
+    warn("[ErrorBoundary] Uncaught error:", error);
+    warn("[ErrorBoundary] Component stack:", info.componentStack);
   }
 
   handleReset() {
