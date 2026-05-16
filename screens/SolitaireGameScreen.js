@@ -14,12 +14,10 @@ import GameHeader from "../components/GameHeader";
 import EndOfRoundModal from "../components/EndOfRoundModal";
 import StatsStrip from "../components/StatsStrip";
 import {
-  SPIDER_MODE_OPTIONS,
   createSolitaireState,
   getTopCard,
   getVariantOption,
   newGameAction,
-  setSpiderModeAction,
   solitaireReducer,
   tapAction,
   undoAction,
@@ -316,33 +314,6 @@ export default function SolitaireGameScreen({ navigation, route }) {
       <View style={styles.statsBar}>
         <StatsStrip gameId="solitaire" items={items} />
 
-        {vid === "spider" ? (
-          <View style={styles.modeRow}>
-            {SPIDER_MODE_OPTIONS.map((option) => {
-              const selected = option.id === state.spiderMode;
-              return (
-                <Pressable
-                  key={option.id}
-                  onPress={() => dispatch(setSpiderModeAction(option.id))}
-                  style={({ pressed }) => [
-                    styles.modeChip,
-                    selected && styles.modeChipSelected,
-                    pressed && styles.modeChipPressed,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.modeChipText,
-                      selected && styles.modeChipTextSelected,
-                    ]}
-                  >
-                    {option.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        ) : null}
       </View>
     );
   };
@@ -924,34 +895,6 @@ const styles = StyleSheet.create({
     color: "#eff4fb",
     fontSize: 12,
     fontWeight: "900",
-  },
-  modeRow: {
-    flexDirection: "row",
-    gap: 8,
-    flexWrap: "wrap",
-  },
-  modeChip: {
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "#2c3750",
-    backgroundColor: "#182131",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  modeChipSelected: {
-    borderColor: "#77aef7",
-    backgroundColor: "#21314a",
-  },
-  modeChipPressed: {
-    opacity: 0.9,
-  },
-  modeChipText: {
-    color: "#d3dcec",
-    fontSize: 12,
-    fontWeight: "800",
-  },
-  modeChipTextSelected: {
-    color: "#eef4ff",
   },
   boardCard: {
     borderRadius: 22,
