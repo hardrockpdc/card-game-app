@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  BackHandler,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { createDeck, shuffleDeck, calculateHandValue } from "../game/deck";
@@ -331,6 +332,33 @@ export default function MultiplayerGameScreen({ navigation, route }) {
     else disconnectFromHost();
     navigation.navigate("Home");
   }
+
+  // UX-5: Android hardware back confirmation
+  useEffect(() => {
+    const onBack = () => {
+      Alert.alert(
+        "Leave Game?",
+        isHost
+          ? "You'll end the game for everyone."
+          : "You'll disconnect from the host.",
+        [
+          { text: "Stay", style: "cancel" },
+          {
+            text: "Leave",
+            style: "destructive",
+            onPress: () => {
+              if (isHost) stopServer();
+              else disconnectFromHost();
+              navigation.navigate("Home");
+            },
+          },
+        ]
+      );
+      return true;
+    };
+    const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
+    return () => sub.remove();
+  }, [navigation, isHost]);
 
   const menuItems = [
     {

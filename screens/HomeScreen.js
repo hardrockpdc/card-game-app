@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   subtitle: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     textAlign: "center",
     marginBottom: 20,
   },
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   linkText: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: 16,
   },
 });

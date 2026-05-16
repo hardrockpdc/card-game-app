@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   message: {
-    color: "#95a2b6",
+    color: "#a8b5c8",
     fontSize: scaleFont(16),
     textAlign: "center",
     lineHeight: scale(22),

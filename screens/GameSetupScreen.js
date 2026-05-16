@@ -138,7 +138,7 @@ export default function GameSetupScreen({ navigation, route }) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.loadingWrap}>
-          <ActivityIndicator color="#e94560" size="large" />
+          <ActivityIndicator color="#7fb3ff" size="large" />
           <Text style={styles.loadingText}>Loading your profile…</Text>
         </View>
       </SafeAreaView>
@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#1a1a2e",
   },
   loadingText: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(15),
     marginTop: scale(12),
   },

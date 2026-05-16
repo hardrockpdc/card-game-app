@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  BackHandler,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Card from "../components/Card";
@@ -669,6 +670,41 @@ export default function ConquianGameScreen({ navigation, route }) {
     saveGame(SAVE_KEY_CONQUIAN, { fullState: fullRef.current });
     navigation.navigate("Home");
   }
+
+  // UX-5: Android hardware back confirmation
+  useEffect(() => {
+    const onBack = () => {
+      const message = isSinglePlayer
+        ? "Your progress will be saved."
+        : isHost
+          ? "You'll end the game for everyone."
+          : "You'll disconnect from the host.";
+      Alert.alert(
+        "Leave Game?",
+        message,
+        [
+          { text: "Stay", style: "cancel" },
+          {
+            text: "Leave",
+            style: isSinglePlayer ? "default" : "destructive",
+            onPress: () => {
+              if (isSinglePlayer) {
+                if (typeof handleSaveAndExit === "function") handleSaveAndExit();
+                else navigation.navigate("Home");
+              } else {
+                if (isHost) stopServer();
+                else disconnectFromHost();
+                navigation.navigate("Home");
+              }
+            },
+          },
+        ]
+      );
+      return true;
+    };
+    const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
+    return () => sub.remove();
+  }, [navigation, isSinglePlayer, isHost]);
 
   const menuItems = [
     {
@@ -1338,7 +1374,7 @@ const styles = StyleSheet.create({
     borderRadius: scale(4),
   },
   scoreBarFillWinner: { backgroundColor: "#ffd700" },
-  scoreCount: { color: "#b0b0c0", fontSize: scaleFont(12), textAlign: "right" },
+  scoreCount: { color: "#c4c4d4", fontSize: scaleFont(12), textAlign: "right" },
   opponentsRow: {
     paddingHorizontal: scale(12),
     gap: scale(6),
@@ -1371,7 +1407,7 @@ const styles = StyleSheet.create({
     marginLeft: scale(4),
   },
   opponentStats: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(11),
     marginBottom: scale(2),
   },
@@ -1392,7 +1428,7 @@ const styles = StyleSheet.create({
     minWidth: scale(68),
   },
   pileLabel: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(11),
     textTransform: "uppercase",
     letterSpacing: scale(1),
@@ -1418,7 +1454,7 @@ const styles = StyleSheet.create({
     marginBottom: scale(2),
   },
   phaseLabel: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(12),
     textAlign: "center",
   },
@@ -1431,7 +1467,7 @@ const styles = StyleSheet.create({
 
   meldSection: { paddingHorizontal: scale(12), marginBottom: scale(6) },
   sectionLabel: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(11),
     textTransform: "uppercase",
     letterSpacing: scale(1),
@@ -1505,7 +1541,7 @@ const styles = StyleSheet.create({
     paddingVertical: scale(6),
   },
   waitText: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(14),
     textAlign: "center",
     paddingVertical: scale(6),
@@ -1520,7 +1556,7 @@ const styles = StyleSheet.create({
     marginBottom: scale(4),
   },
   borrowSubtitle: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(13),
     textAlign: "center",
     marginBottom: scale(12),
@@ -1544,7 +1580,7 @@ const styles = StyleSheet.create({
   borrowGroupValid: { borderColor: "#4caf50" },
   borrowGroupInvalid: { borderColor: "#e94560" },
   borrowGroupLabel: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(12),
     marginBottom: scale(6),
   },

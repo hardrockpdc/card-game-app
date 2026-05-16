@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  BackHandler,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { createDeck, shuffleDeck } from "../game/deck";
@@ -851,6 +852,41 @@ export default function PokerGameScreen({ navigation, route }) {
     navigation.navigate("Home");
   }
 
+  // UX-5: Android hardware back confirmation
+  useEffect(() => {
+    const onBack = () => {
+      const message = isSinglePlayer
+        ? "Your progress will be saved."
+        : isHost
+          ? "You'll end the game for everyone."
+          : "You'll disconnect from the host.";
+      Alert.alert(
+        "Leave Game?",
+        message,
+        [
+          { text: "Stay", style: "cancel" },
+          {
+            text: "Leave",
+            style: isSinglePlayer ? "default" : "destructive",
+            onPress: () => {
+              if (isSinglePlayer) {
+                if (typeof handleSaveAndExit === "function") handleSaveAndExit();
+                else navigation.navigate("Home");
+              } else {
+                if (isHost) stopServer();
+                else disconnectFromHost();
+                navigation.navigate("Home");
+              }
+            },
+          },
+        ]
+      );
+      return true;
+    };
+    const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
+    return () => sub.remove();
+  }, [navigation, isSinglePlayer, isHost]);
+
   // NOTE: Restart is omitted for Poker — tournament restart logic
   // (same chips vs new buy-in?) is unresolved. Future: re-add when
   // decided.
@@ -1144,7 +1180,7 @@ const styles = StyleSheet.create({
     fontSize: scaleFont(14),
     fontWeight: "bold",
   },
-  playerBet: { color: "#b0b0c0", fontSize: scaleFont(12), marginTop: scale(4) },
+  playerBet: { color: "#c4c4d4", fontSize: scaleFont(12), marginTop: scale(4) },
   foldedLabel: {
     color: "#e94560",
     fontSize: scaleFont(12),
@@ -1178,7 +1214,7 @@ const styles = StyleSheet.create({
     marginBottom: scale(10),
   },
   myHandLabel: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(12),
     textTransform: "uppercase",
     letterSpacing: scale(1),
@@ -1244,7 +1280,7 @@ const styles = StyleSheet.create({
     marginBottom: scale(24),
   },
   tournamentLostText: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(15),
     textAlign: "center",
     lineHeight: scale(22),

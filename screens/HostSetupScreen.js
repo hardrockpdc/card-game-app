@@ -89,7 +89,7 @@ export default function HostSetupScreen({ navigation }) {
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <ActivityIndicator color="#e94560" size="large" />
+        <ActivityIndicator color="#7fb3ff" size="large" />
         <Text style={styles.loadingText}>Loading your profile…</Text>
       </KeyboardAvoidingView>
     );
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
     padding: scale(24),
   },
   loadingText: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(15),
     marginTop: scale(12),
   },
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     marginBottom: scale(20),
   },
   label: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(13),
     textTransform: "uppercase",
     letterSpacing: scale(1),
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
     marginBottom: scale(16),
   },
   ipLabel: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(13),
     marginBottom: scale(6),
     textTransform: "uppercase",
@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
     marginBottom: scale(6),
   },
   ipHint: {
-    color: "#666680",
+    color: "#9090a8",
     fontSize: scaleFont(12),
   },
   ipBoxCopied: {
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
     marginRight: scale(8),
   },
   statusText: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(14),
   },
   button: {

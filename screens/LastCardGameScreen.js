@@ -8,6 +8,8 @@ import {
   Image,
   Animated,
   useWindowDimensions,
+  Alert,
+  BackHandler,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import GameHeader from "../components/GameHeader";
@@ -966,6 +968,41 @@ export default function LastCardGameScreen({ navigation, route }) {
     navigation.navigate("Home");
   }
 
+  // UX-5: Android hardware back confirmation
+  useEffect(() => {
+    const onBack = () => {
+      const message = isSinglePlayer
+        ? "Your progress will be saved."
+        : isHost
+          ? "You'll end the game for everyone."
+          : "You'll disconnect from the host.";
+      Alert.alert(
+        "Leave Game?",
+        message,
+        [
+          { text: "Stay", style: "cancel" },
+          {
+            text: "Leave",
+            style: isSinglePlayer ? "default" : "destructive",
+            onPress: () => {
+              if (isSinglePlayer) {
+                if (typeof handleSaveAndExit === "function") handleSaveAndExit();
+                else navigation.navigate("Home");
+              } else {
+                if (isHost) stopServer();
+                else disconnectFromHost();
+                navigation.navigate("Home");
+              }
+            },
+          },
+        ]
+      );
+      return true;
+    };
+    const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
+    return () => sub.remove();
+  }, [navigation, isSinglePlayer, isHost]);
+
   const menuItems = [
     {
       type: "restart",
@@ -1252,7 +1289,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#2a0f20",
   },
   opponentName: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(12),
     fontWeight: "600",
     maxWidth: scale(80),
@@ -1339,7 +1376,7 @@ const styles = StyleSheet.create({
     borderColor: "#fff",
   },
   colorLabel: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(10),
     textAlign: "center",
     maxWidth: scale(60),

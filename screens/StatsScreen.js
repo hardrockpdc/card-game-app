@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
     marginBottom: scale(24),
   },
   loading: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(15),
     marginTop: scale(40),
   },
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     fontSize: scaleFont(15),
   },
   winCount: {
-    color: "#666680",
+    color: "#9090a8",
     fontSize: scaleFont(16),
     fontWeight: "bold",
   },
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
     color: "#4ade80",
   },
   emptyHint: {
-    color: "#666680",
+    color: "#9090a8",
     fontSize: scaleFont(13),
     textAlign: "center",
     marginBottom: scale(16),
@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
     borderColor: "#4a4a6a",
   },
   backBtnText: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(16),
     fontWeight: "600",
   },

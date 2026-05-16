@@ -354,7 +354,7 @@ export default function ProfileScreen({ navigation, route }) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.loadingWrap}>
-          <ActivityIndicator color="#e94560" size="large" />
+          <ActivityIndicator color="#7fb3ff" size="large" />
           <Text style={styles.loadingText}>Loading your profile…</Text>
         </View>
       </SafeAreaView>
@@ -575,7 +575,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: scale(12),
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(15),
   },
   title: {
@@ -586,7 +586,7 @@ const styles = StyleSheet.create({
     marginBottom: scale(10),
   },
   subtitle: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(16),
     textAlign: "center",
     marginBottom: scale(18),
@@ -637,7 +637,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   photoHint: {
-    color: "#666680",
+    color: "#9090a8",
     fontSize: scaleFont(13),
     textAlign: "center",
     marginBottom: scale(12),
@@ -667,7 +667,7 @@ const styles = StyleSheet.create({
     marginBottom: scale(18),
   },
   sectionLabel: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(12),
     textTransform: "uppercase",
     letterSpacing: 1,
@@ -747,7 +747,7 @@ const styles = StyleSheet.create({
     marginBottom: scale(4),
   },
   themeHint: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(13),
   },
   themeBtn: {
@@ -815,7 +815,7 @@ const styles = StyleSheet.create({
     fontSize: scaleFont(15),
   },
   moreRowArrow: {
-    color: "#666680",
+    color: "#9090a8",
     fontSize: scaleFont(18),
   },
   backBtn: {
@@ -823,7 +823,7 @@ const styles = StyleSheet.create({
     paddingVertical: scale(10),
   },
   backBtnText: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(15),
   },
 });

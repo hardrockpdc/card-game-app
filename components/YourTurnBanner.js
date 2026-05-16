@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   subtitle: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(13),
   },
 });

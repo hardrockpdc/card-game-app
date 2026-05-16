@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  BackHandler,
 } from "react-native";
 import { createDeck, shuffleDeck } from "../game/deck";
 import { addCoins } from "../game/wallet";
@@ -453,6 +454,41 @@ export default function GoFishGameScreen({ navigation, route }) {
     navigation.navigate("Home");
   }
 
+  // UX-5: Android hardware back confirmation
+  useEffect(() => {
+    const onBack = () => {
+      const message = isSinglePlayer
+        ? "Your progress will be saved."
+        : isHost
+          ? "You'll end the game for everyone."
+          : "You'll disconnect from the host.";
+      Alert.alert(
+        "Leave Game?",
+        message,
+        [
+          { text: "Stay", style: "cancel" },
+          {
+            text: "Leave",
+            style: isSinglePlayer ? "default" : "destructive",
+            onPress: () => {
+              if (isSinglePlayer) {
+                if (typeof handleSaveAndExit === "function") handleSaveAndExit();
+                else navigation.navigate("Home");
+              } else {
+                if (isHost) stopServer();
+                else disconnectFromHost();
+                navigation.navigate("Home");
+              }
+            },
+          },
+        ]
+      );
+      return true;
+    };
+    const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
+    return () => sub.remove();
+  }, [navigation, isSinglePlayer, isHost]);
+
   const menuItems = [
     {
       type: "restart",
@@ -735,16 +771,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   infoLabel: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(11),
     textAlign: "center",
     marginBottom: scale(4),
   },
   infoValue: { color: "#fff", fontSize: scaleFont(20), fontWeight: "bold" },
-  infoSub: { color: "#666680", fontSize: scaleFont(11), marginTop: scale(2) },
+  infoSub: { color: "#9090a8", fontSize: scaleFont(11), marginTop: scale(2) },
 
   sectionLabel: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(12),
     textTransform: "uppercase",
     letterSpacing: scale(1),

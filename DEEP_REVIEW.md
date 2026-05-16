@@ -41,8 +41,8 @@
 
 - [ ] **PERF-1** — `cardTheme.js` loads 8 themes × 53 images at startup
 - [ ] **PERF-2** — LastCard ships 109 images in a single module
-- [ ] **PERF-3** — Solitaire auto-save fires on every state field change
-- [ ] **PERF-4** — Background sockets keep running until user backs out
+- [x] ~~**PERF-3** — Solitaire auto-save fires on every state field change~~
+- [x] ~~**PERF-4** — Background sockets keep running until user backs out~~
 
 ### ♿ ACCESSIBILITY (Apple/Google care about this)
 
@@ -50,15 +50,15 @@
 - [x] ~~**ACC-2** — Card components have no accessibility info~~
 - [ ] **ACC-3** — Many in-game action buttons lack accessibility props
 - [ ] **ACC-4** — Color-only state indication (turn highlights, valid melds)
-- [ ] **ACC-5** — Text contrast on muted labels (`#666680` on dark)
+- [x] ~~**ACC-5** — Text contrast on muted labels (`#666680` on dark)~~
 
 ### 🎨 UX POLISH
 
 - [ ] **UX-1** — "Start New" is labeled `destructive` (red) but is on the right
 - [ ] **UX-2** — Profile photo button has no hit feedback
-- [ ] **UX-3** — Loading states use hardcoded `#e94560` spinner everywhere
+- [x] ~~**UX-3** — Loading states use hardcoded `#e94560` spinner everywhere~~
 - [ ] **UX-4** — Resume prompt destroys saves with no second confirmation
-- [ ] **UX-5** — No "back" handling on Android hardware back button
+- [x] ~~**UX-5** — No "back" handling on Android hardware back button~~
 
 ### 🧹 CODE QUALITY (from v1 that I'm bringing forward)
 

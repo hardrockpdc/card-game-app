@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
     marginBottom: scale(4),
   },
   version: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(14),
     marginBottom: scale(24),
   },
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
     borderColor: "#4a4a6a",
   },
   backBtnText: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(16),
     fontWeight: "600",
   },

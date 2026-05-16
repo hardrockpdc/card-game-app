@@ -278,7 +278,7 @@ export default function SinglePlayerSetupScreen({ navigation }) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.loadingWrap}>
-          <ActivityIndicator color="#e94560" size="large" />
+          <ActivityIndicator color="#7fb3ff" size="large" />
           <Text style={styles.loadingText}>Loading your profile…</Text>
         </View>
       </SafeAreaView>
@@ -435,7 +435,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#1a1a2e",
   },
   loadingText: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: 15,
     marginTop: 12,
   },
@@ -451,7 +451,7 @@ const styles = StyleSheet.create({
 
   // Labels
   label: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     textTransform: "uppercase",
     letterSpacing: 1,
     marginBottom: 10,
@@ -518,7 +518,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   cardPlayers: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: 13,
   },
   cardTag: {
@@ -570,7 +570,7 @@ const styles = StyleSheet.create({
     borderColor: "#4caf50",
   },
   countBtnText: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontWeight: "bold",
   },
   countBtnTextSelected: {
@@ -625,7 +625,7 @@ const styles = StyleSheet.create({
     borderColor: "#4caf50",
   },
   chipText: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontWeight: "bold",
     fontSize: 15,
   },
@@ -652,7 +652,7 @@ const styles = StyleSheet.create({
     borderColor: "#1565c0",
   },
   diffBtnText: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: 15,
     fontWeight: "bold",
   },
@@ -673,7 +673,7 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   infoText: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: 15,
     textAlign: "center",
   },

@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
     marginBottom: scale(8),
   },
   subtitle: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     textAlign: "center",
     marginBottom: scale(28),
   },
@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   comingSoon: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(12),
     marginTop: scale(4),
   },
@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(16),
   },
   backButtonText: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(16),
   },
 });

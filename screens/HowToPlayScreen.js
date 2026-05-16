@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
     borderColor: "#334",
   },
   chipSelected: { backgroundColor: "#e94560", borderColor: "#e94560" },
-  chipText: { color: "#b0b0c0", fontSize: scaleFont(14), fontWeight: "bold" },
+  chipText: { color: "#c4c4d4", fontSize: scaleFont(14), fontWeight: "bold" },
   chipTextSelected: { color: "#fff" },
 
   goalBox: {
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
   goalText: { color: "#fff", fontSize: scaleFont(16), lineHeight: scale(24) },
 
   sectionHeader: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(12),
     textTransform: "uppercase",
     letterSpacing: scale(1),

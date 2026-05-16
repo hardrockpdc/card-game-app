@@ -6,6 +6,8 @@ import {
   ScrollView,
   TouchableOpacity,
   useWindowDimensions,
+  Alert,
+  BackHandler,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { createDeck, shuffleDeck, calculateHandValue } from "../game/deck";
@@ -156,6 +158,26 @@ export default function GameScreen({ navigation, route }) {
     splitResult,
     coinsDelta,
   ]);
+
+  // UX-5: Android hardware back confirmation
+  useEffect(() => {
+    const onBack = () => {
+      Alert.alert(
+        "Leave Game?",
+        "Your current hand will be saved.",
+        [
+          { text: "Stay", style: "cancel" },
+          {
+            text: "Leave",
+            onPress: () => navigation.navigate("Home"),
+          },
+        ]
+      );
+      return true;
+    };
+    const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
+    return () => sub.remove();
+  }, [navigation]);
 
   // ── Payout ────────────────────────────────────────────────────────
   // Called once per hand when it's fully resolved.

@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   gameName: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(13),
     letterSpacing: 2,
     textTransform: "uppercase",
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
     marginBottom: scale(28),
   },
   scoreboardTitle: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(11),
     textTransform: "uppercase",
     letterSpacing: 1.5,
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
     color: "#4ade80",
   },
   scoreValue: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(15),
     fontWeight: "bold",
   },
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   secondaryBtnText: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(16),
     fontWeight: "600",
   },

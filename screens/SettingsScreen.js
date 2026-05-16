@@ -33,7 +33,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   placeholder: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: 16,
     textAlign: "center",
   },

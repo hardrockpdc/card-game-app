@@ -7,6 +7,7 @@ import {
   FlatList,
   ScrollView,
   Alert,
+  BackHandler,
 } from "react-native";
 import { scale, scaleFont } from "../game/responsive";
 import {
@@ -18,6 +19,7 @@ import {
   disconnectFromHost,
   startBroadcasting,
   stopBroadcasting,
+  stopServer,
 } from "../game/GameNetwork";
 import {
   getRummyVariantLabel,
@@ -296,6 +298,37 @@ export default function LobbyScreen({ navigation, route }) {
     });
   }
 
+  // UX-5: Android hardware back confirmation
+  useEffect(() => {
+    const onBack = () => {
+      Alert.alert(
+        "Leave Lobby?",
+        isHost
+          ? "You'll stop hosting and disconnect everyone."
+          : "You'll be disconnected from the host.",
+        [
+          { text: "Stay", style: "cancel" },
+          {
+            text: "Leave",
+            style: "destructive",
+            onPress: () => {
+              if (isHost) {
+                stopServer();
+                stopBroadcasting();
+              } else {
+                disconnectFromHost();
+              }
+              navigation.navigate("Home");
+            },
+          },
+        ]
+      );
+      return true;
+    };
+    const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
+    return () => sub.remove();
+  }, [navigation, isHost]);
+
   // ─── Start game ────────────────────────────────────────────────────────────
   function handleStartGame() {
     if (players.length < minPlayers) {
@@ -556,7 +589,7 @@ const styles = StyleSheet.create({
     marginBottom: scale(24),
   },
   sectionLabel: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(13),
     textTransform: "uppercase",
     letterSpacing: scale(1),
@@ -601,7 +634,7 @@ const styles = StyleSheet.create({
   },
   badge: {
     backgroundColor: "#2a2a4a",
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(11),
     fontWeight: "bold",
     paddingHorizontal: scale(8),
@@ -649,7 +682,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(14),
     paddingVertical: scale(8),
   },
-  ipLabel: { color: "#b0b0c0", fontSize: scaleFont(13) },
+  ipLabel: { color: "#c4c4d4", fontSize: scaleFont(13) },
   ipValue: {
     color: "#e94560",
     fontSize: scaleFont(15),
@@ -670,7 +703,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   waitingText: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(14),
     textAlign: "center",
   },
@@ -739,7 +772,7 @@ const styles = StyleSheet.create({
     borderColor: "#e94560",
   },
   gameChipText: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(14),
     fontWeight: "bold",
   },
@@ -758,7 +791,7 @@ const styles = StyleSheet.create({
   },
   toneChipSelected: { backgroundColor: "#9c27b0", borderColor: "#9c27b0" },
   toneChipText: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(13),
     fontWeight: "bold",
   },

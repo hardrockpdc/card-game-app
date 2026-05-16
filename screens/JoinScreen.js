@@ -137,7 +137,7 @@ export default function JoinScreen({ navigation }) {
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <ActivityIndicator color="#e94560" size="large" />
+        <ActivityIndicator color="#7fb3ff" size="large" />
         <Text style={styles.loadingText}>Loading your profile…</Text>
       </KeyboardAvoidingView>
     );
@@ -159,7 +159,7 @@ export default function JoinScreen({ navigation }) {
 
       {games.length === 0 ? (
         <View style={styles.emptyBox}>
-          <ActivityIndicator color="#e94560" style={{ marginBottom: 12 }} />
+          <ActivityIndicator color="#7fb3ff" style={{ marginBottom: 12 }} />
           <Text style={styles.emptyText}>Looking for games on your WiFi…</Text>
           <Text style={styles.emptyHint}>
             Make sure the host has tapped "Host a Game"
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
     padding: scale(24),
   },
   loadingText: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(15),
     marginTop: scale(12),
   },
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
     marginBottom: scale(20),
   },
   label: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(13),
     textTransform: "uppercase",
     letterSpacing: scale(1),
@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
     marginBottom: scale(16),
   },
   emptyText: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(15),
     marginBottom: scale(6),
     textAlign: "center",
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
   },
   gameInfo: { flex: 1 },
   gameName: { color: "#ffffff", fontSize: scaleFont(17), fontWeight: "bold" },
-  gameIp: { color: "#666680", fontSize: scaleFont(13), marginTop: scale(2) },
+  gameIp: { color: "#9090a8", fontSize: scaleFont(13), marginTop: scale(2) },
   joinBtn: {
     backgroundColor: "#e94560",
     paddingHorizontal: scale(22),
@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   manualToggleText: {
-    color: "#666680",
+    color: "#9090a8",
     fontSize: scaleFont(13),
   },
   manualRow: {

@@ -42,6 +42,7 @@ import {
   stopServer,
   stopBroadcasting,
   stopDiscovery,
+  disconnectFromHost,
 } from "./game/GameNetwork";
 
 const Stack = createNativeStackNavigator();
@@ -69,6 +70,8 @@ export default function App() {
         stopServer();
         stopBroadcasting();
         stopDiscovery();
+        // PERF-4: also drop client TCP socket so host sees us as left
+        disconnectFromHost();
       }
     });
     return () => sub.remove();

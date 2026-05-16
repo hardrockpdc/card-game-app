@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
+  BackHandler,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -267,6 +268,41 @@ export default function RummyGameScreen({ navigation, route }) {
     });
     navigation.navigate("Home");
   }
+
+  // UX-5: Android hardware back confirmation
+  useEffect(() => {
+    const onBack = () => {
+      const message = isSinglePlayer
+        ? "Your progress will be saved."
+        : isHost
+          ? "You'll end the game for everyone."
+          : "You'll disconnect from the host.";
+      Alert.alert(
+        "Leave Game?",
+        message,
+        [
+          { text: "Stay", style: "cancel" },
+          {
+            text: "Leave",
+            style: isSinglePlayer ? "default" : "destructive",
+            onPress: () => {
+              if (isSinglePlayer) {
+                if (typeof handleSaveAndExit === "function") handleSaveAndExit();
+                else navigation.navigate("Home");
+              } else {
+                if (isHost) stopServer();
+                else disconnectFromHost();
+                navigation.navigate("Home");
+              }
+            },
+          },
+        ]
+      );
+      return true;
+    };
+    const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
+    return () => sub.remove();
+  }, [navigation, isSinglePlayer, isHost]);
 
   const menuItems = [
     {
@@ -1079,7 +1115,7 @@ const styles = StyleSheet.create({
     backgroundColor: BG,
   },
   loadingText: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: 16,
   },
   headerCard: {

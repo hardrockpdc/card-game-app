@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import {
+  Alert,
+  BackHandler,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -172,6 +174,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
   );
   const coinRewardedRef = useRef(false);
   const wonClearedRef = useRef(false);
+  const lastSaveRef = useRef(0);
   const [coinsEarned, setCoinsEarned] = useState(0);
   const [showRoundModal, setShowRoundModal] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -218,6 +221,10 @@ export default function SolitaireGameScreen({ navigation, route }) {
       return;
     }
     wonClearedRef.current = false;
+    // PERF-3: throttle saves to once per 3 seconds (elapsed updates every second)
+    const now = Date.now();
+    if (now - lastSaveRef.current < 3000) return;
+    lastSaveRef.current = now;
     saveGame(key, { state: { ...state, history: undefined }, elapsed });
   }, [state, elapsed]);
 
@@ -242,6 +249,26 @@ export default function SolitaireGameScreen({ navigation, route }) {
     const id = setInterval(() => setElapsed((e) => e + 1), 1000);
     return () => clearInterval(id);
   }, [state.moves, state.status]);
+
+  // UX-5: Android hardware back confirmation
+  useEffect(() => {
+    const onBack = () => {
+      Alert.alert(
+        "Leave Game?",
+        "Your progress will be saved.",
+        [
+          { text: "Stay", style: "cancel" },
+          {
+            text: "Leave",
+            onPress: handleSaveAndExit,
+          },
+        ]
+      );
+      return true;
+    };
+    const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
+    return () => sub.remove();
+  }, []);
 
   const variant = useMemo(
     () => getVariantOption(state.variantId),

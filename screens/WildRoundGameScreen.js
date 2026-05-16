@@ -7,6 +7,7 @@ import {
   FlatList,
   Alert,
   Animated,
+  BackHandler,
   PanResponder,
   useWindowDimensions,
 } from "react-native";
@@ -652,6 +653,33 @@ export default function WildRoundGameScreen({ navigation, route }) {
   const displayPrompt =
     isJudge && gs.phase === "judgeSkip" ? privateJudgePrompt : gs.currentPrompt;
 
+  // UX-5: Android hardware back confirmation
+  useEffect(() => {
+    const onBack = () => {
+      Alert.alert(
+        "Leave Game?",
+        isHost
+          ? "You'll end the game for everyone."
+          : "You'll disconnect from the host.",
+        [
+          { text: "Stay", style: "cancel" },
+          {
+            text: "Leave",
+            style: "destructive",
+            onPress: () => {
+              if (isHost) stopServer();
+              else disconnectFromHost();
+              navigation.navigate("Home");
+            },
+          },
+        ]
+      );
+      return true;
+    };
+    const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
+    return () => sub.remove();
+  }, [navigation, isHost]);
+
   // ── Main game ───────────────────────────────────────────────────────────────
   const menuItems = [
     {
@@ -1167,7 +1195,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: scale(16),
   },
-  waitText: { color: "#b0b0c0", fontSize: scaleFont(16), textAlign: "center" },
+  waitText: { color: "#c4c4d4", fontSize: scaleFont(16), textAlign: "center" },
   hintText: {
     color: "#888",
     fontSize: scaleFont(14),
@@ -1175,7 +1203,7 @@ const styles = StyleSheet.create({
     marginBottom: scale(8),
   },
   sectionLabel: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(12),
     textTransform: "uppercase",
     letterSpacing: scale(1),
@@ -1222,7 +1250,7 @@ const styles = StyleSheet.create({
     marginBottom: scale(10),
   },
   secondaryBtnText: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(15),
     fontWeight: "bold",
   },
@@ -1316,7 +1344,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   revealCardPlayerName: {
-    color: "#b0b0c0",
+    color: "#c4c4d4",
     fontSize: scaleFont(14),
     textAlign: "center",
     marginTop: scale(16),
