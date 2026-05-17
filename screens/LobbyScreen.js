@@ -20,6 +20,7 @@ import {
   startBroadcasting,
   stopBroadcasting,
   stopServer,
+  getAssignedClientId,
 } from "../game/GameNetwork";
 import {
   getRummyVariantPlayerLimits,
@@ -212,6 +213,9 @@ export default function LobbyScreen({ navigation, route }) {
   // Ref so server-listener closures always see the latest AI list
   const aiPlayersRef = useRef([]);
 
+  // Assigned numeric clientId from host (set via ASSIGNED_ID TCP message)
+  const assignedClientIdRef = useRef(null);
+
   // ─── HOST setup ────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!isHost) return;
@@ -281,13 +285,27 @@ export default function LobbyScreen({ navigation, route }) {
 
     setClientListeners({
       onMessage: (msg) => {
+        if (msg.type === "ASSIGNED_ID") {
+          assignedClientIdRef.current = msg.clientId;
+          return;
+        }
+
         if (msg.type === "PLAYER_LIST") {
+          const myId = assignedClientIdRef.current;
+
           setPlayers(
-            msg.players.map((p) => ({
-              ...p,
-              isMe: p.name === myName,
-              isHost: p.isHost || false,
-            })),
+            msg.players.map((p) => {
+              const isMeById =
+                myId !== null && myId !== undefined
+                  ? String(p.id) === String(myId)
+                  : false;
+
+              return {
+                ...p,
+                isMe: isMeById ? true : p.name === myName,
+                isHost: p.isHost || false,
+              };
+            }),
           );
         } else if (msg.type === "START_GAME") {
           const game = GAMES.find((g) => g.id === msg.gameType) || GAMES[0];
@@ -295,6 +313,7 @@ export default function LobbyScreen({ navigation, route }) {
           navigation.replace(game.screen, {
             role: "client",
             myName,
+            assignedClientId: assignedClientIdRef.current,
             players: msg.players,
             variant:
               msg.variant || msg.selectedPokerVariant || DEFAULT_POKER_VARIANT,

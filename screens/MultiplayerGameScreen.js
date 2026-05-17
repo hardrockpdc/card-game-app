@@ -217,9 +217,7 @@ function toBroadcast(state) {
     players: state.players,
     dealer: {
       hand: state.dealer.hand.map((c, i) =>
-        i === 1 && state.phase === "playing"
-          ? { id: "hidden", hidden: true }
-          : c,
+        i === 1 && state.phase === "playing" ? { ...c, hidden: true } : c,
       ),
       status: state.dealer.status,
     },
@@ -229,7 +227,12 @@ function toBroadcast(state) {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function MultiplayerGameScreen({ navigation, route }) {
-  const { role, myName, players: initialPlayers } = route.params;
+  const {
+    role,
+    myName,
+    players: initialPlayers,
+    assignedClientId,
+  } = route.params;
   const isHost = role === "host";
 
   const { width } = useWindowDimensions();
@@ -318,6 +321,7 @@ export default function MultiplayerGameScreen({ navigation, route }) {
 
   useEffect(() => {
     if (gameState?.phase === "results") setShowRoundModal(true);
+    else setShowRoundModal(false);
   }, [gameState?.phase]);
 
   // ── Actions ──
@@ -402,9 +406,14 @@ export default function MultiplayerGameScreen({ navigation, route }) {
     gameState;
 
   // Find "me" in the players array
-  const myIndex = players.findIndex((p) =>
-    isHost ? p.id === "host" : p.name === myName,
-  );
+  // Clients identify by numeric TCP-assigned clientId to avoid name collisions.
+  const myIndex = players.findIndex((p) => {
+    if (isHost) return p.id === "host";
+    if (assignedClientId !== null && assignedClientId !== undefined) {
+      return String(p.id) === String(assignedClientId);
+    }
+    return p.name === myName; // fallback
+  });
   const isMyTurn = phase === "playing" && currentPlayerIndex === myIndex;
   const showFullDealer = phase === "results";
   const currentPlayer =
@@ -516,7 +525,7 @@ export default function MultiplayerGameScreen({ navigation, route }) {
                 key={card.id}
                 rank={card.rank}
                 suit={card.suit}
-                faceDown={!!card.hidden}
+                faceDown={index === 1 && phase === "playing"}
                 sizeScale={1}
                 animateReveal={index === 1}
                 animateDeal={hasMountedRef.current}
@@ -659,9 +668,9 @@ export default function MultiplayerGameScreen({ navigation, route }) {
             if (main === "push") return "Push — bet returned.";
             return "";
           })()}
-          showContinue={isHost}
+          showContinue
           showLeave
-          onContinue={handlePlayAgain}
+          onContinue={isHost ? handlePlayAgain : () => setShowRoundModal(false)}
           onLeave={handleQuit}
           tableColor={BG}
         />

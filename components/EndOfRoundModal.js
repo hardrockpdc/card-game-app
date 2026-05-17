@@ -15,6 +15,7 @@ export default function EndOfRoundModal({
   leaveLabel,
   tableColor,
   isGameOver,
+  continueLabel,
 }) {
   return (
     <Modal
@@ -46,7 +47,7 @@ export default function EndOfRoundModal({
                 onPress={onContinue}
               >
                 <Text style={styles.primaryBtnText}>
-                  {isGameOver ? "Play Again" : "Continue"}
+                  {continueLabel ?? (isGameOver ? "Play Again" : "Continue")}
                 </Text>
               </Pressable>
             )}

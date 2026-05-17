@@ -22,8 +22,7 @@ let nextClientId = 1;
 // NOTE: Only one screen can listen at a time. Calling setServerListeners() replaces
 // the previous listeners entirely (last-write-wins). If two screens are briefly
 // mounted at the same time during navigation, the second will silently take over
-// and the first will stop receiving messages. If you need multiple listeners,
-// refactor to an array-based subscription model.
+// and the first will stop receiving messages.
 let serverListeners = {};
 
 export function setServerListeners(listeners) {
@@ -38,6 +37,16 @@ export function startServer() {
     clients.set(id, socket);
     serverListeners.onClientJoined?.({ id });
 
+    // Let the client know which numeric id it was assigned on this TCP connection.
+    // This prevents the UI from having to guess "me" by player name (which can collide).
+    socket.write(
+      JSON.stringify({
+        type: "ASSIGNED_ID",
+        clientId: id,
+        protocolVersion: PROTOCOL_VERSION,
+      }) + "\n",
+    );
+
     socket.on("data", (data) => {
       data
         .toString()
@@ -46,6 +55,7 @@ export function startServer() {
           if (!line.trim()) return;
           try {
             const msg = JSON.parse(line);
+
             if (msg.protocolVersion !== PROTOCOL_VERSION) {
               socket.write(
                 JSON.stringify({
@@ -57,10 +67,12 @@ export function startServer() {
               socket.destroy();
               return;
             }
+
             // Auto-store player name whenever a JOIN message arrives
             if (msg.type === "JOIN" && msg.name) {
               playerNames.set(id, msg.name);
             }
+
             serverListeners.onMessage?.(msg, id);
           } catch (_) {}
         });
@@ -130,12 +142,15 @@ export function getConnectedPlayers() {
 
 // ─── Client state ─────────────────────────────────────────────────────────────
 let clientSocket = null;
+let assignedClientId = null;
+
+export function getAssignedClientId() {
+  if (IS_WEB) return null;
+  return assignedClientId;
+}
 
 // Mutable listener object — connectToHost sets the initial one,
 // then LobbyScreen calls setClientListeners() to take over.
-//
-// NOTE: Same last-write-wins contract as setServerListeners — only one screen
-// can listen at a time.
 let clientListeners = {};
 
 export function setClientListeners(listeners) {
@@ -167,6 +182,13 @@ export function connectToHost(ip, callbacks) {
         if (!line.trim()) return;
         try {
           const parsed = JSON.parse(line);
+
+          if (parsed.type === "ASSIGNED_ID") {
+            assignedClientId = parsed.clientId;
+            clientListeners.onMessage?.(parsed);
+            return;
+          }
+
           if (parsed.type === "VERSION_MISMATCH") {
             Alert.alert(
               "Update Required",
@@ -175,6 +197,7 @@ export function connectToHost(ip, callbacks) {
             );
             return;
           }
+
           clientListeners.onMessage?.(parsed);
         } catch (_) {}
       });
@@ -202,6 +225,7 @@ export function sendToHost(message) {
 export function disconnectFromHost() {
   if (IS_WEB) {
     clientListeners = {};
+    assignedClientId = null;
     return;
   }
 
@@ -210,6 +234,7 @@ export function disconnectFromHost() {
     clientSocket = null;
   }
   clientListeners = {};
+  assignedClientId = null;
 }
 
 // ─── Game discovery (UDP broadcast) ──────────────────────────────────────────
