@@ -14,6 +14,78 @@ import { useTheme } from "../game/ThemeContext";
 const BASE_WIDTH = 390;
 const FLIP_DURATION = 260;
 
+const DEAL_DURATION = 350;
+const DEAL_TRAVEL = 200; // pixels — how far above the final position the card starts
+
+function DealWrapper({ children, dealDelay, w, h, m }) {
+  const translateY = useRef(new Animated.Value(-DEAL_TRAVEL)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
+  const [reduceMotion, setReduceMotion] = useState(false);
+  const initialDealDelayRef = useRef(dealDelay);
+  const didStartRef = useRef(false);
+
+  useEffect(() => {
+    let mounted = true;
+    AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
+      if (mounted) setReduceMotion(enabled);
+    });
+    const sub = AccessibilityInfo.addEventListener(
+      "reduceMotionChanged",
+      (enabled) => setReduceMotion(enabled),
+    );
+    return () => {
+      mounted = false;
+      sub?.remove?.();
+    };
+  }, []);
+
+  useEffect(() => {
+    // If reduced motion is on, snap to final state immediately.
+    if (reduceMotion) {
+      translateY.setValue(0);
+      opacity.setValue(1);
+      return;
+    }
+
+    // Only animate once per mount; later prop updates (e.g. dealDelay changes
+    // for other cards on the board) must NOT re-trigger this card.
+    if (didStartRef.current) return;
+    didStartRef.current = true;
+
+    // Run the slide-in + fade-in animation in parallel.
+    Animated.parallel([
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: DEAL_DURATION,
+        delay: initialDealDelayRef.current,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: DEAL_DURATION,
+        delay: initialDealDelayRef.current,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [reduceMotion, translateY, opacity]);
+
+  return (
+    <Animated.View
+      style={{
+        width: w,
+        height: h,
+        margin: m,
+        opacity,
+        transform: [{ translateY }],
+      }}
+    >
+      {children}
+    </Animated.View>
+  );
+}
+
 function FlipCard({
   rank,
   suit,
@@ -165,6 +237,8 @@ export default function Card({
   sizeScale = 1,
   small = false,
   animateReveal = false,
+  animateDeal = false,
+  dealDelay = 0,
 }) {
   // Subscribes this card to theme changes via context.
   // When the theme changes, ThemeProvider updates the context value,
@@ -195,27 +269,41 @@ export default function Card({
     const source = faceDown ? backSource : frontSource;
     if (!source) return null;
 
-    return (
+    const imageEl = (
       <Image
         source={source}
-        style={{ width: w, height: h, margin: m, borderRadius: r }}
+        style={
+          animateDeal
+            ? { width: w, height: h, borderRadius: r }
+            : { width: w, height: h, margin: m, borderRadius: r }
+        }
         accessible={true}
         accessibilityRole="image"
         accessibilityLabel={a11yLabel}
       />
     );
+
+    if (animateDeal) {
+      return (
+        <DealWrapper dealDelay={dealDelay} w={w} h={h} m={m}>
+          {imageEl}
+        </DealWrapper>
+      );
+    }
+
+    return imageEl;
   }
 
   if (!backSource || !frontSource) return null;
 
-  return (
+  const flipCardEl = (
     <FlipCard
       rank={rank}
       suit={suit}
       faceDown={faceDown}
       w={w}
       h={h}
-      m={m}
+      m={animateDeal ? 0 : m}
       r={r}
       backSource={backSource}
       frontSource={frontSource}
@@ -223,4 +311,14 @@ export default function Card({
       animateReveal={animateReveal}
     />
   );
+
+  if (animateDeal) {
+    return (
+      <DealWrapper dealDelay={dealDelay} w={w} h={h} m={m}>
+        {flipCardEl}
+      </DealWrapper>
+    );
+  }
+
+  return flipCardEl;
 }

@@ -19,6 +19,8 @@ This file is written as a **human-readable spec**, but it also includes **repo-s
 
 **Update (animation work, Phase 1):** Card.js now supports a 3D flip animation when both `animateReveal` is passed AND the `faceDown` prop changes. The animation is opt-in — all other Card.js usages in the codebase continue to render a single Image with no animation overhead. The Blackjack dealer's hole card in screens/GameScreen.js uses this. Multiplayer Blackjack and Solitaire still use the instant swap pending further work.
 
+**Update (animation work, Phase 2):** Card.js now also supports a slide-in deal animation via the `animateDeal` and `dealDelay` props. When `animateDeal` is true, the card mounts at translateY: -200 and opacity: 0, then animates to final position over 350ms. Used in screens/GameScreen.js (single-player Blackjack) for the player's hand and split hand, both on initial deal (staggered 100ms apart) and on every hit. The first render after mount is skipped via a hasMountedRef so resume-from-save doesn't animate existing cards. Dealer cards, multiplayer, and other games still appear instantly pending further work.
+
 ### Blackjack “deal / hit / stand” is currently instant
 
 - `screens/GameScreen.js`:

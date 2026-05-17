@@ -84,6 +84,7 @@ export default function GameScreen({ navigation, route }) {
   const currentBetRef = useRef(0);
   const payoutDoneRef = useRef(false);
   const modalDelayTimerRef = useRef(null);
+  const hasMountedRef = useRef(false);
 
   // ── Screen phase: 'betting' | 'playing' | 'result' ───────────────
   const [screenPhase, setScreenPhase] = useState("betting");
@@ -159,6 +160,15 @@ export default function GameScreen({ navigation, route }) {
     splitResult,
     coinsDelta,
   ]);
+
+  useEffect(() => {
+    // After the first render completes, flag mount-complete so future deals animate.
+    // We use a microtask so this fires AFTER the initial render, before the next state update.
+    const timer = setTimeout(() => {
+      hasMountedRef.current = true;
+    }, 50);
+    return () => clearTimeout(timer);
+  }, []);
 
   // UX-5: Android hardware back confirmation
   useEffect(() => {
@@ -776,12 +786,14 @@ export default function GameScreen({ navigation, route }) {
                 { width: handWidth },
               ]}
             >
-              {playerHand.map((card) => (
+              {playerHand.map((card, index) => (
                 <Card
                   key={card.id}
                   rank={card.rank}
                   suit={card.suit}
                   sizeScale={1}
+                  animateDeal={hasMountedRef.current}
+                  dealDelay={playerHand.length <= 2 ? index * 100 : 0}
                 />
               ))}
             </View>
@@ -803,12 +815,14 @@ export default function GameScreen({ navigation, route }) {
                   { width: handWidth },
                 ]}
               >
-                {splitHand.map((card) => (
+                {splitHand.map((card, index) => (
                   <Card
                     key={card.id}
                     rank={card.rank}
                     suit={card.suit}
                     sizeScale={1}
+                    animateDeal={hasMountedRef.current}
+                    dealDelay={splitHand.length <= 2 ? index * 100 : 0}
                   />
                 ))}
               </View>
