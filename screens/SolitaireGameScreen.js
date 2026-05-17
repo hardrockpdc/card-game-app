@@ -212,6 +212,9 @@ export default function SolitaireGameScreen({ navigation, route }) {
 
   const [spiderFlyAwayCards, setSpiderFlyAwayCards] = useState([]); // { cardId, card, x, y, w, h }
 
+  // P1: Cached reduced-motion preference. Read once on mount, updated on change.
+  const reduceMotionRef = useRef(false);
+
   // BUG-4: Unified mount effect — always check for a saved game first,
   // regardless of resumeFromSave. Prevents hot-reload from clobbering
   // an in-progress game with a fresh deal.
@@ -235,6 +238,48 @@ export default function SolitaireGameScreen({ navigation, route }) {
     }
     init();
   }, [routeVariantId, routeSpiderMode]);
+
+  // P1: Subscribe to the system reduced-motion preference. When enabled,
+  // the Spider fly-away animation is skipped entirely (cards just vanish + modal shows).
+  useEffect(() => {
+    let mounted = true;
+    AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
+      if (mounted) reduceMotionRef.current = enabled;
+    });
+    const sub = AccessibilityInfo.addEventListener(
+      "reduceMotionChanged",
+      (enabled) => {
+        reduceMotionRef.current = enabled;
+      },
+    );
+    return () => {
+      mounted = false;
+      sub?.remove?.();
+    };
+  }, []);
+
+  // P4: Cleanup any pending Spider animation timers on unmount so we don't
+  // leak setTimeout callbacks if the user navigates away mid-animation.
+  useEffect(() => {
+    return () => {
+      if (spiderFlyAwayTimeoutRef.current) {
+        clearTimeout(spiderFlyAwayTimeoutRef.current);
+        spiderFlyAwayTimeoutRef.current = null;
+      }
+      if (spiderWinModalTimeoutRef.current) {
+        clearTimeout(spiderWinModalTimeoutRef.current);
+        spiderWinModalTimeoutRef.current = null;
+      }
+      // Stop any in-flight animations to prevent state updates after unmount.
+      spiderFlyAwayAnimValuesRef.current.forEach((anim) => {
+        anim.translateY.stopAnimation();
+        anim.opacity.stopAnimation();
+        anim.scale.stopAnimation();
+      });
+      spiderFlyAwayAnimValuesRef.current.clear();
+      spiderFlyAwayInProgressRef.current = false;
+    };
+  }, []);
 
   // Auto-save after every move; clear save on win (only once per win).
   useEffect(() => {
@@ -348,6 +393,26 @@ export default function SolitaireGameScreen({ navigation, route }) {
           .filter(Boolean);
 
         if (ghostCards.length > 0) {
+          // P1: If reduced motion is enabled, skip the animation entirely.
+          // Cards have already been removed from game state, so there's nothing
+          // visually to do. Just trigger the pending win modal if applicable.
+          if (reduceMotionRef.current) {
+            if (spiderPendingWinModalRef.current) {
+              spiderPendingWinModalRef.current = false;
+              setShowRoundModal(true);
+            }
+            return;
+          }
+
+          // P4: Guard against starting a new fly-away while one is in progress.
+          // If a second run completes before the first animation finishes (rare,
+          // but possible with auto-complete-style move chains), we let the first
+          // one finish and skip the second — its cards have already been removed
+          // from state anyway.
+          if (spiderFlyAwayInProgressRef.current) {
+            return;
+          }
+
           spiderFlyAwayInProgressRef.current = true;
 
           spiderFlyAwayAnimValuesRef.current.clear();
@@ -363,17 +428,26 @@ export default function SolitaireGameScreen({ navigation, route }) {
 
           setSpiderFlyAwayCards(ghostCards);
 
+          // P5: Final-run celebration — when this run pushes us to 8 (game won),
+          // boost the animation: bigger travel distance and brief bloom-then-shrink
+          // scale curve so the victory feels weightier.
+          const isFinalRun = (state.completedRuns ?? 0) >= 8;
+
           const STAGGER_MS = 160;
           const ANIM_MS = 620;
+          const TRAVEL_MULTIPLIER = isFinalRun ? 1.6 : 1.0;
+          const SHRINK_TARGET = isFinalRun ? 0.78 : 0.86;
+          const BLOOM_TARGET = 1.12;
+          const BLOOM_DURATION = Math.round(ANIM_MS * 0.3);
 
           let finishedCount = 0;
           ghostCards.forEach((ghost, index) => {
             const anim = spiderFlyAwayAnimValuesRef.current.get(ghost.cardId);
             if (!anim) return;
 
-            const translateTarget = -(ghost.h + 30);
+            const translateTarget = -((ghost.h + 30) * TRAVEL_MULTIPLIER);
 
-            Animated.parallel([
+            const animations = [
               Animated.timing(anim.translateY, {
                 toValue: translateTarget,
                 duration: ANIM_MS,
@@ -388,14 +462,41 @@ export default function SolitaireGameScreen({ navigation, route }) {
                 easing: Easing.out(Easing.quad),
                 useNativeDriver: true,
               }),
-              Animated.timing(anim.scale, {
-                toValue: 0.86,
-                duration: Math.round(ANIM_MS * 0.75),
-                delay: index * STAGGER_MS,
-                easing: Easing.out(Easing.quad),
-                useNativeDriver: true,
-              }),
-            ]).start(() => {
+            ];
+
+            if (isFinalRun) {
+              // Bloom-then-shrink for the final run: scale up briefly, then down.
+              animations.push(
+                Animated.sequence([
+                  Animated.delay(index * STAGGER_MS),
+                  Animated.timing(anim.scale, {
+                    toValue: BLOOM_TARGET,
+                    duration: BLOOM_DURATION,
+                    easing: Easing.out(Easing.quad),
+                    useNativeDriver: true,
+                  }),
+                  Animated.timing(anim.scale, {
+                    toValue: SHRINK_TARGET,
+                    duration: ANIM_MS - BLOOM_DURATION,
+                    easing: Easing.out(Easing.quad),
+                    useNativeDriver: true,
+                  }),
+                ]),
+              );
+            } else {
+              // Standard runs: simple shrink.
+              animations.push(
+                Animated.timing(anim.scale, {
+                  toValue: SHRINK_TARGET,
+                  duration: Math.round(ANIM_MS * 0.75),
+                  delay: index * STAGGER_MS,
+                  easing: Easing.out(Easing.quad),
+                  useNativeDriver: true,
+                }),
+              );
+            }
+
+            Animated.parallel(animations).start(() => {
               finishedCount += 1;
               if (finishedCount === lastAnimCount) {
                 spiderFlyAwayInProgressRef.current = false;

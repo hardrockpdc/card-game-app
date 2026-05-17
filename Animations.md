@@ -23,6 +23,8 @@ This file is written as a **human-readable spec**, but it also includes **repo-s
 
 Multiplayer Blackjack (screens/MultiplayerGameScreen.js) also wires the same deal slide-in and dealer flip. The deal stagger scales across N players using casino-table order — for 3 players, the initial deal sequence is P0c0 → P1c0 → P2c0 → DealerC0 → P0c1 → P1c1 → P2c1 → DealerC1, each 100ms apart. The hasMountedRef pattern prevents non-host clients from animating cards on first state arrival from the network.
 
+**Update (animation work, Phase 3 — Solitaire):** Spider Solitaire now animates run completion. When a 13-card same-suit sequence is removed from the tableau (King to Ace), the cards "fly away" upward off the screen with staggered timing (160ms between cards, 620ms each, ease-out). Implemented via an absolute-positioned ghost overlay using snapshots of the previous render's card layouts. The win modal (when state.completedRuns reaches 8) is delayed until the animation completes, matching the dealer-flip → modal pattern in Blackjack. The animation respects AccessibilityInfo.isReduceMotionEnabled (snaps instantly when enabled) and guards against re-entry mid-animation. The final run (run #8 — game won) plays a boosted variant: 1.6× travel distance and a brief bloom-then-shrink scale curve to emphasize the victory moment. Standard runs use a simple shrink.
+
 ### Blackjack “deal / hit / stand” is currently instant
 
 - `screens/GameScreen.js`:
