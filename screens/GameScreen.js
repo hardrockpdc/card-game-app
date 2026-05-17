@@ -766,6 +766,8 @@ export default function GameScreen({ navigation, route }) {
                   faceDown={index === 1 && !showFullDealerHand}
                   animateReveal={index === 1}
                   sizeScale={1}
+                  animateDeal={hasMountedRef.current}
+                  dealDelay={dealerHand.length <= 2 ? index * 200 + 100 : 0}
                 />
               ))}
             </View>
@@ -793,7 +795,7 @@ export default function GameScreen({ navigation, route }) {
                   suit={card.suit}
                   sizeScale={1}
                   animateDeal={hasMountedRef.current}
-                  dealDelay={playerHand.length <= 2 ? index * 100 : 0}
+                  dealDelay={playerHand.length <= 2 ? index * 200 : 0}
                 />
               ))}
             </View>
