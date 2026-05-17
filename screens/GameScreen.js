@@ -83,6 +83,7 @@ export default function GameScreen({ navigation, route }) {
 
   const currentBetRef = useRef(0);
   const payoutDoneRef = useRef(false);
+  const modalDelayTimerRef = useRef(null);
 
   // ── Screen phase: 'betting' | 'playing' | 'result' ───────────────
   const [screenPhase, setScreenPhase] = useState("betting");
@@ -175,6 +176,16 @@ export default function GameScreen({ navigation, route }) {
     return () => sub.remove();
   }, [navigation]);
 
+  // Clean up the result-modal delay timer on unmount.
+  useEffect(() => {
+    return () => {
+      if (modalDelayTimerRef.current) {
+        clearTimeout(modalDelayTimerRef.current);
+        modalDelayTimerRef.current = null;
+      }
+    };
+  }, []);
+
   // ── Payout ────────────────────────────────────────────────────────
   // Called once per hand when it's fully resolved.
   // All result values are passed as parameters to avoid stale closure issues.
@@ -234,11 +245,22 @@ export default function GameScreen({ navigation, route }) {
       playSound("win");
       recordWin("blackjack");
     }
-    setScreenPhase("result");
+
+    // Delay the result modal so the dealer hole-card flip animation can play in full
+    // before being covered. 2000ms covers the 260ms flip + a comfortable pause.
+    if (modalDelayTimerRef.current) clearTimeout(modalDelayTimerRef.current);
+    modalDelayTimerRef.current = setTimeout(() => {
+      setScreenPhase("result");
+      modalDelayTimerRef.current = null;
+    }, 2000);
   }
 
   // ── Deal ──────────────────────────────────────────────────────────
   async function handleDeal() {
+    if (modalDelayTimerRef.current) {
+      clearTimeout(modalDelayTimerRef.current);
+      modalDelayTimerRef.current = null;
+    }
     if (!selectedBet || screenPhase !== "betting") return;
 
     const bet = selectedBet;
@@ -375,6 +397,10 @@ export default function GameScreen({ navigation, route }) {
 
   // ── Continue (same bet, deal immediately) ────────────────────────
   async function handleContinueSameBet() {
+    if (modalDelayTimerRef.current) {
+      clearTimeout(modalDelayTimerRef.current);
+      modalDelayTimerRef.current = null;
+    }
     const bet = currentBetRef.current;
     let freshCoins;
 
@@ -441,6 +467,10 @@ export default function GameScreen({ navigation, route }) {
 
   // ── Adjust bet (go back to betting screen) ────────────────────────
   async function handleAdjustBet() {
+    if (modalDelayTimerRef.current) {
+      clearTimeout(modalDelayTimerRef.current);
+      modalDelayTimerRef.current = null;
+    }
     if (isFree) {
       if (freeCoinsRef.current < MIN_BET) {
         freeCoinsRef.current = 1000;

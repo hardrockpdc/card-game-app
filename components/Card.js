@@ -25,6 +25,7 @@ function FlipCard({
   backSource,
   frontSource,
   a11yLabel,
+  animateReveal,
 }) {
   // flipValue: 0 = back-facing (showing card_back), 1 = front-facing (showing rank/suit)
   const flipValue = useRef(new Animated.Value(faceDown ? 0 : 1)).current;
@@ -58,27 +59,28 @@ function FlipCard({
 
     const target = faceDown ? 0 : 1;
 
-    // If we don't want animations OR this is the first render OR reduced motion is on,
-    // just snap to the target. This covers the common case: cards that never flip.
-    if (reduceMotion || prev === faceDown) {
+    // Snap-only conditions:
+    //   - animateReveal is off (most cards in the app)
+    //   - reduced-motion is enabled (accessibility)
+    //   - first render (prev === faceDown means no change yet)
+    //   - this is the un-reveal direction (going FROM face-up TO face-down):
+    //     we only animate the reveal, not the hide, because a hide between
+    //     hands looks wrong (the front face spins out before the back arrives).
+    const isReveal = prev === true && faceDown === false;
+
+    if (!animateReveal || reduceMotion || prev === faceDown || !isReveal) {
       flipValue.setValue(target);
       return;
     }
 
-    // Locked-in rule: animate only for reveal (true -> false).
-    if (!(prev === true && faceDown === false)) {
-      flipValue.setValue(target);
-      return;
-    }
-
-    // Run the flip
+    // Run the flip (reveal only: back -> front)
     Animated.timing(flipValue, {
       toValue: target,
       duration: FLIP_DURATION,
       easing: Easing.out(Easing.quad),
       useNativeDriver: true,
     }).start();
-  }, [faceDown, reduceMotion, flipValue]);
+  }, [faceDown, reduceMotion, animateReveal, flipValue]);
 
   // Map flipValue [0..1] to the rotation of each face.
   // Back face rotates from 0deg (visible) to 180deg (hidden) as flipValue goes 0 -> 1.
@@ -202,6 +204,7 @@ export default function Card({
       backSource={backSource}
       frontSource={frontSource}
       a11yLabel={a11yLabel}
+      animateReveal={animateReveal}
     />
   );
 }
