@@ -1,7 +1,10 @@
 import React, { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import {
   Alert,
+  Animated,
+  AccessibilityInfo,
   BackHandler,
+  Easing,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -97,11 +100,14 @@ function CardSlot({
   disabled = false,
   small = true,
   sizeScale = 1.1,
+  animateReveal = false,
   style,
+  onCardLayout,
 }) {
   return (
     <Pressable
       onPress={disabled ? undefined : onPress}
+      onLayout={onCardLayout}
       style={({ pressed }) => [
         card ? styles.cardTouch : styles.emptyCard,
         style,
@@ -115,6 +121,7 @@ function CardSlot({
           rank={card.rankLabel}
           suit={card.symbol}
           faceDown={!card.faceUp}
+          animateReveal={animateReveal}
           small={small}
           sizeScale={sizeScale}
         />
@@ -185,6 +192,26 @@ export default function SolitaireGameScreen({ navigation, route }) {
   // restore effect (which fires after) knows if it should override it.
   const initialGameDispatched = useRef(false);
 
+  // Spider run-complete fly-away animation state (UI-only).
+  const spiderPrevCompletedRunsRef = useRef(0);
+  const spiderPrevTableauCardsRef = useRef(new Map()); // cardId -> card (prev render)
+  const spiderColumnLayoutsRef = useRef({}); // pileIndex -> { x, y } (current render)
+  const spiderCardLayoutsRef = useRef({}); // cardId -> { x, y, w, h, pileIndex, cardIndex } (current render)
+
+  // Snapshot of layouts/cards from the previous committed render, used to
+  // animate the cards that were removed by spiderResolveCompletedRuns.
+  const spiderPrevColumnLayoutsRef = useRef({}); // pileIndex -> { x, y } (prev render)
+  const spiderPrevCardLayoutsRef = useRef({}); // cardId -> { x, y, w, h, pileIndex, cardIndex } (prev render)
+
+  const spiderFlyAwayInProgressRef = useRef(false);
+  const spiderPendingWinModalRef = useRef(false);
+  const spiderWinModalTimeoutRef = useRef(null);
+  const spiderFlyAwayTimeoutRef = useRef(null);
+
+  const spiderFlyAwayAnimValuesRef = useRef(new Map()); // cardId -> { translateY, opacity, scale }
+
+  const [spiderFlyAwayCards, setSpiderFlyAwayCards] = useState([]); // { cardId, card, x, y, w, h }
+
   // BUG-4: Unified mount effect — always check for a saved game first,
   // regardless of resumeFromSave. Prevents hot-reload from clobbering
   // an in-progress game with a fresh deal.
@@ -240,8 +267,157 @@ export default function SolitaireGameScreen({ navigation, route }) {
   }, [state.status]);
 
   useEffect(() => {
-    if (state.status === "won") setShowRoundModal(true);
-  }, [state.status]);
+    if (state.status !== "won") return;
+
+    if (state.variantId === "spider") {
+      const currCompletedRuns = state.completedRuns ?? 0;
+      const justCompletedRun =
+        currCompletedRuns > spiderPrevCompletedRunsRef.current;
+
+      // If we just completed a run (same render) or the fly-away is already in progress,
+      // delay the modal until the animation finishes.
+      if (justCompletedRun || spiderFlyAwayInProgressRef.current) {
+        spiderPendingWinModalRef.current = true;
+        return;
+      }
+    }
+
+    setShowRoundModal(true);
+  }, [state.status, state.variantId, state.completedRuns]);
+
+  useEffect(() => {
+    if (state.variantId !== "spider") return;
+
+    const currCompletedRuns = state.completedRuns ?? 0;
+    const prevCompletedRuns = spiderPrevCompletedRunsRef.current;
+
+    const currentCardsMap = new Map();
+    const currentCardIds = new Set();
+
+    for (let pileIndex = 0; pileIndex < state.tableau.length; pileIndex += 1) {
+      const pile = state.tableau[pileIndex] || [];
+      for (let cardIndex = 0; cardIndex < pile.length; cardIndex += 1) {
+        const card = pile[cardIndex];
+        currentCardsMap.set(card.id, card);
+        currentCardIds.add(card.id);
+      }
+    }
+
+    const justCompletedRuns = currCompletedRuns > prevCompletedRuns;
+
+    // Trigger only when spider completed a run (i.e. card removals happened).
+    if (justCompletedRuns && !spiderFlyAwayInProgressRef.current) {
+      const prevCardLayouts = spiderPrevCardLayoutsRef.current; // cardId -> layout
+      const prevColumnLayouts = spiderPrevColumnLayoutsRef.current; // pileIndex -> { x, y }
+      const prevCardsMap = spiderPrevTableauCardsRef.current; // Map(cardId -> card)
+
+      const removedIds = [];
+      for (const cardId of Object.keys(prevCardLayouts)) {
+        if (!currentCardIds.has(cardId)) removedIds.push(cardId);
+      }
+
+      if (removedIds.length > 0) {
+        removedIds.sort((a, b) => {
+          const la = prevCardLayouts[a];
+          const lb = prevCardLayouts[b];
+          if (!la || !lb) return 0;
+          if (la.pileIndex !== lb.pileIndex) return la.pileIndex - lb.pileIndex;
+          return (la.cardIndex ?? 0) - (lb.cardIndex ?? 0);
+        });
+
+        const ghostCards = removedIds
+          .map((cardId) => {
+            const layout = prevCardLayouts[cardId];
+            if (!layout) return null;
+            const card = prevCardsMap.get(cardId);
+            if (!card) return null;
+
+            const col = prevColumnLayouts[layout.pileIndex] || { x: 0, y: 0 };
+            const x = (col.x ?? 0) + (layout.x ?? 0);
+            const y = (col.y ?? 0) + (layout.y ?? 0);
+
+            return {
+              cardId,
+              card,
+              x,
+              y,
+              w: layout.w,
+              h: layout.h,
+            };
+          })
+          .filter(Boolean);
+
+        if (ghostCards.length > 0) {
+          spiderFlyAwayInProgressRef.current = true;
+
+          spiderFlyAwayAnimValuesRef.current.clear();
+          const lastAnimCount = ghostCards.length;
+
+          for (const ghost of ghostCards) {
+            spiderFlyAwayAnimValuesRef.current.set(ghost.cardId, {
+              translateY: new Animated.Value(0),
+              opacity: new Animated.Value(1),
+              scale: new Animated.Value(1),
+            });
+          }
+
+          setSpiderFlyAwayCards(ghostCards);
+
+          const STAGGER_MS = 160;
+          const ANIM_MS = 620;
+
+          let finishedCount = 0;
+          ghostCards.forEach((ghost, index) => {
+            const anim = spiderFlyAwayAnimValuesRef.current.get(ghost.cardId);
+            if (!anim) return;
+
+            const translateTarget = -(ghost.h + 30);
+
+            Animated.parallel([
+              Animated.timing(anim.translateY, {
+                toValue: translateTarget,
+                duration: ANIM_MS,
+                delay: index * STAGGER_MS,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+              }),
+              Animated.timing(anim.opacity, {
+                toValue: 0,
+                duration: Math.round(ANIM_MS * 0.75),
+                delay: index * STAGGER_MS,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+              }),
+              Animated.timing(anim.scale, {
+                toValue: 0.86,
+                duration: Math.round(ANIM_MS * 0.75),
+                delay: index * STAGGER_MS,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+              }),
+            ]).start(() => {
+              finishedCount += 1;
+              if (finishedCount === lastAnimCount) {
+                spiderFlyAwayInProgressRef.current = false;
+                setSpiderFlyAwayCards([]);
+
+                if (spiderPendingWinModalRef.current) {
+                  spiderPendingWinModalRef.current = false;
+                  setShowRoundModal(true);
+                }
+              }
+            });
+          });
+        }
+      }
+    }
+
+    // Update "previous render" snapshots for the next move.
+    spiderPrevCompletedRunsRef.current = currCompletedRuns;
+    spiderPrevColumnLayoutsRef.current = { ...spiderColumnLayoutsRef.current };
+    spiderPrevCardLayoutsRef.current = { ...spiderCardLayoutsRef.current };
+    spiderPrevTableauCardsRef.current = currentCardsMap;
+  }, [state.variantId, state.completedRuns, state.tableau]);
 
   useEffect(() => {
     if (state.moves === 0 || state.status === "won") return;
@@ -252,17 +428,13 @@ export default function SolitaireGameScreen({ navigation, route }) {
   // UX-5: Android hardware back confirmation
   useEffect(() => {
     const onBack = () => {
-      Alert.alert(
-        "Leave Game?",
-        "Your progress will be saved.",
-        [
-          { text: "Stay", style: "cancel" },
-          {
-            text: "Leave",
-            onPress: handleSaveAndExit,
-          },
-        ]
-      );
+      Alert.alert("Leave Game?", "Your progress will be saved.", [
+        { text: "Stay", style: "cancel" },
+        {
+          text: "Leave",
+          onPress: handleSaveAndExit,
+        },
+      ]);
       return true;
     };
     const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
@@ -339,7 +511,6 @@ export default function SolitaireGameScreen({ navigation, route }) {
     return (
       <View style={styles.statsBar}>
         <StatsStrip gameId="solitaire" items={items} />
-
       </View>
     );
   };
@@ -436,6 +607,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                     key={card.id}
                     card={card}
                     label=""
+                    animateReveal={true}
                     onPress={() =>
                       dispatch(
                         tapAction({
@@ -486,11 +658,57 @@ export default function SolitaireGameScreen({ navigation, route }) {
           style={[
             styles.tableauRow,
             styles.spiderTableauRow,
-            { width: spiderBoardWidth },
+            { width: spiderBoardWidth, position: "relative" },
           ]}
         >
+          {spiderFlyAwayCards.map((ghost) => {
+            const anim = spiderFlyAwayAnimValuesRef.current.get(ghost.cardId);
+            if (!anim) return null;
+
+            return (
+              <Animated.View
+                key={ghost.cardId}
+                pointerEvents="none"
+                style={{
+                  position: "absolute",
+                  left: ghost.x,
+                  top: ghost.y,
+                  width: ghost.w,
+                  height: ghost.h,
+                  opacity: anim.opacity,
+                  transform: [
+                    { translateY: anim.translateY },
+                    { scale: anim.scale },
+                  ],
+                  zIndex: 50,
+                }}
+              >
+                <Card
+                  rank={ghost.card.rankLabel}
+                  suit={ghost.card.symbol}
+                  faceDown={!ghost.card.faceUp}
+                  animateReveal={true}
+                  small={true}
+                  sizeScale={1.1}
+                />
+              </Animated.View>
+            );
+          })}
+
           {state.tableau.map((pile, pileIndex) => (
-            <View key={`spider-${pileIndex}`} style={styles.tableauColumn}>
+            <View
+              key={`spider-${pileIndex}`}
+              style={styles.tableauColumn}
+              onLayout={(e) => {
+                const layout = e.nativeEvent.layout;
+                spiderColumnLayoutsRef.current[pileIndex] = {
+                  x: layout.x,
+                  y: layout.y,
+                  w: layout.width,
+                  h: layout.height,
+                };
+              }}
+            >
               {pile.length === 0 ? (
                 <Pressable
                   onPress={() =>
@@ -525,6 +743,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                     key={card.id}
                     card={card}
                     label=""
+                    animateReveal={true}
                     onPress={() =>
                       dispatch(
                         tapAction({
@@ -536,6 +755,17 @@ export default function SolitaireGameScreen({ navigation, route }) {
                     }
                     selected={selected}
                     disabled={!card.faceUp}
+                    onCardLayout={(e) => {
+                      const layout = e.nativeEvent.layout;
+                      spiderCardLayoutsRef.current[card.id] = {
+                        x: layout.x,
+                        y: layout.y,
+                        w: layout.width,
+                        h: layout.height,
+                        pileIndex,
+                        cardIndex,
+                      };
+                    }}
                     style={[
                       styles.stackCard,
                       cardIndex > 0 && styles.stackCardOverlapSpider,
@@ -634,6 +864,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                     key={card.id}
                     card={card}
                     label=""
+                    animateReveal={true}
                     onPress={() =>
                       dispatch(
                         tapAction({
@@ -724,6 +955,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                       key={card.id}
                       card={card}
                       label=""
+                      animateReveal={true}
                       onPress={() =>
                         dispatch(
                           tapAction({
@@ -813,6 +1045,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                       key={card.id}
                       card={card}
                       label=""
+                      animateReveal={true}
                       onPress={() =>
                         dispatch(
                           tapAction({
