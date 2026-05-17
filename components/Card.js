@@ -94,6 +94,20 @@ function FlipCard({
     outputRange: ["-180deg", "0deg"],
   });
 
+  // Opacity belt-and-suspenders: backfaceVisibility is unreliable on Android,
+  // so we ALSO fade each face out when it's pointing away from the camera.
+  // The cutover happens just before the midpoint so the swap is invisible.
+  // Back face: visible (1) until flipValue 0.5, then hidden (0)
+  // Front face: hidden (0) until flipValue 0.5, then visible (1)
+  const backOpacity = flipValue.interpolate({
+    inputRange: [0, 0.499, 0.5, 1],
+    outputRange: [1, 1, 0, 0],
+  });
+  const frontOpacity = flipValue.interpolate({
+    inputRange: [0, 0.499, 0.5, 1],
+    outputRange: [0, 0, 1, 1],
+  });
+
   return (
     <View
       style={{
@@ -113,6 +127,7 @@ function FlipCard({
             width: w,
             height: h,
             borderRadius: r,
+            opacity: backOpacity,
             transform: [{ perspective: 800 }, { rotateY: backRotation }],
           },
         ]}
@@ -125,6 +140,7 @@ function FlipCard({
             width: w,
             height: h,
             borderRadius: r,
+            opacity: frontOpacity,
             transform: [{ perspective: 800 }, { rotateY: frontRotation }],
           },
         ]}
