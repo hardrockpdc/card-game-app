@@ -624,6 +624,9 @@ export default function GoFishGameScreen({ navigation, route }) {
                       isSelected && styles.targetBtnSelected,
                     ]}
                     onPress={() => setSelectedTarget(isSelected ? null : p.id)}
+                    accessibilityRole="button"
+                    accessibilityLabel={p.name}
+                    accessibilityHint={`Ask ${p.name} for cards`}
                   >
                     <Text
                       style={[
@@ -687,6 +690,10 @@ export default function GoFishGameScreen({ navigation, route }) {
             ]}
             onPress={handleAsk}
             disabled={!selectedRank || selectedTarget === null}
+            accessibilityRole="button"
+            accessibilityLabel={selectedRank && selectedTarget !== null ? `Ask for ${selectedRank}s` : "Ask"}
+            accessibilityHint="Ask the selected player for your chosen rank"
+            accessibilityState={{ disabled: !selectedRank || selectedTarget === null }}
           >
             <Text style={styles.askBtnText}>
               {selectedRank && selectedTarget !== null

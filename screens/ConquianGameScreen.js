@@ -764,6 +764,9 @@ export default function ConquianGameScreen({ navigation, route }) {
                 ]}
                 onPress={() => borrowMoveToGroup(idx)}
                 activeOpacity={borrowSelCardId ? 0.6 : 1}
+                accessibilityRole="button"
+                accessibilityLabel={`Group ${idx + 1}`}
+                accessibilityHint="Move selected card into this group"
               >
                 <Text style={styles.borrowGroupLabel}>
                   Group {idx + 1}{" "}
@@ -789,6 +792,9 @@ export default function ConquianGameScreen({ navigation, route }) {
           <TouchableOpacity
             style={styles.addGroupBtn}
             onPress={() => setBorrowGroups((p) => [...p, []])}
+            accessibilityRole="button"
+            accessibilityLabel="New Group"
+            accessibilityHint="Add a new empty meld group"
           >
             <Text style={styles.addGroupText}>+ New Group</Text>
           </TouchableOpacity>
@@ -826,6 +832,9 @@ export default function ConquianGameScreen({ navigation, route }) {
             <TouchableOpacity
               style={[styles.actionBtn, styles.passBtn]}
               onPress={exitBorrowMode}
+              accessibilityRole="button"
+              accessibilityLabel="Cancel"
+              accessibilityHint="Exit rearrange mode without saving changes"
             >
               <Text style={styles.actionBtnText}>Cancel</Text>
             </TouchableOpacity>
@@ -837,6 +846,10 @@ export default function ConquianGameScreen({ navigation, route }) {
               ]}
               onPress={handleConfirmBorrow}
               disabled={!canConfirm}
+              accessibilityRole="button"
+              accessibilityLabel="Confirm"
+              accessibilityHint="Save rearranged melds and continue"
+              accessibilityState={{ disabled: !canConfirm }}
             >
               <Text style={styles.actionBtnText}>Confirm</Text>
             </TouchableOpacity>
@@ -1222,6 +1235,10 @@ export default function ConquianGameScreen({ navigation, route }) {
               ]}
               onPress={handleConfirmPass}
               disabled={!passCardId}
+              accessibilityRole="button"
+              accessibilityLabel="Confirm Pass"
+              accessibilityHint="Submit your chosen card to pass"
+              accessibilityState={{ disabled: !passCardId }}
             >
               <Text style={styles.actionBtnText}>Confirm Pass</Text>
             </TouchableOpacity>
@@ -1232,7 +1249,13 @@ export default function ConquianGameScreen({ navigation, route }) {
           )}
 
           {phase === "playing" && isMyTurn && turnPhase === "draw" && (
-            <TouchableOpacity style={styles.actionBtn} onPress={handleDraw}>
+            <TouchableOpacity
+              style={styles.actionBtn}
+              onPress={handleDraw}
+              accessibilityRole="button"
+              accessibilityLabel="Draw from Stock"
+              accessibilityHint="Take a card from the stock pile"
+            >
               <Text style={styles.actionBtnText}>Draw from Stock</Text>
             </TouchableOpacity>
           )}
@@ -1249,6 +1272,10 @@ export default function ConquianGameScreen({ navigation, route }) {
                     ]}
                     onPress={handleLayMeld}
                     disabled={!canLayMeld}
+                    accessibilityRole="button"
+                    accessibilityLabel="Lay Meld"
+                    accessibilityHint="Place selected cards as a meld"
+                    accessibilityState={{ disabled: !canLayMeld }}
                   >
                     <Text style={styles.actionBtnText}>Lay Meld</Text>
                   </TouchableOpacity>
@@ -1261,6 +1288,10 @@ export default function ConquianGameScreen({ navigation, route }) {
                   ]}
                   onPress={enterBorrowMode}
                   disabled={!activeCard}
+                  accessibilityRole="button"
+                  accessibilityLabel="Rearrange"
+                  accessibilityHint="Reorganize your melds to place the active card"
+                  accessibilityState={{ disabled: !activeCard }}
                 >
                   <Text style={styles.actionBtnText}>Rearrange</Text>
                 </TouchableOpacity>
@@ -1272,12 +1303,19 @@ export default function ConquianGameScreen({ navigation, route }) {
                   ]}
                   onPress={handleSmartTake}
                   disabled={!activeCard}
+                  accessibilityRole="button"
+                  accessibilityLabel="Take and Meld"
+                  accessibilityHint="Add the active card to a meld"
+                  accessibilityState={{ disabled: !activeCard }}
                 >
                   <Text style={styles.actionBtnText}>Take + Meld</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.actionBtn, styles.passBtn]}
                   onPress={handlePass}
+                  accessibilityRole="button"
+                  accessibilityLabel="Pass"
+                  accessibilityHint="Pass the active card to the next player"
                 >
                   <Text style={styles.actionBtnText}>Pass</Text>
                 </TouchableOpacity>

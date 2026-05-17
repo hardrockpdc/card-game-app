@@ -1092,6 +1092,9 @@ export default function LastCardGameScreen({ navigation, route }) {
           style={styles.pileWrapper}
           onPress={onDeckTap}
           activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="Draw from deck"
+          accessibilityHint="Take a card from the draw pile"
         >
           <View style={[styles.cardShell, { width: PILE_W, height: PILE_H }]}>
             <Image
@@ -1219,6 +1222,9 @@ export default function LastCardGameScreen({ navigation, route }) {
                 key={color}
                 style={[styles.colorBtn, { backgroundColor: COLOR_HEX[color] }]}
                 onPress={() => onColorPick(color)}
+                accessibilityRole="button"
+                accessibilityLabel={COLOR_LABELS[color]}
+                accessibilityHint="Set this as the active color"
               >
                 <Text style={styles.colorBtnText}>{COLOR_LABELS[color]}</Text>
               </TouchableOpacity>

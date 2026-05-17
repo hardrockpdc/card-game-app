@@ -46,18 +46,18 @@
 
 ### ♿ ACCESSIBILITY (Apple/Google care about this)
 
-- [x] ~~**ACC-1** — partial: lobby/menu/setup screens done. In-game action buttons still pending (becomes ACC-3 future work).~~
+- [x] ~~**ACC-1** — accessibility labels added across all screens (lobby + setup done earlier; in-game completed by ACC-3)~~
 - [x] ~~**ACC-2** — Card components have no accessibility info~~
-- [ ] **ACC-3** — Many in-game action buttons lack accessibility props
+- [x] ~~**ACC-3** — Many in-game action buttons lack accessibility props~~
 - [x] ~~**ACC-4** — Color-only state indication (turn highlights, valid melds)~~
 - [x] ~~**ACC-5** — Text contrast on muted labels (`#666680` on dark)~~
 
 ### 🎨 UX POLISH
 
-- [ ] **UX-1** — "Start New" is labeled `destructive` (red) but is on the right
+- [x] ~~**UX-1** — covered by BUG-1 resume prompt fix~~
 - [x] ~~**UX-2** — Profile photo button has no hit feedback~~
 - [x] ~~**UX-3** — Loading states use hardcoded `#e94560` spinner everywhere~~
-- [ ] **UX-4** — Resume prompt destroys saves with no second confirmation
+- [x] ~~**UX-4** — covered by BUG-1 resume prompt fix~~
 - [x] ~~**UX-5** — No "back" handling on Android hardware back button~~
 
 ### 🧹 CODE QUALITY (from v1 that I'm bringing forward)

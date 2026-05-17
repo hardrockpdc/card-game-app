@@ -140,6 +140,9 @@ function StockSlot({ label, onPress, disabled = false, style }) {
         style,
         pressed && !disabled && styles.cardTouchPressed,
       ]}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled }}
     >
       <Text style={styles.stockLabel}>{label}</Text>
     </Pressable>

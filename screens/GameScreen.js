@@ -629,6 +629,9 @@ export default function GameScreen({ navigation, route }) {
                     if (canAfford) setSelectedBet(amount);
                   }}
                   disabled={!canAfford}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Bet ${amount}`}
+                  accessibilityState={{ disabled: !canAfford }}
                 >
                   <Text
                     style={[
@@ -650,6 +653,10 @@ export default function GameScreen({ navigation, route }) {
             ]}
             onPress={handleDeal}
             disabled={!selectedBet}
+            accessibilityRole="button"
+            accessibilityLabel="Deal"
+            accessibilityHint="Start the hand with your selected bet"
+            accessibilityState={{ disabled: !selectedBet }}
           >
             <Text
               style={[
@@ -802,6 +809,10 @@ export default function GameScreen({ navigation, route }) {
               ]}
               onPress={handleHit}
               disabled={!canPlay}
+              accessibilityRole="button"
+              accessibilityLabel="Hit"
+              accessibilityHint="Take another card"
+              accessibilityState={{ disabled: !canPlay }}
             >
               <Text style={styles.buttonText}>Hit</Text>
             </TouchableOpacity>
@@ -814,6 +825,10 @@ export default function GameScreen({ navigation, route }) {
               ]}
               onPress={handleStand}
               disabled={!canPlay}
+              accessibilityRole="button"
+              accessibilityLabel="Stand"
+              accessibilityHint="End your turn with current cards"
+              accessibilityState={{ disabled: !canPlay }}
             >
               <Text style={styles.buttonText}>Stand</Text>
             </TouchableOpacity>
@@ -822,6 +837,9 @@ export default function GameScreen({ navigation, route }) {
               <TouchableOpacity
                 style={[styles.button, styles.splitButton]}
                 onPress={handleSplit}
+                accessibilityRole="button"
+                accessibilityLabel="Split"
+                accessibilityHint="Split matching pair into two hands"
               >
                 <Text style={styles.buttonText}>Split</Text>
               </TouchableOpacity>

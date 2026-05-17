@@ -984,6 +984,9 @@ export default function RummyGameScreen({ navigation, route }) {
                     styles.drawButton,
                     pressed && styles.actionButtonPressed,
                   ]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Draw Stock"
+                  accessibilityHint="Take a card from the stock pile"
                 >
                   <Text style={styles.actionButtonText}>Draw Stock</Text>
                 </Pressable>
@@ -997,6 +1000,10 @@ export default function RummyGameScreen({ navigation, route }) {
                     !discardTop && styles.actionButtonDisabled,
                     pressed && discardTop && styles.actionButtonPressed,
                   ]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Take Discard"
+                  accessibilityHint="Pick up the top card from the discard pile"
+                  accessibilityState={{ disabled: !discardTop }}
                 >
                   <Text style={styles.actionButtonText}>Take Discard</Text>
                 </Pressable>
@@ -1015,6 +1022,10 @@ export default function RummyGameScreen({ navigation, route }) {
                       selectedHandIndexes.length >= 3 &&
                       styles.actionButtonPressed,
                   ]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Lay Meld"
+                  accessibilityHint="Place selected cards as a meld on the table"
+                  accessibilityState={{ disabled: selectedHandIndexes.length < 3 }}
                 >
                   <Text style={styles.actionButtonText}>Lay Meld</Text>
                 </Pressable>
@@ -1036,6 +1047,10 @@ export default function RummyGameScreen({ navigation, route }) {
                       selectedMeldIndex !== null &&
                       styles.actionButtonPressed,
                   ]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Extend"
+                  accessibilityHint="Add selected card to a meld already on the table"
+                  accessibilityState={{ disabled: selectedHandIndexes.length !== 1 || selectedMeldIndex === null }}
                 >
                   <Text style={styles.actionButtonText}>Extend</Text>
                 </Pressable>
@@ -1052,6 +1067,10 @@ export default function RummyGameScreen({ navigation, route }) {
                       selectedHandIndexes.length === 1 &&
                       styles.actionButtonPressed,
                   ]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Discard"
+                  accessibilityHint="Discard the selected card to end your turn"
+                  accessibilityState={{ disabled: selectedHandIndexes.length !== 1 }}
                 >
                   <Text style={styles.actionButtonText}>Discard</Text>
                 </Pressable>
@@ -1063,6 +1082,9 @@ export default function RummyGameScreen({ navigation, route }) {
                     styles.knockButton,
                     pressed && styles.actionButtonPressed,
                   ]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Knock"
+                  accessibilityHint="End the round and reveal all hands"
                 >
                   <Text style={styles.actionButtonText}>Knock</Text>
                 </Pressable>

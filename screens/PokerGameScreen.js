@@ -1035,12 +1035,18 @@ export default function PokerGameScreen({ navigation, route }) {
               <TouchableOpacity
                 style={[styles.actionBtn, styles.foldBtn]}
                 onPress={() => act({ action: "fold" })}
+                accessibilityRole="button"
+                accessibilityLabel="Fold"
+                accessibilityHint="Give up your hand and exit this round"
               >
                 <Text style={styles.actionBtnText}>Fold</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.actionBtn, styles.callBtn]}
                 onPress={() => act({ action: canCheck ? "check" : "call" })}
+                accessibilityRole="button"
+                accessibilityLabel={canCheck ? "Check" : `Call ${currentBet - (myPS.bet ?? 0)}`}
+                accessibilityHint={canCheck ? "Stay in without betting more" : "Match the current bet to stay in"}
               >
                 <Text style={styles.actionBtnText}>
                   {canCheck ? "Check" : `Call ${currentBet - (myPS.bet ?? 0)}`}
@@ -1054,6 +1060,9 @@ export default function PokerGameScreen({ navigation, route }) {
                     key={opt.label}
                     style={styles.raiseBtn}
                     onPress={() => act({ action: "raise", amount: opt.amount })}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Raise ${opt.label}`}
+                    accessibilityHint="Increase the current bet"
                   >
                     <Text style={styles.raiseBtnText}>Raise</Text>
                     <Text style={styles.raiseBtnAmt}>{opt.label}</Text>

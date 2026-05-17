@@ -620,12 +620,18 @@ export default function MultiplayerGameScreen({ navigation, route }) {
                   <TouchableOpacity
                     style={[styles.actionBtn, styles.hitBtn]}
                     onPress={() => handleAction("hit")}
+                    accessibilityRole="button"
+                    accessibilityLabel="Hit"
+                    accessibilityHint="Take another card"
                   >
                     <Text style={styles.actionBtnText}>Hit</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.actionBtn, styles.standBtn]}
                     onPress={() => handleAction("stand")}
+                    accessibilityRole="button"
+                    accessibilityLabel="Stand"
+                    accessibilityHint="End your turn with current cards"
                   >
                     <Text style={styles.actionBtnText}>Stand</Text>
                   </TouchableOpacity>
@@ -633,6 +639,9 @@ export default function MultiplayerGameScreen({ navigation, route }) {
                     <TouchableOpacity
                       style={[styles.actionBtn, styles.splitBtn]}
                       onPress={() => handleAction("split")}
+                      accessibilityRole="button"
+                      accessibilityLabel="Split"
+                      accessibilityHint="Split matching pair into two hands"
                     >
                       <Text style={styles.actionBtnText}>Split</Text>
                     </TouchableOpacity>

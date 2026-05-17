@@ -760,6 +760,9 @@ export default function WildRoundGameScreen({ navigation, route }) {
           <TouchableOpacity
             style={styles.primaryBtn}
             onPress={handleKeepPrompt}
+            accessibilityRole="button"
+            accessibilityLabel="Keep this prompt"
+            accessibilityHint="Lock in the current prompt and proceed"
           >
             <Text style={styles.primaryBtnText}>Keep this prompt ✓</Text>
           </TouchableOpacity>
@@ -767,6 +770,9 @@ export default function WildRoundGameScreen({ navigation, route }) {
             <TouchableOpacity
               style={styles.secondaryBtn}
               onPress={handleSkipPrompt}
+              accessibilityRole="button"
+              accessibilityLabel="Skip — draw new prompt"
+              accessibilityHint="Discard this prompt and draw a different one"
             >
               <Text style={styles.secondaryBtnText}>
                 Skip — draw new prompt
@@ -871,6 +877,10 @@ export default function WildRoundGameScreen({ navigation, route }) {
             style={[styles.primaryBtn, !selectedCard && styles.btnDimmed]}
             onPress={handleSubmitCard}
             disabled={!selectedCard}
+            accessibilityRole="button"
+            accessibilityLabel="Submit"
+            accessibilityHint="Submit your selected card as your answer"
+            accessibilityState={{ disabled: !selectedCard }}
           >
             <Text style={styles.primaryBtnText}>Submit ✓</Text>
           </TouchableOpacity>
@@ -952,6 +962,10 @@ export default function WildRoundGameScreen({ navigation, route }) {
                 style={[styles.primaryBtn, !selectedSub && styles.btnDimmed]}
                 onPress={handlePickWinner}
                 disabled={!selectedSub}
+                accessibilityRole="button"
+                accessibilityLabel="Pick this answer"
+                accessibilityHint="Select the current answer as the winner"
+                accessibilityState={{ disabled: !selectedSub }}
               >
                 <Text style={styles.primaryBtnText}>Pick this answer ✓</Text>
               </TouchableOpacity>
@@ -1142,6 +1156,9 @@ export default function WildRoundGameScreen({ navigation, route }) {
                 <TouchableOpacity
                   style={styles.primaryBtn}
                   onPress={handleNextRound}
+                  accessibilityRole="button"
+                  accessibilityLabel="Next Round"
+                  accessibilityHint="Start the next round"
                 >
                   <Text style={styles.primaryBtnText}>Next Round →</Text>
                 </TouchableOpacity>
