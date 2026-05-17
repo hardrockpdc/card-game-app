@@ -708,6 +708,37 @@ export default function PokerGameScreen({ navigation, route }) {
     });
   }, []);
 
+  // UX-5: Android hardware back confirmation — must be before early returns
+  useEffect(() => {
+    const onBack = () => {
+      const message = isSinglePlayer
+        ? "Your progress will be saved."
+        : isHost
+          ? "You'll end the game for everyone."
+          : "You'll disconnect from the host.";
+      Alert.alert("Leave Game?", message, [
+        { text: "Stay", style: "cancel" },
+        {
+          text: "Leave",
+          style: isSinglePlayer ? "default" : "destructive",
+          onPress: () => {
+            if (isSinglePlayer) {
+              if (typeof handleSaveAndExit === "function") handleSaveAndExit();
+              else navigation.navigate("Home");
+            } else {
+              if (isHost) stopServer();
+              else disconnectFromHost();
+              navigation.navigate("Home");
+            }
+          },
+        },
+      ]);
+      return true;
+    };
+    const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
+    return () => sub.remove();
+  }, [navigation, isSinglePlayer, isHost]);
+
   function act(action) {
     if (isHost) {
       const state = fullRef.current;
@@ -861,37 +892,6 @@ export default function PokerGameScreen({ navigation, route }) {
     saveGame(saveKey, { fullState: fullRef.current });
     navigation.navigate("Home");
   }
-
-  // UX-5: Android hardware back confirmation
-  useEffect(() => {
-    const onBack = () => {
-      const message = isSinglePlayer
-        ? "Your progress will be saved."
-        : isHost
-          ? "You'll end the game for everyone."
-          : "You'll disconnect from the host.";
-      Alert.alert("Leave Game?", message, [
-        { text: "Stay", style: "cancel" },
-        {
-          text: "Leave",
-          style: isSinglePlayer ? "default" : "destructive",
-          onPress: () => {
-            if (isSinglePlayer) {
-              if (typeof handleSaveAndExit === "function") handleSaveAndExit();
-              else navigation.navigate("Home");
-            } else {
-              if (isHost) stopServer();
-              else disconnectFromHost();
-              navigation.navigate("Home");
-            }
-          },
-        },
-      ]);
-      return true;
-    };
-    const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
-    return () => sub.remove();
-  }, [navigation, isSinglePlayer, isHost]);
 
   // NOTE: Restart is omitted for Poker — tournament restart logic
   // (same chips vs new buy-in?) is unresolved. Future: re-add when
