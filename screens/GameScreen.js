@@ -162,17 +162,13 @@ export default function GameScreen({ navigation, route }) {
   // UX-5: Android hardware back confirmation
   useEffect(() => {
     const onBack = () => {
-      Alert.alert(
-        "Leave Game?",
-        "Your current hand will be saved.",
-        [
-          { text: "Stay", style: "cancel" },
-          {
-            text: "Leave",
-            onPress: () => navigation.navigate("Home"),
-          },
-        ]
-      );
+      Alert.alert("Leave Game?", "Your current hand will be saved.", [
+        { text: "Stay", style: "cancel" },
+        {
+          text: "Leave",
+          onPress: () => navigation.navigate("Home"),
+        },
+      ]);
       return true;
     };
     const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
@@ -728,6 +724,7 @@ export default function GameScreen({ navigation, route }) {
                   rank={card.rank}
                   suit={card.suit}
                   faceDown={index === 1 && !showFullDealerHand}
+                  animateReveal={index === 1}
                   sizeScale={1}
                 />
               ))}

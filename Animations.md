@@ -17,6 +17,8 @@ This file is written as a **human-readable spec**, but it also includes **repo-s
   - `faceDown ? getCardBackImage() : getCardImage(rank, suit)`
 - There is **no flip animation**—when `faceDown` changes, the image simply changes on re-render.
 
+**Update (animation work, Phase 1):** Card.js now supports a 3D flip animation when both `animateReveal` is passed AND the `faceDown` prop changes. The animation is opt-in — all other Card.js usages in the codebase continue to render a single Image with no animation overhead. The Blackjack dealer's hole card in screens/GameScreen.js uses this. Multiplayer Blackjack and Solitaire still use the instant swap pending further work.
+
 ### Blackjack “deal / hit / stand” is currently instant
 
 - `screens/GameScreen.js`:
@@ -338,5 +340,6 @@ When implementing any new animation, confirm:
 
 ## Open questions to finalize the spec
 
-- [ ] For flip animation: should you rotate/transform the entire card, or crossfade/swap opacity between front/back?
+- [x] **Flip implementation:** 3D rotation (rotateY transform). Two stacked Images with backfaceVisibility: hidden. Implemented in components/Card.js behind an opt-in `animateReveal` prop. Duration 260ms, ease-out, useNativeDriver true. Reduced motion check via AccessibilityInfo.
+
 - [ ] For movement: do you want “deck/hand slot” positions measured dynamically from layout, or do you want fixed board coordinates?
