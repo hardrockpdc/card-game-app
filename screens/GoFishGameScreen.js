@@ -285,6 +285,7 @@ export default function GoFishGameScreen({ navigation, route }) {
   const fullRef = useRef(null);
   const coinRewardedRef = useRef(false);
   const aiTimerRef = useRef(null);
+  const hasMountedRef = useRef(false);
   function applyState(next) {
     fullRef.current = next;
     setMyHand(next.hands["host"] ?? []);
@@ -337,6 +338,15 @@ export default function GoFishGameScreen({ navigation, route }) {
     return () => {
       if (aiTimerRef.current) clearTimeout(aiTimerRef.current);
     };
+  }, []);
+
+  // After the first render completes, flag mount-complete so future deals animate.
+  // Prevents cards present at mount (resume / network arrival) from sliding in.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      hasMountedRef.current = true;
+    }, 50);
+    return () => clearTimeout(timer);
   }, []);
 
   // Auto-save after each state change in single-player.
@@ -462,27 +472,23 @@ export default function GoFishGameScreen({ navigation, route }) {
         : isHost
           ? "You'll end the game for everyone."
           : "You'll disconnect from the host.";
-      Alert.alert(
-        "Leave Game?",
-        message,
-        [
-          { text: "Stay", style: "cancel" },
-          {
-            text: "Leave",
-            style: isSinglePlayer ? "default" : "destructive",
-            onPress: () => {
-              if (isSinglePlayer) {
-                if (typeof handleSaveAndExit === "function") handleSaveAndExit();
-                else navigation.navigate("Home");
-              } else {
-                if (isHost) stopServer();
-                else disconnectFromHost();
-                navigation.navigate("Home");
-              }
-            },
+      Alert.alert("Leave Game?", message, [
+        { text: "Stay", style: "cancel" },
+        {
+          text: "Leave",
+          style: isSinglePlayer ? "default" : "destructive",
+          onPress: () => {
+            if (isSinglePlayer) {
+              if (typeof handleSaveAndExit === "function") handleSaveAndExit();
+              else navigation.navigate("Home");
+            } else {
+              if (isHost) stopServer();
+              else disconnectFromHost();
+              navigation.navigate("Home");
+            }
           },
-        ]
-      );
+        },
+      ]);
       return true;
     };
     const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
@@ -657,7 +663,7 @@ export default function GoFishGameScreen({ navigation, route }) {
             </Text>
           )}
           <View style={styles.handRow}>
-            {displayHand.map((card) => {
+            {displayHand.map((card, index) => {
               const isSelected = card.rank === selectedRank;
               return (
                 <TouchableOpacity
@@ -674,7 +680,13 @@ export default function GoFishGameScreen({ navigation, route }) {
                     !isMyTurn && styles.cardDim,
                   ]}
                 >
-                  <Card rank={card.rank} suit={card.suit} />
+                  <Card
+                    rank={card.rank}
+                    suit={card.suit}
+                    small
+                    animateDeal={hasMountedRef.current}
+                    dealDelay={displayHand.length <= 7 ? index * 100 : 0}
+                  />
                 </TouchableOpacity>
               );
             })}
@@ -691,9 +703,15 @@ export default function GoFishGameScreen({ navigation, route }) {
             onPress={handleAsk}
             disabled={!selectedRank || selectedTarget === null}
             accessibilityRole="button"
-            accessibilityLabel={selectedRank && selectedTarget !== null ? `Ask for ${selectedRank}s` : "Ask"}
+            accessibilityLabel={
+              selectedRank && selectedTarget !== null
+                ? `Ask for ${selectedRank}s`
+                : "Ask"
+            }
             accessibilityHint="Ask the selected player for your chosen rank"
-            accessibilityState={{ disabled: !selectedRank || selectedTarget === null }}
+            accessibilityState={{
+              disabled: !selectedRank || selectedTarget === null,
+            }}
           >
             <Text style={styles.askBtnText}>
               {selectedRank && selectedTarget !== null

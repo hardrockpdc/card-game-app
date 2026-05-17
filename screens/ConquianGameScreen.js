@@ -91,6 +91,7 @@ export default function ConquianGameScreen({ navigation, route }) {
   const fullRef = useRef(null);
   const coinRewardedRef = useRef(false);
   const aiTimerRef = useRef(null);
+  const hasMountedRef = useRef(false);
   const [gameState, setGameState] = useState(null);
   const [myHand, setMyHand] = useState([]);
   const [selectedHandIds, setSelectedHandIds] = useState(new Set());
@@ -110,6 +111,15 @@ export default function ConquianGameScreen({ navigation, route }) {
   useEffect(() => {
     if (gameState?.phase !== "initialPass") setPassCardId(null);
   }, [gameState?.phase]);
+
+  // After the first render completes, flag mount-complete so future deals animate.
+  // Prevents cards present at mount (resume / network arrival) from sliding in.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      hasMountedRef.current = true;
+    }, 50);
+    return () => clearTimeout(timer);
+  }, []);
 
   // ─── State management ────────────────────────────────────────────────────────
 
@@ -679,27 +689,23 @@ export default function ConquianGameScreen({ navigation, route }) {
         : isHost
           ? "You'll end the game for everyone."
           : "You'll disconnect from the host.";
-      Alert.alert(
-        "Leave Game?",
-        message,
-        [
-          { text: "Stay", style: "cancel" },
-          {
-            text: "Leave",
-            style: isSinglePlayer ? "default" : "destructive",
-            onPress: () => {
-              if (isSinglePlayer) {
-                if (typeof handleSaveAndExit === "function") handleSaveAndExit();
-                else navigation.navigate("Home");
-              } else {
-                if (isHost) stopServer();
-                else disconnectFromHost();
-                navigation.navigate("Home");
-              }
-            },
+      Alert.alert("Leave Game?", message, [
+        { text: "Stay", style: "cancel" },
+        {
+          text: "Leave",
+          style: isSinglePlayer ? "default" : "destructive",
+          onPress: () => {
+            if (isSinglePlayer) {
+              if (typeof handleSaveAndExit === "function") handleSaveAndExit();
+              else navigation.navigate("Home");
+            } else {
+              if (isHost) stopServer();
+              else disconnectFromHost();
+              navigation.navigate("Home");
+            }
           },
-        ]
-      );
+        },
+      ]);
       return true;
     };
     const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
@@ -1188,7 +1194,7 @@ export default function ConquianGameScreen({ navigation, route }) {
               : `Your Hand (${myHand.length})`}
           </Text>
           <View style={styles.handRow}>
-            {myHand.map((card) => {
+            {myHand.map((card, index) => {
               const isSelected =
                 phase === "initialPass"
                   ? passCardId === card.id
@@ -1217,7 +1223,13 @@ export default function ConquianGameScreen({ navigation, route }) {
                   }}
                 >
                   <View style={isSelected ? styles.selectedWrapperSmall : null}>
-                    <Card rank={card.rank} suit={card.suit} small />
+                    <Card
+                      rank={card.rank}
+                      suit={card.suit}
+                      small
+                      animateDeal={hasMountedRef.current}
+                      dealDelay={myHand.length <= 10 ? index * 100 : 0}
+                    />
                   </View>
                 </TouchableOpacity>
               );

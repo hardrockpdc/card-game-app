@@ -564,6 +564,7 @@ export default function PokerGameScreen({ navigation, route }) {
   const chipsRef = useRef(null);
   const coinRewardedRef = useRef(false);
   const aiTimerRef = useRef(null);
+  const hasMountedRef = useRef(false);
 
   function applyState(next) {
     fullRef.current = next;
@@ -613,6 +614,15 @@ export default function PokerGameScreen({ navigation, route }) {
     return () => {
       if (aiTimerRef.current) clearTimeout(aiTimerRef.current);
     };
+  }, []);
+
+  // After the first render completes, flag mount-complete so future deals animate.
+  // Prevents cards present at mount (resume / network arrival) from sliding in.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      hasMountedRef.current = true;
+    }, 50);
+    return () => clearTimeout(timer);
   }, []);
 
   // Auto-save after each state change in single-player.
@@ -860,27 +870,23 @@ export default function PokerGameScreen({ navigation, route }) {
         : isHost
           ? "You'll end the game for everyone."
           : "You'll disconnect from the host.";
-      Alert.alert(
-        "Leave Game?",
-        message,
-        [
-          { text: "Stay", style: "cancel" },
-          {
-            text: "Leave",
-            style: isSinglePlayer ? "default" : "destructive",
-            onPress: () => {
-              if (isSinglePlayer) {
-                if (typeof handleSaveAndExit === "function") handleSaveAndExit();
-                else navigation.navigate("Home");
-              } else {
-                if (isHost) stopServer();
-                else disconnectFromHost();
-                navigation.navigate("Home");
-              }
-            },
+      Alert.alert("Leave Game?", message, [
+        { text: "Stay", style: "cancel" },
+        {
+          text: "Leave",
+          style: isSinglePlayer ? "default" : "destructive",
+          onPress: () => {
+            if (isSinglePlayer) {
+              if (typeof handleSaveAndExit === "function") handleSaveAndExit();
+              else navigation.navigate("Home");
+            } else {
+              if (isHost) stopServer();
+              else disconnectFromHost();
+              navigation.navigate("Home");
+            }
           },
-        ]
-      );
+        },
+      ]);
       return true;
     };
     const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
@@ -1022,8 +1028,14 @@ export default function PokerGameScreen({ navigation, route }) {
         <View style={styles.myHand}>
           <Text style={styles.myHandLabel}>Your Cards</Text>
           <View style={styles.myHandRow}>
-            {myHand.map((c) => (
-              <Card key={c.id} rank={c.rank} suit={c.suit} />
+            {myHand.map((c, index) => (
+              <Card
+                key={c.id}
+                rank={c.rank}
+                suit={c.suit}
+                animateDeal={hasMountedRef.current}
+                dealDelay={myHand.length <= 2 ? index * 100 : 0}
+              />
             ))}
           </View>
         </View>
@@ -1045,8 +1057,14 @@ export default function PokerGameScreen({ navigation, route }) {
                 style={[styles.actionBtn, styles.callBtn]}
                 onPress={() => act({ action: canCheck ? "check" : "call" })}
                 accessibilityRole="button"
-                accessibilityLabel={canCheck ? "Check" : `Call ${currentBet - (myPS.bet ?? 0)}`}
-                accessibilityHint={canCheck ? "Stay in without betting more" : "Match the current bet to stay in"}
+                accessibilityLabel={
+                  canCheck ? "Check" : `Call ${currentBet - (myPS.bet ?? 0)}`
+                }
+                accessibilityHint={
+                  canCheck
+                    ? "Stay in without betting more"
+                    : "Match the current bet to stay in"
+                }
               >
                 <Text style={styles.actionBtnText}>
                   {canCheck ? "Check" : `Call ${currentBet - (myPS.bet ?? 0)}`}

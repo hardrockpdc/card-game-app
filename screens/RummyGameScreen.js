@@ -153,6 +153,8 @@ function RummyCard({
   selected = false,
   onPress,
   disabled = false,
+  animateDeal = false,
+  dealDelay = 0,
 }) {
   const isJoker = card?.rank === "JOKER";
 
@@ -173,7 +175,13 @@ function RummyCard({
           <Text style={styles.jokerText}>Joker</Text>
         </View>
       ) : (
-        <Card rank={card.rank} suit={card.suit} small={small} />
+        <Card
+          rank={card.rank}
+          suit={card.suit}
+          small={small}
+          animateDeal={animateDeal}
+          dealDelay={dealDelay}
+        />
       )}
     </Pressable>
   );
@@ -206,6 +214,7 @@ export default function RummyGameScreen({ navigation, route }) {
   const fullRef = useRef(null);
   const aiTimerRef = useRef(null);
   const coinRewardedRef = useRef(false);
+  const hasMountedRef = useRef(false);
   const {
     show: showToast,
     message: toastMessage,
@@ -277,27 +286,23 @@ export default function RummyGameScreen({ navigation, route }) {
         : isHost
           ? "You'll end the game for everyone."
           : "You'll disconnect from the host.";
-      Alert.alert(
-        "Leave Game?",
-        message,
-        [
-          { text: "Stay", style: "cancel" },
-          {
-            text: "Leave",
-            style: isSinglePlayer ? "default" : "destructive",
-            onPress: () => {
-              if (isSinglePlayer) {
-                if (typeof handleSaveAndExit === "function") handleSaveAndExit();
-                else navigation.navigate("Home");
-              } else {
-                if (isHost) stopServer();
-                else disconnectFromHost();
-                navigation.navigate("Home");
-              }
-            },
+      Alert.alert("Leave Game?", message, [
+        { text: "Stay", style: "cancel" },
+        {
+          text: "Leave",
+          style: isSinglePlayer ? "default" : "destructive",
+          onPress: () => {
+            if (isSinglePlayer) {
+              if (typeof handleSaveAndExit === "function") handleSaveAndExit();
+              else navigation.navigate("Home");
+            } else {
+              if (isHost) stopServer();
+              else disconnectFromHost();
+              navigation.navigate("Home");
+            }
           },
-        ]
-      );
+        },
+      ]);
       return true;
     };
     const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
@@ -494,6 +499,15 @@ export default function RummyGameScreen({ navigation, route }) {
         setServerListeners({});
       }
     };
+  }, []);
+
+  // After the first render completes, flag mount-complete so future deals animate.
+  // Prevents cards present at mount (resume / network arrival) from sliding in.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      hasMountedRef.current = true;
+    }, 50);
+    return () => clearTimeout(timer);
   }, []);
 
   const canGoBack =
@@ -727,6 +741,8 @@ export default function RummyGameScreen({ navigation, route }) {
               selected={selected}
               onPress={() => allowSelect && toggleCard(index)}
               disabled={!allowSelect}
+              animateDeal={hasMountedRef.current}
+              dealDelay={myHand.length <= 10 ? index * 100 : 0}
             />
           );
         })}
@@ -909,7 +925,8 @@ export default function RummyGameScreen({ navigation, route }) {
                     index === currentPlayerIndex && styles.playerChipNameActive,
                   ]}
                 >
-                  {index === currentPlayerIndex ? "▶ " : ""}{player.name}
+                  {index === currentPlayerIndex ? "▶ " : ""}
+                  {player.name}
                 </Text>
                 <Text style={styles.playerChipMeta}>
                   {player.handCount ?? 0} cards • {player.score ?? 0} pts
@@ -1025,7 +1042,9 @@ export default function RummyGameScreen({ navigation, route }) {
                   accessibilityRole="button"
                   accessibilityLabel="Lay Meld"
                   accessibilityHint="Place selected cards as a meld on the table"
-                  accessibilityState={{ disabled: selectedHandIndexes.length < 3 }}
+                  accessibilityState={{
+                    disabled: selectedHandIndexes.length < 3,
+                  }}
                 >
                   <Text style={styles.actionButtonText}>Lay Meld</Text>
                 </Pressable>
@@ -1050,7 +1069,11 @@ export default function RummyGameScreen({ navigation, route }) {
                   accessibilityRole="button"
                   accessibilityLabel="Extend"
                   accessibilityHint="Add selected card to a meld already on the table"
-                  accessibilityState={{ disabled: selectedHandIndexes.length !== 1 || selectedMeldIndex === null }}
+                  accessibilityState={{
+                    disabled:
+                      selectedHandIndexes.length !== 1 ||
+                      selectedMeldIndex === null,
+                  }}
                 >
                   <Text style={styles.actionButtonText}>Extend</Text>
                 </Pressable>
@@ -1070,7 +1093,9 @@ export default function RummyGameScreen({ navigation, route }) {
                   accessibilityRole="button"
                   accessibilityLabel="Discard"
                   accessibilityHint="Discard the selected card to end your turn"
-                  accessibilityState={{ disabled: selectedHandIndexes.length !== 1 }}
+                  accessibilityState={{
+                    disabled: selectedHandIndexes.length !== 1,
+                  }}
                 >
                   <Text style={styles.actionButtonText}>Discard</Text>
                 </Pressable>
