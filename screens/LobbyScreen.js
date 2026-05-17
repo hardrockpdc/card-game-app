@@ -15,6 +15,7 @@ import {
   broadcastToClients,
   getConnectedPlayers,
   setClientListeners,
+  sendToHost,
   disconnectFromHost,
   startBroadcasting,
   stopBroadcasting,
