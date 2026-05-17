@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -15,16 +15,17 @@ import {
   broadcastToClients,
   getConnectedPlayers,
   setClientListeners,
-  sendToHost,
   disconnectFromHost,
   startBroadcasting,
   stopBroadcasting,
   stopServer,
 } from "../game/GameNetwork";
 import {
-  getRummyVariantLabel,
   getRummyVariantPlayerLimits,
+  RUMMY_VARIANT_OPTIONS,
 } from "../game/rummy";
+import ScrollWheelPicker from "../components/ScrollWheelPicker";
+import { POKER_VARIANT_OPTIONS } from "../components/PokerVariantWheel";
 
 const GAMES = [
   {
@@ -93,46 +94,122 @@ const GAMES = [
 ];
 
 const DEFAULT_MAX_PLAYERS = 4;
+const DEFAULT_POKER_VARIANT = "texasHoldem";
+const DEFAULT_RUMMY_VARIANT = "ginRummy";
+
+const WHEEL_OPTIONS = [
+  { value: "blackjack", title: "Blackjack" },
+  { value: "goFish", title: "Go Fish" },
+  { value: "conquian", title: "Conquián" },
+
+  ...POKER_VARIANT_OPTIONS.map((v) => ({
+    value: `poker:${v.value}`,
+    title: "Poker",
+    subtitle: v.label,
+  })),
+
+  ...RUMMY_VARIANT_OPTIONS.map((v) => ({
+    value: `rummy:${v.value}`,
+    title: "Rummy",
+    subtitle: v.label,
+  })),
+
+  { value: "wildRound:family", title: "Wild Round", subtitle: "Family 🧒" },
+  { value: "wildRound:mature", title: "Wild Round", subtitle: "Mature 🔞" },
+
+  { value: "lastCard", title: "Last Card" },
+];
+
+function parseLobbySelection(value) {
+  const safe = String(value ?? "conquian");
+  if (safe.startsWith("poker:")) {
+    return {
+      gameId: "poker",
+      pokerVariant: safe.split(":")[1] || DEFAULT_POKER_VARIANT,
+    };
+  }
+  if (safe.startsWith("rummy:")) {
+    return {
+      gameId: "rummy",
+      rummyVariant: safe.split(":")[1] || DEFAULT_RUMMY_VARIANT,
+    };
+  }
+  if (safe.startsWith("wildRound:")) {
+    return {
+      gameId: "wildRound",
+      tone: safe.split(":")[1] === "mature" ? "mature" : "family",
+    };
+  }
+  return { gameId: safe };
+}
 
 export default function LobbyScreen({ navigation, route }) {
   const { role, hostName, hostIp, playerName } = route.params || {};
   const isHost = role === "host";
   const myName = isHost ? hostName || "Host" : playerName || "Player";
 
+  const initialWheelValue = useMemo(() => {
+    const incomingPokerVariant = route.params?.selectedPokerVariant;
+    const incomingRummyVariant = route.params?.selectedRummyVariant;
+    const incomingTone = route.params?.tone;
+
+    if (incomingPokerVariant) return `poker:${incomingPokerVariant}`;
+    if (incomingRummyVariant) return `rummy:${incomingRummyVariant}`;
+    if (incomingTone) return `wildRound:${incomingTone}`;
+    return "conquian";
+  }, []);
+
   const [players, setPlayers] = useState([
     { id: isHost ? "host" : "me", name: myName, isMe: true, isHost },
   ]);
-  const [selectedGame, setSelectedGame] = useState("conquian");
-  const [selectedPokerVariant, setSelectedPokerVariant] = useState(
-    route.params?.selectedPokerVariant || "texasHoldem",
-  );
-  const [selectedRummyVariant, setSelectedRummyVariant] = useState(
-    route.params?.selectedRummyVariant || "ginRummy",
-  );
-  const [tone, setTone] = useState("family");
 
-  // Ref so server-listener closures always see the latest AI list
-  const aiPlayersRef = useRef([]);
+  const [selectedWheelValue, setSelectedWheelValue] =
+    useState(initialWheelValue);
 
-  const selectedGameDef = GAMES.find((g) => g.id === selectedGame);
-  const rummyLimits = getRummyVariantPlayerLimits(selectedRummyVariant);
+  const parsedSelection = useMemo(
+    () => parseLobbySelection(selectedWheelValue),
+    [selectedWheelValue],
+  );
+
+  const selectedGame = parsedSelection.gameId;
+  const selectedPokerVariant =
+    parsedSelection.gameId === "poker"
+      ? parsedSelection.pokerVariant || DEFAULT_POKER_VARIANT
+      : undefined;
+  const selectedRummyVariant =
+    parsedSelection.gameId === "rummy"
+      ? parsedSelection.rummyVariant || DEFAULT_RUMMY_VARIANT
+      : undefined;
+  const tone =
+    parsedSelection.gameId === "wildRound" ? parsedSelection.tone : undefined;
+
+  const selectedGameDef = GAMES.find((g) => g.id === selectedGame) || GAMES[0];
+
+  const rummyLimits = getRummyVariantPlayerLimits(
+    selectedRummyVariant || DEFAULT_RUMMY_VARIANT,
+  );
+
   const minPlayers =
     selectedGame === "rummy"
       ? rummyLimits.minPlayers
       : (selectedGameDef?.minPlayers ?? 2);
+
   const maxPlayers =
     selectedGame === "rummy"
       ? rummyLimits.maxPlayers
       : (selectedGameDef?.maxPlayers ?? DEFAULT_MAX_PLAYERS);
-  const selectedPokerLabel =
-    selectedPokerVariant === "texasHoldem"
-      ? "Texas Hold'em"
-      : selectedPokerVariant === "omaha"
-        ? "Omaha"
-        : selectedPokerVariant === "fiveCardDraw"
-          ? "Five Card Draw"
-          : "Seven Card Stud";
-  const selectedRummyLabel = getRummyVariantLabel(selectedRummyVariant);
+
+  const wheelAccentColor =
+    selectedGame === "poker"
+      ? "#C1121F"
+      : selectedGame === "rummy"
+        ? "#E94560"
+        : selectedGame === "wildRound"
+          ? "#77AEF7"
+          : "#E94560";
+
+  // Ref so server-listener closures always see the latest AI list
+  const aiPlayersRef = useRef([]);
 
   // ─── HOST setup ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -197,20 +274,6 @@ export default function LobbyScreen({ navigation, route }) {
     return () => stopBroadcasting();
   }, []);
 
-  const incomingPokerVariant = route.params?.selectedPokerVariant;
-  useEffect(() => {
-    if (incomingPokerVariant) {
-      setSelectedPokerVariant(incomingPokerVariant);
-    }
-  }, [incomingPokerVariant]);
-
-  const incomingRummyVariant = route.params?.selectedRummyVariant;
-  useEffect(() => {
-    if (incomingRummyVariant) {
-      setSelectedRummyVariant(incomingRummyVariant);
-    }
-  }, [incomingRummyVariant]);
-
   // ─── CLIENT setup ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (isHost) return;
@@ -233,9 +296,11 @@ export default function LobbyScreen({ navigation, route }) {
             myName,
             players: msg.players,
             variant:
-              msg.variant || msg.selectedPokerVariant || selectedPokerVariant,
+              msg.variant || msg.selectedPokerVariant || DEFAULT_POKER_VARIANT,
             variantId:
-              msg.variantId || msg.selectedRummyVariant || selectedRummyVariant,
+              msg.variantId ||
+              msg.selectedRummyVariant ||
+              DEFAULT_RUMMY_VARIANT,
             ...extra,
           });
         }
@@ -246,6 +311,11 @@ export default function LobbyScreen({ navigation, route }) {
         ]);
       },
     });
+
+    // Join host
+    // (server listeners will fill our player list)
+    // eslint-disable-next-line no-unused-vars
+    navigation;
 
     sendToHost({ type: "JOIN", name: myName });
 
@@ -321,7 +391,7 @@ export default function LobbyScreen({ navigation, route }) {
               navigation.navigate("Home");
             },
           },
-        ]
+        ],
       );
       return true;
     };
@@ -349,13 +419,12 @@ export default function LobbyScreen({ navigation, route }) {
       return;
     }
 
-    const game = GAMES.find((g) => g.id === selectedGame);
     const extra = selectedGame === "wildRound" ? { tone } : {};
     const pokerExtra =
       selectedGame === "poker"
         ? {
             variant: selectedPokerVariant,
-            selectedPokerVariant,
+            selectedPokerVariant: selectedPokerVariant,
           }
         : {};
     const rummyExtra =
@@ -363,11 +432,10 @@ export default function LobbyScreen({ navigation, route }) {
         ? {
             variant: selectedRummyVariant,
             variantId: selectedRummyVariant,
-            selectedRummyVariant,
+            selectedRummyVariant: selectedRummyVariant,
           }
         : {};
 
-    // BUG-5: stop UDP broadcast so other phones don't see a phantom game
     stopBroadcasting();
     broadcastToClients({
       type: "START_GAME",
@@ -378,7 +446,7 @@ export default function LobbyScreen({ navigation, route }) {
       ...rummyExtra,
     });
 
-    navigation.replace(game.screen, {
+    navigation.replace(selectedGameDef.screen, {
       role: "host",
       myName,
       players,
@@ -394,95 +462,21 @@ export default function LobbyScreen({ navigation, route }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Lobby</Text>
-
       {isHost && (
         <View style={styles.gameSelectorSection}>
           <Text style={styles.sectionLabel}>Game</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.gameScroll}
-          >
-            {GAMES.map((game) => (
-              <TouchableOpacity
-                key={game.id}
-                style={[
-                  styles.gameChip,
-                  selectedGame === game.id && styles.gameChipSelected,
-                ]}
-                onPress={() => setSelectedGame(game.id)}
-              >
-                <Text
-                  style={[
-                    styles.gameChipText,
-                    selectedGame === game.id && styles.gameChipTextSelected,
-                  ]}
-                >
-                  {game.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
 
-          {selectedGame === "poker" && (
-            <TouchableOpacity
-              style={styles.pokerVariantBtn}
-              onPress={() =>
-                navigation.navigate("PokerVariantPicker", {
-                  mode: "lobby",
-                  currentVariant: selectedPokerVariant,
-                })
-              }
-            >
-              <Text style={styles.pokerVariantBtnText}>
-                Poker Variant: {selectedPokerLabel}
-              </Text>
-            </TouchableOpacity>
-          )}
-
-          {selectedGame === "rummy" && (
-            <TouchableOpacity
-              style={styles.rummyVariantBtn}
-              onPress={() =>
-                navigation.navigate("RummyVariantPicker", {
-                  mode: "lobby",
-                  currentVariant: selectedRummyVariant,
-                })
-              }
-            >
-              <Text style={styles.rummyVariantBtnText}>
-                Rummy Variant: {selectedRummyLabel}
-              </Text>
-            </TouchableOpacity>
-          )}
-
-          {selectedGame === "wildRound" && (
-            <View style={styles.toneRow}>
-              {[
-                { id: "family", label: "Family 🧒" },
-                { id: "mature", label: "Mature 🔞" },
-              ].map((t) => (
-                <TouchableOpacity
-                  key={t.id}
-                  style={[
-                    styles.toneChip,
-                    tone === t.id && styles.toneChipSelected,
-                  ]}
-                  onPress={() => setTone(t.id)}
-                >
-                  <Text
-                    style={[
-                      styles.toneChipText,
-                      tone === t.id && styles.toneChipTextSelected,
-                    ]}
-                  >
-                    {t.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
+          <ScrollWheelPicker
+            options={WHEEL_OPTIONS}
+            value={selectedWheelValue}
+            onChange={setSelectedWheelValue}
+            itemHeight={48}
+            visibleCount={3}
+            accentColor={wheelAccentColor}
+            style={{ marginTop: 0 }}
+            titleFontSize={14}
+            subtitleFontSize={10}
+          />
         </View>
       )}
 
@@ -526,17 +520,6 @@ export default function LobbyScreen({ navigation, route }) {
 
       {isHost ? (
         <View style={styles.bottomSection}>
-          {hostIp && (
-            <View style={styles.ipRow}>
-              <Text style={styles.ipLabel}>Your IP: </Text>
-              <Text style={styles.ipValue}>{hostIp}</Text>
-            </View>
-          )}
-          {canAddAI && (
-            <TouchableOpacity style={styles.addAIBtn} onPress={handleAddAI}>
-              <Text style={styles.addAIBtnText}>+ Add Computer</Text>
-            </TouchableOpacity>
-          )}
           <Text style={styles.waitingText}>
             {players.length < minPlayers
               ? `${selectedGameDef?.label} needs at least ${minPlayers} players`
@@ -544,6 +527,13 @@ export default function LobbyScreen({ navigation, route }) {
                 ? `${selectedGameDef?.label} only supports up to ${maxPlayers} players`
                 : "Ready! Tap Start Game when everyone is here."}
           </Text>
+
+          {canAddAI && (
+            <TouchableOpacity style={styles.addAIBtn} onPress={handleAddAI}>
+              <Text style={styles.addAIBtnText}>+ Add Computer</Text>
+            </TouchableOpacity>
+          )}
+
           <TouchableOpacity
             style={[
               styles.startButton,
@@ -579,7 +569,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#1a1a2e",
     padding: scale(20),
-    paddingTop: scale(28),
+    paddingTop: scale(12),
   },
   title: {
     fontSize: scaleFont(28),
@@ -620,13 +610,13 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     color: "#ffffff",
-    fontSize: scaleFont(18),
+    fontSize: scaleFont(10),
     fontWeight: "bold",
   },
   playerName: {
     flex: 1,
     color: "#ffffff",
-    fontSize: scaleFont(18),
+    fontSize: scaleFont(10),
   },
   badges: {
     flexDirection: "row",
@@ -635,7 +625,7 @@ const styles = StyleSheet.create({
   badge: {
     backgroundColor: "#2a2a4a",
     color: "#c4c4d4",
-    fontSize: scaleFont(11),
+    fontSize: scaleFont(5),
     fontWeight: "bold",
     paddingHorizontal: scale(8),
     paddingVertical: scale(3),
@@ -674,21 +664,6 @@ const styles = StyleSheet.create({
     paddingBottom: scale(16),
     gap: scale(12),
   },
-  ipRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#16213e",
-    borderRadius: scale(8),
-    paddingHorizontal: scale(14),
-    paddingVertical: scale(8),
-  },
-  ipLabel: { color: "#c4c4d4", fontSize: scaleFont(13) },
-  ipValue: {
-    color: "#e94560",
-    fontSize: scaleFont(15),
-    fontWeight: "bold",
-    letterSpacing: scale(1),
-  },
   addAIBtn: {
     backgroundColor: "#3a1a5a",
     borderWidth: 1.5,
@@ -723,77 +698,6 @@ const styles = StyleSheet.create({
   },
   gameSelectorSection: {
     width: "100%",
-    marginBottom: scale(16),
+    marginBottom: scale(10),
   },
-  gameScroll: {
-    flexDirection: "row",
-  },
-  pokerVariantBtn: {
-    marginTop: scale(10),
-    backgroundColor: "#16213e",
-    borderWidth: 1.5,
-    borderColor: "#6a1b9a",
-    borderRadius: scale(10),
-    paddingHorizontal: scale(14),
-    paddingVertical: scale(10),
-    alignItems: "center",
-  },
-  pokerVariantBtnText: {
-    color: "#d7d2ff",
-    fontSize: scaleFont(13),
-    fontWeight: "bold",
-  },
-  rummyVariantBtn: {
-    marginTop: scale(10),
-    backgroundColor: "#16213e",
-    borderWidth: 1.5,
-    borderColor: "#e94560",
-    borderRadius: scale(10),
-    paddingHorizontal: scale(14),
-    paddingVertical: scale(10),
-    alignItems: "center",
-  },
-  rummyVariantBtnText: {
-    color: "#ffd8df",
-    fontSize: scaleFont(13),
-    fontWeight: "bold",
-  },
-  gameChip: {
-    backgroundColor: "#16213e",
-    borderWidth: 1.5,
-    borderColor: "#334",
-    borderRadius: scale(20),
-    paddingHorizontal: scale(16),
-    paddingVertical: scale(8),
-    marginRight: scale(8),
-  },
-  gameChipSelected: {
-    backgroundColor: "#e94560",
-    borderColor: "#e94560",
-  },
-  gameChipText: {
-    color: "#c4c4d4",
-    fontSize: scaleFont(14),
-    fontWeight: "bold",
-  },
-  gameChipTextSelected: {
-    color: "#ffffff",
-  },
-  toneRow: { flexDirection: "row", gap: scale(10), marginTop: scale(10) },
-  toneChip: {
-    flex: 1,
-    paddingVertical: scale(8),
-    borderRadius: scale(10),
-    backgroundColor: "#16213e",
-    borderWidth: 1.5,
-    borderColor: "#334",
-    alignItems: "center",
-  },
-  toneChipSelected: { backgroundColor: "#9c27b0", borderColor: "#9c27b0" },
-  toneChipText: {
-    color: "#c4c4d4",
-    fontSize: scaleFont(13),
-    fontWeight: "bold",
-  },
-  toneChipTextSelected: { color: "#ffffff" },
 });
