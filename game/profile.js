@@ -7,7 +7,7 @@ const DEFAULT_PROFILE = {
   name: "",
   photoType: null,
   photoValue: null,
-  cardTheme: "neon",
+  cardTheme: "classic",
   stats: {},
 };
 
@@ -38,10 +38,16 @@ function normalizeProfile(profile) {
       safeProfile.photoValue.trim()
         ? safeProfile.photoValue
         : null,
-    cardTheme:
-      typeof safeProfile.cardTheme === "string" && safeProfile.cardTheme.trim()
-        ? safeProfile.cardTheme.trim()
-        : DEFAULT_PROFILE.cardTheme,
+    cardTheme: (() => {
+      const raw = safeProfile.cardTheme;
+      if (typeof raw !== "string" || !raw.trim()) {
+        return DEFAULT_PROFILE.cardTheme;
+      }
+      const normalized = raw.trim();
+      if (normalized === "hp") return "wizards";
+      if (normalized === "jewel") return "classic";
+      return normalized;
+    })(),
     stats:
       safeProfile.stats && typeof safeProfile.stats === "object"
         ? { ...safeProfile.stats }

@@ -50,7 +50,7 @@ const AVATAR_CHOICES = [
 ];
 
 function getThemeLabel(themeId) {
-  return THEMES_LIST.find(([key]) => key === themeId)?.[1]?.name || "Neon";
+  return THEMES_LIST.find(([key]) => key === themeId)?.[1]?.name || "Classic";
 }
 
 function getAvatarChoice(avatarId) {
@@ -274,7 +274,12 @@ export default function ProfileScreen({ navigation, route }) {
       setShowPhotoActions(false);
       setShowAvatarGrid(false);
     } catch (err) {
-      warn("[ProfileScreen] handlePickFromLibrary error:", err?.message, err?.code, err);
+      warn(
+        "[ProfileScreen] handlePickFromLibrary error:",
+        err?.message,
+        err?.code,
+        err,
+      );
       Alert.alert("Error", "Could not open photo library. Please try again.");
     }
   }

@@ -14,15 +14,14 @@ const SUIT_KEY = {
 
 // ─── Theme registry ───────────────────────────────────────────────────────────
 // Note: actual asset folder names differ from the logical IDs for the
-// girly/hp/jewel themes (on-disk names use the card_images_ prefix).
+// girly/wizards themes (on-disk names use the card_images_ prefix).
 
 const THEMES = {
+  classic: { name: "Classic", folder: "card_images_classic" },
   neon: { name: "Neon", folder: "cards" },
   cowboy: { name: "Cowboy", folder: "cards_cowboy" },
   girly: { name: "Girly", folder: "card_images_girly" },
-  hp: { name: "Hogwarts", folder: "card_images_hp" },
-  jewel: { name: "Jewel", folder: "card_images_jewel" },
-  classic: { name: "Classic", folder: "card_images_classic" },
+  wizards: { name: "Wizards", folder: "card_images_hp" },
   gothic: { name: "Gothic", folder: "card_images_gothic" },
   pirate: { name: "Pirate", folder: "card_images_pirate" },
 };
@@ -481,30 +480,28 @@ const JEWEL = {
 
 // Preview images: Ace of Spades for each theme (used by CardThemeScreen)
 const PREVIEW_IMAGES = {
+  classic: require("../assets/card_images_classic/a_spades.png"),
   neon: require("../assets/cards/a_spades.png"),
   cowboy: require("../assets/cards_cowboy/a_spades.png"),
   girly: require("../assets/card_images_girly/a_spades.png"),
-  hp: require("../assets/card_images_hp/a_spades.png"),
-  jewel: require("../assets/card_images_jewel/a_spades.png"),
-  classic: require("../assets/card_images_classic/a_spades.png"),
+  wizards: require("../assets/card_images_hp/a_spades.png"),
   gothic: require("../assets/card_images_gothic/a_spades.png"),
   pirate: require("../assets/card_images_pirate/a_spades.png"),
 };
 
 const ALL_IMAGES = {
+  classic: CLASSIC,
   neon: NEON,
   cowboy: COWBOY,
   girly: GIRLY,
-  hp: HP,
-  jewel: JEWEL,
-  classic: CLASSIC,
+  wizards: HP,
   gothic: GOTHIC,
   pirate: PIRATE,
 };
 
 // ─── Active theme state + listener pattern ────────────────────────────────────
 
-let _active = "neon";
+let _active = "classic";
 const _listeners = new Set();
 
 export function getCurrentTheme() {
@@ -538,5 +535,5 @@ export function getCardBackImage() {
 }
 
 export function getThemePreviewImage(themeKey) {
-  return PREVIEW_IMAGES[themeKey] ?? PREVIEW_IMAGES["neon"];
+  return PREVIEW_IMAGES[themeKey] ?? PREVIEW_IMAGES["classic"];
 }
