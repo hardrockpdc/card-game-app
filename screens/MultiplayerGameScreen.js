@@ -241,6 +241,9 @@ export default function MultiplayerGameScreen({ navigation, route }) {
   const stateRef = useRef(null);
   // currentPlayersRef holds the live player list — updates when someone disconnects
   const currentPlayersRef = useRef(initialPlayers);
+  // Prevents the initial render / network state arrival from animating cards.
+  // Only cards added AFTER this is true will slide in.
+  const hasMountedRef = useRef(false);
 
   function applyState(newState) {
     stateRef.current = newState;
@@ -301,6 +304,16 @@ export default function MultiplayerGameScreen({ navigation, route }) {
         ]);
       },
     });
+  }, []);
+
+  // After the first render completes, flag mount-complete so future deals animate.
+  // Cards present on first render (e.g. when a non-host client joins mid-game)
+  // appear instantly; subsequent additions animate in.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      hasMountedRef.current = true;
+    }, 50);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -416,6 +429,22 @@ export default function MultiplayerGameScreen({ navigation, route }) {
     statusText = "Dealer playing";
   }
 
+  // Casino-table stagger math for the initial deal.
+  // Player at position p, card index c (0 or 1): delay = (c * (numPlayers + 1) + p) * 100ms
+  // Dealer card index c: delay = (c * (numPlayers + 1) + numPlayers) * 100ms
+  // Result: P0c0, P1c0, ..., PNc0, DealerC0, P0c1, P1c1, ..., PNc1, DealerC1
+  const STAGGER_STEP_MS = 100;
+  function computePlayerDealDelay(playerIdx, cardIdx, totalCardsInHand) {
+    // Only stagger during the initial deal (when hand has exactly 2 cards).
+    // For hits (3+ cards), only the newest card animates — no delay needed.
+    if (totalCardsInHand > 2) return 0;
+    return (cardIdx * (playersCount + 1) + playerIdx) * STAGGER_STEP_MS;
+  }
+  function computeDealerDealDelay(cardIdx, totalCardsInHand) {
+    if (totalCardsInHand > 2) return 0;
+    return (cardIdx * (playersCount + 1) + playersCount) * STAGGER_STEP_MS;
+  }
+
   function resultColor(r) {
     return r === "win" ? "#4caf50" : r === "lose" ? "#e94560" : "#ffd700";
   }
@@ -482,13 +511,16 @@ export default function MultiplayerGameScreen({ navigation, route }) {
             {showFullDealer && dealer.status === "bust" ? " 💥" : ""}
           </Text>
           <View style={[styles.hand, { width: handWidth }]}>
-            {dealer.hand.map((card) => (
+            {dealer.hand.map((card, index) => (
               <Card
                 key={card.id}
                 rank={card.rank}
                 suit={card.suit}
                 faceDown={!!card.hidden}
                 sizeScale={1}
+                animateReveal={index === 1}
+                animateDeal={hasMountedRef.current}
+                dealDelay={computeDealerDealDelay(index, dealer.hand.length)}
               />
             ))}
           </View>
@@ -544,12 +576,18 @@ export default function MultiplayerGameScreen({ navigation, route }) {
                     styles.activeHand,
                 ]}
               >
-                {player.hand.map((card) => (
+                {player.hand.map((card, cardIdx) => (
                   <Card
                     key={card.id}
                     rank={card.rank}
                     suit={card.suit}
                     sizeScale={1}
+                    animateDeal={hasMountedRef.current}
+                    dealDelay={computePlayerDealDelay(
+                      index,
+                      cardIdx,
+                      player.hand.length,
+                    )}
                   />
                 ))}
               </View>
@@ -579,12 +617,18 @@ export default function MultiplayerGameScreen({ navigation, route }) {
                       isCurrent && slot === "split" && styles.activeHand,
                     ]}
                   >
-                    {player.splitHand.map((card) => (
+                    {player.splitHand.map((card, cardIdx) => (
                       <Card
                         key={card.id}
                         rank={card.rank}
                         suit={card.suit}
                         sizeScale={1}
+                        animateDeal={hasMountedRef.current}
+                        dealDelay={computePlayerDealDelay(
+                          index,
+                          cardIdx,
+                          player.splitHand.length,
+                        )}
                       />
                     ))}
                   </View>

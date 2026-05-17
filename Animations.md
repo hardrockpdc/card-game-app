@@ -21,6 +21,8 @@ This file is written as a **human-readable spec**, but it also includes **repo-s
 
 **Update (animation work, Phase 2):** Card.js now also supports a slide-in deal animation via the `animateDeal` and `dealDelay` props. When `animateDeal` is true, the card mounts at translateY: -200 and opacity: 0, then animates to final position over 350ms. Used in screens/GameScreen.js (single-player Blackjack) for the player's hand and split hand, both on initial deal (staggered 100ms apart) and on every hit. The first render after mount is skipped via a hasMountedRef so resume-from-save doesn't animate existing cards. Dealer cards in single-player Blackjack now also animate in — staggered with the player cards in casino-table order (player1 → dealer1 → player2 → dealer2, 100ms between each card). The dealer's hole card simultaneously uses animateReveal for the 3D flip when the player stands; the two animations are independent and don't conflict. Multiplayer and other games still appear instantly pending further work.
 
+Multiplayer Blackjack (screens/MultiplayerGameScreen.js) also wires the same deal slide-in and dealer flip. The deal stagger scales across N players using casino-table order — for 3 players, the initial deal sequence is P0c0 → P1c0 → P2c0 → DealerC0 → P0c1 → P1c1 → P2c1 → DealerC1, each 100ms apart. The hasMountedRef pattern prevents non-host clients from animating cards on first state arrival from the network.
+
 ### Blackjack “deal / hit / stand” is currently instant
 
 - `screens/GameScreen.js`:
