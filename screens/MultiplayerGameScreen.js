@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Alert,
   BackHandler,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { createDeck, shuffleDeck, calculateHandValue } from "../game/deck";
@@ -231,6 +232,9 @@ export default function MultiplayerGameScreen({ navigation, route }) {
   const { role, myName, players: initialPlayers } = route.params;
   const isHost = role === "host";
 
+  const { width } = useWindowDimensions();
+  const handWidth = width - 48; // matches single-player's 12*2+12*2 padding math
+
   const [gameState, setGameState] = useState(null);
   const [showRoundModal, setShowRoundModal] = useState(false);
   // stateRef lets network callbacks always read the latest state without stale closures
@@ -271,7 +275,7 @@ export default function MultiplayerGameScreen({ navigation, route }) {
       onClientLeft: ({ id }) => {
         // Keep the live player list in sync so Play Again deals to the right people
         currentPlayersRef.current = currentPlayersRef.current.filter(
-          (p) => String(p.id) !== String(id)
+          (p) => String(p.id) !== String(id),
         );
         // Auto-stand a disconnected player so the game can continue
         const state = stateRef.current;
@@ -352,7 +356,7 @@ export default function MultiplayerGameScreen({ navigation, route }) {
               navigation.navigate("Home");
             },
           },
-        ]
+        ],
       );
       return true;
     };
@@ -422,6 +426,20 @@ export default function MultiplayerGameScreen({ navigation, route }) {
     return "";
   }
 
+  function resultIcon(r) {
+    if (r === "win") return "🎉 WIN";
+    if (r === "lose") return "💥 LOSE";
+    if (r === "push") return "🤝 TIE";
+    return "";
+  }
+
+  function localResultMessage(r) {
+    if (r === "win") return "🎉 You win!";
+    if (r === "lose") return "😞 Dealer wins.";
+    if (r === "push") return "🤝 Push — bet returned.";
+    return "";
+  }
+
   return (
     <SafeAreaView style={styles.screenRoot}>
       <GameHeader
@@ -454,27 +472,23 @@ export default function MultiplayerGameScreen({ navigation, route }) {
 
         {/* Dealer */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionName}>Dealer</Text>
-            <Text style={styles.sectionValue}>
-              {showFullDealer
-                ? `= ${calculateHandValue(dealer.hand)}`
-                : dealer.hand.length > 0 && !dealer.hand[0].hidden
-                  ? `shows ${calculateHandValue([dealer.hand[0]])}`
-                  : ""}
-            </Text>
-            {showFullDealer && dealer.status === "bust" && (
-              <Text style={styles.labelBust}>BUST</Text>
-            )}
-          </View>
-          <View style={styles.handRow}>
+          <Text style={styles.label}>
+            Dealer — {showFullDealer ? "total:" : "shows"}{" "}
+            {showFullDealer
+              ? calculateHandValue(dealer.hand)
+              : dealer.hand.length > 0 && !dealer.hand[0].hidden
+                ? calculateHandValue([dealer.hand[0]])
+                : 0}
+            {showFullDealer && dealer.status === "bust" ? " 💥" : ""}
+          </Text>
+          <View style={[styles.hand, { width: handWidth }]}>
             {dealer.hand.map((card) => (
               <Card
                 key={card.id}
                 rank={card.rank}
                 suit={card.suit}
                 faceDown={!!card.hidden}
-                sizeScale={2}
+                sizeScale={1}
               />
             ))}
           </View>
@@ -492,73 +506,42 @@ export default function MultiplayerGameScreen({ navigation, route }) {
           const slot = currentHandSlot ?? "main";
 
           return (
-            <View
-              key={String(player.id)}
-              style={[styles.section, isCurrent && styles.sectionActive]}
-            >
-              {/* Section header */}
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionName}>
-                  {player.name}
-                  {isMe ? " (you)" : ""}
-                </Text>
-                {!hasSplit && (
-                  <>
-                    <Text style={styles.sectionValue}>= {mainHandValue}</Text>
-                    {phase === "playing" && player.status === "bust" && (
-                      <Text style={styles.labelBust}>BUST</Text>
-                    )}
-                    {phase === "playing" && player.status === "stand" && (
-                      <Text style={styles.labelStand}>STAND</Text>
-                    )}
-                    {phase === "results" && player.result !== "" && (
-                      <Text
-                        style={[
-                          styles.labelResult,
-                          { color: resultColor(player.result) },
-                        ]}
-                      >
-                        {resultLabel(player.result)}
-                      </Text>
-                    )}
-                  </>
-                )}
-              </View>
-
-              {/* Main hand label (only when split exists) */}
-              {hasSplit && (
-                <View style={styles.handLabelRow}>
-                  <Text style={styles.handLabel}>
-                    {isCurrent && slot === "main" ? "▶ " : ""}Hand 1 ={" "}
-                    {mainHandValue}
+            <View key={String(player.id)} style={styles.section}>
+              {isMe &&
+                phase === "results" &&
+                !hasSplit &&
+                player.result !== "" && (
+                  <Text style={[styles.label, { fontSize: scaleFont(24) }]}>
+                    {localResultMessage(player.result)}
                   </Text>
-                  {phase === "playing" && player.status === "bust" && (
-                    <Text style={styles.labelBust}>BUST</Text>
-                  )}
-                  {phase === "playing" && player.status === "stand" && (
-                    <Text style={styles.labelStand}>STAND</Text>
-                  )}
-                  {phase === "results" && player.result !== "" && (
-                    <Text
-                      style={[
-                        styles.labelResult,
-                        { color: resultColor(player.result) },
-                      ]}
-                    >
-                      {resultLabel(player.result)}
-                    </Text>
-                  )}
-                </View>
-              )}
+                )}
 
-              {/* Main hand cards */}
+              {/* Main hand label */}
+              <Text style={styles.label}>
+                {hasSplit
+                  ? (isCurrent && slot === "main" ? "▶ " : "") +
+                    (isMe ? "Your Hand 1" : `${player.name}'s Hand 1`) +
+                    ` — total: ${mainHandValue}`
+                  : (isCurrent ? "▶ " : "") +
+                    (isMe
+                      ? `You — total: ${mainHandValue}`
+                      : `${player.name} — total: ${mainHandValue}`)}
+                {phase === "playing" && player.status === "bust" ? " 💥" : ""}
+                {phase === "playing" && player.status === "stand" ? " ✋" : ""}
+                {phase === "results" && player.result !== ""
+                  ? !isMe || hasSplit
+                    ? ` ${resultIcon(player.result)}`
+                    : ""
+                  : ""}
+              </Text>
+
               <View
                 style={[
-                  styles.handRow,
-                  hasSplit &&
-                    isCurrent &&
-                    slot === "main" &&
-                    styles.activeHandBorder,
+                  styles.hand,
+                  { width: handWidth },
+                  isCurrent &&
+                    (!hasSplit || slot === "main") &&
+                    styles.activeHand,
                 ]}
               >
                 {player.hand.map((card) => (
@@ -566,7 +549,7 @@ export default function MultiplayerGameScreen({ navigation, route }) {
                     key={card.id}
                     rank={card.rank}
                     suit={card.suit}
-                    sizeScale={2}
+                    sizeScale={1}
                   />
                 ))}
               </View>
@@ -574,32 +557,26 @@ export default function MultiplayerGameScreen({ navigation, route }) {
               {/* Split hand */}
               {hasSplit && (
                 <>
-                  <View style={styles.handLabelRow}>
-                    <Text style={styles.handLabel}>
-                      {isCurrent && slot === "split" ? "▶ " : ""}Hand 2 ={" "}
-                      {splitHandValue}
-                    </Text>
-                    {phase === "playing" && player.splitStatus === "bust" && (
-                      <Text style={styles.labelBust}>BUST</Text>
-                    )}
-                    {phase === "playing" && player.splitStatus === "stand" && (
-                      <Text style={styles.labelStand}>STAND</Text>
-                    )}
-                    {phase === "results" && player.splitResult !== "" && (
-                      <Text
-                        style={[
-                          styles.labelResult,
-                          { color: resultColor(player.splitResult) },
-                        ]}
-                      >
-                        {resultLabel(player.splitResult)}
-                      </Text>
-                    )}
-                  </View>
+                  <Text style={styles.label}>
+                    {(isCurrent && slot === "split" ? "▶ " : "") +
+                      (isMe ? "Your Hand 2" : `${player.name}'s Hand 2`) +
+                      ` — total: ${splitHandValue}`}
+                    {phase === "playing" && player.splitStatus === "bust"
+                      ? " 💥"
+                      : ""}
+                    {phase === "playing" && player.splitStatus === "stand"
+                      ? " ✋"
+                      : ""}
+                    {phase === "results" && player.splitResult !== ""
+                      ? ` ${resultIcon(player.splitResult)}`
+                      : ""}
+                  </Text>
+
                   <View
                     style={[
-                      styles.handRow,
-                      isCurrent && slot === "split" && styles.activeHandBorder,
+                      styles.hand,
+                      { width: handWidth },
+                      isCurrent && slot === "split" && styles.activeHand,
                     ]}
                   >
                     {player.splitHand.map((card) => (
@@ -607,46 +584,11 @@ export default function MultiplayerGameScreen({ navigation, route }) {
                         key={card.id}
                         rank={card.rank}
                         suit={card.suit}
-                        sizeScale={2}
+                        sizeScale={1}
                       />
                     ))}
                   </View>
                 </>
-              )}
-
-              {/* Hit / Stand / Split — only for the active player on their turn */}
-              {isMe && isMyTurn && (
-                <View style={styles.actionRow}>
-                  <TouchableOpacity
-                    style={[styles.actionBtn, styles.hitBtn]}
-                    onPress={() => handleAction("hit")}
-                    accessibilityRole="button"
-                    accessibilityLabel="Hit"
-                    accessibilityHint="Take another card"
-                  >
-                    <Text style={styles.actionBtnText}>Hit</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.actionBtn, styles.standBtn]}
-                    onPress={() => handleAction("stand")}
-                    accessibilityRole="button"
-                    accessibilityLabel="Stand"
-                    accessibilityHint="End your turn with current cards"
-                  >
-                    <Text style={styles.actionBtnText}>Stand</Text>
-                  </TouchableOpacity>
-                  {canSplit && (
-                    <TouchableOpacity
-                      style={[styles.actionBtn, styles.splitBtn]}
-                      onPress={() => handleAction("split")}
-                      accessibilityRole="button"
-                      accessibilityLabel="Split"
-                      accessibilityHint="Split matching pair into two hands"
-                    >
-                      <Text style={styles.actionBtnText}>Split</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
               )}
             </View>
           );
@@ -680,6 +622,42 @@ export default function MultiplayerGameScreen({ navigation, route }) {
           tableColor={BG}
         />
       </ScrollView>
+
+      {isMyTurn && (
+        <View style={styles.bottomArea}>
+          <View style={styles.buttonRow}>
+            <TouchableOpacity
+              style={[styles.button, styles.hitButton]}
+              onPress={() => handleAction("hit")}
+              accessibilityRole="button"
+              accessibilityLabel="Hit"
+              accessibilityHint="Take another card"
+            >
+              <Text style={styles.buttonText}>Hit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.button, styles.standButton]}
+              onPress={() => handleAction("stand")}
+              accessibilityRole="button"
+              accessibilityLabel="Stand"
+              accessibilityHint="End your turn with current cards"
+            >
+              <Text style={styles.buttonText}>Stand</Text>
+            </TouchableOpacity>
+            {canSplit && (
+              <TouchableOpacity
+                style={[styles.button, styles.splitButton]}
+                onPress={() => handleAction("split")}
+                accessibilityRole="button"
+                accessibilityLabel="Split"
+                accessibilityHint="Split matching pair into two hands"
+              >
+                <Text style={styles.buttonText}>Split</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -699,11 +677,14 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     backgroundColor: BG,
-    padding: scale(14),
-    paddingBottom: scale(40),
+    paddingHorizontal: scale(12),
+    paddingVertical: scale(20),
+    paddingBottom: scale(30),
+    alignItems: "center",
   },
 
   banner: {
+    width: "100%",
     backgroundColor: "#e94560",
     borderRadius: scale(10),
     paddingVertical: scale(10),
@@ -714,64 +695,56 @@ const styles = StyleSheet.create({
   bannerText: { color: "#fff", fontSize: scaleFont(16), fontWeight: "bold" },
 
   section: {
-    backgroundColor: "rgba(0,0,0,0.28)",
-    borderRadius: scale(12),
-    padding: scale(14),
-    marginBottom: scale(12),
-    borderWidth: 1.5,
-    borderColor: "transparent",
-  },
-  sectionActive: {
-    borderColor: "#ffd700",
-    backgroundColor: "rgba(255,215,0,0.08)",
-  },
-  sectionHeader: {
-    flexDirection: "row",
     alignItems: "center",
-    marginBottom: scale(8),
-    gap: scale(8),
+    marginVertical: scale(16),
+    width: "100%",
   },
-  sectionName: {
-    color: "#fff",
-    fontSize: scaleFont(16),
+  label: {
+    color: "#ffffff",
+    fontSize: scaleFont(18),
     fontWeight: "bold",
-    flex: 1,
+    marginBottom: scale(10),
+    textAlign: "center",
   },
-  sectionValue: { color: "#ccc", fontSize: scaleFont(14) },
-
-  labelBust: { color: "#e94560", fontWeight: "bold", fontSize: scaleFont(13) },
-  labelStand: { color: "#999", fontWeight: "bold", fontSize: scaleFont(13) },
-  labelResult: { fontWeight: "bold", fontSize: scaleFont(15) },
-
-  handRow: { flexDirection: "row", flexWrap: "wrap" },
-  activeHandBorder: {
-    borderWidth: 2,
-    borderColor: "#ffd700",
-    borderRadius: scale(8),
-    padding: scale(2),
-  },
-
-  handLabelRow: {
+  hand: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: scale(8),
-    marginTop: scale(10),
-    marginBottom: scale(4),
-  },
-  handLabel: { color: "#ddd", fontSize: scaleFont(13), fontWeight: "bold" },
-
-  actionRow: { flexDirection: "row", marginTop: scale(12), gap: scale(10) },
-  actionBtn: {
-    flex: 1,
-    minHeight: scale(66),
-    borderRadius: scale(8),
-    alignItems: "center",
+    flexWrap: "wrap",
     justifyContent: "center",
   },
-  hitBtn: { backgroundColor: "#e94560" },
-  standBtn: { backgroundColor: "#2980b9" },
-  splitBtn: { backgroundColor: "#8e44ad" },
-  actionBtnText: { color: "#fff", fontSize: scaleFont(12), fontWeight: "bold" },
+  activeHand: {
+    borderWidth: 2,
+    borderColor: "#ffd700",
+    borderRadius: scale(10),
+    padding: scale(4),
+  },
+
+  bottomArea: {
+    alignSelf: "stretch",
+    alignItems: "center",
+    paddingHorizontal: scale(12),
+    paddingBottom: scale(16),
+  },
+  buttonRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: scale(10),
+  },
+  button: {
+    minHeight: scale(68),
+    paddingHorizontal: scale(40),
+    borderRadius: scale(10),
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  hitButton: { backgroundColor: "#e94560" },
+  standButton: { backgroundColor: "#2980b9" },
+  splitButton: { backgroundColor: "#8e44ad" },
+  buttonText: {
+    color: "#ffffff",
+    fontSize: scaleFont(14),
+    fontWeight: "bold",
+  },
 
   waitText: {
     color: "#aaa",
