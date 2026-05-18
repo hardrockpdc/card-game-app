@@ -28,6 +28,8 @@ import {
   disconnectFromHost,
 } from "../game/GameNetwork";
 import { getTableTheme } from "../game/tableThemes";
+import TestBotToggle from "../components/TestBotToggle";
+import { useTestBot, TEST_BOT_DELAY_MS } from "../game/testBot";
 
 const BG = getTableTheme("poker").table;
 
@@ -565,6 +567,9 @@ export default function PokerGameScreen({ navigation, route }) {
   const coinRewardedRef = useRef(false);
   const aiTimerRef = useRef(null);
   const hasMountedRef = useRef(false);
+  const botRestartTimerRef = useRef(null);
+  const { enabled: botEnabled } = useTestBot();
+  const botEnabledRef = useRef(false);
 
   function applyState(next) {
     fullRef.current = next;
@@ -594,19 +599,23 @@ export default function PokerGameScreen({ navigation, route }) {
   function scheduleAI(state) {
     if (!isHost || state.phase === "showdown") return;
     const currentP = state.players[state.currentPlayerIndex];
-    if (!currentP?.isAI) return;
+    if (!currentP?.isAI && !(botEnabledRef.current && isSinglePlayer)) return;
     if (aiTimerRef.current) clearTimeout(aiTimerRef.current);
     aiTimerRef.current = setTimeout(
       () => {
         const s = fullRef.current;
         if (!s || s.phase === "showdown") return;
         const cp = s.players[s.currentPlayerIndex];
-        if (!cp?.isAI) return;
+        if (!cp?.isAI && !(botEnabledRef.current && isSinglePlayer)) return;
         const pid = String(cp.id);
-        const next = pokerAIAction(s, pid, difficulty);
-        if (next !== s) applyState(next);
+        try {
+          const next = pokerAIAction(s, pid, difficulty);
+          if (next !== s) applyState(next);
+        } catch (err) {
+          console.warn("[TestBot] poker AI crashed:", err);
+        }
       },
-      1000 + Math.random() * 800,
+      TEST_BOT_DELAY_MS,
     );
   }
 
@@ -615,6 +624,10 @@ export default function PokerGameScreen({ navigation, route }) {
       if (aiTimerRef.current) clearTimeout(aiTimerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    botEnabledRef.current = botEnabled;
+  }, [botEnabled]);
 
   // After the first render completes, flag mount-complete so future deals animate.
   // Prevents cards present at mount (resume / network arrival) from sliding in.
@@ -738,6 +751,23 @@ export default function PokerGameScreen({ navigation, route }) {
     const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
     return () => sub.remove();
   }, [navigation, isSinglePlayer, isHost]);
+
+  // Bot: Auto-restart when tournament ends
+  useEffect(() => {
+    if (
+      tournamentWinner === null ||
+      !botEnabledRef.current ||
+      !isSinglePlayer
+    )
+      return;
+    if (botRestartTimerRef.current) clearTimeout(botRestartTimerRef.current);
+    botRestartTimerRef.current = setTimeout(() => {
+      if (botEnabledRef.current) handleRestart();
+    }, 1500);
+    return () => {
+      if (botRestartTimerRef.current) clearTimeout(botRestartTimerRef.current);
+    };
+  }, [tournamentWinner]);
 
   function act(action) {
     if (isHost) {
@@ -922,6 +952,7 @@ export default function PokerGameScreen({ navigation, route }) {
             </View>
           </View>
         }
+        extraButton={<TestBotToggle />}
         menuItems={menuItems}
       />
       <StatsStrip

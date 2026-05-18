@@ -31,6 +31,8 @@ import {
   stopServer,
   disconnectFromHost,
 } from "../game/GameNetwork";
+import TestBotToggle from "../components/TestBotToggle";
+import { useTestBot, TEST_BOT_DELAY_MS } from "../game/testBot";
 
 // ─── Game logic ───────────────────────────────────────────────────────────────
 
@@ -286,6 +288,9 @@ export default function GoFishGameScreen({ navigation, route }) {
   const coinRewardedRef = useRef(false);
   const aiTimerRef = useRef(null);
   const hasMountedRef = useRef(false);
+  const botRestartTimerRef = useRef(null);
+  const { enabled: botEnabled } = useTestBot();
+  const botEnabledRef = useRef(false);
   function applyState(next) {
     fullRef.current = next;
     setMyHand(next.hands["host"] ?? []);
@@ -307,14 +312,14 @@ export default function GoFishGameScreen({ navigation, route }) {
   function scheduleAI(state) {
     if (!isHost || state.phase !== "playing") return;
     const currentP = state.players[state.currentPlayerIndex];
-    if (!currentP?.isAI) return;
+    if (!currentP?.isAI && !(botEnabledRef.current && isSinglePlayer)) return;
     if (aiTimerRef.current) clearTimeout(aiTimerRef.current);
     aiTimerRef.current = setTimeout(
       () => {
         const s = fullRef.current;
         if (!s || s.phase !== "playing") return;
         const cp = s.players[s.currentPlayerIndex];
-        if (!cp?.isAI) return;
+        if (!cp?.isAI && !(botEnabledRef.current && isSinglePlayer)) return;
         const aiPid = String(cp.id);
         const hand = s.hands[aiPid] || [];
         if (hand.length === 0) return;
@@ -322,15 +327,19 @@ export default function GoFishGameScreen({ navigation, route }) {
           (_, i) => i !== s.currentPlayerIndex,
         );
         if (opponents.length === 0) return;
-        const { rank, target } = pickGoFishAIMove(
-          s,
-          aiPid,
-          opponents,
-          difficulty,
-        );
-        applyState(doAsk(s, aiPid, target.id, rank));
+        try {
+          const { rank, target } = pickGoFishAIMove(
+            s,
+            aiPid,
+            opponents,
+            difficulty,
+          );
+          applyState(doAsk(s, aiPid, target.id, rank));
+        } catch (err) {
+          console.warn("[TestBot] gofish AI crashed:", err);
+        }
       },
-      1000 + Math.random() * 600,
+      TEST_BOT_DELAY_MS,
     );
   }
 
@@ -339,6 +348,10 @@ export default function GoFishGameScreen({ navigation, route }) {
       if (aiTimerRef.current) clearTimeout(aiTimerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    botEnabledRef.current = botEnabled;
+  }, [botEnabled]);
 
   // After the first render completes, flag mount-complete so future deals animate.
   // Prevents cards present at mount (resume / network arrival) from sliding in.
@@ -446,6 +459,23 @@ export default function GoFishGameScreen({ navigation, route }) {
     if (gameState?.phase === "results") setShowRoundModal(true);
   }, [gameState?.phase]);
 
+  // Bot: Auto-restart when game ends
+  useEffect(() => {
+    if (
+      gameState?.phase !== "results" ||
+      !botEnabledRef.current ||
+      !isSinglePlayer
+    )
+      return;
+    if (botRestartTimerRef.current) clearTimeout(botRestartTimerRef.current);
+    botRestartTimerRef.current = setTimeout(() => {
+      if (botEnabledRef.current) handleRestart();
+    }, 1500);
+    return () => {
+      if (botRestartTimerRef.current) clearTimeout(botRestartTimerRef.current);
+    };
+  }, [gameState?.phase]);
+
   function handleQuit() {
     if (isSinglePlayer) clearGame(SAVE_KEY_GOFISH);
     else if (isHost) stopServer();
@@ -543,6 +573,7 @@ export default function GoFishGameScreen({ navigation, route }) {
         gameId="gofish"
         title="Go Fish"
         subtitle={isSinglePlayer ? "Single Player" : "Multiplayer"}
+        extraButton={<TestBotToggle />}
         menuItems={menuItems}
       />
       <StatsStrip

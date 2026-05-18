@@ -37,6 +37,8 @@ import {
   getRummyVariantLabel,
   calculateRummyDeadwood,
 } from "../game/rummy";
+import TestBotToggle from "../components/TestBotToggle";
+import { useTestBot, TEST_BOT_DELAY_MS } from "../game/testBot";
 
 const BG = getTableTheme("rummy").table;
 
@@ -215,6 +217,9 @@ export default function RummyGameScreen({ navigation, route }) {
   const aiTimerRef = useRef(null);
   const coinRewardedRef = useRef(false);
   const hasMountedRef = useRef(false);
+  const botRestartTimerRef = useRef(null);
+  const { enabled: botEnabled } = useTestBot();
+  const botEnabledRef = useRef(false);
   const {
     show: showToast,
     message: toastMessage,
@@ -335,7 +340,7 @@ export default function RummyGameScreen({ navigation, route }) {
     }
 
     const current = state.players?.[state.currentPlayerIndex];
-    if (!current?.isAI) {
+    if (!current?.isAI && !(botEnabledRef.current && isSinglePlayer)) {
       return;
     }
 
@@ -351,27 +356,31 @@ export default function RummyGameScreen({ navigation, route }) {
         }
 
         const active = latest.players?.[latest.currentPlayerIndex];
-        if (!active?.isAI) {
+        if (!active?.isAI && !(botEnabledRef.current && isSinglePlayer)) {
           return;
         }
 
-        const move = rummyAiChooseMove(
-          latest,
-          latest.currentPlayerIndex,
-          difficulty,
-        );
+        try {
+          const move = rummyAiChooseMove(
+            latest,
+            latest.currentPlayerIndex,
+            difficulty,
+          );
 
-        const next = rummyReducer(latest, {
-          type: move.type,
-          pid: latest.currentPlayerIndex,
-          ...move,
-        });
+          const next = rummyReducer(latest, {
+            type: move.type,
+            pid: latest.currentPlayerIndex,
+            ...move,
+          });
 
-        if (next !== latest) {
-          applyState(next);
+          if (next !== latest) {
+            applyState(next);
+          }
+        } catch (err) {
+          console.warn("[TestBot] rummy AI crashed:", err);
         }
       },
-      900 + Math.random() * 500,
+      TEST_BOT_DELAY_MS,
     );
   }
 
@@ -792,6 +801,27 @@ export default function RummyGameScreen({ navigation, route }) {
   }, [gameState?.phase, gameState?.winner, gameState?.tie]);
 
   useEffect(() => {
+    botEnabledRef.current = botEnabled;
+  }, [botEnabled]);
+
+  // Bot: Auto-restart when game ends
+  useEffect(() => {
+    if (
+      gameState?.phase !== "game-over" ||
+      !botEnabledRef.current ||
+      !isSinglePlayer
+    )
+      return;
+    if (botRestartTimerRef.current) clearTimeout(botRestartTimerRef.current);
+    botRestartTimerRef.current = setTimeout(() => {
+      if (botEnabledRef.current) handleRestart();
+    }, 1500);
+    return () => {
+      if (botRestartTimerRef.current) clearTimeout(botRestartTimerRef.current);
+    };
+  }, [gameState?.phase]);
+
+  useEffect(() => {
     if (variantId !== "ginRummy") return;
     hasSeen("ginRummy").then((seen) => {
       if (!seen) setShowTutorial(true);
@@ -877,6 +907,7 @@ export default function RummyGameScreen({ navigation, route }) {
         gameId="rummy"
         title={variantLabel}
         subtitle={isSinglePlayer ? "Single Player" : "Multiplayer"}
+        extraButton={<TestBotToggle />}
         menuItems={menuItems}
       />
       <StatsStrip

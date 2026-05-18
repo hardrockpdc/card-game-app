@@ -44,6 +44,8 @@ import { addCoins } from "../game/wallet";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import { recordWin } from "../game/profile";
 import { getTableTheme } from "../game/tableThemes";
+import TestBotToggle from "../components/TestBotToggle";
+import { useTestBot, TEST_BOT_DELAY_MS } from "../game/testBot";
 
 const BG = getTableTheme("conquian").table;
 const SAVE_KEY_CONQUIAN = "@cardnight:save:rummy:conquian";
@@ -92,6 +94,9 @@ export default function ConquianGameScreen({ navigation, route }) {
   const coinRewardedRef = useRef(false);
   const aiTimerRef = useRef(null);
   const hasMountedRef = useRef(false);
+  const botRestartTimerRef = useRef(null);
+  const { enabled: botEnabled } = useTestBot();
+  const botEnabledRef = useRef(false);
   const [gameState, setGameState] = useState(null);
   const [myHand, setMyHand] = useState([]);
   const [selectedHandIds, setSelectedHandIds] = useState(new Set());
@@ -148,17 +153,21 @@ export default function ConquianGameScreen({ navigation, route }) {
   function scheduleAI(state) {
     if (!isHost || state.phase !== "playing") return;
     const cp = state.players[state.currentPlayerIndex];
-    if (!cp?.isAI) return;
+    if (!cp?.isAI && !(botEnabledRef.current && isSinglePlayer)) return;
     if (aiTimerRef.current) clearTimeout(aiTimerRef.current);
     aiTimerRef.current = setTimeout(
       () => {
         const s = fullRef.current;
         if (!s || s.phase !== "playing") return;
         const cp2 = s.players[s.currentPlayerIndex];
-        if (!cp2?.isAI) return;
-        runAITurn(s);
+        if (!cp2?.isAI && !(botEnabledRef.current && isSinglePlayer)) return;
+        try {
+          runAITurn(s);
+        } catch (err) {
+          console.warn("[TestBot] conquian AI crashed:", err);
+        }
       },
-      700 + Math.random() * 500,
+      TEST_BOT_DELAY_MS,
     );
   }
 
@@ -167,6 +176,10 @@ export default function ConquianGameScreen({ navigation, route }) {
       if (aiTimerRef.current) clearTimeout(aiTimerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    botEnabledRef.current = botEnabled;
+  }, [botEnabled]);
 
   function runAITurn(state) {
     const cp = state.players[state.currentPlayerIndex];
@@ -653,6 +666,23 @@ export default function ConquianGameScreen({ navigation, route }) {
     if (gameState?.phase === "results") setShowRoundModal(true);
   }, [gameState?.phase]);
 
+  // Bot: Auto-restart when game ends
+  useEffect(() => {
+    if (
+      gameState?.phase !== "results" ||
+      !botEnabledRef.current ||
+      !isSinglePlayer
+    )
+      return;
+    if (botRestartTimerRef.current) clearTimeout(botRestartTimerRef.current);
+    botRestartTimerRef.current = setTimeout(() => {
+      if (botEnabledRef.current) handleRestart();
+    }, 1500);
+    return () => {
+      if (botRestartTimerRef.current) clearTimeout(botRestartTimerRef.current);
+    };
+  }, [gameState?.phase]);
+
   // ─── Guards ──────────────────────────────────────────────────────────────────
 
   if (!gameState) {
@@ -992,6 +1022,7 @@ export default function ConquianGameScreen({ navigation, route }) {
         gameId="conquian"
         title="Conquian"
         subtitle={isSinglePlayer ? "Single Player" : "Multiplayer"}
+        extraButton={<TestBotToggle />}
         menuItems={menuItems}
       />
       <StatsStrip

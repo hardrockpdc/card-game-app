@@ -37,6 +37,7 @@ import { setTheme } from "./game/cardTheme";
 import { warn } from "./game/logger";
 import { initSounds } from "./game/sounds";
 import { ThemeProvider } from "./game/ThemeContext";
+import { TestBotProvider } from "./game/testBot";
 import ErrorBoundary from "./components/ErrorBoundary";
 import {
   stopServer,
@@ -81,7 +82,8 @@ export default function App() {
     <ErrorBoundary>
       <SafeAreaProvider>
         <ThemeProvider>
-          <NavigationContainer>
+          <TestBotProvider>
+            <NavigationContainer>
             <Stack.Navigator
               initialRouteName="Home"
               screenOptions={{
@@ -232,6 +234,7 @@ export default function App() {
               />
             </Stack.Navigator>
           </NavigationContainer>
+          </TestBotProvider>
         </ThemeProvider>
       </SafeAreaProvider>
     </ErrorBoundary>

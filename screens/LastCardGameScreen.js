@@ -44,6 +44,8 @@ import { addCoins } from "../game/wallet";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import { recordWin } from "../game/profile";
 import { getTableTheme } from "../game/tableThemes";
+import TestBotToggle from "../components/TestBotToggle";
+import { useTestBot, TEST_BOT_DELAY_MS } from "../game/testBot";
 
 const SAVE_KEY_LASTCARD = "@cardnight:save:lastcard";
 
@@ -306,6 +308,9 @@ export default function LastCardGameScreen({ navigation, route }) {
   const colorTimerRef = useRef(null);
   const yourTurnTimerRef = useRef(null);
   const prevTurnRef = useRef(null);
+  const botRestartTimerRef = useRef(null);
+  const { enabled: botEnabled } = useTestBot();
+  const botEnabledRef = useRef(false);
   const [gameState, setGameState] = useState(null);
   const [showYourTurnBanner, setShowYourTurnBanner] = useState(false);
   const [myHand, setMyHand] = useState([]);
@@ -325,9 +330,14 @@ export default function LastCardGameScreen({ navigation, route }) {
       if (turnTimerRef.current) clearTimeout(turnTimerRef.current);
       if (colorTimerRef.current) clearTimeout(colorTimerRef.current);
       if (yourTurnTimerRef.current) clearTimeout(yourTurnTimerRef.current);
+      if (botRestartTimerRef.current) clearTimeout(botRestartTimerRef.current);
     },
     [],
   );
+
+  useEffect(() => {
+    botEnabledRef.current = botEnabled;
+  }, [botEnabled]);
 
   useEffect(() => {
     if (!isSinglePlayer) return;
@@ -363,6 +373,30 @@ export default function LastCardGameScreen({ navigation, route }) {
     }
     prevTurnRef.current = currentTurn;
   }, [gameState?.currentTurn]);
+
+  // Bot: Auto-pick color when color picker appears
+  useEffect(() => {
+    if (phase !== "colorPicker" || !botEnabledRef.current || !isSinglePlayer) return;
+    if (colorTimerRef.current) clearTimeout(colorTimerRef.current);
+    colorTimerRef.current = setTimeout(() => {
+      onColorPick(COLORS[0]);
+    }, TEST_BOT_DELAY_MS);
+    return () => {
+      if (colorTimerRef.current) clearTimeout(colorTimerRef.current);
+    };
+  }, [phase]);
+
+  // Bot: Auto-restart when game ends
+  useEffect(() => {
+    if (phase !== "gameOver" || !botEnabledRef.current || !isSinglePlayer) return;
+    if (botRestartTimerRef.current) clearTimeout(botRestartTimerRef.current);
+    botRestartTimerRef.current = setTimeout(() => {
+      if (botEnabledRef.current) handleRestart();
+    }, 1500);
+    return () => {
+      if (botRestartTimerRef.current) clearTimeout(botRestartTimerRef.current);
+    };
+  }, [phase]);
 
   function scheduleTimeout(ref, fn, ms) {
     if (ref.current) clearTimeout(ref.current);
@@ -598,50 +632,51 @@ export default function LastCardGameScreen({ navigation, route }) {
     const s = fullRef.current;
     if (!s || s.gameOver) return;
     const current = s.players.find((p) => p.id === s.currentTurn);
-    if (!current?.isAI) return;
+    if (!current?.isAI && !(botEnabledRef.current && isSinglePlayer)) return;
 
-    const move = getAIMove(s, current.id);
-    if (move) {
-      const next = doHostCardPlay(current.id, move.card, move.chosenColor);
-      if (next !== s) {
-        const parts = [`${current.name} plays ${cardLabel(move.card)}`];
-        if (move.card.type === "skip") parts.push("— skips next player!");
-        if (move.card.type === "reverse") parts.push("— reverses direction!");
-        if (move.card.type === "draw2") parts.push("— next player draws 2!");
-        if (move.card.type === "wild_draw4")
-          parts.push("— next player draws 4!");
-        if (move.chosenColor)
-          parts.push(`— picks ${COLOR_LABELS[move.chosenColor]}`);
-        setStatusMsg(parts.join(" "));
-        applyState(next);
+    try {
+      const move = getAIMove(s, current.id);
+      if (move) {
+        const next = doHostCardPlay(current.id, move.card, move.chosenColor);
+        if (next !== s) {
+          const parts = [`${current.name} plays ${cardLabel(move.card)}`];
+          if (move.card.type === "skip") parts.push("— skips next player!");
+          if (move.card.type === "reverse") parts.push("— reverses direction!");
+          if (move.card.type === "draw2") parts.push("— next player draws 2!");
+          if (move.card.type === "wild_draw4")
+            parts.push("— next player draws 4!");
+          if (move.chosenColor)
+            parts.push(`— picks ${COLOR_LABELS[move.chosenColor]}`);
+          setStatusMsg(parts.join(" "));
+          applyState(next);
+          scheduleTimeout(turnTimerRef, () => handleTurn(stateRef.current), 1100);
+          return;
+        }
+      }
+
+      let nextState = s;
+      let drawn = null;
+      let count = 0;
+      while (true) {
+        const r = drawCard(nextState, current.id);
+        nextState = r.state;
+        if (!r.drawnCard) break;
+        drawn = r.drawnCard;
+        count += 1;
+        const topCard = nextState.discardPile[nextState.discardPile.length - 1];
+        const hand = nextState.hands[current.id] ?? [];
+        const hasColorMatch = hand.some((c) => c.color === nextState.activeColor);
+        if (isPlayable(drawn, topCard, nextState.activeColor, hasColorMatch))
+          break;
+      }
+
+      if (!drawn) {
+        const final = { ...nextState, currentTurn: getNextPlayer(nextState) };
+        setStatusMsg(`${current.name} cannot draw any more cards.`);
+        applyState(resolveIfNeeded(final));
         scheduleTimeout(turnTimerRef, () => handleTurn(stateRef.current), 1100);
         return;
       }
-    }
-
-    let nextState = s;
-    let drawn = null;
-    let count = 0;
-    while (true) {
-      const r = drawCard(nextState, current.id);
-      nextState = r.state;
-      if (!r.drawnCard) break;
-      drawn = r.drawnCard;
-      count += 1;
-      const topCard = nextState.discardPile[nextState.discardPile.length - 1];
-      const hand = nextState.hands[current.id] ?? [];
-      const hasColorMatch = hand.some((c) => c.color === nextState.activeColor);
-      if (isPlayable(drawn, topCard, nextState.activeColor, hasColorMatch))
-        break;
-    }
-
-    if (!drawn) {
-      const final = { ...nextState, currentTurn: getNextPlayer(nextState) };
-      setStatusMsg(`${current.name} cannot draw any more cards.`);
-      applyState(resolveIfNeeded(final));
-      scheduleTimeout(turnTimerRef, () => handleTurn(stateRef.current), 1100);
-      return;
-    }
 
     setStatusMsg(
       `${current.name} draws ${count} card${count !== 1 ? "s" : ""}`,
@@ -690,6 +725,9 @@ export default function LastCardGameScreen({ navigation, route }) {
       const final = { ...nextState, currentTurn: getNextPlayer(nextState) };
       applyState(resolveIfNeeded(final));
       scheduleTimeout(turnTimerRef, () => handleTurn(stateRef.current), 1100);
+    }
+    } catch (err) {
+      console.warn("[TestBot] lastcard AI crashed:", err);
     }
   }
 
@@ -1024,6 +1062,7 @@ export default function LastCardGameScreen({ navigation, route }) {
         gameId="lastcard"
         title="Last Card"
         subtitle={isSinglePlayer ? "Single Player" : "Multiplayer"}
+        extraButton={<TestBotToggle />}
         menuItems={menuItems}
       />
       <StatsStrip

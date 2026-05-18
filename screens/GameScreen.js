@@ -22,6 +22,8 @@ import TutorialOverlay, { hasSeen } from "../components/TutorialOverlay";
 import EndOfRoundModal from "../components/EndOfRoundModal";
 import StatsStrip from "../components/StatsStrip";
 import { getTableTheme } from "../game/tableThemes";
+import TestBotToggle from "../components/TestBotToggle";
+import { useTestBot, TEST_BOT_DELAY_MS } from "../game/testBot";
 const BG = getTableTheme("blackjack").table;
 const ACCENT = getTableTheme("blackjack").accent;
 
@@ -85,6 +87,9 @@ export default function GameScreen({ navigation, route }) {
   const payoutDoneRef = useRef(false);
   const modalDelayTimerRef = useRef(null);
   const hasMountedRef = useRef(false);
+  const botTimerRef = useRef(null);
+  const { enabled: botEnabled } = useTestBot();
+  const botEnabledRef = useRef(false);
 
   // ── Screen phase: 'betting' | 'playing' | 'result' ───────────────
   const [screenPhase, setScreenPhase] = useState("betting");
@@ -193,8 +198,65 @@ export default function GameScreen({ navigation, route }) {
         clearTimeout(modalDelayTimerRef.current);
         modalDelayTimerRef.current = null;
       }
+      if (botTimerRef.current) clearTimeout(botTimerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    botEnabledRef.current = botEnabled;
+  }, [botEnabled]);
+
+  // Bot: Select bet when on the betting screen (deal is triggered by the effect below)
+  useEffect(() => {
+    if (!botEnabledRef.current || screenPhase !== "betting") return;
+    if (coins === null || coins < MIN_BET) return;
+    if (botTimerRef.current) clearTimeout(botTimerRef.current);
+    botTimerRef.current = setTimeout(() => {
+      if (!botEnabledRef.current) return;
+      setSelectedBet(MIN_BET);
+    }, TEST_BOT_DELAY_MS);
+    return () => {
+      if (botTimerRef.current) clearTimeout(botTimerRef.current);
+    };
+  }, [botEnabled, screenPhase, coins]);
+
+  // Bot: Deal once selectedBet lands on MIN_BET (fresh closure sees correct selectedBet)
+  useEffect(() => {
+    if (!botEnabledRef.current || screenPhase !== "betting" || selectedBet !== MIN_BET) return;
+    handleDeal();
+  }, [selectedBet]);
+
+  // Bot: Auto-play during the hand
+  useEffect(() => {
+    if (!botEnabledRef.current || gameStatus !== "playing") return;
+    if (botTimerRef.current) clearTimeout(botTimerRef.current);
+    botTimerRef.current = setTimeout(() => {
+      if (!botEnabledRef.current || gameStatus !== "playing") return;
+      try {
+        const total = calculateHandValue(playerHand);
+        if (total < 17) handleHit();
+        else handleStand();
+      } catch (err) {
+        console.warn("[TestBot] blackjack AI crashed:", err);
+      }
+    }, TEST_BOT_DELAY_MS);
+    return () => {
+      if (botTimerRef.current) clearTimeout(botTimerRef.current);
+    };
+  }, [botEnabled, gameStatus, playerHand]);
+
+  // Bot: Auto-continue after hand resolves
+  useEffect(() => {
+    if (!botEnabledRef.current) return;
+    if (gameStatus !== "finished" && gameStatus !== "bust") return;
+    if (botTimerRef.current) clearTimeout(botTimerRef.current);
+    botTimerRef.current = setTimeout(() => {
+      if (botEnabledRef.current) handleContinueSameBet();
+    }, 1500);
+    return () => {
+      if (botTimerRef.current) clearTimeout(botTimerRef.current);
+    };
+  }, [botEnabled, gameStatus]);
 
   // ── Payout ────────────────────────────────────────────────────────
   // Called once per hand when it's fully resolved.
@@ -620,6 +682,7 @@ export default function GameScreen({ navigation, route }) {
           gameId="blackjack"
           title="Blackjack"
           subtitle={isFree ? "Free Play" : "Casino"}
+          extraButton={<TestBotToggle />}
           menuItems={menuItems}
         />
         <StatsStrip
