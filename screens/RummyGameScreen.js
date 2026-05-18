@@ -1131,14 +1131,33 @@ export default function RummyGameScreen({ navigation, route }) {
 
                 <Pressable
                   onPress={handleKnock}
+                  disabled={
+                    !isMyTurn ||
+                    currentPhase !== "discard" ||
+                    gameState?.winner != null
+                  }
                   style={({ pressed }) => [
                     styles.actionButton,
                     styles.knockButton,
-                    pressed && styles.actionButtonPressed,
+                    (!isMyTurn ||
+                      currentPhase !== "discard" ||
+                      gameState?.winner != null) &&
+                      styles.actionButtonDisabled,
+                    pressed &&
+                      isMyTurn &&
+                      currentPhase === "discard" &&
+                      gameState?.winner == null &&
+                      styles.actionButtonPressed,
                   ]}
                   accessibilityRole="button"
                   accessibilityLabel="Knock"
                   accessibilityHint="End the round and reveal all hands"
+                  accessibilityState={{
+                    disabled:
+                      !isMyTurn ||
+                      currentPhase !== "discard" ||
+                      gameState?.winner != null,
+                  }}
                 >
                   <Text style={styles.actionButtonText}>Knock</Text>
                 </Pressable>

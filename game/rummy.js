@@ -1055,6 +1055,29 @@ export function rummyReducer(state, action = {}) {
   const hand = nextState.hands[pid] || [];
   const playerName = nextState.players[pid]?.name || "Player";
 
+  // Safety: prevent "discard" phase with empty hand from freezing the game.
+  // This can happen when a player empties their hand via meld actions
+  // but doesn't satisfy Indian Rummy finish rules (or when AI targets discard
+  // while having no cards).
+  if (nextState.phase === "discard" && hand.length === 0) {
+    // DEBUG: identify “stuck” conditions in Indian Rummy / AI.
+    console.warn("[rummyReducer:empty-discard]", {
+      pid,
+      type,
+      phase: nextState.phase,
+      variantId: nextState.variantId,
+      canFinish: canPlayerFinish(nextState, pid, config),
+    });
+
+    if (canPlayerFinish(nextState, pid, config)) {
+      return finalizeRummyWin(nextState, pid, config, "empty-hand");
+    }
+
+    nextState.phase = "draw";
+    nextState.statusMessage = `${playerName} has no cards. Draw a card.`;
+    return nextState;
+  }
+
   if (type === "draw-card") {
     if (nextState.phase !== "draw") {
       return nextState;
@@ -1123,11 +1146,17 @@ export function rummyReducer(state, action = {}) {
     });
     nextState.statusMessage = `${playerName} laid down a meld.`;
 
-    if (
-      !nextState.hands[pid].length &&
-      canPlayerFinish(nextState, pid, config)
-    ) {
-      return finalizeRummyWin(nextState, pid, config, "meld");
+    if (!nextState.hands[pid].length) {
+      if (canPlayerFinish(nextState, pid, config)) {
+        return finalizeRummyWin(nextState, pid, config, "meld");
+      }
+
+      // Prevent getting stuck: if the hand becomes empty but the variant
+      // finish conditions aren't met (e.g. Indian Rummy pure/run rules),
+      // a discard is impossible. Switch back to draw so the player can continue.
+      nextState.phase = "draw";
+      nextState.statusMessage = `${playerName} laid down a meld but can't go out yet. Draw a card.`;
+      return nextState;
     }
 
     return nextState;
@@ -1157,8 +1186,16 @@ export function rummyReducer(state, action = {}) {
     targetMeld.cards = sortRummyCards((targetMeld.cards || []).concat(card));
     nextState.statusMessage = `${playerName} added to a meld.`;
 
-    if (!hand.length && canPlayerFinish(nextState, pid, config)) {
-      return finalizeRummyWin(nextState, pid, config, "meld");
+    if (!hand.length) {
+      if (canPlayerFinish(nextState, pid, config)) {
+        return finalizeRummyWin(nextState, pid, config, "meld");
+      }
+
+      // Prevent getting stuck: with an empty hand the player can't discard.
+      // If variant finish rules aren't met, switch back to draw so the player can continue.
+      nextState.phase = "draw";
+      nextState.statusMessage = `${playerName} added to a meld but can't go out yet. Draw a card.`;
+      return nextState;
     }
 
     return nextState;
@@ -1170,6 +1207,16 @@ export function rummyReducer(state, action = {}) {
     }
 
     if (!canPlayerFinish(nextState, pid, config)) {
+      // DEBUG
+      console.warn("[rummyReducer:knock-rejected]", {
+        pid,
+        variantId: nextState.variantId,
+        deadwood: calculateRummyDeadwood(
+          hand,
+          getPlayerMelds(nextState.melds, pid),
+        ),
+      });
+
       nextState.statusMessage = `${playerName} cannot finish yet.`;
       return nextState;
     }
@@ -1182,9 +1229,40 @@ export function rummyReducer(state, action = {}) {
       return nextState;
     }
 
+    // If the current player has no cards, discard is impossible.
+    // Force progress instead of returning a no-op.
+    if (hand.length === 0) {
+      // DEBUG
+      console.warn("[rummyReducer:discard-card-empty-hand]", {
+        pid,
+        phase: nextState.phase,
+        variantId: nextState.variantId,
+        canFinish: canPlayerFinish(nextState, pid, config),
+      });
+
+      if (canPlayerFinish(nextState, pid, config)) {
+        return finalizeRummyWin(nextState, pid, config, "discard");
+      }
+
+      nextState.phase = "draw";
+      nextState.statusMessage = `${playerName} has no cards. Draw a card.`;
+      return nextState;
+    }
+
     const indexes = getSelectionIndexes(hand, action);
     const discardIndex = indexes.length ? indexes[0] : -1;
+
     if (!hand[discardIndex]) {
+      // DEBUG
+      console.warn("[rummyReducer:discard-card-invalid-index]", {
+        pid,
+        discardIndex,
+        handLength: hand.length,
+        variantId: nextState.variantId,
+      });
+
+      nextState.phase = "draw";
+      nextState.statusMessage = `${playerName} can't discard. Draw a card.`;
       return nextState;
     }
 
