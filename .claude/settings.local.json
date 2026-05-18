@@ -28,7 +28,10 @@
       "Bash(node -e \"const j=require\\('./app.json'\\); const p=j.expo.android.permissions; console.log\\('Android permissions count:', p.length\\); console.log\\(p\\); const ios=j.expo.ios.infoPlist; console.log\\('iOS infoPlist keys:', Object.keys\\(ios\\)\\); console.log\\('Bonjour count:', ios.NSBonjourServices.length\\);\")",
       "Bash(dir \"c:\\\\Users\\\\hardr\\\\OneDrive\\\\Documents\\\\Projects\\\\card-game-app\\\\game\\\\\" | findstr -i testbot)",
       "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(p.scripts?.lint ?? 'NO_LINT_SCRIPT'\\)\")",
-      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(JSON.stringify\\(p.scripts, null, 2\\)\\)\")"
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(JSON.stringify\\(p.scripts, null, 2\\)\\)\")",
+      "Bash(npx eslint *)",
+      "Bash(node_modules/.bin/eslint screens/LastCardGameScreen.js screens/PokerGameScreen.js screens/GoFishGameScreen.js screens/ConquianGameScreen.js screens/RummyGameScreen.js screens/GameScreen.js)",
+      "PowerShell(Get-ChildItem \"c:\\\\Users\\\\hardr\\\\OneDrive\\\\Documents\\\\Projects\\\\card-game-app\\\\node_modules\\\\.bin\" | Where-Object { $_.Name -match \"eslint\" })"
     ],
     "additionalDirectories": [
       "C:\\Users\\hardr\\.claude\\projects\\c--Users-hardr-OneDrive-Documents-Projects-card-game-app"

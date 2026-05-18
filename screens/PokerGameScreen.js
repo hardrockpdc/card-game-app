@@ -611,9 +611,13 @@ export default function PokerGameScreen({ navigation, route }) {
         const pid = String(cp.id);
         try {
           const next = pokerAIAction(s, pid, difficulty);
-          if (next !== s) applyState(next);
+          if (next !== s) {
+            const _category = (botEnabledRef.current && isSinglePlayer) ? "MOVE_BOT" : "MOVE_AI";
+            botLog(_category, "Poker", { player: cp.name, action: next.lastAction, phase: s.phase });
+            applyState(next);
+          }
         } catch (err) {
-          console.warn("[TestBot] poker AI crashed:", err);
+          botLogError("CRASH", "Poker", err);
         }
       },
       TEST_BOT_DELAY_MS,
@@ -661,6 +665,7 @@ export default function PokerGameScreen({ navigation, route }) {
           return;
         }
       }
+      botLog("GAMESTART", "Poker", { players: initialPlayers.length, difficulty, variant });
       applyState(initDeal(initialPlayers, 0, null, startingChips));
       // Deduct the buy-in from the wallet when a single-player casino tournament starts.
       if (isSinglePlayer && buyIn && !freePlay) {
@@ -771,6 +776,7 @@ export default function PokerGameScreen({ navigation, route }) {
   }, [tournamentWinner]);
 
   function act(action) {
+    if (!botEnabledRef.current) botLog("MOVE_USER", "Poker", { action: action.action, amount: action.amount });
     if (isHost) {
       const state = fullRef.current;
       if (!state) return;
@@ -786,6 +792,7 @@ export default function PokerGameScreen({ navigation, route }) {
           // watch computers play each other out.
           if (isSinglePlayer) {
             const winner = hostIsOut ? null : (activePlayers[0] ?? null);
+            botLog("GAMEOVER", "Poker", { winner: winner?.id ?? null });
             setTournamentWinner(winner ?? { id: "__none__", name: "Nobody" });
             if (
               winner &&

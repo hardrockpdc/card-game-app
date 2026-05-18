@@ -335,9 +335,11 @@ export default function GoFishGameScreen({ navigation, route }) {
             opponents,
             difficulty,
           );
+          const _category = (botEnabledRef.current && isSinglePlayer) ? "MOVE_BOT" : "MOVE_AI";
+          botLog(_category, "GoFish", { player: cp.name, asks: `${cp.name} asks ${target.name} for ${rank}s` });
           applyState(doAsk(s, aiPid, target.id, rank));
         } catch (err) {
-          console.warn("[TestBot] gofish AI crashed:", err);
+          botLogError("CRASH", "GoFish", err);
         }
       },
       TEST_BOT_DELAY_MS,
@@ -384,6 +386,7 @@ export default function GoFishGameScreen({ navigation, route }) {
           return;
         }
       }
+      botLog("GAMESTART", "GoFish", { players: initialPlayers.length, difficulty });
       applyState(dealGoFish(initialPlayers));
     }
     init();
@@ -420,6 +423,7 @@ export default function GoFishGameScreen({ navigation, route }) {
 
   function handleAsk() {
     if (!selectedRank || selectedTarget === null) return;
+    if (!botEnabledRef.current) botLog("MOVE_USER", "GoFish ask", { rank: selectedRank, target: selectedTarget });
     if (isHost) {
       const state = fullRef.current;
       if (
@@ -457,7 +461,10 @@ export default function GoFishGameScreen({ navigation, route }) {
   }, [gameState?.phase, gameState?.winner]);
 
   useEffect(() => {
-    if (gameState?.phase === "results") setShowRoundModal(true);
+    if (gameState?.phase === "results") {
+      botLog("GAMEOVER", "GoFish", { winner: gameState?.winner?.id });
+      setShowRoundModal(true);
+    }
   }, [gameState?.phase]);
 
   // Bot: Auto-restart when game ends
@@ -486,6 +493,7 @@ export default function GoFishGameScreen({ navigation, route }) {
 
   function handleRestart() {
     if (isSinglePlayer) clearGame(SAVE_KEY_GOFISH);
+    botLog("GAMESTART", "GoFish", { players: initialPlayers.length, difficulty });
     applyState(dealGoFish(initialPlayers));
   }
 

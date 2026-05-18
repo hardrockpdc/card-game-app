@@ -214,6 +214,7 @@ export default function GameScreen({ navigation, route }) {
     if (botTimerRef.current) clearTimeout(botTimerRef.current);
     botTimerRef.current = setTimeout(() => {
       if (!botEnabledRef.current) return;
+      botLog("MOVE_BOT", "Blackjack bet", { amount: MIN_BET, coins });
       setSelectedBet(MIN_BET);
     }, TEST_BOT_DELAY_MS);
     return () => {
@@ -235,10 +236,11 @@ export default function GameScreen({ navigation, route }) {
       if (!botEnabledRef.current || gameStatus !== "playing") return;
       try {
         const total = calculateHandValue(playerHand);
+        botLog("MOVE_BOT", "Blackjack", { total, action: total < 17 ? "hit" : "stand", hand: playerHand.map((c) => `${c.rank}${c.suit}`).join(" ") });
         if (total < 17) handleHit();
         else handleStand();
       } catch (err) {
-        console.warn("[TestBot] blackjack AI crashed:", err);
+        botLogError("CRASH", "Blackjack", err);
       }
     }, TEST_BOT_DELAY_MS);
     return () => {
@@ -252,7 +254,10 @@ export default function GameScreen({ navigation, route }) {
     if (gameStatus !== "finished" && gameStatus !== "bust") return;
     if (botTimerRef.current) clearTimeout(botTimerRef.current);
     botTimerRef.current = setTimeout(() => {
-      if (botEnabledRef.current) handleContinueSameBet();
+      if (botEnabledRef.current) {
+        botLog("RESTART", "Blackjack");
+        handleContinueSameBet();
+      }
     }, 1500);
     return () => {
       if (botTimerRef.current) clearTimeout(botTimerRef.current);
@@ -319,6 +324,8 @@ export default function GameScreen({ navigation, route }) {
       recordWin("blackjack");
     }
 
+    botLog("GAMEOVER", "Blackjack", { result: mainResult, payout });
+
     // Delay the result modal so the dealer hole-card flip animation can play in full
     // before being covered. 2000ms covers the 260ms flip + a comfortable pause.
     if (modalDelayTimerRef.current) clearTimeout(modalDelayTimerRef.current);
@@ -335,6 +342,8 @@ export default function GameScreen({ navigation, route }) {
       modalDelayTimerRef.current = null;
     }
     if (!selectedBet || screenPhase !== "betting") return;
+
+    if (!botEnabledRef.current) botLog("MOVE_USER", "Blackjack deal", { bet: selectedBet });
 
     const bet = selectedBet;
     currentBetRef.current = bet;
@@ -382,6 +391,8 @@ export default function GameScreen({ navigation, route }) {
   // ── Split ─────────────────────────────────────────────────────────
   async function handleSplit() {
     if (coins === null || coins < currentBetRef.current) return;
+
+    if (!botEnabledRef.current) botLog("MOVE_USER", "Blackjack split");
     const newCoins = await subtractCoins(currentBetRef.current);
     setCoins(newCoins);
     const newCard0 = deck[0];
@@ -394,6 +405,7 @@ export default function GameScreen({ navigation, route }) {
 
   // ── Hit ───────────────────────────────────────────────────────────
   function handleHit() {
+    if (!botEnabledRef.current) botLog("MOVE_USER", "Blackjack hit");
     playSound("card_flip");
     const newCard = deck[0];
     const remainingDeck = deck.slice(1);
@@ -423,6 +435,7 @@ export default function GameScreen({ navigation, route }) {
 
   // ── Stand ─────────────────────────────────────────────────────────
   function handleStand() {
+    if (!botEnabledRef.current) botLog("MOVE_USER", "Blackjack stand");
     if (splitHand !== null && activeHand === 0) {
       setActiveHand(1);
     } else {

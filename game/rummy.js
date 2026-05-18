@@ -1,3 +1,4 @@
+/* global __DEV__ */
 import { createDeck, shuffleDeck } from "./deck";
 
 export const RUMMY_VARIANTS = {
@@ -82,6 +83,7 @@ export const RUMMY_VARIANT_OPTIONS = [
   },
 ];
 
+const MAX_TURNS_PER_HAND_MULTIPLIER = 20;
 const RUMMY_VARIANT_PLAYER_LIMITS = {
   ginRummy: { minPlayers: 2, maxPlayers: 2 },
   rummy500: { minPlayers: 2, maxPlayers: 4 },
@@ -565,6 +567,33 @@ function analyzeRummyMelds(melds) {
   };
 }
 
+// Dev-only logging helper used to debug why Indian Rummy "go out" might not be reachable.
+// Keep it out of AI simulation paths; only call from the reducer on real game-state checks.
+function debugIndianRummyFinishCheck(state, pid, config, context) {
+  const shouldLog =
+    typeof globalThis !== "undefined" &&
+    typeof globalThis.__DEV__ !== "undefined"
+      ? globalThis.__DEV__
+      : false;
+  if (!shouldLog || !state || config?.id !== "indianRummy") return;
+
+  const hand = state.hands?.[pid] || [];
+  const playerMelds = getPlayerMelds(state.melds, pid);
+  const deadwood = calculateRummyDeadwood(hand, playerMelds);
+  const analysis = analyzeRummyMelds(playerMelds);
+
+  console.warn("[rummyReducer:indianRummy-finish-check]", {
+    context,
+    pid,
+    handLength: hand.length,
+    deadwood,
+    runCount: analysis.runCount,
+    pureRunCount: analysis.pureRunCount,
+    setCount: analysis.setCount,
+    canastaCount: analysis.canastaCount,
+  });
+}
+
 function canPlayerFinish(state, pid, config) {
   const hand = state.hands[pid] || [];
   const playerMelds = getPlayerMelds(state.melds, pid);
@@ -761,7 +790,7 @@ function removeCardsFromHand(hand, indexes) {
   };
 }
 
-function findBestMeldInHand(hand, difficulty = "normal") {
+function findBestMeldInHand(hand, difficulty = "normal", aiContext = {}) {
   if (!Array.isArray(hand) || hand.length < 3) {
     return null;
   }
@@ -800,9 +829,32 @@ function findBestMeldInHand(hand, difficulty = "normal") {
         return;
       }
 
-      const score =
+      const baseScore =
         cards.reduce((total, card) => total + getDeadwoodValue(card), 0) +
         cards.length * 5;
+
+      let score = baseScore;
+
+      if (aiContext.variantId === "indianRummy") {
+        const meldType = getRummyMeldType(cards);
+        const pure = meldType === "run" && isPureRun(cards);
+        const hasJoker = cards.some((c) => isJokerCard(c));
+
+        if (meldType === "run") {
+          if (pure) {
+            score += aiContext.needsPureRun ? 5000 : 1000;
+          } else {
+            score += aiContext.needsSecondRun ? 2500 : 200;
+          }
+          if (hasJoker) score -= 300;
+        } else if (meldType === "set") {
+          // Sets are allowed, but Indian Rummy finish rules prioritize sequences.
+          score -=
+            aiContext.needsPureRun || aiContext.needsSecondRun ? 800 : 200;
+          if (hasJoker) score -= 150;
+        }
+      }
+
       if (!best || score > best.score) {
         best = {
           cardIndexes: combo,
@@ -836,7 +888,41 @@ function wouldCardCompleteMeld(hand, card) {
   return false;
 }
 
-function findBestExtensionMove(hand, melds) {
+function wouldCardCompleteRun(hand, card) {
+  if (!card || !Array.isArray(hand) || hand.length < 2) {
+    return false;
+  }
+
+  for (let first = 0; first < hand.length - 1; first += 1) {
+    for (let second = first + 1; second < hand.length; second += 1) {
+      const candidate = [hand[first], hand[second], card];
+      if (getRummyMeldType(candidate) === "run") {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function wouldCardCompletePureRun(hand, card) {
+  if (!card || !Array.isArray(hand) || hand.length < 2) {
+    return false;
+  }
+
+  for (let first = 0; first < hand.length - 1; first += 1) {
+    for (let second = first + 1; second < hand.length; second += 1) {
+      const candidate = [hand[first], hand[second], card];
+      if (getRummyMeldType(candidate) === "run" && isPureRun(candidate)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function findBestExtensionMove(hand, melds, aiContext = {}) {
   if (
     !Array.isArray(hand) ||
     !hand.length ||
@@ -850,12 +936,34 @@ function findBestExtensionMove(hand, melds) {
 
   melds.forEach((meld, meldIndex) => {
     const cards = getMeldCards(meld);
+    const meldType = getRummyMeldType(cards);
+    const pure = isPureRun(cards);
+
     hand.forEach((card, cardIndex) => {
       if (!canExtendRummyMeld(meld, card)) {
         return;
       }
 
-      const score = cards.length * 10 + getDeadwoodValue(card);
+      let score = cards.length * 10 + getDeadwoodValue(card);
+
+      if (aiContext.variantId === "indianRummy") {
+        const cardIsJoker = isJokerCard(card);
+
+        // If we still need a pure run, never help make one impure.
+        if (aiContext.needsPureRun) {
+          if (meldType === "run" && pure) {
+            // Extending a pure run with a joker breaks purity.
+            if (cardIsJoker) score -= 5000;
+            else score += 5000;
+          } else if (meldType === "run") {
+            score -= 2000;
+          }
+        } else if (aiContext.needsSecondRun) {
+          // If pure run is already done, favor any run (including extending existing ones).
+          if (meldType === "run") score += 1000;
+        }
+      }
+
       if (!best || score > best.score) {
         best = {
           type: "extend-meld",
@@ -973,6 +1081,11 @@ export function createRummyState({
     requiresPureRun: Boolean(config.requiresPureRun),
     requireCanasta: Boolean(config.requireCanasta),
     canastaSize: config.canastaSize || 7,
+
+    // Safety: prevents infinite loops / endless bot rounds where win condition is never met.
+    // Incremented on each completed turn (successful discard-card).
+    turnCount: 0,
+    maxTurnsPerRound: config.handSize * MAX_TURNS_PER_HAND_MULTIPLIER,
   };
 }
 
@@ -986,26 +1099,104 @@ export function rummyAiChooseMove(state, pid, difficulty = "normal") {
   const config = getRummyVariantConfig(state.variantId);
   const topDiscard = (state.discardPile || [])[state.discardPile.length - 1];
 
+  const playerMelds = getPlayerMelds(state.melds || [], pid);
+  const indianAnalysis =
+    config.id === "indianRummy" ? analyzeRummyMelds(playerMelds) : null;
+
+  const needsPureRun =
+    config.id === "indianRummy" ? indianAnalysis.pureRunCount < 1 : false;
+
+  const needsSecondRun =
+    config.id === "indianRummy" ? indianAnalysis.runCount < 2 : false;
+
+  const aiContext = {
+    variantId: config.id,
+    needsPureRun,
+    needsSecondRun,
+  };
+
   if (phase === "draw") {
-    if (topDiscard && wouldCardCompleteMeld(hand, topDiscard)) {
-      return { type: "draw-card", from: "discard" };
+    if (topDiscard) {
+      if (config.id === "indianRummy") {
+        // Prefer completing the required pure sequence first.
+        if (needsPureRun && wouldCardCompletePureRun(hand, topDiscard)) {
+          return { type: "draw-card", from: "discard" };
+        }
+
+        // Then prefer completing any run to reach 2 sequences total.
+        if (needsSecondRun && wouldCardCompleteRun(hand, topDiscard)) {
+          return { type: "draw-card", from: "discard" };
+        }
+      } else if (wouldCardCompleteMeld(hand, topDiscard)) {
+        return { type: "draw-card", from: "discard" };
+      }
     }
 
     return { type: "draw-card", from: "stock" };
   }
 
   if (phase === "discard") {
-    const bestMeld = findBestMeldInHand(hand, difficulty);
+    const bestMeld = findBestMeldInHand(hand, difficulty, aiContext);
     if (bestMeld) {
-      return { type: "lay-meld", cardIndexes: bestMeld.cardIndexes };
+      const remaining = hand.length - bestMeld.cardIndexes.length;
+      if (remaining > 0) {
+        return { type: "lay-meld", cardIndexes: bestMeld.cardIndexes };
+      }
+      // Laying this meld would empty the hand — only do it if it actually wins.
+      // Without this check the AI endlessly empties its hand into non-winning melds
+      // (e.g. all sets, no runs) then gets forced back to "draw", creating a tight loop.
+      const simMelds = (state.melds || []).concat([
+        {
+          owner: pid,
+          type: getRummyMeldType(bestMeld.cards),
+          cards: bestMeld.cards,
+        },
+      ]);
+      const simHands = (state.hands || []).map((h, i) =>
+        i === pid ? [] : h || [],
+      );
+      if (
+        canPlayerFinish(
+          { ...state, hands: simHands, melds: simMelds },
+          pid,
+          config,
+        )
+      ) {
+        return { type: "lay-meld", cardIndexes: bestMeld.cardIndexes };
+      }
+      // Can't finish even after laying — fall through to discard instead
     }
 
-    const extension = findBestExtensionMove(hand, state.melds || []);
+    const extension = findBestExtensionMove(hand, state.melds || [], aiContext);
     if (extension) {
-      return extension;
+      const remaining = hand.length - 1;
+      if (remaining > 0) {
+        return extension;
+      }
+      // Would empty the hand — simulate win check before committing
+      const simMelds = (state.melds || []).map((meld, i) => {
+        if (i !== extension.meldIndex) return meld;
+        const newCards = getMeldCards(meld)
+          .concat(hand[extension.cardIndex])
+          .filter(Boolean);
+        return { ...meld, cards: sortRummyCards(newCards) };
+      });
+      const simHands = (state.hands || []).map((h, i) =>
+        i === pid ? [] : h || [],
+      );
+      if (
+        canPlayerFinish(
+          { ...state, hands: simHands, melds: simMelds },
+          pid,
+          config,
+        )
+      ) {
+        return extension;
+      }
+      // Can't finish — fall through to discard
     }
 
-    const discardIndex = chooseDiscardCardIndex(hand, config);
+    const discardIndex = chooseDiscardCardIndex(hand);
     return { type: "discard-card", cardIndex: discardIndex };
   }
 
@@ -1061,17 +1252,25 @@ export function rummyReducer(state, action = {}) {
   // while having no cards).
   if (nextState.phase === "discard" && hand.length === 0) {
     // DEBUG: identify “stuck” conditions in Indian Rummy / AI.
+    const canFinish = canPlayerFinish(nextState, pid, config);
     console.warn("[rummyReducer:empty-discard]", {
       pid,
       type,
       phase: nextState.phase,
       variantId: nextState.variantId,
-      canFinish: canPlayerFinish(nextState, pid, config),
+      canFinish,
     });
 
-    if (canPlayerFinish(nextState, pid, config)) {
+    if (canFinish) {
       return finalizeRummyWin(nextState, pid, config, "empty-hand");
     }
+
+    debugIndianRummyFinishCheck(
+      nextState,
+      pid,
+      config,
+      "empty-discard-no-go-out",
+    );
 
     nextState.phase = "draw";
     nextState.statusMessage = `${playerName} has no cards. Draw a card.`;
@@ -1151,6 +1350,13 @@ export function rummyReducer(state, action = {}) {
         return finalizeRummyWin(nextState, pid, config, "meld");
       }
 
+      debugIndianRummyFinishCheck(
+        nextState,
+        pid,
+        config,
+        "lay-meld-empty-no-go-out",
+      );
+
       // Prevent getting stuck: if the hand becomes empty but the variant
       // finish conditions aren't met (e.g. Indian Rummy pure/run rules),
       // a discard is impossible. Switch back to draw so the player can continue.
@@ -1191,6 +1397,13 @@ export function rummyReducer(state, action = {}) {
         return finalizeRummyWin(nextState, pid, config, "meld");
       }
 
+      debugIndianRummyFinishCheck(
+        nextState,
+        pid,
+        config,
+        "extend-meld-empty-no-go-out",
+      );
+
       // Prevent getting stuck: with an empty hand the player can't discard.
       // If variant finish rules aren't met, switch back to draw so the player can continue.
       nextState.phase = "draw";
@@ -1208,14 +1421,21 @@ export function rummyReducer(state, action = {}) {
 
     if (!canPlayerFinish(nextState, pid, config)) {
       // DEBUG
+      const playerMelds = getPlayerMelds(nextState.melds, pid);
+      const deadwood = calculateRummyDeadwood(hand, playerMelds);
+
       console.warn("[rummyReducer:knock-rejected]", {
         pid,
         variantId: nextState.variantId,
-        deadwood: calculateRummyDeadwood(
-          hand,
-          getPlayerMelds(nextState.melds, pid),
-        ),
+        deadwood,
       });
+
+      debugIndianRummyFinishCheck(
+        nextState,
+        pid,
+        config,
+        "knock-rejected-no-go-out",
+      );
 
       nextState.statusMessage = `${playerName} cannot finish yet.`;
       return nextState;
@@ -1233,16 +1453,24 @@ export function rummyReducer(state, action = {}) {
     // Force progress instead of returning a no-op.
     if (hand.length === 0) {
       // DEBUG
+      const canFinish = canPlayerFinish(nextState, pid, config);
       console.warn("[rummyReducer:discard-card-empty-hand]", {
         pid,
         phase: nextState.phase,
         variantId: nextState.variantId,
-        canFinish: canPlayerFinish(nextState, pid, config),
+        canFinish,
       });
 
-      if (canPlayerFinish(nextState, pid, config)) {
+      if (canFinish) {
         return finalizeRummyWin(nextState, pid, config, "discard");
       }
+
+      debugIndianRummyFinishCheck(
+        nextState,
+        pid,
+        config,
+        "discard-card-empty-hand-no-go-out",
+      );
 
       nextState.phase = "draw";
       nextState.statusMessage = `${playerName} has no cards. Draw a card.`;
@@ -1272,6 +1500,26 @@ export function rummyReducer(state, action = {}) {
     if (canPlayerFinish(nextState, pid, config)) {
       return finalizeRummyWin(nextState, pid, config, "discard");
     }
+
+    // Safety termination: if win condition is never reached, stop the round.
+    nextState.turnCount = (nextState.turnCount || 0) + 1;
+    const maxTurns =
+      nextState.maxTurnsPerRound ||
+      config.handSize * MAX_TURNS_PER_HAND_MULTIPLIER;
+    if (nextState.turnCount >= maxTurns) {
+      nextState.tie = true;
+      nextState.phase = "game-over";
+      nextState.statusMessage = "Round ended in a tie (max turns reached).";
+      debugIndianRummyFinishCheck(nextState, pid, config, "max-turns-tie");
+      return nextState;
+    }
+
+    debugIndianRummyFinishCheck(
+      nextState,
+      pid,
+      config,
+      "discard-finish-failed",
+    );
 
     nextState.currentPlayerIndex = (pid + 1) % playerCount;
     nextState.phase = "draw";

@@ -356,7 +356,10 @@ export default function LastCardGameScreen({ navigation, route }) {
   }, [phase, winner]);
 
   useEffect(() => {
-    if (phase === "gameOver") setShowRoundModal(true);
+    if (phase === "gameOver") {
+      botLog("GAMEOVER", "LastCard", { winner });
+      setShowRoundModal(true);
+    }
   }, [phase]);
 
   // Auto-save after each state update in single-player.
@@ -380,6 +383,7 @@ export default function LastCardGameScreen({ navigation, route }) {
     if (phase !== "colorPicker" || !botEnabledRef.current || !isSinglePlayer) return;
     if (colorTimerRef.current) clearTimeout(colorTimerRef.current);
     colorTimerRef.current = setTimeout(() => {
+      botLog("MOVE_BOT", "LastCard color pick", { color: COLORS[0] });
       onColorPick(COLORS[0]);
     }, TEST_BOT_DELAY_MS);
     return () => {
@@ -640,6 +644,8 @@ export default function LastCardGameScreen({ navigation, route }) {
       if (move) {
         const next = doHostCardPlay(current.id, move.card, move.chosenColor);
         if (next !== s) {
+          const _category = (botEnabledRef.current && isSinglePlayer) ? "MOVE_BOT" : "MOVE_AI";
+          botLog(_category, "LastCard", { player: current.name, card: cardLabel(move.card), handSize: s.hands[current.id]?.length });
           const parts = [`${current.name} plays ${cardLabel(move.card)}`];
           if (move.card.type === "skip") parts.push("— skips next player!");
           if (move.card.type === "reverse") parts.push("— reverses direction!");
@@ -728,7 +734,7 @@ export default function LastCardGameScreen({ navigation, route }) {
       scheduleTimeout(turnTimerRef, () => handleTurn(stateRef.current), 1100);
     }
     } catch (err) {
-      console.warn("[TestBot] lastcard AI crashed:", err);
+      botLogError("CRASH", "LastCard", err);
     }
   }
 
@@ -745,6 +751,7 @@ export default function LastCardGameScreen({ navigation, route }) {
         }
       }
       const next = buildInitialState(initialPlayers);
+      botLog("GAMESTART", "LastCard", { players: initialPlayers.length, difficulty });
       applyState(next);
       scheduleTimeout(turnTimerRef, () => handleTurn(next), 300);
     }
@@ -879,6 +886,8 @@ export default function LastCardGameScreen({ navigation, route }) {
     if (s.awaitingColorChoiceBy) return;
     if (lockedRef.current) return;
 
+    if (!botEnabledRef.current) botLog("MOVE_USER", "LastCard play", { card: cardLabel(card) });
+
     const hand = s.hands[myPid] ?? [];
     const topCard = s.discardPile[s.discardPile.length - 1];
     const hasColorMatch = hand.some((c) => c.color === s.activeColor);
@@ -921,6 +930,8 @@ export default function LastCardGameScreen({ navigation, route }) {
     if (s.awaitingColorChoiceBy) return;
     if (lockedRef.current) return;
 
+    if (!botEnabledRef.current) botLog("MOVE_USER", "LastCard draw");
+
     const hasPlay = hasPlayableCard(s, myPid);
     if (hasPlay) return;
 
@@ -944,6 +955,8 @@ export default function LastCardGameScreen({ navigation, route }) {
     const pending = pendingWildRef.current;
     if (!s || !pending || s.gameOver) return;
 
+    if (!botEnabledRef.current) botLog("MOVE_USER", "LastCard color pick", { color });
+
     pendingWildRef.current = null;
     setPhase("playing");
     setStatusMsg("");
@@ -965,6 +978,7 @@ export default function LastCardGameScreen({ navigation, route }) {
     coinRewardedRef.current = false;
     setCoinsEarned(0);
     const next = buildInitialState(initialPlayers);
+    botLog("GAMESTART", "LastCard", { players: initialPlayers.length, difficulty });
     applyState(next);
     setStatusMsg("Dealing...");
     setPhase("playing");
@@ -997,6 +1011,7 @@ export default function LastCardGameScreen({ navigation, route }) {
   function handleRestart() {
     if (isSinglePlayer) clearGame(SAVE_KEY_LASTCARD);
     const next = buildInitialState(initialPlayers);
+    botLog("GAMESTART", "LastCard", { players: initialPlayers.length, difficulty });
     applyState(next);
     scheduleTimeout(turnTimerRef, () => handleTurn(next), 300);
   }

@@ -163,9 +163,11 @@ export default function ConquianGameScreen({ navigation, route }) {
         const cp2 = s.players[s.currentPlayerIndex];
         if (!cp2?.isAI && !(botEnabledRef.current && isSinglePlayer)) return;
         try {
+          const _category = (botEnabledRef.current && isSinglePlayer) ? "MOVE_BOT" : "MOVE_AI";
+          botLog(_category, "Conquian", { player: cp2.id, turnPhase: s.turnPhase });
           runAITurn(s);
         } catch (err) {
-          console.warn("[TestBot] conquian AI crashed:", err);
+          botLogError("CRASH", "Conquian", err);
         }
       },
       TEST_BOT_DELAY_MS,
@@ -258,6 +260,7 @@ export default function ConquianGameScreen({ navigation, route }) {
           return;
         }
       }
+      botLog("GAMESTART", "Conquian", { players: initialPlayers.length, difficulty });
       applyState(deal(initialPlayers));
     }
     init();
@@ -375,6 +378,7 @@ export default function ConquianGameScreen({ navigation, route }) {
   }
 
   function handleDraw() {
+    if (!botEnabledRef.current) botLog("MOVE_USER", "Conquian draw");
     if (isHost) {
       const s = fullRef.current;
       if (!s) return;
@@ -395,6 +399,7 @@ export default function ConquianGameScreen({ navigation, route }) {
   }
 
   function handleLayMeld() {
+    if (!botEnabledRef.current) { const _hand = fullRef.current?.hands?.[myPid] ?? []; botLog("MOVE_USER", "Conquian lay meld", { cards: [...selectedHandIds].map((id) => { const c = _hand.find((x) => x.id === id); return c ? `${c.rank}${c.suit}` : id; }) }); }
     if (isHost) {
       const s = fullRef.current;
       if (!s) return;
@@ -491,6 +496,7 @@ export default function ConquianGameScreen({ navigation, route }) {
   }
 
   function handleSmartTake() {
+    if (!botEnabledRef.current) botLog("MOVE_USER", "Conquian take");
     if (isHost) {
       const s = fullRef.current;
       if (!s || !s.activeCard) return;
@@ -536,6 +542,7 @@ export default function ConquianGameScreen({ navigation, route }) {
   }
 
   function handlePass() {
+    if (!botEnabledRef.current) botLog("MOVE_USER", "Conquian pass");
     if (isHost) {
       applyState(doPassActiveCard(fullRef.current));
     } else {
@@ -544,6 +551,7 @@ export default function ConquianGameScreen({ navigation, route }) {
   }
 
   function handleDiscard(cardId) {
+    if (!botEnabledRef.current) { const _c = (fullRef.current?.hands?.[myPid] ?? []).find((x) => x.id === cardId); botLog("MOVE_USER", "Conquian discard", { card: _c ? `${_c.rank}${_c.suit}` : cardId }); }
     if (isHost) {
       const s = fullRef.current;
       if (!s) return;
@@ -564,6 +572,7 @@ export default function ConquianGameScreen({ navigation, route }) {
     setCoinsEarned(0);
     setPassCardId(null);
     clearGame(SAVE_KEY_CONQUIAN);
+    botLog("GAMESTART", "Conquian", { players: initialPlayers.length, difficulty });
     applyState(deal(initialPlayers));
   }
 
@@ -664,7 +673,10 @@ export default function ConquianGameScreen({ navigation, route }) {
   }, [gameState?.phase, gameState?.winner, gameState?.tie]);
 
   useEffect(() => {
-    if (gameState?.phase === "results") setShowRoundModal(true);
+    if (gameState?.phase === "results") {
+      botLog("GAMEOVER", "Conquian", { winner: gameState?.winner?.id ?? null, tie: gameState?.tie });
+      setShowRoundModal(true);
+    }
   }, [gameState?.phase]);
 
   // Bot: Auto-restart when game ends
@@ -703,6 +715,7 @@ export default function ConquianGameScreen({ navigation, route }) {
 
   function handleRestart() {
     if (isSinglePlayer) clearGame(SAVE_KEY_CONQUIAN);
+    botLog("GAMESTART", "Conquian", { players: initialPlayers.length, difficulty });
     applyState(deal(initialPlayers));
   }
 
