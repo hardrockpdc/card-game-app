@@ -24,6 +24,7 @@ import StatsStrip from "../components/StatsStrip";
 import { getTableTheme } from "../game/tableThemes";
 import TestBotToggle from "../components/TestBotToggle";
 import { useTestBot, TEST_BOT_DELAY_MS } from "../game/testBot";
+import { botLog, botLogError } from "../game/testBotLogger";
 const BG = getTableTheme("blackjack").table;
 const ACCENT = getTableTheme("blackjack").accent;
 

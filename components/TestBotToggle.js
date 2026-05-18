@@ -6,6 +6,7 @@
 import React from "react";
 import { Pressable, StyleSheet, Text } from "react-native";
 import { useTestBot, IS_DEV } from "../game/testBot";
+import { botLog } from "../game/testBotLogger";
 import { scale, scaleFont } from "../game/responsive";
 
 export default function TestBotToggle() {

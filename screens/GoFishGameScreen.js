@@ -33,6 +33,7 @@ import {
 } from "../game/GameNetwork";
 import TestBotToggle from "../components/TestBotToggle";
 import { useTestBot, TEST_BOT_DELAY_MS } from "../game/testBot";
+import { botLog, botLogError } from "../game/testBotLogger";
 
 // ─── Game logic ───────────────────────────────────────────────────────────────
 

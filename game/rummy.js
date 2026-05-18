@@ -226,7 +226,17 @@ function buildRummyDeck(config) {
   let deck = [];
 
   for (let index = 0; index < (config.deckCount || 1); index += 1) {
-    deck = deck.concat(createDeck());
+    const deckInstanceIndex = index + 1;
+
+    // Ensure React keys are unique even when a variant uses multiple decks.
+    // (createDeck() card ids are rank+suit, which collide across deck instances)
+    const deckInstance = createDeck().map((card) => ({
+      ...card,
+      id: `${card.id}-d${deckInstanceIndex}`,
+    }));
+
+    deck = deck.concat(deckInstance);
+
     if (config.includeJokers) {
       deck = deck.concat([
         { rank: "JOKER", suit: "JOKER", id: `JOKER-${index * 2 + 1}` },

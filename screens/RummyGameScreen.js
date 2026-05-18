@@ -39,6 +39,7 @@ import {
 } from "../game/rummy";
 import TestBotToggle from "../components/TestBotToggle";
 import { useTestBot, TEST_BOT_DELAY_MS } from "../game/testBot";
+import { botLog, botLogError } from "../game/testBotLogger";
 
 const BG = getTableTheme("rummy").table;
 
@@ -348,40 +349,37 @@ export default function RummyGameScreen({ navigation, route }) {
       clearTimeout(aiTimerRef.current);
     }
 
-    aiTimerRef.current = setTimeout(
-      () => {
-        const latest = fullRef.current;
-        if (!latest || latest.phase === "game-over") {
-          return;
+    aiTimerRef.current = setTimeout(() => {
+      const latest = fullRef.current;
+      if (!latest || latest.phase === "game-over") {
+        return;
+      }
+
+      const active = latest.players?.[latest.currentPlayerIndex];
+      if (!active?.isAI && !(botEnabledRef.current && isSinglePlayer)) {
+        return;
+      }
+
+      try {
+        const move = rummyAiChooseMove(
+          latest,
+          latest.currentPlayerIndex,
+          difficulty,
+        );
+
+        const next = rummyReducer(latest, {
+          type: move.type,
+          pid: latest.currentPlayerIndex,
+          ...move,
+        });
+
+        if (next !== latest) {
+          applyState(next);
         }
-
-        const active = latest.players?.[latest.currentPlayerIndex];
-        if (!active?.isAI && !(botEnabledRef.current && isSinglePlayer)) {
-          return;
-        }
-
-        try {
-          const move = rummyAiChooseMove(
-            latest,
-            latest.currentPlayerIndex,
-            difficulty,
-          );
-
-          const next = rummyReducer(latest, {
-            type: move.type,
-            pid: latest.currentPlayerIndex,
-            ...move,
-          });
-
-          if (next !== latest) {
-            applyState(next);
-          }
-        } catch (err) {
-          console.warn("[TestBot] rummy AI crashed:", err);
-        }
-      },
-      TEST_BOT_DELAY_MS,
-    );
+      } catch (err) {
+        console.warn("[TestBot] rummy AI crashed:", err);
+      }
+    }, TEST_BOT_DELAY_MS);
   }
 
   function applyState(nextState) {
@@ -745,7 +743,7 @@ export default function RummyGameScreen({ navigation, route }) {
 
           return (
             <RummyCard
-              key={card.id || `${card.rank}-${card.suit}-${index}`}
+              key={`${card.id || `${card.rank}-${card.suit}`}-${index}`}
               card={card}
               selected={selected}
               onPress={() => allowSelect && toggleCard(index)}
@@ -998,7 +996,7 @@ export default function RummyGameScreen({ navigation, route }) {
                     <View style={styles.meldCards}>
                       {(meld.cards || []).map((card, cardIndex) => (
                         <RummyCard
-                          key={card.id || `${index}-${cardIndex}`}
+                          key={`${card.id || `${index}-${cardIndex}`}-${cardIndex}`}
                           card={card}
                           small
                           disabled

@@ -46,6 +46,7 @@ import { recordWin } from "../game/profile";
 import { getTableTheme } from "../game/tableThemes";
 import TestBotToggle from "../components/TestBotToggle";
 import { useTestBot, TEST_BOT_DELAY_MS } from "../game/testBot";
+import { botLog, botLogError } from "../game/testBotLogger";
 
 const SAVE_KEY_LASTCARD = "@cardnight:save:lastcard";
 
