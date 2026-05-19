@@ -560,6 +560,68 @@ export default function ConquianGameScreen({ navigation, route }) {
     }
   }
 
+  // Tap-to-take: try a simple take with the current selection.
+  // If no simple take is possible, automatically open rearrange mode.
+  function handleTapActiveCard() {
+    const ac = gameState?.activeCard;
+    if (!ac) return;
+    if (!isMyTurn || turnPhase !== "action") return;
+
+    if (isHost) {
+      const s = fullRef.current;
+      if (!s) return;
+
+      // Try 1: extend a selected meld with the active card.
+      if (selectedMeldIdx !== null) {
+        const next = doTakeActiveCard(s, myPid, {
+          type: "extend",
+          meldIdx: selectedMeldIdx,
+        });
+        if (next !== s) {
+          applyState(next);
+          return;
+        }
+      }
+
+      // Try 2: form a new meld with the selected hand cards + active card.
+      if (selectedHandIds.size > 0) {
+        const next = doTakeActiveCard(s, myPid, {
+          type: "new",
+          handCardIds: [...selectedHandIds],
+        });
+        if (next !== s) {
+          applyState(next);
+          return;
+        }
+      }
+
+      // No simple take worked — open Rearrange mode automatically.
+      enterBorrowMode();
+    } else {
+      // Multiplayer client path: try the same strategies via host messages.
+      if (selectedMeldIdx !== null) {
+        sendToHost({
+          type: "ACTION",
+          action: "takeExtend",
+          meldIdx: selectedMeldIdx,
+        });
+        setSelectedMeldIdx(null);
+        return;
+      }
+      if (selectedHandIds.size > 0) {
+        sendToHost({
+          type: "ACTION",
+          action: "takeMeld",
+          handCardIds: [...selectedHandIds],
+        });
+        setSelectedHandIds(new Set());
+        return;
+      }
+      // No simple take possible — open Rearrange locally.
+      enterBorrowMode();
+    }
+  }
+
   function handlePass() {
     if (!botEnabledRef.current) botLog("MOVE_USER", "Conquian pass");
     if (isHost) {
@@ -1130,7 +1192,7 @@ export default function ConquianGameScreen({ navigation, route }) {
               : phase === "playing" && isMyTurn && turnPhase === "draw"
                 ? "▶ Your turn — Draw from Stock"
                 : phase === "playing" && isMyTurn && turnPhase === "action"
-                  ? "▶ Your turn — Take, Pass, or Lay Meld"
+                  ? "▶ Your turn — Tap the active card to take, or Pass"
                   : phase === "playing" && isMyTurn && turnPhase === "discard"
                     ? "▶ Your turn — Discard a card"
                     : phase === "playing"
@@ -1197,7 +1259,23 @@ export default function ConquianGameScreen({ navigation, route }) {
             <View style={styles.activeSlotBox}>
               <Text style={styles.pileLabel}>Active</Text>
               {activeCard ? (
-                <Card rank={activeCard.rank} suit={activeCard.suit} />
+                isMyTurn && turnPhase === "action" ? (
+                  <TouchableOpacity
+                    onPress={handleTapActiveCard}
+                    activeOpacity={0.7}
+                    style={styles.activeCardTappable}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Take ${activeCard.rank} of ${activeCard.suit}`}
+                    accessibilityHint="Place this card into a valid meld"
+                  >
+                    <Card rank={activeCard.rank} suit={activeCard.suit} />
+                    <Text style={styles.activeTapHint}>Tap to take</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <View>
+                    <Card rank={activeCard.rank} suit={activeCard.suit} />
+                  </View>
+                )
               ) : (
                 <View style={styles.emptySlot}>
                   <Text style={styles.emptySlotText}>—</Text>
@@ -1397,30 +1475,21 @@ export default function ConquianGameScreen({ navigation, route }) {
 
           {phase === "playing" && isMyTurn && turnPhase === "action" && (
             <>
-              {/* Primary actions — the central Take vs Pass decision */}
               <View style={styles.actionBtnRow}>
+                {canLayMeld && (
+                  <TouchableOpacity
+                    style={[styles.actionBtn, styles.layBtn]}
+                    onPress={handleLayMeld}
+                    accessibilityRole="button"
+                    accessibilityLabel="Lay Meld"
+                    accessibilityHint="Place selected cards as a meld"
+                  >
+                    <Text style={styles.actionBtnText}>Lay Meld</Text>
+                  </TouchableOpacity>
+                )}
+
                 <TouchableOpacity
-                  style={[
-                    styles.actionBtn,
-                    styles.actionBtnPrimary,
-                    styles.takeBtn,
-                    !activeCard && styles.actionBtnDisabled,
-                  ]}
-                  onPress={handleSmartTake}
-                  disabled={!activeCard}
-                  accessibilityRole="button"
-                  accessibilityLabel="Take and Meld"
-                  accessibilityHint="Take the active card and meld it"
-                  accessibilityState={{ disabled: !activeCard }}
-                >
-                  <Text style={styles.actionBtnText}>Take + Meld</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.actionBtn,
-                    styles.actionBtnPrimary,
-                    styles.passBtn,
-                  ]}
+                  style={[styles.actionBtn, styles.passBtn]}
                   onPress={handlePass}
                   accessibilityRole="button"
                   accessibilityLabel="Pass"
@@ -1430,49 +1499,9 @@ export default function ConquianGameScreen({ navigation, route }) {
                 </TouchableOpacity>
               </View>
 
-              {/* Secondary actions — meld management */}
-              {(isDrawTurnFreeAction || activeCard) && (
-                <View style={styles.actionBtnRow}>
-                  {isDrawTurnFreeAction && (
-                    <TouchableOpacity
-                      style={[
-                        styles.actionBtn,
-                        styles.actionBtnSecondary,
-                        styles.layBtn,
-                        !canLayMeld && styles.actionBtnDisabled,
-                      ]}
-                      onPress={handleLayMeld}
-                      disabled={!canLayMeld}
-                      accessibilityRole="button"
-                      accessibilityLabel="Lay Meld"
-                      accessibilityHint="Place selected cards as a meld"
-                      accessibilityState={{ disabled: !canLayMeld }}
-                    >
-                      <Text style={styles.actionBtnText}>Lay Meld</Text>
-                    </TouchableOpacity>
-                  )}
-                  <TouchableOpacity
-                    style={[
-                      styles.actionBtn,
-                      styles.actionBtnSecondary,
-                      styles.borrowBtn,
-                      !activeCard && styles.actionBtnDisabled,
-                    ]}
-                    onPress={enterBorrowMode}
-                    disabled={!activeCard}
-                    accessibilityRole="button"
-                    accessibilityLabel="Rearrange"
-                    accessibilityHint="Reorganize your melds to place the active card"
-                    accessibilityState={{ disabled: !activeCard }}
-                  >
-                    <Text style={styles.actionBtnText}>Rearrange</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-
               <Text style={styles.hintText}>
-                Select hand cards · tap a meld to target it · Rearrange to
-                reorganize melds
+                Tap the active card to take · select hand cards first to choose
+                how to meld
               </Text>
             </>
           )}
@@ -1641,6 +1670,20 @@ const styles = StyleSheet.create({
   },
   pileCount: { color: "#fff", fontSize: scaleFont(24), fontWeight: "bold" },
   activeSlotBox: { alignItems: "center" },
+  activeCardTappable: {
+    alignItems: "center",
+    padding: scale(4),
+    borderRadius: scale(10),
+    borderWidth: 2,
+    borderColor: "#7fb3ff",
+    backgroundColor: "rgba(127, 179, 255, 0.10)",
+  },
+  activeTapHint: {
+    color: "#7fb3ff",
+    fontSize: scaleFont(10),
+    marginTop: scale(2),
+    fontWeight: "600",
+  },
   emptySlot: {
     width: scale(70),
     height: scale(100),
