@@ -1571,6 +1571,17 @@ export default function ConquianGameScreen({ navigation, route }) {
                     <Text style={styles.actionBtnText}>Meld</Text>
                   </TouchableOpacity>
                 )}
+                {canAddToMeld && (
+                  <TouchableOpacity
+                    style={[styles.actionBtn, styles.layBtn]}
+                    onPress={handleAddToMeld}
+                    accessibilityRole="button"
+                    accessibilityLabel="Add to Meld"
+                    accessibilityHint="Add the selected card to your targeted meld"
+                  >
+                    <Text style={styles.actionBtnText}>Add to Meld</Text>
+                  </TouchableOpacity>
+                )}
 
                 <TouchableOpacity
                   style={[
