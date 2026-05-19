@@ -32,15 +32,13 @@ export default function StatsStrip({ gameId, items }) {
       <View style={styles.row}>
         {items?.map((item, idx) => {
           const showDivider = idx !== 0;
-          const valueColor = item?.accent ? accent : styles.value.color;
+          const baseValueColor = item?.accent ? accent : styles.value.color;
+          const valueColor = item?.valueColor ?? baseValueColor;
 
           return (
             <View
               key={`${item?.label ?? "item"}-${idx}`}
-              style={[
-                styles.item,
-                showDivider ? styles.itemDivider : null,
-              ]}
+              style={[styles.item, showDivider ? styles.itemDivider : null]}
             >
               <Text style={styles.label} numberOfLines={1}>
                 {(item?.label ?? "").toUpperCase()}
