@@ -271,7 +271,11 @@ export default function RummyGameScreen({ navigation, route }) {
             { id: "host", name: myName, isAI: false },
             { id: "ai_1", name: "Computer", isAI: true },
           ];
-    botLog("GAMESTART", "Rummy", { players: initPlayers.length, difficulty, variantId });
+    botLog("GAMESTART", "Rummy", {
+      players: initPlayers.length,
+      difficulty,
+      variantId,
+    });
     applyState(
       createRummyState({ variantId, players: initPlayers, difficulty }),
     );
@@ -375,8 +379,13 @@ export default function RummyGameScreen({ navigation, route }) {
         });
 
         if (next !== latest) {
-          const _category = (botEnabledRef.current && isSinglePlayer) ? "MOVE_BOT" : "MOVE_AI";
-          botLog(_category, "Rummy", { player: latest.currentPlayerIndex, move: move.type, msg: next.statusMessage });
+          const _category =
+            botEnabledRef.current && isSinglePlayer ? "MOVE_BOT" : "MOVE_AI";
+          botLog(_category, "Rummy", {
+            player: latest.currentPlayerIndex,
+            move: move.type,
+            msg: next.statusMessage,
+          });
           applyState(next);
         }
       } catch (err) {
@@ -454,10 +463,16 @@ export default function RummyGameScreen({ navigation, route }) {
         const saved = await loadGame(rummySaveKey);
         if (saved?.fullState) {
           applyState(saved.fullState);
+          hasMountedRef.current = true;
           return;
         }
       }
-      botLog("GAMESTART", "Rummy", { players: initialPlayers.length, difficulty, variantId });
+      botLog("GAMESTART", "Rummy", {
+        players: initialPlayers.length,
+        difficulty,
+        variantId,
+      });
+      hasMountedRef.current = true;
       applyState(
         createRummyState({ variantId, players: initialPlayers, difficulty }),
       );
@@ -510,15 +525,6 @@ export default function RummyGameScreen({ navigation, route }) {
         setServerListeners({});
       }
     };
-  }, []);
-
-  // After the first render completes, flag mount-complete so future deals animate.
-  // Prevents cards present at mount (resume / network arrival) from sliding in.
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      hasMountedRef.current = true;
-    }, 50);
-    return () => clearTimeout(timer);
   }, []);
 
   const canGoBack =
@@ -678,7 +684,10 @@ export default function RummyGameScreen({ navigation, route }) {
       return;
     }
 
-    if (!botEnabledRef.current) botLog("MOVE_USER", "Rummy take discard", { card: discardTop ? `${discardTop.rank}${discardTop.suit}` : null });
+    if (!botEnabledRef.current)
+      botLog("MOVE_USER", "Rummy take discard", {
+        card: discardTop ? `${discardTop.rank}${discardTop.suit}` : null,
+      });
     dispatchAction("draw-card", { from: "discard" });
   }
 
@@ -687,7 +696,13 @@ export default function RummyGameScreen({ navigation, route }) {
       return;
     }
 
-    if (!botEnabledRef.current) botLog("MOVE_USER", "Rummy lay meld", { cards: selectedHandIndexes.map((i) => { const c = myHand[i]; return c ? `${c.rank}${c.suit}` : i; }) });
+    if (!botEnabledRef.current)
+      botLog("MOVE_USER", "Rummy lay meld", {
+        cards: selectedHandIndexes.map((i) => {
+          const c = myHand[i];
+          return c ? `${c.rank}${c.suit}` : i;
+        }),
+      });
     dispatchAction("lay-meld", { cardIndexes: selectedHandIndexes }, () =>
       showToast("Invalid meld — cards must form a valid set or run"),
     );
@@ -711,7 +726,12 @@ export default function RummyGameScreen({ navigation, route }) {
       return;
     }
 
-    if (!botEnabledRef.current) { const _dc = myHand[selectedHandIndexes[0]]; botLog("MOVE_USER", "Rummy discard", { card: _dc ? `${_dc.rank}${_dc.suit}` : null }); }
+    if (!botEnabledRef.current) {
+      const _dc = myHand[selectedHandIndexes[0]];
+      botLog("MOVE_USER", "Rummy discard", {
+        card: _dc ? `${_dc.rank}${_dc.suit}` : null,
+      });
+    }
     dispatchAction("discard-card", { cardIndex: selectedHandIndexes[0] }, () =>
       showToast("Draw a card before discarding"),
     );
@@ -736,7 +756,11 @@ export default function RummyGameScreen({ navigation, route }) {
     coinRewardedRef.current = false;
     setCoinsEarned(0);
     clearGame(`@cardnight:save:rummy:${variantId}`);
-    botLog("GAMESTART", "Rummy", { players: fullRef.current.players.length, difficulty: fullRef.current.difficulty, variantId: fullRef.current.variantId });
+    botLog("GAMESTART", "Rummy", {
+      players: fullRef.current.players.length,
+      difficulty: fullRef.current.difficulty,
+      variantId: fullRef.current.variantId,
+    });
     applyState(
       createRummyState({
         variantId: fullRef.current.variantId,
@@ -807,7 +831,10 @@ export default function RummyGameScreen({ navigation, route }) {
       gameState?.winner != null ||
       gameState?.tie;
     if (isOver) {
-      botLog("GAMEOVER", "Rummy", { winner: gameState?.winner, tie: gameState?.tie });
+      botLog("GAMEOVER", "Rummy", {
+        winner: gameState?.winner,
+        tie: gameState?.tie,
+      });
       setShowRoundModal(true);
     }
   }, [gameState?.phase, gameState?.winner, gameState?.tie]);

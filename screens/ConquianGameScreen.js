@@ -126,15 +126,6 @@ export default function ConquianGameScreen({ navigation, route }) {
     if (gameState?.phase !== "initialPass") setPassCardId(null);
   }, [gameState?.phase]);
 
-  // After the first render completes, flag mount-complete so future deals animate.
-  // Prevents cards present at mount (resume / network arrival) from sliding in.
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      hasMountedRef.current = true;
-    }, 50);
-    return () => clearTimeout(timer);
-  }, []);
-
   // ─── State management ────────────────────────────────────────────────────────
 
   function applyState(next) {
@@ -271,6 +262,7 @@ export default function ConquianGameScreen({ navigation, route }) {
         const saved = await loadGame(SAVE_KEY_CONQUIAN);
         if (saved?.fullState) {
           applyState(saved.fullState);
+          hasMountedRef.current = true;
           return;
         }
       }
@@ -278,6 +270,7 @@ export default function ConquianGameScreen({ navigation, route }) {
         players: initialPlayers.length,
         difficulty,
       });
+      hasMountedRef.current = true;
       applyState(deal(initialPlayers));
     }
     init();

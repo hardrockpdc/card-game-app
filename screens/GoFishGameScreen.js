@@ -315,35 +315,34 @@ export default function GoFishGameScreen({ navigation, route }) {
     const currentP = state.players[state.currentPlayerIndex];
     if (!currentP?.isAI && !(botEnabledRef.current && isSinglePlayer)) return;
     if (aiTimerRef.current) clearTimeout(aiTimerRef.current);
-    aiTimerRef.current = setTimeout(
-      () => {
-        const s = fullRef.current;
-        if (!s || s.phase !== "playing") return;
-        const cp = s.players[s.currentPlayerIndex];
-        if (!cp?.isAI && !(botEnabledRef.current && isSinglePlayer)) return;
-        const aiPid = String(cp.id);
-        const hand = s.hands[aiPid] || [];
-        if (hand.length === 0) return;
-        const opponents = s.players.filter(
-          (_, i) => i !== s.currentPlayerIndex,
+    aiTimerRef.current = setTimeout(() => {
+      const s = fullRef.current;
+      if (!s || s.phase !== "playing") return;
+      const cp = s.players[s.currentPlayerIndex];
+      if (!cp?.isAI && !(botEnabledRef.current && isSinglePlayer)) return;
+      const aiPid = String(cp.id);
+      const hand = s.hands[aiPid] || [];
+      if (hand.length === 0) return;
+      const opponents = s.players.filter((_, i) => i !== s.currentPlayerIndex);
+      if (opponents.length === 0) return;
+      try {
+        const { rank, target } = pickGoFishAIMove(
+          s,
+          aiPid,
+          opponents,
+          difficulty,
         );
-        if (opponents.length === 0) return;
-        try {
-          const { rank, target } = pickGoFishAIMove(
-            s,
-            aiPid,
-            opponents,
-            difficulty,
-          );
-          const _category = (botEnabledRef.current && isSinglePlayer) ? "MOVE_BOT" : "MOVE_AI";
-          botLog(_category, "GoFish", { player: cp.name, asks: `${cp.name} asks ${target.name} for ${rank}s` });
-          applyState(doAsk(s, aiPid, target.id, rank));
-        } catch (err) {
-          botLogError("CRASH", "GoFish", err);
-        }
-      },
-      TEST_BOT_DELAY_MS,
-    );
+        const _category =
+          botEnabledRef.current && isSinglePlayer ? "MOVE_BOT" : "MOVE_AI";
+        botLog(_category, "GoFish", {
+          player: cp.name,
+          asks: `${cp.name} asks ${target.name} for ${rank}s`,
+        });
+        applyState(doAsk(s, aiPid, target.id, rank));
+      } catch (err) {
+        botLogError("CRASH", "GoFish", err);
+      }
+    }, TEST_BOT_DELAY_MS);
   }
 
   useEffect(() => {
@@ -355,15 +354,6 @@ export default function GoFishGameScreen({ navigation, route }) {
   useEffect(() => {
     botEnabledRef.current = botEnabled;
   }, [botEnabled]);
-
-  // After the first render completes, flag mount-complete so future deals animate.
-  // Prevents cards present at mount (resume / network arrival) from sliding in.
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      hasMountedRef.current = true;
-    }, 50);
-    return () => clearTimeout(timer);
-  }, []);
 
   // Auto-save after each state change in single-player.
   useEffect(() => {
@@ -383,10 +373,15 @@ export default function GoFishGameScreen({ navigation, route }) {
         const saved = await loadGame(SAVE_KEY_GOFISH);
         if (saved?.fullState) {
           applyState(saved.fullState);
+          hasMountedRef.current = true;
           return;
         }
       }
-      botLog("GAMESTART", "GoFish", { players: initialPlayers.length, difficulty });
+      botLog("GAMESTART", "GoFish", {
+        players: initialPlayers.length,
+        difficulty,
+      });
+      hasMountedRef.current = true;
       applyState(dealGoFish(initialPlayers));
     }
     init();
@@ -423,7 +418,11 @@ export default function GoFishGameScreen({ navigation, route }) {
 
   function handleAsk() {
     if (!selectedRank || selectedTarget === null) return;
-    if (!botEnabledRef.current) botLog("MOVE_USER", "GoFish ask", { rank: selectedRank, target: selectedTarget });
+    if (!botEnabledRef.current)
+      botLog("MOVE_USER", "GoFish ask", {
+        rank: selectedRank,
+        target: selectedTarget,
+      });
     if (isHost) {
       const state = fullRef.current;
       if (
@@ -493,7 +492,10 @@ export default function GoFishGameScreen({ navigation, route }) {
 
   function handleRestart() {
     if (isSinglePlayer) clearGame(SAVE_KEY_GOFISH);
-    botLog("GAMESTART", "GoFish", { players: initialPlayers.length, difficulty });
+    botLog("GAMESTART", "GoFish", {
+      players: initialPlayers.length,
+      difficulty,
+    });
     applyState(dealGoFish(initialPlayers));
   }
 

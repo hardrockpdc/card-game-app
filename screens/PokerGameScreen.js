@@ -602,26 +602,28 @@ export default function PokerGameScreen({ navigation, route }) {
     const currentP = state.players[state.currentPlayerIndex];
     if (!currentP?.isAI && !(botEnabledRef.current && isSinglePlayer)) return;
     if (aiTimerRef.current) clearTimeout(aiTimerRef.current);
-    aiTimerRef.current = setTimeout(
-      () => {
-        const s = fullRef.current;
-        if (!s || s.phase === "showdown") return;
-        const cp = s.players[s.currentPlayerIndex];
-        if (!cp?.isAI && !(botEnabledRef.current && isSinglePlayer)) return;
-        const pid = String(cp.id);
-        try {
-          const next = pokerAIAction(s, pid, difficulty);
-          if (next !== s) {
-            const _category = (botEnabledRef.current && isSinglePlayer) ? "MOVE_BOT" : "MOVE_AI";
-            botLog(_category, "Poker", { player: cp.name, action: next.lastAction, phase: s.phase });
-            applyState(next);
-          }
-        } catch (err) {
-          botLogError("CRASH", "Poker", err);
+    aiTimerRef.current = setTimeout(() => {
+      const s = fullRef.current;
+      if (!s || s.phase === "showdown") return;
+      const cp = s.players[s.currentPlayerIndex];
+      if (!cp?.isAI && !(botEnabledRef.current && isSinglePlayer)) return;
+      const pid = String(cp.id);
+      try {
+        const next = pokerAIAction(s, pid, difficulty);
+        if (next !== s) {
+          const _category =
+            botEnabledRef.current && isSinglePlayer ? "MOVE_BOT" : "MOVE_AI";
+          botLog(_category, "Poker", {
+            player: cp.name,
+            action: next.lastAction,
+            phase: s.phase,
+          });
+          applyState(next);
         }
-      },
-      TEST_BOT_DELAY_MS,
-    );
+      } catch (err) {
+        botLogError("CRASH", "Poker", err);
+      }
+    }, TEST_BOT_DELAY_MS);
   }
 
   useEffect(() => {
@@ -633,15 +635,6 @@ export default function PokerGameScreen({ navigation, route }) {
   useEffect(() => {
     botEnabledRef.current = botEnabled;
   }, [botEnabled]);
-
-  // After the first render completes, flag mount-complete so future deals animate.
-  // Prevents cards present at mount (resume / network arrival) from sliding in.
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      hasMountedRef.current = true;
-    }, 50);
-    return () => clearTimeout(timer);
-  }, []);
 
   // Auto-save after each state change in single-player.
   useEffect(() => {
@@ -662,10 +655,16 @@ export default function PokerGameScreen({ navigation, route }) {
         if (saved?.fullState) {
           // Restore without subtracting buy-in (already paid in the original session).
           applyState(saved.fullState);
+          hasMountedRef.current = true;
           return;
         }
       }
-      botLog("GAMESTART", "Poker", { players: initialPlayers.length, difficulty, variant });
+      botLog("GAMESTART", "Poker", {
+        players: initialPlayers.length,
+        difficulty,
+        variant,
+      });
+      hasMountedRef.current = true;
       applyState(initDeal(initialPlayers, 0, null, startingChips));
       // Deduct the buy-in from the wallet when a single-player casino tournament starts.
       if (isSinglePlayer && buyIn && !freePlay) {
@@ -760,11 +759,7 @@ export default function PokerGameScreen({ navigation, route }) {
 
   // Bot: Auto-restart when tournament ends
   useEffect(() => {
-    if (
-      tournamentWinner === null ||
-      !botEnabledRef.current ||
-      !isSinglePlayer
-    )
+    if (tournamentWinner === null || !botEnabledRef.current || !isSinglePlayer)
       return;
     if (botRestartTimerRef.current) clearTimeout(botRestartTimerRef.current);
     botRestartTimerRef.current = setTimeout(() => {
@@ -776,7 +771,11 @@ export default function PokerGameScreen({ navigation, route }) {
   }, [tournamentWinner]);
 
   function act(action) {
-    if (!botEnabledRef.current) botLog("MOVE_USER", "Poker", { action: action.action, amount: action.amount });
+    if (!botEnabledRef.current)
+      botLog("MOVE_USER", "Poker", {
+        action: action.action,
+        amount: action.amount,
+      });
     if (isHost) {
       const state = fullRef.current;
       if (!state) return;
