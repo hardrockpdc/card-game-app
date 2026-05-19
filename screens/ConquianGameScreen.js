@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Alert,
   BackHandler,
+  Animated,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Card from "../components/Card";
@@ -98,6 +99,7 @@ export default function ConquianGameScreen({ navigation, route }) {
   const aiTimerRef = useRef(null);
   const hasMountedRef = useRef(false);
   const lastSaveRef = useRef(0);
+  const activeCardShakeRef = useRef(new Animated.Value(0)).current;
   const botRestartTimerRef = useRef(null);
   const { enabled: botEnabled } = useTestBot();
   const botEnabledRef = useRef(false);
@@ -105,6 +107,7 @@ export default function ConquianGameScreen({ navigation, route }) {
   const [myHand, setMyHand] = useState([]);
   const [selectedHandIds, setSelectedHandIds] = useState(new Set());
   const [selectedMeldIdx, setSelectedMeldIdx] = useState(null);
+  const [isActiveCardSelected, setIsActiveCardSelected] = useState(false);
   const [passCardId, setPassCardId] = useState(null);
   const [statusMsg, setStatusMsg] = useState("");
   const [coinsEarned, setCoinsEarned] = useState(0);
@@ -126,6 +129,11 @@ export default function ConquianGameScreen({ navigation, route }) {
   useEffect(() => {
     if (gameState?.phase !== "initialPass") setPassCardId(null);
   }, [gameState?.phase]);
+
+  // When the active card changes (new round / new offer), reset the "selected" state.
+  useEffect(() => {
+    setIsActiveCardSelected(false);
+  }, [gameState?.activeCard?.id]);
 
   // ─── State management ────────────────────────────────────────────────────────
 
@@ -409,6 +417,99 @@ export default function ConquianGameScreen({ navigation, route }) {
     setStatusMsg("");
   }
 
+  // Try to commit a take with the current selection. Returns true if committed.
+  // Does NOT show error messages or open Rearrange — those are caller's responsibility.
+  function tryCommitTake() {
+    if (!gameState?.activeCard) return false;
+
+    if (isHost) {
+      const s = fullRef.current;
+      if (!s || !s.activeCard) return false;
+
+      if (selectedMeldIdx !== null) {
+        const next = doTakeActiveCard(s, myPid, {
+          type: "extend",
+          meldIdx: selectedMeldIdx,
+        });
+        if (next !== s) {
+          applyState(next);
+          setSelectedHandIds(new Set());
+          setSelectedMeldIdx(null);
+          setIsActiveCardSelected(false);
+          return true;
+        }
+      }
+
+      if (selectedHandIds.size > 0) {
+        const next = doTakeActiveCard(s, myPid, {
+          type: "new",
+          handCardIds: [...selectedHandIds],
+        });
+        if (next !== s) {
+          applyState(next);
+          setSelectedHandIds(new Set());
+          setSelectedMeldIdx(null);
+          setIsActiveCardSelected(false);
+          return true;
+        }
+      }
+
+      return false;
+    }
+
+    if (selectedMeldIdx !== null) {
+      sendToHost({
+        type: "ACTION",
+        action: "takeExtend",
+        meldIdx: selectedMeldIdx,
+      });
+      setSelectedHandIds(new Set());
+      setSelectedMeldIdx(null);
+      setIsActiveCardSelected(false);
+      return true;
+    }
+
+    if (selectedHandIds.size > 0) {
+      sendToHost({
+        type: "ACTION",
+        action: "takeMeld",
+        handCardIds: [...selectedHandIds],
+      });
+      setSelectedHandIds(new Set());
+      setSelectedMeldIdx(null);
+      setIsActiveCardSelected(false);
+      return true;
+    }
+
+    return false;
+  }
+
+  function shakeActiveCard() {
+    activeCardShakeRef.setValue(0);
+    Animated.sequence([
+      Animated.timing(activeCardShakeRef, {
+        toValue: 1,
+        duration: 60,
+        useNativeDriver: true,
+      }),
+      Animated.timing(activeCardShakeRef, {
+        toValue: -1,
+        duration: 60,
+        useNativeDriver: true,
+      }),
+      Animated.timing(activeCardShakeRef, {
+        toValue: 1,
+        duration: 60,
+        useNativeDriver: true,
+      }),
+      Animated.timing(activeCardShakeRef, {
+        toValue: 0,
+        duration: 60,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }
+
   function handleLayMeld() {
     if (!botEnabledRef.current) {
       const _hand = fullRef.current?.hands?.[myPid] ?? [];
@@ -560,66 +661,25 @@ export default function ConquianGameScreen({ navigation, route }) {
     }
   }
 
-  // Tap-to-take: try a simple take with the current selection.
-  // If no simple take is possible, automatically open rearrange mode.
+  // Tap active card — implements the selection model.
+  // - If already selected: deselect (no shake).
+  // - If a valid combination exists with current selections: commit immediately.
+  // - Otherwise: select the active card (visual highlight) and shake to indicate
+  //   the user needs to select hand cards or a meld first.
   function handleTapActiveCard() {
     const ac = gameState?.activeCard;
     if (!ac) return;
     if (!isMyTurn || turnPhase !== "action") return;
 
-    if (isHost) {
-      const s = fullRef.current;
-      if (!s) return;
-
-      // Try 1: extend a selected meld with the active card.
-      if (selectedMeldIdx !== null) {
-        const next = doTakeActiveCard(s, myPid, {
-          type: "extend",
-          meldIdx: selectedMeldIdx,
-        });
-        if (next !== s) {
-          applyState(next);
-          return;
-        }
-      }
-
-      // Try 2: form a new meld with the selected hand cards + active card.
-      if (selectedHandIds.size > 0) {
-        const next = doTakeActiveCard(s, myPid, {
-          type: "new",
-          handCardIds: [...selectedHandIds],
-        });
-        if (next !== s) {
-          applyState(next);
-          return;
-        }
-      }
-
-      // No simple take worked — open Rearrange mode automatically.
-      enterBorrowMode();
-    } else {
-      // Multiplayer client path: try the same strategies via host messages.
-      if (selectedMeldIdx !== null) {
-        sendToHost({
-          type: "ACTION",
-          action: "takeExtend",
-          meldIdx: selectedMeldIdx,
-        });
-        setSelectedMeldIdx(null);
-        return;
-      }
-      if (selectedHandIds.size > 0) {
-        sendToHost({
-          type: "ACTION",
-          action: "takeMeld",
-          handCardIds: [...selectedHandIds],
-        });
-        setSelectedHandIds(new Set());
-        return;
-      }
-      // No simple take possible — open Rearrange locally.
-      enterBorrowMode();
+    if (isActiveCardSelected) {
+      setIsActiveCardSelected(false);
+      return;
     }
+
+    if (tryCommitTake()) return;
+
+    setIsActiveCardSelected(true);
+    shakeActiveCard();
   }
 
   function handlePass() {
@@ -756,6 +816,23 @@ export default function ConquianGameScreen({ navigation, route }) {
       exitBorrowMode();
     }
   }
+
+  // When the active card is selected and the user changes their hand or meld
+  // selection, try to commit again after state updates settle.
+  useEffect(() => {
+    if (!isActiveCardSelected) return;
+    if (!isMyTurn || turnPhase !== "action") return;
+    const handle = setTimeout(() => {
+      tryCommitTake();
+    }, 0);
+    return () => clearTimeout(handle);
+  }, [
+    selectedHandIds,
+    selectedMeldIdx,
+    isActiveCardSelected,
+    isMyTurn,
+    turnPhase,
+  ]);
 
   // Must be before the early returns below so hook call order is consistent.
   useEffect(() => {
@@ -1263,13 +1340,20 @@ export default function ConquianGameScreen({ navigation, route }) {
                   <TouchableOpacity
                     onPress={handleTapActiveCard}
                     activeOpacity={0.7}
-                    style={styles.activeCardTappable}
+                    style={[
+                      styles.activeCardTappable,
+                      isActiveCardSelected && styles.activeCardSelected,
+                    ]}
                     accessibilityRole="button"
                     accessibilityLabel={`Take ${activeCard.rank} of ${activeCard.suit}`}
                     accessibilityHint="Place this card into a valid meld"
                   >
                     <Card rank={activeCard.rank} suit={activeCard.suit} />
-                    <Text style={styles.activeTapHint}>Tap to take</Text>
+                    <Text style={styles.activeTapHint}>
+                      {isActiveCardSelected
+                        ? "Pick cards to meld"
+                        : "Tap to take"}
+                    </Text>
                   </TouchableOpacity>
                 ) : (
                   <View>
@@ -1476,7 +1560,7 @@ export default function ConquianGameScreen({ navigation, route }) {
           {phase === "playing" && isMyTurn && turnPhase === "action" && (
             <>
               <View style={styles.actionBtnRow}>
-                {canLayMeld && (
+                {isDrawTurnFreeAction && canLayMeld && (
                   <TouchableOpacity
                     style={[styles.actionBtn, styles.layBtn]}
                     onPress={handleLayMeld}
@@ -1488,6 +1572,21 @@ export default function ConquianGameScreen({ navigation, route }) {
                   </TouchableOpacity>
                 )}
 
+                <TouchableOpacity
+                  style={[
+                    styles.actionBtn,
+                    styles.borrowBtn,
+                    !activeCard && styles.actionBtnDisabled,
+                  ]}
+                  onPress={enterBorrowMode}
+                  disabled={!activeCard}
+                  accessibilityRole="button"
+                  accessibilityLabel="Arrange"
+                  accessibilityHint="Open meld rearrange mode"
+                  accessibilityState={{ disabled: !activeCard }}
+                >
+                  <Text style={styles.actionBtnText}>Arrange</Text>
+                </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.actionBtn, styles.passBtn]}
                   onPress={handlePass}
@@ -1677,6 +1776,11 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#7fb3ff",
     backgroundColor: "rgba(127, 179, 255, 0.10)",
+  },
+  activeCardSelected: {
+    borderColor: "#4caf50",
+    backgroundColor: "rgba(76, 175, 80, 0.15)",
+    transform: [{ translateY: -6 }],
   },
   activeTapHint: {
     color: "#7fb3ff",
