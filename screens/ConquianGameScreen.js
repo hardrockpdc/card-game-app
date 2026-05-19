@@ -711,6 +711,37 @@ export default function ConquianGameScreen({ navigation, route }) {
     }
   }, [gameState?.phase]);
 
+  // UX-5: Android hardware back confirmation
+  useEffect(() => {
+    const onBack = () => {
+      const message = isSinglePlayer
+        ? "Your progress will be saved."
+        : isHost
+          ? "You'll end the game for everyone."
+          : "You'll disconnect from the host.";
+      Alert.alert("Leave Game?", message, [
+        { text: "Stay", style: "cancel" },
+        {
+          text: "Leave",
+          style: isSinglePlayer ? "default" : "destructive",
+          onPress: () => {
+            if (isSinglePlayer) {
+              if (typeof handleSaveAndExit === "function") handleSaveAndExit();
+              else navigation.navigate("Home");
+            } else {
+              if (isHost) stopServer();
+              else disconnectFromHost();
+              navigation.navigate("Home");
+            }
+          },
+        },
+      ]);
+      return true;
+    };
+    const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
+    return () => sub.remove();
+  }, [navigation, isSinglePlayer, isHost]);
+
   // Bot: Auto-restart when game ends
   useEffect(() => {
     if (
@@ -759,37 +790,6 @@ export default function ConquianGameScreen({ navigation, route }) {
     saveGame(SAVE_KEY_CONQUIAN, { fullState: fullRef.current });
     navigation.navigate("Home");
   }
-
-  // UX-5: Android hardware back confirmation
-  useEffect(() => {
-    const onBack = () => {
-      const message = isSinglePlayer
-        ? "Your progress will be saved."
-        : isHost
-          ? "You'll end the game for everyone."
-          : "You'll disconnect from the host.";
-      Alert.alert("Leave Game?", message, [
-        { text: "Stay", style: "cancel" },
-        {
-          text: "Leave",
-          style: isSinglePlayer ? "default" : "destructive",
-          onPress: () => {
-            if (isSinglePlayer) {
-              if (typeof handleSaveAndExit === "function") handleSaveAndExit();
-              else navigation.navigate("Home");
-            } else {
-              if (isHost) stopServer();
-              else disconnectFromHost();
-              navigation.navigate("Home");
-            }
-          },
-        },
-      ]);
-      return true;
-    };
-    const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
-    return () => sub.remove();
-  }, [navigation, isSinglePlayer, isHost]);
 
   const menuItems = [
     {
