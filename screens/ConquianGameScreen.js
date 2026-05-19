@@ -1287,47 +1287,51 @@ export default function ConquianGameScreen({ navigation, route }) {
               ? "Your Hand — tap to select 1 card to pass"
               : `Your Hand (${myHand.length})`}
           </Text>
-          <View style={styles.handRow}>
-            {myHand.map((card, index) => {
-              const isSelected =
-                phase === "initialPass"
-                  ? passCardId === card.id
-                  : selectedHandIds.has(card.id);
-              const tappable =
-                (phase === "initialPass" && !myHasSubmittedPass) ||
-                (turnPhase === "action" && isMyTurn) ||
-                (turnPhase === "discard" && isMyTurn);
-              return (
-                <TouchableOpacity
-                  key={card.id}
-                  disabled={!tappable}
-                  onPress={() => {
-                    if (phase === "initialPass") {
-                      setPassCardId((prev) =>
-                        prev === card.id ? null : card.id,
-                      );
-                      return;
-                    }
-                    if (turnPhase === "discard" && isMyTurn) {
-                      handleDiscard(card.id);
-                      return;
-                    }
-                    if (turnPhase === "action" && isMyTurn)
-                      toggleHandCard(card.id);
-                  }}
-                >
-                  <View style={isSelected ? styles.selectedWrapperSmall : null}>
-                    <Card
-                      rank={card.rank}
-                      suit={card.suit}
-                      small
-                      animateDeal={hasMountedRef.current}
-                      dealDelay={myHand.length <= 10 ? index * 100 : 0}
-                    />
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
+          <View style={styles.handContainer}>
+            <View style={styles.handRow}>
+              {myHand.map((card, index) => {
+                const isSelected =
+                  phase === "initialPass"
+                    ? passCardId === card.id
+                    : selectedHandIds.has(card.id);
+                const tappable =
+                  (phase === "initialPass" && !myHasSubmittedPass) ||
+                  (turnPhase === "action" && isMyTurn) ||
+                  (turnPhase === "discard" && isMyTurn);
+                return (
+                  <TouchableOpacity
+                    key={card.id}
+                    disabled={!tappable}
+                    onPress={() => {
+                      if (phase === "initialPass") {
+                        setPassCardId((prev) =>
+                          prev === card.id ? null : card.id,
+                        );
+                        return;
+                      }
+                      if (turnPhase === "discard" && isMyTurn) {
+                        handleDiscard(card.id);
+                        return;
+                      }
+                      if (turnPhase === "action" && isMyTurn)
+                        toggleHandCard(card.id);
+                    }}
+                  >
+                    <View
+                      style={isSelected ? styles.selectedWrapperSmall : null}
+                    >
+                      <Card
+                        rank={card.rank}
+                        suit={card.suit}
+                        small
+                        animateDeal={hasMountedRef.current}
+                        dealDelay={myHand.length <= 10 ? index * 100 : 0}
+                      />
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
         </View>
 
@@ -1617,12 +1621,13 @@ const styles = StyleSheet.create({
     height: scale(100),
     borderRadius: scale(8),
     borderWidth: 2,
-    borderColor: "#334",
+    borderColor: "#7fb3ff",
     borderStyle: "dashed",
     alignItems: "center",
     justifyContent: "center",
+    opacity: 0.6,
   },
-  emptySlotText: { color: "#555", fontSize: scaleFont(20) },
+  emptySlotText: { color: "#7fb3ff", fontSize: scaleFont(20), opacity: 0.6 },
   myProgress: {
     color: "#4caf50",
     fontSize: scaleFont(13),
@@ -1660,7 +1665,19 @@ const styles = StyleSheet.create({
   },
   meldGroupSelected: { borderColor: "#7fb3ff" },
 
-  handSection: { paddingHorizontal: scale(12), marginBottom: scale(6) },
+  handSection: {
+    paddingHorizontal: scale(12),
+    marginBottom: scale(6),
+  },
+  handContainer: {
+    backgroundColor: "rgba(127, 179, 255, 0.06)",
+    borderWidth: 1,
+    borderColor: "rgba(127, 179, 255, 0.18)",
+    borderRadius: scale(12),
+    paddingVertical: scale(8),
+    paddingHorizontal: scale(6),
+    marginTop: scale(4),
+  },
   handRow: { flexDirection: "row", flexWrap: "wrap" },
   selectedWrapper: {
     borderRadius: scale(10),
