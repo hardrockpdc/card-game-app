@@ -72,6 +72,14 @@ export function isValidMeld(cards) {
   );
 }
 
+function sortMeldCards(cards) {
+  return [...cards].sort((a, b) => {
+    const rankDiff = RANK_VAL[a.rank] - RANK_VAL[b.rank];
+    if (rankDiff !== 0) return rankDiff;
+    return a.suit.localeCompare(b.suit);
+  });
+}
+
 // Can `card` legally extend `meld` (set or run)?
 export function canExtendMeld(meld, card) {
   if (isValidSet(meld) && meld.length < 4 && card.rank === meld[0].rank) {
@@ -253,7 +261,7 @@ export function doLayDownMeld(state, playerPid, cardIds) {
     },
     melds: {
       ...state.melds,
-      [pidStr]: [...(state.melds[pidStr] ?? []), cards],
+      [pidStr]: [...(state.melds[pidStr] ?? []), sortMeldCards(cards)],
     },
   };
   return winCheck(next, pidStr);
@@ -288,7 +296,9 @@ export function doExtendMeldFromHand(state, playerPid, meldIdx, cardIds) {
     },
     melds: {
       ...state.melds,
-      [pidStr]: myMelds.map((m, i) => (i === meldIdx ? newMeld : m)),
+      [pidStr]: myMelds.map((m, i) =>
+        i === meldIdx ? sortMeldCards(newMeld) : m,
+      ),
     },
   };
   return winCheck(next, pidStr);
@@ -326,7 +336,7 @@ export function doTakeActiveCard(state, playerPid, meldAction) {
     const target = myMelds[meldAction.meldIdx];
     if (!target || !canExtendMeld(target, state.activeCard)) return state;
     newMelds = myMelds.map((m, i) =>
-      i === meldAction.meldIdx ? [...m, state.activeCard] : m,
+      i === meldAction.meldIdx ? sortMeldCards([...m, state.activeCard]) : m,
     );
   } else {
     return state;
@@ -468,7 +478,10 @@ export function doTakeWithBorrow(state, playerPid, finalMelds) {
   const next = {
     ...state,
     hands: { ...state.hands, [pidStr]: newHand },
-    melds: { ...state.melds, [pidStr]: finalMelds },
+    melds: {
+      ...state.melds,
+      [pidStr]: finalMelds.map((meld) => sortMeldCards(meld)),
+    },
     activeCard: null,
     turnPhase: "discard",
   };
