@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useResumePrompt } from "../game/useResumePrompt";
@@ -18,7 +18,6 @@ export default function ConquianSetupScreen({ navigation, route }) {
       ? params.launchParams
       : {};
 
-  const [difficulty, setDifficulty] = useState("medium");
   const promptIfSaved = useResumePrompt();
 
   const handleStart = async () => {
@@ -34,7 +33,6 @@ export default function ConquianSetupScreen({ navigation, route }) {
           role: "singleplayer",
           myName: playerName,
           players,
-          difficulty,
           resumeFromSave: false,
         }),
       onResume: () =>
@@ -43,7 +41,6 @@ export default function ConquianSetupScreen({ navigation, route }) {
           role: "singleplayer",
           myName: playerName,
           players,
-          difficulty,
           resumeFromSave: true,
         }),
     });
@@ -73,42 +70,6 @@ export default function ConquianSetupScreen({ navigation, route }) {
             <Text style={styles.constraintNote}>
               Conquián is 1v1 — only one opponent.
             </Text>
-          </View>
-
-          <View style={styles.sectionBlock}>
-            <Text style={styles.sectionLabel}>Difficulty</Text>
-            <View style={styles.pillRow}>
-              {[
-                { id: "easy", label: "Easy" },
-                { id: "medium", label: "Medium" },
-                { id: "hard", label: "Hard" },
-              ].map((option) => {
-                const selected = option.id === difficulty;
-                return (
-                  <Pressable
-                    key={option.id}
-                    onPress={() => setDifficulty(option.id)}
-                    style={({ pressed }) => [
-                      styles.pill,
-                      selected && styles.pillSelected,
-                      pressed && styles.pillPressed,
-                    ]}
-                    accessibilityRole="button"
-                    accessibilityLabel={option.label}
-                    accessibilityState={{ selected }}
-                  >
-                    <Text
-                      style={[
-                        styles.pillText,
-                        selected && styles.pillTextSelected,
-                      ]}
-                    >
-                      {option.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
           </View>
 
           <Pressable
@@ -170,7 +131,11 @@ const styles = StyleSheet.create({
   },
   pillSelected: { backgroundColor: "#7fb3ff", borderColor: "#7fb3ff" },
   pillPressed: { opacity: 0.7 },
-  pillText: { color: "#c4c4d4", fontSize: scaleFont(14), fontWeight: "bold" },
+  pillText: {
+    color: "#c4c4d4",
+    fontSize: scaleFont(14),
+    fontWeight: "bold",
+  },
   pillTextSelected: { color: "#0a0a1a" },
   constraintNote: {
     color: "#9090a8",

@@ -90,7 +90,7 @@ export function canExtendMeld(meld, card) {
 export function getConfig(playerCount) {
   if (playerCount <= 2) return { handSize: 10, winTarget: 11 };
   if (playerCount === 3) return { handSize: 8, winTarget: 9 };
-  return { handSize: 6, winTarget: 7 };
+  return { handSize: 7, winTarget: 8 };
 }
 
 // ─── State helpers ────────────────────────────────────────────────────────────
@@ -126,7 +126,7 @@ function advanceTurn(state) {
 
 // ─── Deal & Initial Pass ──────────────────────────────────────────────────────
 
-export function deal(playerList) {
+export function deal(playerList, options = {}) {
   const { handSize, winTarget } = getConfig(playerList.length);
   const deck = createConquianDeck();
   const hands = {};
@@ -135,6 +135,13 @@ export function deal(playerList) {
     hands[pid(p)] = deck.slice(i, i + handSize);
     i += handSize;
   }
+  // Dealer: random on first deal, otherwise provided by caller (typically the previous winner's index).
+  const dealerIndex =
+    typeof options.dealerIndex === "number" && options.dealerIndex >= 0
+      ? options.dealerIndex % playerList.length
+      : Math.floor(Math.random() * playerList.length);
+  // First player is to the dealer's left (clockwise = next index).
+  const firstPlayerIndex = (dealerIndex + 1) % playerList.length;
   return {
     phase: "initialPass",
     players: playerList,
@@ -145,11 +152,12 @@ export function deal(playerList) {
     hands,
     melds: Object.fromEntries(playerList.map((p) => [pid(p), []])),
     passSelections: Object.fromEntries(playerList.map((p) => [pid(p), null])),
-    currentPlayerIndex: 0,
+    currentPlayerIndex: firstPlayerIndex,
     turnPhase: "draw",
     winner: null,
     tie: false,
-    originalDrawerIndex: 0,
+    dealerIndex,
+    originalDrawerIndex: firstPlayerIndex,
     activeCardSourcePid: null,
     chainPassedPids: [],
   };
@@ -189,9 +197,11 @@ export function doSelectPassCard(state, playerPid, cardId) {
     passSelections: Object.fromEntries(
       state.players.map((p) => [pid(p), null]),
     ),
-    currentPlayerIndex: 0,
+    // Spec: first player is to the dealer's left (dealerIndex is set in deal()).
+    // Preserve that computed starting index after the initial pass resolves.
+    currentPlayerIndex: state.currentPlayerIndex,
     turnPhase: "draw",
-    originalDrawerIndex: 0,
+    originalDrawerIndex: state.currentPlayerIndex,
     activeCardSourcePid: null,
     chainPassedPids: [],
   };

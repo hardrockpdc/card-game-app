@@ -72,6 +72,7 @@ function toPublic(state) {
     winner: state.winner,
     tie: state.tie,
     originalDrawerIndex: state.originalDrawerIndex,
+    dealerIndex: state.dealerIndex,
     activeCardSourcePid: state.activeCardSourcePid,
     chainPassedPids: state.chainPassedPids,
   };
@@ -601,7 +602,20 @@ export default function ConquianGameScreen({ navigation, route }) {
       players: initialPlayers.length,
       difficulty,
     });
-    applyState(deal(initialPlayers));
+
+    // Spec: subsequent games' dealer = previous game's winner. Fall back to random if there was no winner (tie).
+    const prevWinner = fullRef.current?.winner;
+    const nextDealerIndex =
+      prevWinner && Array.isArray(initialPlayers)
+        ? initialPlayers.findIndex(
+            (p) => String(p.id) === String(prevWinner.id),
+          )
+        : -1;
+    applyState(
+      deal(initialPlayers, {
+        dealerIndex: nextDealerIndex >= 0 ? nextDealerIndex : undefined,
+      }),
+    );
   }
 
   // ─── Borrow mode handlers ─────────────────────────────────────────────────────
@@ -777,11 +791,23 @@ export default function ConquianGameScreen({ navigation, route }) {
 
   function handleRestart() {
     if (isSinglePlayer) clearGame(SAVE_KEY_CONQUIAN);
+    const prevWinner = fullRef.current?.winner;
+    const nextDealerIndex =
+      prevWinner && Array.isArray(initialPlayers)
+        ? initialPlayers.findIndex(
+            (p) => String(p.id) === String(prevWinner.id),
+          )
+        : -1;
+
     botLog("GAMESTART", "Conquian", {
       players: initialPlayers.length,
       difficulty,
     });
-    applyState(deal(initialPlayers));
+    applyState(
+      deal(initialPlayers, {
+        dealerIndex: nextDealerIndex >= 0 ? nextDealerIndex : undefined,
+      }),
+    );
   }
 
   function handleSaveAndExit() {
@@ -817,6 +843,12 @@ export default function ConquianGameScreen({ navigation, route }) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.container}>
+          <View style={styles.borrowHint}>
+            <Text style={styles.borrowHintText}>
+              Rearrange your own melds — every meld must remain a valid set or
+              run, and the active card must end up in a meld.
+            </Text>
+          </View>
           <Text style={styles.borrowTitle}>Rearrange Melds</Text>
           <Text style={styles.borrowSubtitle}>
             {hasActive
@@ -1801,4 +1833,19 @@ const styles = StyleSheet.create({
     borderColor: "#ffa000",
   },
   emptyHint: { color: "#555", fontSize: scaleFont(13), padding: scale(8) },
+  borrowHint: {
+    backgroundColor: "rgba(127, 179, 255, 0.10)",
+    borderLeftWidth: 3,
+    borderLeftColor: "#7fb3ff",
+    borderRadius: scale(8),
+    paddingVertical: scale(8),
+    paddingHorizontal: scale(12),
+    marginHorizontal: scale(12),
+    marginBottom: scale(8),
+  },
+  borrowHintText: {
+    color: "#c4c4d4",
+    fontSize: scaleFont(13),
+    lineHeight: scaleFont(18),
+  },
 });
