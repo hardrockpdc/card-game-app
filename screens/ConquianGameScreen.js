@@ -1565,10 +1565,10 @@ export default function ConquianGameScreen({ navigation, route }) {
                     style={[styles.actionBtn, styles.layBtn]}
                     onPress={handleLayMeld}
                     accessibilityRole="button"
-                    accessibilityLabel="Lay Meld"
+                    accessibilityLabel="Meld"
                     accessibilityHint="Place selected cards as a meld"
                   >
-                    <Text style={styles.actionBtnText}>Lay Meld</Text>
+                    <Text style={styles.actionBtnText}>Meld</Text>
                   </TouchableOpacity>
                 )}
 
