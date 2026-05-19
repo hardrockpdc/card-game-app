@@ -50,6 +50,15 @@ const CAROUSEL_GAMES = [
     image: require("../assets/images/thumb_rummy.png"),
   },
   {
+    id: "conquian",
+    label: "Conquián",
+    players: "1 player",
+    tag: "Mexican rummy",
+    color: "#14131f",
+    accent: "#c4923f",
+    image: require("../assets/images/thumb_rummy.png"),
+  },
+  {
     id: "goFish",
     label: "Go Fish",
     players: "1–4 players",
@@ -97,6 +106,12 @@ const GAMES = [
     id: "rummy",
     screen: "RummyGame",
     aiRange: [1, 3],
+    hasDifficulty: true,
+  },
+  {
+    id: "conquian",
+    screen: "ConquianSetup",
+    aiRange: [1, 1],
     hasDifficulty: true,
   },
   {
@@ -211,6 +226,12 @@ export default function SinglePlayerSetupScreen({ navigation }) {
     });
   }
 
+  function openConquianSetup() {
+    navigation.navigate("ConquianSetup", {
+      mode: "singleplayer",
+    });
+  }
+
   function openGameSetup() {
     navigation.navigate("GameSetup", {
       mode: "singleplayer",
@@ -250,6 +271,11 @@ export default function SinglePlayerSetupScreen({ navigation }) {
 
     if (game.id === "rummy") {
       openRummyVariantPicker();
+      return;
+    }
+
+    if (game.id === "conquian") {
+      openConquianSetup();
       return;
     }
 
@@ -322,6 +348,7 @@ export default function SinglePlayerSetupScreen({ navigation }) {
             const isPoker = item.id === "poker";
             const isSolitaire = item.id === "solitaire";
             const isRummy = item.id === "rummy";
+            const isConquian = item.id === "conquian";
             const isGoFish = item.id === "goFish";
 
             return (
@@ -335,9 +362,11 @@ export default function SinglePlayerSetupScreen({ navigation }) {
                       ? openSolitaireVariantPicker
                       : isRummy
                         ? openRummyVariantPicker
-                        : isGoFish
-                          ? () => navigation.navigate("GoFishPicker")
-                          : undefined
+                        : isConquian
+                          ? openConquianSetup
+                          : isGoFish
+                            ? () => navigation.navigate("GoFishPicker")
+                            : undefined
                 }
               >
                 <View

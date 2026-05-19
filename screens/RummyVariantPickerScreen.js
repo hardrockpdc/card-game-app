@@ -4,19 +4,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useResumePrompt } from "../game/useResumePrompt";
 
 import RummyVariantWheel from "../components/RummyVariantWheel";
-import { RUMMY_VARIANT_OPTIONS, getRummyVariantLabel } from "../game/rummy";
+import { RUMMY_VARIANT_OPTIONS } from "../game/rummy";
 import { scale, scaleFont } from "../game/responsive";
-
-const CONQUIAN_VARIANT_OPTION = {
-  value: "conquian",
-  label: "Conquián",
-  description: "Classic Mexican rummy — meld 9 cards to win.",
-};
-
-const SINGLE_PLAYER_RUMMY_OPTIONS = [
-  ...RUMMY_VARIANT_OPTIONS,
-  CONQUIAN_VARIANT_OPTION,
-];
 
 function getInitialVariant(currentVariant, options) {
   const found = options.find((option) => option.value === currentVariant);
@@ -54,8 +43,7 @@ function buildPlayers(playerName, aiCount) {
 function RummyVariantPickerScreen({ navigation, route }) {
   const params = route?.params ?? {};
   const { mode = "singleplayer", currentVariant, launchParams } = params;
-  const pickerOptions =
-    mode === "lobby" ? RUMMY_VARIANT_OPTIONS : SINGLE_PLAYER_RUMMY_OPTIONS;
+  const pickerOptions = RUMMY_VARIANT_OPTIONS;
 
   const [selectedVariant, setSelectedVariant] = useState(() =>
     getInitialVariant(currentVariant, pickerOptions),
@@ -64,16 +52,9 @@ function RummyVariantPickerScreen({ navigation, route }) {
   const [difficulty, setDifficulty] = useState("medium");
   const promptIfSaved = useResumePrompt();
 
-  const isConquian = selectedVariant === "conquian";
-
   useEffect(() => {
     setSelectedVariant(getInitialVariant(currentVariant, pickerOptions));
   }, [currentVariant, pickerOptions]);
-
-  // Conquián is 1v1 — collapse AI count to 1
-  useEffect(() => {
-    if (isConquian) setAiCount(1);
-  }, [isConquian]);
 
   const modeCopy = useMemo(() => getModeCopy(mode), [mode]);
 
@@ -94,35 +75,9 @@ function RummyVariantPickerScreen({ navigation, route }) {
     const playerName = launchPayload.myName ?? "Player";
     const players = buildPlayers(playerName, aiCount);
 
-    if (selectedVariant === "conquian") {
-      await promptIfSaved({
-        saveKey: "@cardnight:save:rummy:conquian",
-        gameName: "Conquián",
-        onFresh: () =>
-          navigation.navigate("ConquianGame", {
-            ...launchPayload,
-            role: "singleplayer",
-            myName: playerName,
-            players,
-            difficulty,
-            resumeFromSave: false,
-          }),
-        onResume: () =>
-          navigation.navigate("ConquianGame", {
-            ...launchPayload,
-            role: "singleplayer",
-            myName: playerName,
-            players,
-            difficulty,
-            resumeFromSave: true,
-          }),
-      });
-      return;
-    }
-
     const variantLabel =
-      SINGLE_PLAYER_RUMMY_OPTIONS.find((o) => o.value === selectedVariant)
-        ?.label ?? "Rummy";
+      RUMMY_VARIANT_OPTIONS.find((o) => o.value === selectedVariant)?.label ??
+      "Rummy";
     await promptIfSaved({
       saveKey: `@cardnight:save:rummy:${selectedVariant}`,
       gameName: variantLabel,
@@ -171,43 +126,28 @@ function RummyVariantPickerScreen({ navigation, route }) {
             <>
               <View style={styles.sectionBlock}>
                 <Text style={styles.sectionLabel}>AI Opponents</Text>
-                {isConquian ? (
-                  <>
-                    <View style={styles.pillRow}>
-                      <View style={[styles.pill, styles.pillSelected]}>
-                        <Text style={[styles.pillText, styles.pillTextSelected]}>
-                          1
-                        </Text>
-                      </View>
-                    </View>
-                    <Text style={styles.constraintNote}>
-                      Conquián is 1v1 — only one opponent.
-                    </Text>
-                  </>
-                ) : (
-                  <View style={styles.pillRow}>
-                    {[1, 2, 3].map((count) => (
-                      <Pressable
-                        key={count}
-                        onPress={() => setAiCount(count)}
-                        style={({ pressed }) => [
-                          styles.pill,
-                          aiCount === count && styles.pillSelected,
-                          pressed && styles.pillPressed,
+                <View style={styles.pillRow}>
+                  {[1, 2, 3].map((count) => (
+                    <Pressable
+                      key={count}
+                      onPress={() => setAiCount(count)}
+                      style={({ pressed }) => [
+                        styles.pill,
+                        aiCount === count && styles.pillSelected,
+                        pressed && styles.pillPressed,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.pillText,
+                          aiCount === count && styles.pillTextSelected,
                         ]}
                       >
-                        <Text
-                          style={[
-                            styles.pillText,
-                            aiCount === count && styles.pillTextSelected,
-                          ]}
-                        >
-                          {count}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                )}
+                        {count}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
               </View>
 
               <View style={styles.sectionBlock}>
