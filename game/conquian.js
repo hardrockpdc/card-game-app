@@ -331,7 +331,7 @@ export function doTakeActiveCard(state, playerPid, meldAction) {
     const meldCards = [state.activeCard, ...hCards];
     if (!isValidMeld(meldCards)) return state;
     newHand = hand.filter((c) => !meldAction.handCardIds.includes(c.id));
-    newMelds = [...myMelds, meldCards];
+    newMelds = [...myMelds, sortMeldCards(meldCards)];
   } else if (meldAction.type === "extend") {
     const target = myMelds[meldAction.meldIdx];
     if (!target || !canExtendMeld(target, state.activeCard)) return state;
