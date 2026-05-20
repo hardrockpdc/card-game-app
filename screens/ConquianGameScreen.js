@@ -1221,7 +1221,7 @@ export default function ConquianGameScreen({ navigation, route }) {
     const acIsSelected = borrowSelCardId === ac?.id;
     const nonEmpty = borrowGroups.filter((g) => g.length > 0);
     const allValid = nonEmpty.every((g) => isValidMeld(g));
-    const canConfirm = allValid && acIsPlaced && nonEmpty.length > 0;
+    const canConfirm = allValid && nonEmpty.length > 0;
     const draggedCardId = borrowDragState?.card?.id ?? null;
     const hoveredGroupIdx = borrowHoveredTarget?.startsWith("group:")
       ? Number(borrowHoveredTarget.split(":")[1])
@@ -1301,14 +1301,6 @@ export default function ConquianGameScreen({ navigation, route }) {
 
           {/* Validation badge */}
           <View style={styles.borrowValidRow}>
-            <Text
-              style={[
-                styles.borrowValidText,
-                acIsPlaced ? styles.borrowValidOk : styles.borrowValidWarn,
-              ]}
-            >
-              {acIsPlaced ? "✓ Active card placed" : "⚠ Active card not placed"}
-            </Text>
             <Text
               style={[
                 styles.borrowValidText,

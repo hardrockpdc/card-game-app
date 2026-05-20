@@ -438,16 +438,11 @@ export function doDiscardCard(state, playerPid, cardId) {
 }
 
 // ─── Borrow Take ─────────────────────────────────────────────────────────────
-// Take active card with full meld rearrangement.
+// Take with full meld rearrangement.
 // finalMelds = the complete proposed meld arrangement (Card[][]).
 // Cards not placed in finalMelds return to hand. The active card is optional.
 export function doTakeWithBorrow(state, playerPid, finalMelds) {
-  if (
-    state.phase !== "playing" ||
-    state.turnPhase !== "action" ||
-    !state.activeCard
-  )
-    return state;
+  if (state.phase !== "playing" || state.turnPhase !== "action") return state;
   const pidStr = String(playerPid);
   if (pid(state.players[state.currentPlayerIndex]) !== pidStr) return state;
   if (!finalMelds || finalMelds.length === 0) return state;
@@ -456,19 +451,21 @@ export function doTakeWithBorrow(state, playerPid, finalMelds) {
   if (!finalMelds.every((m) => isValidMeld(m))) return state;
 
   const allCards = finalMelds.flat();
+  const activeId = state.activeCard?.id ?? null;
+  const activeUsed = activeId ? allCards.some((c) => c.id === activeId) : false;
 
   // Every card used must come from the allowed pool: hand + own melds + active card
   const pool = [
     state.activeCard,
     ...(state.hands[pidStr] ?? []),
     ...(state.melds[pidStr] ?? []).flat(),
-  ];
+  ].filter(Boolean);
   const poolIds = new Set(pool.map((c) => c.id));
   if (!allCards.every((c) => poolIds.has(c.id))) return state;
 
-  // Cards not placed in any meld go back to hand, including the active card if unused.
+  // Cards not placed in any meld go back to hand. If the active card is unused, it stays active.
   const usedIds = new Set(allCards.map((c) => c.id));
-  const newHand = pool.filter((c) => !usedIds.has(c.id));
+  const newHand = pool.filter((c) => c.id !== activeId && !usedIds.has(c.id));
 
   const next = {
     ...state,
@@ -477,8 +474,8 @@ export function doTakeWithBorrow(state, playerPid, finalMelds) {
       ...state.melds,
       [pidStr]: finalMelds.map((meld) => sortMeldCards(meld)),
     },
-    activeCard: null,
-    turnPhase: "discard",
+    activeCard: activeUsed ? null : state.activeCard,
+    turnPhase: activeUsed ? "discard" : "action",
   };
   return winCheck(next, pidStr);
 }
