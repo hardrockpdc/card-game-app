@@ -8,6 +8,7 @@ import {
   Alert,
   BackHandler,
   Animated,
+  PanResponder,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Card from "../components/Card";
@@ -119,6 +120,14 @@ export default function ConquianGameScreen({ navigation, route }) {
   const [borrowPool, setBorrowPool] = useState([]);
   const [borrowSelCardId, setBorrowSelCardId] = useState(null);
   const [borrowTargetedMeldIdx, setBorrowTargetedMeldIdx] = useState(null);
+  const [borrowDragState, setBorrowDragState] = useState(null);
+  const [borrowHoveredTarget, setBorrowHoveredTarget] = useState(null);
+  const borrowDragXY = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
+  const borrowDragStateRef = useRef(null);
+  const borrowCardRefs = useRef({});
+  const borrowHandRowRef = useRef(null);
+  const borrowMeldRowRefs = useRef([]);
+  const borrowDropZonesRef = useRef({ hand: null, groups: [] });
 
   // Wipe any legacy Conquián save (old key "@cardnight:save:rummy:conquian")
   // to rule out a stale-schema crash. Runs once on mount.
@@ -761,6 +770,13 @@ export default function ConquianGameScreen({ navigation, route }) {
     setBorrowPool([]);
     setBorrowSelCardId(null);
     setBorrowTargetedMeldIdx(null);
+    setBorrowDragState(null);
+    setBorrowHoveredTarget(null);
+    borrowDragXY.setValue({ x: 0, y: 0 });
+    borrowDropZonesRef.current = { hand: null, groups: [] };
+    borrowCardRefs.current = {};
+    borrowHandRowRef.current = null;
+    borrowMeldRowRefs.current = [];
     setStatusMsg("");
   }
 
@@ -845,6 +861,173 @@ export default function ConquianGameScreen({ navigation, route }) {
   function borrowAddNewMeld() {
     setBorrowGroups((prev) => [...prev, []]);
   }
+
+  function resetBorrowDrag() {
+    borrowDragXY.setValue({ x: 0, y: 0 });
+    borrowDragStateRef.current = null;
+    setBorrowDragState(null);
+    setBorrowHoveredTarget(null);
+  }
+
+  function pointInRect(x, y, rect) {
+    if (!rect) return false;
+    return (
+      x >= rect.x &&
+      x <= rect.x + rect.width &&
+      y >= rect.y &&
+      y <= rect.y + rect.height
+    );
+  }
+
+  function getBorrowDropTarget(x, y) {
+    const { hand, groups } = borrowDropZonesRef.current;
+    const groupIdx = groups.findIndex((rect) => pointInRect(x, y, rect));
+    if (groupIdx !== -1) return { kind: "group", idx: groupIdx };
+    if (pointInRect(x, y, hand)) return { kind: "hand" };
+    return null;
+  }
+
+  function measureNodeInWindow(node) {
+    return new Promise((resolve) => {
+      if (!node?.measureInWindow) {
+        resolve(null);
+        return;
+      }
+      node.measureInWindow((x, y, width, height) => {
+        resolve({ x, y, width, height });
+      });
+    });
+  }
+
+  async function captureBorrowDropZones() {
+    const hand = await measureNodeInWindow(borrowHandRowRef.current);
+    const groups = await Promise.all(
+      borrowMeldRowRefs.current.map((node) => measureNodeInWindow(node)),
+    );
+    borrowDropZonesRef.current = {
+      hand,
+      groups: groups.filter(Boolean),
+    };
+    return borrowDropZonesRef.current;
+  }
+
+  function startBorrowDrag(card, source, node) {
+    if (!node?.measureInWindow) return;
+    node.measureInWindow((x, y, width, height) => {
+      const next = {
+        card,
+        source,
+        originX: x,
+        originY: y,
+        width,
+        height,
+        small: source.small,
+      };
+      borrowDragStateRef.current = next;
+      borrowDragXY.setValue({ x: 0, y: 0 });
+      setBorrowHoveredTarget(null);
+      setBorrowDragState(next);
+      captureBorrowDropZones().catch(() => {});
+    });
+  }
+
+  function moveBorrowCard(card, source, target) {
+    const ac = gameState?.activeCard;
+    if (!target) return false;
+
+    if (target.kind === "group") {
+      if (
+        source.type === "group" &&
+        source.groupIdx === target.idx &&
+        card.id !== ac?.id
+      ) {
+        return false;
+      }
+
+      if (source.type === "hand") {
+        setBorrowPool((prev) => prev.filter((c) => c.id !== card.id));
+      } else if (source.type === "group") {
+        setBorrowGroups((prev) =>
+          prev.map((g, i) =>
+            i === source.groupIdx ? g.filter((c) => c.id !== card.id) : g,
+          ),
+        );
+      }
+
+      setBorrowGroups((prev) =>
+        prev.map((g, i) => (i === target.idx ? [...g, card] : g)),
+      );
+      setBorrowSelCardId(null);
+      setBorrowTargetedMeldIdx(null);
+      return true;
+    }
+
+    if (target.kind === "hand") {
+      if (source.type === "hand" || source.type === "hero") return false;
+
+      if (source.type === "group") {
+        setBorrowGroups((prev) =>
+          prev.map((g, i) =>
+            i === source.groupIdx ? g.filter((c) => c.id !== card.id) : g,
+          ),
+        );
+        if (!ac || card.id !== ac.id) {
+          setBorrowPool((prev) => [...prev, card]);
+        }
+      }
+
+      setBorrowSelCardId(null);
+      setBorrowTargetedMeldIdx(null);
+      return true;
+    }
+
+    return false;
+  }
+
+  function endBorrowDrag(card, source, moveX, moveY) {
+    const target = getBorrowDropTarget(moveX, moveY);
+    if (moveBorrowCard(card, source, target)) {
+      resetBorrowDrag();
+      return;
+    }
+    resetBorrowDrag();
+  }
+
+  function buildBorrowCardPanResponder(card, source) {
+    return PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, g) =>
+        Math.abs(g.dx) > 6 || Math.abs(g.dy) > 6,
+      onPanResponderGrant: () => {
+        const node = borrowCardRefs.current[card.id];
+        setBorrowSelCardId(null);
+        setBorrowTargetedMeldIdx(null);
+        startBorrowDrag(card, source, node);
+      },
+      onPanResponderMove: (_, g) => {
+        if (!borrowDragStateRef.current) return;
+        borrowDragXY.setValue({ x: g.dx, y: g.dy });
+        const target = getBorrowDropTarget(g.moveX, g.moveY);
+        const next = target
+          ? target.kind === "group"
+            ? `group:${target.idx}`
+            : "hand"
+          : null;
+        setBorrowHoveredTarget((prev) => (prev === next ? prev : next));
+      },
+      onPanResponderRelease: (_, g) => {
+        if (!borrowDragStateRef.current) return;
+        endBorrowDrag(card, source, g.moveX, g.moveY);
+      },
+      onPanResponderTerminate: () => {
+        resetBorrowDrag();
+      },
+    }).panHandlers;
+  }
+
+  useEffect(() => {
+    borrowDragStateRef.current = borrowDragState;
+  }, [borrowDragState]);
 
   function handleConfirmBorrow() {
     const nonEmpty = borrowGroups.filter((g) => g.length > 0);
@@ -1039,6 +1222,11 @@ export default function ConquianGameScreen({ navigation, route }) {
     const nonEmpty = borrowGroups.filter((g) => g.length > 0);
     const allValid = nonEmpty.every((g) => isValidMeld(g));
     const canConfirm = allValid && acIsPlaced && nonEmpty.length > 0;
+    const draggedCardId = borrowDragState?.card?.id ?? null;
+    const hoveredGroupIdx = borrowHoveredTarget?.startsWith("group:")
+      ? Number(borrowHoveredTarget.split(":")[1])
+      : -1;
+    const isHandHovered = borrowHoveredTarget === "hand";
 
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -1083,15 +1271,24 @@ export default function ConquianGameScreen({ navigation, route }) {
           <View style={styles.borrowHeroRow}>
             {ac && !acIsPlaced ? (
               <TouchableOpacity
+                ref={(node) => {
+                  if (node) borrowCardRefs.current[ac.id] = node;
+                }}
+                collapsable={false}
+                {...buildBorrowCardPanResponder(ac, {
+                  type: "hero",
+                  small: false,
+                })}
                 onPress={handleTapBorrowActiveCard}
                 style={[
                   styles.borrowHeroCardWrap,
                   acIsSelected && styles.borrowHeroCardSelected,
+                  draggedCardId === ac.id && styles.borrowCardDragging,
                 ]}
                 activeOpacity={0.7}
                 accessibilityRole="button"
                 accessibilityLabel={`Active card ${ac.rank} of ${ac.suit}`}
-                accessibilityHint="Tap to select, then tap a meld to place"
+                accessibilityHint="Tap to select, drag, or tap a meld to place"
               >
                 <Card rank={ac.rank} suit={ac.suit} />
               </TouchableOpacity>
@@ -1134,14 +1331,19 @@ export default function ConquianGameScreen({ navigation, route }) {
             const valid = group.length >= 3 && isValidMeld(group);
             const invalid = group.length > 0 && !isValidMeld(group);
             const isTargeted = borrowTargetedMeldIdx === idx;
+            const isHovered = hoveredGroupIdx === idx;
             return (
               <TouchableOpacity
                 key={idx}
+                ref={(node) => {
+                  borrowMeldRowRefs.current[idx] = node;
+                }}
+                collapsable={false}
                 style={[
                   styles.borrowMeldRow,
                   valid && styles.borrowMeldRowValid,
                   invalid && styles.borrowMeldRowInvalid,
-                  isTargeted && styles.borrowMeldRowTargeted,
+                  (isTargeted || isHovered) && styles.borrowMeldRowTargeted,
                 ]}
                 onPress={() => borrowMoveToGroup(idx)}
                 activeOpacity={0.6}
@@ -1171,21 +1373,36 @@ export default function ConquianGameScreen({ navigation, route }) {
                       Tap to place selected card here
                     </Text>
                   ) : (
-                    group.map((card) => (
-                      <TouchableOpacity
-                        key={card.id}
-                        onPress={(e) => {
-                          // Prevent the row's onPress from also firing.
-                          e.stopPropagation?.();
-                          borrowReturnToPool(card.id, idx);
-                        }}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Remove ${card.rank} of ${card.suit}`}
-                        accessibilityHint="Returns this card to your hand"
-                      >
-                        <Card rank={card.rank} suit={card.suit} small />
-                      </TouchableOpacity>
-                    ))
+                    group.map((card) => {
+                      const isDraggingThisCard = draggedCardId === card.id;
+                      return (
+                        <TouchableOpacity
+                          key={card.id}
+                          ref={(node) => {
+                            if (node) borrowCardRefs.current[card.id] = node;
+                          }}
+                          collapsable={false}
+                          {...buildBorrowCardPanResponder(card, {
+                            type: "group",
+                            groupIdx: idx,
+                            small: true,
+                          })}
+                          onPress={(e) => {
+                            // Prevent the row's onPress from also firing.
+                            e.stopPropagation?.();
+                            borrowReturnToPool(card.id, idx);
+                          }}
+                          style={
+                            isDraggingThisCard && styles.borrowCardDragging
+                          }
+                          accessibilityRole="button"
+                          accessibilityLabel={`Remove ${card.rank} of ${card.suit}`}
+                          accessibilityHint="Drag to another spot or tap to return to your hand"
+                        >
+                          <Card rank={card.rank} suit={card.suit} small />
+                        </TouchableOpacity>
+                      );
+                    })
                   )}
                 </View>
               </TouchableOpacity>
@@ -1204,21 +1421,42 @@ export default function ConquianGameScreen({ navigation, route }) {
 
           {/* Your Hand */}
           <Text style={styles.borrowSectionLabel}>Your Hand</Text>
-          <View style={styles.borrowHandRow}>
+          <View
+            ref={borrowHandRowRef}
+            collapsable={false}
+            style={[
+              styles.borrowHandRow,
+              isHandHovered && styles.borrowHandRowTargeted,
+            ]}
+          >
             {borrowPool.length === 0 ? (
               <Text style={styles.borrowHandEmpty}>(empty)</Text>
             ) : (
               borrowPool.map((card) => {
                 const isSel = borrowSelCardId === card.id;
+                const isDraggingThisCard = draggedCardId === card.id;
                 return (
                   <TouchableOpacity
                     key={card.id}
+                    ref={(node) => {
+                      if (node) borrowCardRefs.current[card.id] = node;
+                    }}
+                    collapsable={false}
+                    {...buildBorrowCardPanResponder(card, {
+                      type: "hand",
+                      small: true,
+                    })}
                     onPress={() => borrowSelectCard(card.id)}
                     accessibilityRole="button"
                     accessibilityLabel={`${card.rank} of ${card.suit}`}
-                    accessibilityHint="Tap to select, then tap a meld to place"
+                    accessibilityHint="Tap to select, drag, or tap a meld to place"
                   >
-                    <View style={isSel ? styles.selectedWrapperSmall : null}>
+                    <View
+                      style={[
+                        isSel ? styles.selectedWrapperSmall : null,
+                        isDraggingThisCard && styles.borrowCardDragging,
+                      ]}
+                    >
                       <Card rank={card.rank} suit={card.suit} small />
                     </View>
                   </TouchableOpacity>
@@ -1228,6 +1466,32 @@ export default function ConquianGameScreen({ navigation, route }) {
           </View>
 
           {statusMsg ? <Text style={styles.errorMsg}>{statusMsg}</Text> : null}
+          {borrowDragState ? (
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.borrowDragOverlay,
+                {
+                  left: borrowDragState.originX,
+                  top: borrowDragState.originY,
+                  width: borrowDragState.width,
+                  height: borrowDragState.height,
+                  transform: [
+                    { translateX: borrowDragXY.x },
+                    { translateY: borrowDragXY.y },
+                  ],
+                },
+              ]}
+            >
+              <View style={styles.borrowDragCardWrap}>
+                <Card
+                  rank={borrowDragState.card.rank}
+                  suit={borrowDragState.card.suit}
+                  small={borrowDragState.small}
+                />
+              </View>
+            </Animated.View>
+          ) : null}
         </ScrollView>
       </SafeAreaView>
     );
@@ -2244,6 +2508,24 @@ const styles = StyleSheet.create({
     fontSize: scaleFont(13),
     fontStyle: "italic",
     padding: scale(6),
+  },
+  borrowCardDragging: {
+    opacity: 0.15,
+  },
+  borrowDragOverlay: {
+    position: "absolute",
+    zIndex: 50,
+    elevation: 20,
+  },
+  borrowDragCardWrap: {
+    shadowColor: "#000",
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  borrowHandRowTargeted: {
+    borderColor: "#7fb3ff",
+    backgroundColor: "rgba(127, 179, 255, 0.12)",
   },
 
   // Borrow mode

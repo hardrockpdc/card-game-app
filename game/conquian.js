@@ -440,7 +440,7 @@ export function doDiscardCard(state, playerPid, cardId) {
 // ─── Borrow Take ─────────────────────────────────────────────────────────────
 // Take active card with full meld rearrangement.
 // finalMelds = the complete proposed meld arrangement (Card[][]).
-// Cards not placed in finalMelds return to hand. Active card must appear in a meld.
+// Cards not placed in finalMelds return to hand. The active card is optional.
 export function doTakeWithBorrow(state, playerPid, finalMelds) {
   if (
     state.phase !== "playing" ||
@@ -457,9 +457,6 @@ export function doTakeWithBorrow(state, playerPid, finalMelds) {
 
   const allCards = finalMelds.flat();
 
-  // Active card must appear in one of the melds
-  if (!allCards.some((c) => c.id === state.activeCard.id)) return state;
-
   // Every card used must come from the allowed pool: hand + own melds + active card
   const pool = [
     state.activeCard,
@@ -469,11 +466,9 @@ export function doTakeWithBorrow(state, playerPid, finalMelds) {
   const poolIds = new Set(pool.map((c) => c.id));
   if (!allCards.every((c) => poolIds.has(c.id))) return state;
 
-  // Cards not placed in any meld go back to hand (active card is always placed)
+  // Cards not placed in any meld go back to hand, including the active card if unused.
   const usedIds = new Set(allCards.map((c) => c.id));
-  const newHand = pool.filter(
-    (c) => c.id !== state.activeCard.id && !usedIds.has(c.id),
-  );
+  const newHand = pool.filter((c) => !usedIds.has(c.id));
 
   const next = {
     ...state,
