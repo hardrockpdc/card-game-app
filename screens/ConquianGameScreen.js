@@ -124,6 +124,7 @@ export default function ConquianGameScreen({ navigation, route }) {
   const [borrowHoveredTarget, setBorrowHoveredTarget] = useState(null);
   const borrowDragXY = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
   const borrowDragStateRef = useRef(null);
+  const borrowDragMovedRef = useRef(false);
   const borrowCardRefs = useRef({});
   const borrowHandRowRef = useRef(null);
   const borrowMeldRowRefs = useRef([]);
@@ -635,24 +636,31 @@ export default function ConquianGameScreen({ navigation, route }) {
     return borrowGroups.findIndex((g) => g.some((c) => c.id === ac.id));
   }
 
-  function handleTapBorrowActiveCard() {
-    const ac = gameState?.activeCard;
-    if (!ac) return;
-    // If already placed in a meld, tap-to-return is via the in-meld card tap handler;
-    // tapping the floating active card simply does nothing in that case.
-    if (findActiveCardMeldIdx() !== -1) return;
+  function handleBorrowCardTap(card, source) {
+    if (source.type === "hero") {
+      const ac = card;
+      if (findActiveCardMeldIdx() !== -1) return;
 
-    // If a meld is targeted, drop the active card into it.
-    if (borrowTargetedMeldIdx !== null) {
-      setBorrowGroups((prev) =>
-        prev.map((g, i) => (i === borrowTargetedMeldIdx ? [...g, ac] : g)),
-      );
-      setBorrowTargetedMeldIdx(null);
+      if (borrowTargetedMeldIdx !== null) {
+        setBorrowGroups((prev) =>
+          prev.map((g, i) => (i === borrowTargetedMeldIdx ? [...g, ac] : g)),
+        );
+        setBorrowTargetedMeldIdx(null);
+        return;
+      }
+
+      setBorrowSelCardId((prev) => (prev === ac.id ? null : ac.id));
       return;
     }
 
-    // Otherwise, "select" the active card the same way hand cards work.
-    setBorrowSelCardId((prev) => (prev === ac.id ? null : ac.id));
+    if (source.type === "group") {
+      borrowReturnToPool(card.id, source.groupIdx);
+      return;
+    }
+
+    if (source.type === "hand") {
+      borrowSelectCard(card.id);
+    }
   }
 
   function borrowSelectCard(cardId) {
@@ -713,6 +721,7 @@ export default function ConquianGameScreen({ navigation, route }) {
   function resetBorrowDrag() {
     borrowDragXY.setValue({ x: 0, y: 0 });
     borrowDragStateRef.current = null;
+    borrowDragMovedRef.current = false;
     setBorrowDragState(null);
     setBorrowHoveredTarget(null);
   }
@@ -843,17 +852,24 @@ export default function ConquianGameScreen({ navigation, route }) {
 
   function buildBorrowCardPanResponder(card, source) {
     return PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: (_, g) =>
-        Math.abs(g.dx) > 6 || Math.abs(g.dy) > 6,
+      onStartShouldSetPanResponderCapture: () => true,
+      onMoveShouldSetPanResponderCapture: (_, g) =>
+        Math.abs(g.dx) > 4 || Math.abs(g.dy) > 4,
       onPanResponderGrant: () => {
         const node = borrowCardRefs.current[card.id];
+        borrowDragMovedRef.current = false;
         setBorrowSelCardId(null);
         setBorrowTargetedMeldIdx(null);
         startBorrowDrag(card, source, node);
       },
       onPanResponderMove: (_, g) => {
         if (!borrowDragStateRef.current) return;
+        if (
+          !borrowDragMovedRef.current &&
+          (Math.abs(g.dx) > 6 || Math.abs(g.dy) > 6)
+        ) {
+          borrowDragMovedRef.current = true;
+        }
         borrowDragXY.setValue({ x: g.dx, y: g.dy });
         const target = getBorrowDropTarget(g.moveX, g.moveY);
         const next = target
@@ -865,11 +881,17 @@ export default function ConquianGameScreen({ navigation, route }) {
       },
       onPanResponderRelease: (_, g) => {
         if (!borrowDragStateRef.current) return;
+        if (!borrowDragMovedRef.current) {
+          handleBorrowCardTap(card, source);
+          resetBorrowDrag();
+          return;
+        }
         endBorrowDrag(card, source, g.moveX, g.moveY);
       },
       onPanResponderTerminate: () => {
         resetBorrowDrag();
       },
+      onShouldBlockNativeResponder: () => true,
     }).panHandlers;
   }
 
@@ -1118,7 +1140,7 @@ export default function ConquianGameScreen({ navigation, route }) {
           <Text style={styles.borrowHeroLabel}>Place this card</Text>
           <View style={styles.borrowHeroRow}>
             {ac && !acIsPlaced ? (
-              <TouchableOpacity
+              <View
                 ref={(node) => {
                   if (node) borrowCardRefs.current[ac.id] = node;
                 }}
@@ -1127,19 +1149,17 @@ export default function ConquianGameScreen({ navigation, route }) {
                   type: "hero",
                   small: false,
                 })}
-                onPress={handleTapBorrowActiveCard}
                 style={[
                   styles.borrowHeroCardWrap,
                   acIsSelected && styles.borrowHeroCardSelected,
                   draggedCardId === ac.id && styles.borrowCardDragging,
                 ]}
-                activeOpacity={0.7}
                 accessibilityRole="button"
                 accessibilityLabel={`Active card ${ac.rank} of ${ac.suit}`}
                 accessibilityHint="Tap to select, drag, or tap a meld to place"
               >
                 <Card rank={ac.rank} suit={ac.suit} />
-              </TouchableOpacity>
+              </View>
             ) : (
               <View style={styles.borrowHeroCardPlaced}>
                 <Text style={styles.borrowHeroPlacedText}>✓ Placed</Text>
@@ -1173,7 +1193,7 @@ export default function ConquianGameScreen({ navigation, route }) {
             const isTargeted = borrowTargetedMeldIdx === idx;
             const isHovered = hoveredGroupIdx === idx;
             return (
-              <TouchableOpacity
+              <View
                 key={idx}
                 ref={(node) => {
                   borrowMeldRowRefs.current[idx] = node;
@@ -1185,8 +1205,9 @@ export default function ConquianGameScreen({ navigation, route }) {
                   invalid && styles.borrowMeldRowInvalid,
                   (isTargeted || isHovered) && styles.borrowMeldRowTargeted,
                 ]}
-                onPress={() => borrowMoveToGroup(idx)}
-                activeOpacity={0.6}
+                onTouchEnd={(e) => {
+                  if (e.target === e.currentTarget) borrowMoveToGroup(idx);
+                }}
                 accessibilityRole="button"
                 accessibilityLabel={`Meld ${idx + 1}`}
                 accessibilityHint="Tap to place selected card here, or to target this meld"
@@ -1216,7 +1237,7 @@ export default function ConquianGameScreen({ navigation, route }) {
                     group.map((card) => {
                       const isDraggingThisCard = draggedCardId === card.id;
                       return (
-                        <TouchableOpacity
+                        <View
                           key={card.id}
                           ref={(node) => {
                             if (node) borrowCardRefs.current[card.id] = node;
@@ -1227,11 +1248,6 @@ export default function ConquianGameScreen({ navigation, route }) {
                             groupIdx: idx,
                             small: true,
                           })}
-                          onPress={(e) => {
-                            // Prevent the row's onPress from also firing.
-                            e.stopPropagation?.();
-                            borrowReturnToPool(card.id, idx);
-                          }}
                           style={
                             isDraggingThisCard && styles.borrowCardDragging
                           }
@@ -1240,12 +1256,12 @@ export default function ConquianGameScreen({ navigation, route }) {
                           accessibilityHint="Drag to another spot or tap to return to your hand"
                         >
                           <Card rank={card.rank} suit={card.suit} small />
-                        </TouchableOpacity>
+                        </View>
                       );
                     })
                   )}
                 </View>
-              </TouchableOpacity>
+              </View>
             );
           })}
 
@@ -1276,7 +1292,7 @@ export default function ConquianGameScreen({ navigation, route }) {
                 const isSel = borrowSelCardId === card.id;
                 const isDraggingThisCard = draggedCardId === card.id;
                 return (
-                  <TouchableOpacity
+                  <View
                     key={card.id}
                     ref={(node) => {
                       if (node) borrowCardRefs.current[card.id] = node;
@@ -1286,7 +1302,6 @@ export default function ConquianGameScreen({ navigation, route }) {
                       type: "hand",
                       small: true,
                     })}
-                    onPress={() => borrowSelectCard(card.id)}
                     accessibilityRole="button"
                     accessibilityLabel={`${card.rank} of ${card.suit}`}
                     accessibilityHint="Tap to select, drag, or tap a meld to place"
@@ -1299,7 +1314,7 @@ export default function ConquianGameScreen({ navigation, route }) {
                     >
                       <Card rank={card.rank} suit={card.suit} small />
                     </View>
-                  </TouchableOpacity>
+                  </View>
                 );
               })
             )}
