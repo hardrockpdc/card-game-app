@@ -118,6 +118,7 @@ export default function ConquianGameScreen({ navigation, route }) {
   const [borrowGroups, setBorrowGroups] = useState([]);
   const [borrowPool, setBorrowPool] = useState([]);
   const [borrowSelCardId, setBorrowSelCardId] = useState(null);
+  const [borrowTargetedMeldIdx, setBorrowTargetedMeldIdx] = useState(null);
 
   // Wipe any legacy Conquián save (old key "@cardnight:save:rummy:conquian")
   // to rule out a stale-schema crash. Runs once on mount.
@@ -747,8 +748,9 @@ export default function ConquianGameScreen({ navigation, route }) {
     if (!ac) return;
     const myMeldsNow = gameState?.melds?.[myPid] ?? [];
     setBorrowGroups(myMeldsNow.map((m) => [...m]));
-    setBorrowPool([ac, ...myHand]);
+    setBorrowPool([...myHand]);
     setBorrowSelCardId(null);
+    setBorrowTargetedMeldIdx(null);
     setStatusMsg("");
     setBorrowMode(true);
   }
@@ -758,7 +760,35 @@ export default function ConquianGameScreen({ navigation, route }) {
     setBorrowGroups([]);
     setBorrowPool([]);
     setBorrowSelCardId(null);
+    setBorrowTargetedMeldIdx(null);
     setStatusMsg("");
+  }
+
+  // Find which meld (if any) currently contains the active card. -1 if not placed.
+  function findActiveCardMeldIdx() {
+    const ac = gameState?.activeCard;
+    if (!ac) return -1;
+    return borrowGroups.findIndex((g) => g.some((c) => c.id === ac.id));
+  }
+
+  function handleTapBorrowActiveCard() {
+    const ac = gameState?.activeCard;
+    if (!ac) return;
+    // If already placed in a meld, tap-to-return is via the in-meld card tap handler;
+    // tapping the floating active card simply does nothing in that case.
+    if (findActiveCardMeldIdx() !== -1) return;
+
+    // If a meld is targeted, drop the active card into it.
+    if (borrowTargetedMeldIdx !== null) {
+      setBorrowGroups((prev) =>
+        prev.map((g, i) => (i === borrowTargetedMeldIdx ? [...g, ac] : g)),
+      );
+      setBorrowTargetedMeldIdx(null);
+      return;
+    }
+
+    // Otherwise, "select" the active card the same way hand cards work.
+    setBorrowSelCardId((prev) => (prev === ac.id ? null : ac.id));
   }
 
   function borrowSelectCard(cardId) {
@@ -766,7 +796,24 @@ export default function ConquianGameScreen({ navigation, route }) {
   }
 
   function borrowMoveToGroup(groupIdx) {
-    if (!borrowSelCardId) return;
+    const ac = gameState?.activeCard;
+    if (!borrowSelCardId) {
+      // No card selected — just target this meld for the next tap.
+      setBorrowTargetedMeldIdx((prev) => (prev === groupIdx ? null : groupIdx));
+      return;
+    }
+
+    // Active card is selected — move it from "floating" into this meld.
+    if (ac && borrowSelCardId === ac.id) {
+      setBorrowGroups((prev) =>
+        prev.map((g, i) => (i === groupIdx ? [...g, ac] : g)),
+      );
+      setBorrowSelCardId(null);
+      setBorrowTargetedMeldIdx(null);
+      return;
+    }
+
+    // A hand-pool card is selected — move it from the pool into this meld.
     const card = borrowPool.find((c) => c.id === borrowSelCardId);
     if (!card) return;
     setBorrowPool((prev) => prev.filter((c) => c.id !== borrowSelCardId));
@@ -774,17 +821,29 @@ export default function ConquianGameScreen({ navigation, route }) {
       prev.map((g, i) => (i === groupIdx ? [...g, card] : g)),
     );
     setBorrowSelCardId(null);
+    setBorrowTargetedMeldIdx(null);
   }
 
   function borrowReturnToPool(cardId, groupIdx) {
+    const ac = gameState?.activeCard;
     const card = borrowGroups[groupIdx]?.find((c) => c.id === cardId);
     if (!card) return;
+
     setBorrowGroups((prev) =>
       prev.map((g, i) =>
         i === groupIdx ? g.filter((c) => c.id !== cardId) : g,
       ),
     );
+
+    // If it's the active card, it "floats" again — don't put it in the hand pool.
+    if (ac && card.id === ac.id) return;
+
+    // Otherwise, return it to the hand pool.
     setBorrowPool((prev) => [...prev, card]);
+  }
+
+  function borrowAddNewMeld() {
+    setBorrowGroups((prev) => [...prev, []]);
   }
 
   function handleConfirmBorrow() {
@@ -974,141 +1033,201 @@ export default function ConquianGameScreen({ navigation, route }) {
 
   if (borrowMode) {
     const ac = gameState?.activeCard;
+    const acPlacedIdx = findActiveCardMeldIdx();
+    const acIsPlaced = acPlacedIdx !== -1;
+    const acIsSelected = borrowSelCardId === ac?.id;
     const nonEmpty = borrowGroups.filter((g) => g.length > 0);
     const allValid = nonEmpty.every((g) => isValidMeld(g));
-    const hasActive = nonEmpty.some((g) => g.some((c) => c.id === ac?.id));
-    const canConfirm = allValid && hasActive && nonEmpty.length > 0;
+    const canConfirm = allValid && acIsPlaced && nonEmpty.length > 0;
 
     return (
       <SafeAreaView style={styles.safeArea}>
+        {/* Top bar */}
+        <View style={styles.borrowTopBar}>
+          <TouchableOpacity
+            onPress={exitBorrowMode}
+            style={styles.borrowTopBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Cancel"
+          >
+            <Text style={styles.borrowTopBtnText}>✕ Cancel</Text>
+          </TouchableOpacity>
+          <Text style={styles.borrowTopTitle}>Arrange</Text>
+          <TouchableOpacity
+            onPress={handleConfirmBorrow}
+            disabled={!canConfirm}
+            style={[
+              styles.borrowTopBtn,
+              styles.borrowTopBtnConfirm,
+              !canConfirm && styles.borrowTopBtnDisabled,
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="Confirm"
+            accessibilityState={{ disabled: !canConfirm }}
+          >
+            <Text
+              style={[
+                styles.borrowTopBtnText,
+                styles.borrowTopBtnConfirmText,
+                !canConfirm && styles.borrowTopBtnDisabledText,
+              ]}
+            >
+              ✓ Confirm
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         <ScrollView contentContainerStyle={styles.container}>
-          <View style={styles.borrowHint}>
-            <Text style={styles.borrowHintText}>
-              Rearrange your own melds — every meld must remain a valid set or
-              run, and the active card must end up in a meld.
+          {/* Hero: "Place this card" */}
+          <Text style={styles.borrowHeroLabel}>Place this card</Text>
+          <View style={styles.borrowHeroRow}>
+            {ac && !acIsPlaced ? (
+              <TouchableOpacity
+                onPress={handleTapBorrowActiveCard}
+                style={[
+                  styles.borrowHeroCardWrap,
+                  acIsSelected && styles.borrowHeroCardSelected,
+                ]}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={`Active card ${ac.rank} of ${ac.suit}`}
+                accessibilityHint="Tap to select, then tap a meld to place"
+              >
+                <Card rank={ac.rank} suit={ac.suit} />
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.borrowHeroCardPlaced}>
+                <Text style={styles.borrowHeroPlacedText}>✓ Placed</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Validation badge */}
+          <View style={styles.borrowValidRow}>
+            <Text
+              style={[
+                styles.borrowValidText,
+                acIsPlaced ? styles.borrowValidOk : styles.borrowValidWarn,
+              ]}
+            >
+              {acIsPlaced ? "✓ Active card placed" : "⚠ Active card not placed"}
+            </Text>
+            <Text
+              style={[
+                styles.borrowValidText,
+                allValid && nonEmpty.length > 0
+                  ? styles.borrowValidOk
+                  : styles.borrowValidWarn,
+              ]}
+            >
+              {nonEmpty.length === 0
+                ? "⚠ No melds"
+                : allValid
+                  ? "✓ All melds valid"
+                  : "⚠ Some melds invalid"}
             </Text>
           </View>
-          <Text style={styles.borrowTitle}>Rearrange Melds</Text>
-          <Text style={styles.borrowSubtitle}>
-            {hasActive
-              ? "✓ Active card placed"
-              : "⚠ Active card must be placed in a group"}
-          </Text>
 
-          {ac && (
-            <View style={styles.borrowActiveRow}>
-              <Text style={styles.sectionLabel}>Active Card</Text>
-              <Card rank={ac.rank} suit={ac.suit} />
-            </View>
-          )}
-
-          <Text style={styles.sectionLabel}>
-            Your Melds — tap a group to add selected card · tap a card to return
-            it to pool
-          </Text>
+          {/* Your Melds */}
+          <Text style={styles.borrowSectionLabel}>Your Melds</Text>
           {borrowGroups.map((group, idx) => {
             const valid = group.length >= 3 && isValidMeld(group);
             const invalid = group.length > 0 && !isValidMeld(group);
+            const isTargeted = borrowTargetedMeldIdx === idx;
             return (
               <TouchableOpacity
                 key={idx}
                 style={[
-                  styles.borrowGroup,
-                  valid && styles.borrowGroupValid,
-                  invalid && styles.borrowGroupInvalid,
+                  styles.borrowMeldRow,
+                  valid && styles.borrowMeldRowValid,
+                  invalid && styles.borrowMeldRowInvalid,
+                  isTargeted && styles.borrowMeldRowTargeted,
                 ]}
                 onPress={() => borrowMoveToGroup(idx)}
-                activeOpacity={borrowSelCardId ? 0.6 : 1}
+                activeOpacity={0.6}
                 accessibilityRole="button"
-                accessibilityLabel={`Group ${idx + 1}`}
-                accessibilityHint="Move selected card into this group"
+                accessibilityLabel={`Meld ${idx + 1}`}
+                accessibilityHint="Tap to place selected card here, or to target this meld"
               >
-                <Text style={styles.borrowGroupLabel}>
-                  Group {idx + 1}{" "}
-                  {group.length === 0
-                    ? "— tap to add selected card"
-                    : valid
-                      ? "✓"
-                      : "✗ not valid yet"}
-                </Text>
-                <View style={styles.handRow}>
-                  {group.map((card) => (
-                    <TouchableOpacity
-                      key={card.id}
-                      onPress={() => borrowReturnToPool(card.id, idx)}
-                    >
-                      <Card rank={card.rank} suit={card.suit} small />
-                    </TouchableOpacity>
-                  ))}
+                <View style={styles.borrowMeldHeader}>
+                  <Text style={styles.borrowMeldLabel}>Meld {idx + 1}</Text>
+                  <Text
+                    style={[
+                      styles.borrowMeldStatus,
+                      valid && styles.borrowMeldStatusOk,
+                      invalid && styles.borrowMeldStatusWarn,
+                    ]}
+                  >
+                    {group.length === 0
+                      ? "empty"
+                      : valid
+                        ? "✓ valid"
+                        : "⚠ invalid"}
+                  </Text>
+                </View>
+                <View style={styles.borrowMeldCardsRow}>
+                  {group.length === 0 ? (
+                    <Text style={styles.borrowMeldEmpty}>
+                      Tap to place selected card here
+                    </Text>
+                  ) : (
+                    group.map((card) => (
+                      <TouchableOpacity
+                        key={card.id}
+                        onPress={(e) => {
+                          // Prevent the row's onPress from also firing.
+                          e.stopPropagation?.();
+                          borrowReturnToPool(card.id, idx);
+                        }}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Remove ${card.rank} of ${card.suit}`}
+                        accessibilityHint="Returns this card to your hand"
+                      >
+                        <Card rank={card.rank} suit={card.suit} small />
+                      </TouchableOpacity>
+                    ))
+                  )}
                 </View>
               </TouchableOpacity>
             );
           })}
+
+          {/* + Create a new meld */}
           <TouchableOpacity
-            style={styles.addGroupBtn}
-            onPress={() => setBorrowGroups((p) => [...p, []])}
+            onPress={borrowAddNewMeld}
+            style={styles.borrowAddMeldBtn}
             accessibilityRole="button"
-            accessibilityLabel="New Group"
-            accessibilityHint="Add a new empty meld group"
+            accessibilityLabel="Create a new meld"
           >
-            <Text style={styles.addGroupText}>+ New Group</Text>
+            <Text style={styles.borrowAddMeldText}>+ Create a new meld</Text>
           </TouchableOpacity>
 
-          <Text style={styles.sectionLabel}>
-            Available Pool — tap to select
-            {borrowSelCardId ? ", then tap a group above" : ""}
-          </Text>
-          <View style={styles.handRow}>
-            {borrowPool.map((card) => (
-              <TouchableOpacity
-                key={card.id}
-                onPress={() => borrowSelectCard(card.id)}
-              >
-                <View
-                  style={[
-                    borrowSelCardId === card.id
-                      ? styles.selectedWrapperSmall
-                      : null,
-                    card.id === ac?.id ? styles.activeCardInPool : null,
-                  ]}
-                >
-                  <Card rank={card.rank} suit={card.suit} small />
-                </View>
-              </TouchableOpacity>
-            ))}
-            {borrowPool.length === 0 && (
-              <Text style={styles.emptyHint}>All cards placed</Text>
+          {/* Your Hand */}
+          <Text style={styles.borrowSectionLabel}>Your Hand</Text>
+          <View style={styles.borrowHandRow}>
+            {borrowPool.length === 0 ? (
+              <Text style={styles.borrowHandEmpty}>(empty)</Text>
+            ) : (
+              borrowPool.map((card) => {
+                const isSel = borrowSelCardId === card.id;
+                return (
+                  <TouchableOpacity
+                    key={card.id}
+                    onPress={() => borrowSelectCard(card.id)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${card.rank} of ${card.suit}`}
+                    accessibilityHint="Tap to select, then tap a meld to place"
+                  >
+                    <View style={isSel ? styles.selectedWrapperSmall : null}>
+                      <Card rank={card.rank} suit={card.suit} small />
+                    </View>
+                  </TouchableOpacity>
+                );
+              })
             )}
           </View>
 
           {statusMsg ? <Text style={styles.errorMsg}>{statusMsg}</Text> : null}
-
-          <View style={[styles.actionBtnRow, { marginTop: 16 }]}>
-            <TouchableOpacity
-              style={[styles.actionBtn, styles.passBtn]}
-              onPress={exitBorrowMode}
-              accessibilityRole="button"
-              accessibilityLabel="Cancel"
-              accessibilityHint="Exit rearrange mode without saving changes"
-            >
-              <Text style={styles.actionBtnText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.actionBtn,
-                styles.takeBtn,
-                !canConfirm && styles.actionBtnDisabled,
-              ]}
-              onPress={handleConfirmBorrow}
-              disabled={!canConfirm}
-              accessibilityRole="button"
-              accessibilityLabel="Confirm"
-              accessibilityHint="Save rearranged melds and continue"
-              accessibilityState={{ disabled: !canConfirm }}
-            >
-              <Text style={styles.actionBtnText}>Confirm</Text>
-            </TouchableOpacity>
-          </View>
         </ScrollView>
       </SafeAreaView>
     );
@@ -1933,13 +2052,207 @@ const styles = StyleSheet.create({
     paddingVertical: scale(6),
   },
 
+  borrowTopBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: scale(12),
+    paddingVertical: scale(10),
+    backgroundColor: "#16213e",
+    borderBottomWidth: 1,
+    borderBottomColor: "#2a2a4a",
+  },
+  borrowTopTitle: {
+    color: "#ffffff",
+    fontSize: scaleFont(16),
+    fontWeight: "bold",
+  },
+  borrowTopBtn: {
+    paddingHorizontal: scale(12),
+    paddingVertical: scale(6),
+    borderRadius: scale(8),
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+  },
+  borrowTopBtnConfirm: {
+    backgroundColor: "#7fb3ff",
+  },
+  borrowTopBtnDisabled: {
+    backgroundColor: "#2a2a4a",
+  },
+  borrowTopBtnText: {
+    color: "#c4c4d4",
+    fontSize: scaleFont(14),
+    fontWeight: "bold",
+  },
+  borrowTopBtnConfirmText: {
+    color: "#0a0a1a",
+  },
+  borrowTopBtnDisabledText: {
+    color: "#666680",
+  },
+
+  borrowHeroLabel: {
+    color: "#c4c4d4",
+    fontSize: scaleFont(12),
+    textTransform: "uppercase",
+    letterSpacing: scale(1),
+    textAlign: "center",
+    marginTop: scale(12),
+    marginBottom: scale(8),
+  },
+  borrowHeroRow: {
+    alignItems: "center",
+    marginBottom: scale(8),
+    minHeight: scale(108),
+    justifyContent: "center",
+  },
+  borrowHeroCardWrap: {
+    padding: scale(6),
+    borderRadius: scale(12),
+    borderWidth: 2,
+    borderColor: "#7fb3ff",
+    backgroundColor: "rgba(127, 179, 255, 0.10)",
+  },
+  borrowHeroCardSelected: {
+    borderColor: "#4caf50",
+    backgroundColor: "rgba(76, 175, 80, 0.15)",
+    transform: [{ translateY: -6 }],
+  },
+  borrowHeroCardPlaced: {
+    padding: scale(20),
+    borderRadius: scale(12),
+    backgroundColor: "rgba(76, 175, 80, 0.10)",
+    borderWidth: 1,
+    borderColor: "rgba(76, 175, 80, 0.4)",
+  },
+  borrowHeroPlacedText: {
+    color: "#4caf50",
+    fontSize: scaleFont(14),
+    fontWeight: "bold",
+  },
+
+  borrowValidRow: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginBottom: scale(12),
+    paddingHorizontal: scale(12),
+  },
+  borrowValidText: {
+    fontSize: scaleFont(12),
+    fontWeight: "600",
+  },
+  borrowValidOk: {
+    color: "#4caf50",
+  },
+  borrowValidWarn: {
+    color: "#e0a93f",
+  },
+
+  borrowSectionLabel: {
+    color: "#c4c4d4",
+    fontSize: scaleFont(11),
+    textTransform: "uppercase",
+    letterSpacing: scale(1),
+    marginHorizontal: scale(12),
+    marginTop: scale(8),
+    marginBottom: scale(4),
+  },
+
+  borrowMeldRow: {
+    marginHorizontal: scale(12),
+    marginBottom: scale(8),
+    borderRadius: scale(10),
+    borderWidth: 2,
+    borderColor: "#2a2a4a",
+    backgroundColor: "#16213e",
+    padding: scale(8),
+  },
+  borrowMeldRowValid: {
+    borderColor: "#4caf50",
+  },
+  borrowMeldRowInvalid: {
+    borderColor: "#e94560",
+  },
+  borrowMeldRowTargeted: {
+    borderColor: "#7fb3ff",
+    backgroundColor: "rgba(127, 179, 255, 0.08)",
+  },
+  borrowMeldHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: scale(4),
+  },
+  borrowMeldLabel: {
+    color: "#c4c4d4",
+    fontSize: scaleFont(12),
+    fontWeight: "600",
+  },
+  borrowMeldStatus: {
+    fontSize: scaleFont(11),
+    fontWeight: "600",
+  },
+  borrowMeldStatusOk: {
+    color: "#4caf50",
+  },
+  borrowMeldStatusWarn: {
+    color: "#e94560",
+  },
+  borrowMeldCardsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    minHeight: scale(40),
+    alignItems: "center",
+  },
+  borrowMeldEmpty: {
+    color: "#666680",
+    fontSize: scaleFont(12),
+    fontStyle: "italic",
+    paddingHorizontal: scale(6),
+  },
+
+  borrowAddMeldBtn: {
+    marginHorizontal: scale(12),
+    marginVertical: scale(8),
+    padding: scale(12),
+    borderRadius: scale(10),
+    borderWidth: 1.5,
+    borderColor: "#7fb3ff",
+    borderStyle: "dashed",
+    alignItems: "center",
+  },
+  borrowAddMeldText: {
+    color: "#7fb3ff",
+    fontSize: scaleFont(13),
+    fontWeight: "bold",
+  },
+
+  borrowHandRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    paddingHorizontal: scale(12),
+    backgroundColor: "rgba(127, 179, 255, 0.06)",
+    borderWidth: 1,
+    borderColor: "rgba(127, 179, 255, 0.18)",
+    borderRadius: scale(12),
+    paddingVertical: scale(8),
+    marginHorizontal: scale(12),
+    marginTop: scale(4),
+  },
+  borrowHandEmpty: {
+    color: "#666680",
+    fontSize: scaleFont(13),
+    fontStyle: "italic",
+    padding: scale(6),
+  },
+
   // Borrow mode
   borrowTitle: {
     color: "#fff",
-    fontSize: scaleFont(20),
+    fontSize: scaleFont(24),
     fontWeight: "bold",
     textAlign: "center",
-    marginBottom: scale(4),
+    marginTop: scale(8),
   },
   borrowSubtitle: {
     color: "#c4c4d4",
