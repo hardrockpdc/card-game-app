@@ -8,7 +8,6 @@ import {
   Alert,
   BackHandler,
   Animated,
-  PanResponder,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Card from "../components/Card";
@@ -120,15 +119,9 @@ export default function ConquianGameScreen({ navigation, route }) {
   const [borrowPool, setBorrowPool] = useState([]);
   const [borrowSelCardId, setBorrowSelCardId] = useState(null);
   const [borrowTargetedMeldIdx, setBorrowTargetedMeldIdx] = useState(null);
-  const [borrowDragState, setBorrowDragState] = useState(null);
-  const [borrowHoveredTarget, setBorrowHoveredTarget] = useState(null);
-  const borrowDragXY = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
-  const borrowDragStateRef = useRef(null);
-  const borrowDragMovedRef = useRef(false);
   const borrowCardRefs = useRef({});
   const borrowHandRowRef = useRef(null);
   const borrowMeldRowRefs = useRef([]);
-  const borrowDropZonesRef = useRef({ hand: null, groups: [] });
 
   // Wipe any legacy Conquián save (old key "@cardnight:save:rummy:conquian")
   // to rule out a stale-schema crash. Runs once on mount.
@@ -619,10 +612,6 @@ export default function ConquianGameScreen({ navigation, route }) {
     setBorrowPool([]);
     setBorrowSelCardId(null);
     setBorrowTargetedMeldIdx(null);
-    setBorrowDragState(null);
-    setBorrowHoveredTarget(null);
-    borrowDragXY.setValue({ x: 0, y: 0 });
-    borrowDropZonesRef.current = { hand: null, groups: [] };
     borrowCardRefs.current = {};
     borrowHandRowRef.current = null;
     borrowMeldRowRefs.current = [];
@@ -717,187 +706,6 @@ export default function ConquianGameScreen({ navigation, route }) {
   function borrowAddNewMeld() {
     setBorrowGroups((prev) => [...prev, []]);
   }
-
-  function resetBorrowDrag() {
-    borrowDragXY.setValue({ x: 0, y: 0 });
-    borrowDragStateRef.current = null;
-    borrowDragMovedRef.current = false;
-    setBorrowDragState(null);
-    setBorrowHoveredTarget(null);
-  }
-
-  function pointInRect(x, y, rect) {
-    if (!rect) return false;
-    return (
-      x >= rect.x &&
-      x <= rect.x + rect.width &&
-      y >= rect.y &&
-      y <= rect.y + rect.height
-    );
-  }
-
-  function getBorrowDropTarget(x, y) {
-    const { hand, groups } = borrowDropZonesRef.current;
-    const groupIdx = groups.findIndex((rect) => pointInRect(x, y, rect));
-    if (groupIdx !== -1) return { kind: "group", idx: groupIdx };
-    if (pointInRect(x, y, hand)) return { kind: "hand" };
-    return null;
-  }
-
-  function measureNodeInWindow(node) {
-    return new Promise((resolve) => {
-      if (!node?.measureInWindow) {
-        resolve(null);
-        return;
-      }
-      node.measureInWindow((x, y, width, height) => {
-        resolve({ x, y, width, height });
-      });
-    });
-  }
-
-  async function captureBorrowDropZones() {
-    const hand = await measureNodeInWindow(borrowHandRowRef.current);
-    const groups = await Promise.all(
-      borrowMeldRowRefs.current.map((node) => measureNodeInWindow(node)),
-    );
-    borrowDropZonesRef.current = {
-      hand,
-      groups: groups.filter(Boolean),
-    };
-    return borrowDropZonesRef.current;
-  }
-
-  function startBorrowDrag(card, source, node) {
-    if (!node?.measureInWindow) return;
-    node.measureInWindow((x, y, width, height) => {
-      const next = {
-        card,
-        source,
-        originX: x,
-        originY: y,
-        width,
-        height,
-        small: source.small,
-      };
-      borrowDragStateRef.current = next;
-      borrowDragXY.setValue({ x: 0, y: 0 });
-      setBorrowHoveredTarget(null);
-      setBorrowDragState(next);
-      captureBorrowDropZones().catch(() => {});
-    });
-  }
-
-  function moveBorrowCard(card, source, target) {
-    const ac = gameState?.activeCard;
-    if (!target) return false;
-
-    if (target.kind === "group") {
-      if (
-        source.type === "group" &&
-        source.groupIdx === target.idx &&
-        card.id !== ac?.id
-      ) {
-        return false;
-      }
-
-      if (source.type === "hand") {
-        setBorrowPool((prev) => prev.filter((c) => c.id !== card.id));
-      } else if (source.type === "group") {
-        setBorrowGroups((prev) =>
-          prev.map((g, i) =>
-            i === source.groupIdx ? g.filter((c) => c.id !== card.id) : g,
-          ),
-        );
-      }
-
-      setBorrowGroups((prev) =>
-        prev.map((g, i) => (i === target.idx ? [...g, card] : g)),
-      );
-      setBorrowSelCardId(null);
-      setBorrowTargetedMeldIdx(null);
-      return true;
-    }
-
-    if (target.kind === "hand") {
-      if (source.type === "hand" || source.type === "hero") return false;
-
-      if (source.type === "group") {
-        setBorrowGroups((prev) =>
-          prev.map((g, i) =>
-            i === source.groupIdx ? g.filter((c) => c.id !== card.id) : g,
-          ),
-        );
-        if (!ac || card.id !== ac.id) {
-          setBorrowPool((prev) => [...prev, card]);
-        }
-      }
-
-      setBorrowSelCardId(null);
-      setBorrowTargetedMeldIdx(null);
-      return true;
-    }
-
-    return false;
-  }
-
-  function endBorrowDrag(card, source, moveX, moveY) {
-    const target = getBorrowDropTarget(moveX, moveY);
-    if (moveBorrowCard(card, source, target)) {
-      resetBorrowDrag();
-      return;
-    }
-    resetBorrowDrag();
-  }
-
-  function buildBorrowCardPanResponder(card, source) {
-    return PanResponder.create({
-      onStartShouldSetPanResponderCapture: () => true,
-      onMoveShouldSetPanResponderCapture: (_, g) =>
-        Math.abs(g.dx) > 4 || Math.abs(g.dy) > 4,
-      onPanResponderGrant: () => {
-        const node = borrowCardRefs.current[card.id];
-        borrowDragMovedRef.current = false;
-        setBorrowSelCardId(null);
-        setBorrowTargetedMeldIdx(null);
-        startBorrowDrag(card, source, node);
-      },
-      onPanResponderMove: (_, g) => {
-        if (!borrowDragStateRef.current) return;
-        if (
-          !borrowDragMovedRef.current &&
-          (Math.abs(g.dx) > 6 || Math.abs(g.dy) > 6)
-        ) {
-          borrowDragMovedRef.current = true;
-        }
-        borrowDragXY.setValue({ x: g.dx, y: g.dy });
-        const target = getBorrowDropTarget(g.moveX, g.moveY);
-        const next = target
-          ? target.kind === "group"
-            ? `group:${target.idx}`
-            : "hand"
-          : null;
-        setBorrowHoveredTarget((prev) => (prev === next ? prev : next));
-      },
-      onPanResponderRelease: (_, g) => {
-        if (!borrowDragStateRef.current) return;
-        if (!borrowDragMovedRef.current) {
-          handleBorrowCardTap(card, source);
-          resetBorrowDrag();
-          return;
-        }
-        endBorrowDrag(card, source, g.moveX, g.moveY);
-      },
-      onPanResponderTerminate: () => {
-        resetBorrowDrag();
-      },
-      onShouldBlockNativeResponder: () => true,
-    }).panHandlers;
-  }
-
-  useEffect(() => {
-    borrowDragStateRef.current = borrowDragState;
-  }, [borrowDragState]);
 
   function handleConfirmBorrow() {
     const nonEmpty = borrowGroups.filter((g) => g.length > 0);
@@ -1092,11 +900,9 @@ export default function ConquianGameScreen({ navigation, route }) {
     const nonEmpty = borrowGroups.filter((g) => g.length > 0);
     const allValid = nonEmpty.every((g) => isValidMeld(g));
     const canConfirm = allValid && nonEmpty.length > 0;
-    const draggedCardId = borrowDragState?.card?.id ?? null;
-    const hoveredGroupIdx = borrowHoveredTarget?.startsWith("group:")
-      ? Number(borrowHoveredTarget.split(":")[1])
-      : -1;
-    const isHandHovered = borrowHoveredTarget === "hand";
+    const draggedCardId = null;
+    const hoveredGroupIdx = -1;
+    const isHandHovered = false;
 
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -1135,219 +941,202 @@ export default function ConquianGameScreen({ navigation, route }) {
           </TouchableOpacity>
         </View>
 
-        <ScrollView contentContainerStyle={styles.container}>
-          {/* Hero: "Place this card" */}
-          <Text style={styles.borrowHeroLabel}>Place this card</Text>
-          <View style={styles.borrowHeroRow}>
-            {ac && !acIsPlaced ? (
-              <View
-                ref={(node) => {
-                  if (node) borrowCardRefs.current[ac.id] = node;
-                }}
-                collapsable={false}
-                {...buildBorrowCardPanResponder(ac, {
-                  type: "hero",
-                  small: false,
-                })}
+        <View style={styles.borrowLayout}>
+          <View style={styles.borrowHeroArea}>
+            {/* Hero: "Place this card" */}
+            <Text style={styles.borrowHeroLabel}>Place this card</Text>
+            <View style={styles.borrowHeroRow}>
+              {ac && !acIsPlaced ? (
+                <TouchableOpacity
+                  ref={(node) => {
+                    if (node) borrowCardRefs.current[ac.id] = node;
+                  }}
+                  collapsable={false}
+                  onPress={() => handleBorrowCardTap(ac, { type: "hero" })}
+                  style={[
+                    styles.borrowHeroCardWrap,
+                    acIsSelected && styles.borrowHeroCardSelected,
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Active card ${ac.rank} of ${ac.suit}`}
+                  accessibilityHint="Tap to select or place"
+                  activeOpacity={0.9}
+                >
+                  <Card rank={ac.rank} suit={ac.suit} />
+                </TouchableOpacity>
+              ) : (
+                <View style={styles.borrowHeroCardPlaced}>
+                  <Text style={styles.borrowHeroPlacedText}>✓ Placed</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Validation badge */}
+            <View style={styles.borrowValidRow}>
+              <Text
                 style={[
-                  styles.borrowHeroCardWrap,
-                  acIsSelected && styles.borrowHeroCardSelected,
-                  draggedCardId === ac.id && styles.borrowCardDragging,
+                  styles.borrowValidText,
+                  allValid && nonEmpty.length > 0
+                    ? styles.borrowValidOk
+                    : styles.borrowValidWarn,
                 ]}
-                accessibilityRole="button"
-                accessibilityLabel={`Active card ${ac.rank} of ${ac.suit}`}
-                accessibilityHint="Tap to select, drag, or tap a meld to place"
               >
-                <Card rank={ac.rank} suit={ac.suit} />
-              </View>
-            ) : (
-              <View style={styles.borrowHeroCardPlaced}>
-                <Text style={styles.borrowHeroPlacedText}>✓ Placed</Text>
-              </View>
-            )}
+                {nonEmpty.length === 0
+                  ? "⚠ No melds"
+                  : allValid
+                    ? "✓ All melds valid"
+                    : "⚠ Some melds invalid"}
+              </Text>
+            </View>
           </View>
 
-          {/* Validation badge */}
-          <View style={styles.borrowValidRow}>
-            <Text
-              style={[
-                styles.borrowValidText,
-                allValid && nonEmpty.length > 0
-                  ? styles.borrowValidOk
-                  : styles.borrowValidWarn,
-              ]}
+          <View style={styles.borrowMeldsSection}>
+            {/* Your Melds */}
+            <Text style={styles.borrowSectionLabel}>Your Melds</Text>
+            <ScrollView
+              style={styles.borrowMeldsScroll}
+              contentContainerStyle={styles.borrowMeldsScrollContent}
+              showsVerticalScrollIndicator={false}
+              nestedScrollEnabled
             >
-              {nonEmpty.length === 0
-                ? "⚠ No melds"
-                : allValid
-                  ? "✓ All melds valid"
-                  : "⚠ Some melds invalid"}
-            </Text>
-          </View>
-
-          {/* Your Melds */}
-          <Text style={styles.borrowSectionLabel}>Your Melds</Text>
-          {borrowGroups.map((group, idx) => {
-            const valid = group.length >= 3 && isValidMeld(group);
-            const invalid = group.length > 0 && !isValidMeld(group);
-            const isTargeted = borrowTargetedMeldIdx === idx;
-            const isHovered = hoveredGroupIdx === idx;
-            return (
-              <View
-                key={idx}
-                ref={(node) => {
-                  borrowMeldRowRefs.current[idx] = node;
-                }}
-                collapsable={false}
-                style={[
-                  styles.borrowMeldRow,
-                  valid && styles.borrowMeldRowValid,
-                  invalid && styles.borrowMeldRowInvalid,
-                  (isTargeted || isHovered) && styles.borrowMeldRowTargeted,
-                ]}
-                onTouchEnd={(e) => {
-                  if (e.target === e.currentTarget) borrowMoveToGroup(idx);
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={`Meld ${idx + 1}`}
-                accessibilityHint="Tap to place selected card here, or to target this meld"
-              >
-                <View style={styles.borrowMeldHeader}>
-                  <Text style={styles.borrowMeldLabel}>Meld {idx + 1}</Text>
-                  <Text
-                    style={[
-                      styles.borrowMeldStatus,
-                      valid && styles.borrowMeldStatusOk,
-                      invalid && styles.borrowMeldStatusWarn,
-                    ]}
-                  >
-                    {group.length === 0
-                      ? "empty"
-                      : valid
-                        ? "✓ valid"
-                        : "⚠ invalid"}
-                  </Text>
-                </View>
-                <View style={styles.borrowMeldCardsRow}>
-                  {group.length === 0 ? (
-                    <Text style={styles.borrowMeldEmpty}>
-                      Tap to place selected card here
-                    </Text>
-                  ) : (
-                    group.map((card) => {
-                      const isDraggingThisCard = draggedCardId === card.id;
-                      return (
-                        <View
-                          key={card.id}
-                          ref={(node) => {
-                            if (node) borrowCardRefs.current[card.id] = node;
-                          }}
-                          collapsable={false}
-                          {...buildBorrowCardPanResponder(card, {
-                            type: "group",
-                            groupIdx: idx,
-                            small: true,
-                          })}
-                          style={
-                            isDraggingThisCard && styles.borrowCardDragging
-                          }
-                          accessibilityRole="button"
-                          accessibilityLabel={`Remove ${card.rank} of ${card.suit}`}
-                          accessibilityHint="Drag to another spot or tap to return to your hand"
-                        >
-                          <Card rank={card.rank} suit={card.suit} small />
-                        </View>
-                      );
-                    })
-                  )}
-                </View>
-              </View>
-            );
-          })}
-
-          {/* + Create a new meld */}
-          <TouchableOpacity
-            onPress={borrowAddNewMeld}
-            style={styles.borrowAddMeldBtn}
-            accessibilityRole="button"
-            accessibilityLabel="Create a new meld"
-          >
-            <Text style={styles.borrowAddMeldText}>+ Create a new meld</Text>
-          </TouchableOpacity>
-
-          {/* Your Hand */}
-          <Text style={styles.borrowSectionLabel}>Your Hand</Text>
-          <View
-            ref={borrowHandRowRef}
-            collapsable={false}
-            style={[
-              styles.borrowHandRow,
-              isHandHovered && styles.borrowHandRowTargeted,
-            ]}
-          >
-            {borrowPool.length === 0 ? (
-              <Text style={styles.borrowHandEmpty}>(empty)</Text>
-            ) : (
-              borrowPool.map((card) => {
-                const isSel = borrowSelCardId === card.id;
-                const isDraggingThisCard = draggedCardId === card.id;
+              {borrowGroups.map((group, idx) => {
+                const valid = group.length >= 3 && isValidMeld(group);
+                const invalid = group.length > 0 && !isValidMeld(group);
+                const isTargeted = borrowTargetedMeldIdx === idx;
+                const isHovered = hoveredGroupIdx === idx;
                 return (
                   <View
-                    key={card.id}
+                    key={idx}
                     ref={(node) => {
-                      if (node) borrowCardRefs.current[card.id] = node;
+                      borrowMeldRowRefs.current[idx] = node;
                     }}
                     collapsable={false}
-                    {...buildBorrowCardPanResponder(card, {
-                      type: "hand",
-                      small: true,
-                    })}
+                    style={[
+                      styles.borrowMeldRow,
+                      valid && styles.borrowMeldRowValid,
+                      invalid && styles.borrowMeldRowInvalid,
+                      (isTargeted || isHovered) && styles.borrowMeldRowTargeted,
+                    ]}
+                    onTouchEnd={(e) => {
+                      if (e.target === e.currentTarget) borrowMoveToGroup(idx);
+                    }}
                     accessibilityRole="button"
-                    accessibilityLabel={`${card.rank} of ${card.suit}`}
-                    accessibilityHint="Tap to select, drag, or tap a meld to place"
+                    accessibilityLabel={`Meld ${idx + 1}`}
+                    accessibilityHint="Tap to place selected card here, or to target this meld"
                   >
-                    <View
-                      style={[
-                        isSel ? styles.selectedWrapperSmall : null,
-                        isDraggingThisCard && styles.borrowCardDragging,
-                      ]}
-                    >
-                      <Card rank={card.rank} suit={card.suit} small />
+                    <View style={styles.borrowMeldHeader}>
+                      <Text style={styles.borrowMeldLabel}>Meld {idx + 1}</Text>
+                      <Text
+                        style={[
+                          styles.borrowMeldStatus,
+                          valid && styles.borrowMeldStatusOk,
+                          invalid && styles.borrowMeldStatusWarn,
+                        ]}
+                      >
+                        {group.length === 0
+                          ? "empty"
+                          : valid
+                            ? "✓ valid"
+                            : "⚠ invalid"}
+                      </Text>
+                    </View>
+                    <View style={styles.borrowMeldCardsRow}>
+                      {group.length === 0 ? (
+                        <Text style={styles.borrowMeldEmpty}>
+                          Tap to place selected card here
+                        </Text>
+                      ) : (
+                        group.map((card) => {
+                          return (
+                            <TouchableOpacity
+                              key={card.id}
+                              ref={(node) => {
+                                if (node)
+                                  borrowCardRefs.current[card.id] = node;
+                              }}
+                              collapsable={false}
+                              onPress={() =>
+                                handleBorrowCardTap(card, {
+                                  type: "group",
+                                  groupIdx: idx,
+                                })
+                              }
+                              accessibilityRole="button"
+                              accessibilityLabel={`Remove ${card.rank} of ${card.suit}`}
+                              accessibilityHint="Tap to return to your hand"
+                              activeOpacity={0.9}
+                            >
+                              <Card rank={card.rank} suit={card.suit} small />
+                            </TouchableOpacity>
+                          );
+                        })
+                      )}
                     </View>
                   </View>
                 );
-              })
-            )}
+              })}
+
+              {/* + Create a new meld */}
+              <TouchableOpacity
+                onPress={borrowAddNewMeld}
+                style={styles.borrowAddMeldBtn}
+                accessibilityRole="button"
+                accessibilityLabel="Create a new meld"
+              >
+                <Text style={styles.borrowAddMeldText}>
+                  + Create a new meld
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
           </View>
 
-          {statusMsg ? <Text style={styles.errorMsg}>{statusMsg}</Text> : null}
-          {borrowDragState ? (
-            <Animated.View
-              pointerEvents="none"
+          <View style={styles.borrowHandSection}>
+            {/* Your Hand */}
+            <Text style={styles.borrowSectionLabel}>Your Hand</Text>
+            <View
+              ref={borrowHandRowRef}
+              collapsable={false}
               style={[
-                styles.borrowDragOverlay,
-                {
-                  left: borrowDragState.originX,
-                  top: borrowDragState.originY,
-                  width: borrowDragState.width,
-                  height: borrowDragState.height,
-                  transform: [
-                    { translateX: borrowDragXY.x },
-                    { translateY: borrowDragXY.y },
-                  ],
-                },
+                styles.borrowHandRow,
+                isHandHovered && styles.borrowHandRowTargeted,
               ]}
             >
-              <View style={styles.borrowDragCardWrap}>
-                <Card
-                  rank={borrowDragState.card.rank}
-                  suit={borrowDragState.card.suit}
-                  small={borrowDragState.small}
-                />
-              </View>
-            </Animated.View>
-          ) : null}
-        </ScrollView>
+              {borrowPool.length === 0 ? (
+                <Text style={styles.borrowHandEmpty}>(empty)</Text>
+              ) : (
+                borrowPool.map((card) => {
+                  const isSel = borrowSelCardId === card.id;
+                  return (
+                    <TouchableOpacity
+                      key={card.id}
+                      ref={(node) => {
+                        if (node) borrowCardRefs.current[card.id] = node;
+                      }}
+                      collapsable={false}
+                      onPress={() =>
+                        handleBorrowCardTap(card, { type: "hand" })
+                      }
+                      accessibilityRole="button"
+                      accessibilityLabel={`${card.rank} of ${card.suit}`}
+                      accessibilityHint="Tap to select or place"
+                      activeOpacity={0.9}
+                    >
+                      <View
+                        style={[isSel ? styles.selectedWrapperSmall : null]}
+                      >
+                        <Card rank={card.rank} suit={card.suit} small />
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })
+              )}
+            </View>
+
+            {statusMsg ? (
+              <Text style={styles.errorMsg}>{statusMsg}</Text>
+            ) : null}
+          </View>
+        </View>
       </SafeAreaView>
     );
   }
@@ -1887,6 +1676,34 @@ const styles = StyleSheet.create({
     backgroundColor: BG,
     paddingTop: scale(12),
     paddingBottom: scale(16),
+  },
+
+  borrowLayout: {
+    flex: 1,
+    paddingTop: scale(12),
+    paddingBottom: scale(12),
+  },
+  borrowHeroArea: {
+    flexShrink: 0,
+    paddingHorizontal: scale(12),
+  },
+  borrowMeldsSection: {
+    flex: 1,
+    minHeight: 0,
+    paddingTop: scale(4),
+  },
+  borrowMeldsScroll: {
+    flex: 1,
+  },
+  borrowMeldsScrollContent: {
+    paddingBottom: scale(12),
+  },
+  borrowHandSection: {
+    marginTop: "auto",
+    flexShrink: 0,
+    paddingHorizontal: scale(12),
+    paddingTop: scale(8),
+    paddingBottom: scale(8),
   },
 
   resultsContainer: {
