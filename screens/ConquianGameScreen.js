@@ -997,7 +997,7 @@ export default function ConquianGameScreen({ navigation, route }) {
                       styles.borrowMeldRow,
                       valid && styles.borrowMeldRowValid,
                       invalid && styles.borrowMeldRowInvalid,
-                      (isTargeted || isHovered) && styles.borrowMeldRowTargeted,
+                      isTargeted && styles.borrowMeldRowTargeted,
                     ]}
                     onTouchEnd={(e) => {
                       if (e.target === e.currentTarget) borrowMoveToGroup(idx);
