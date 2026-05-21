@@ -1,17 +1,22 @@
-import React from "react";
+import React, { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useResumePrompt } from "../game/useResumePrompt";
 import { scale, scaleFont } from "../game/responsive";
 
-function buildPlayers(playerName) {
+function buildPlayers(playerName, aiCount) {
   return [
     { id: "host", name: playerName },
-    { id: "ai_1", name: "Computer", isAI: true },
+    ...Array.from({ length: aiCount }, (_, i) => ({
+      id: `ai_${i + 1}`,
+      name: aiCount > 1 ? `Computer ${i + 1}` : "Computer",
+      isAI: true,
+    })),
   ];
 }
 
 export default function ConquianSetupScreen({ navigation, route }) {
+  const [aiCount, setAiCount] = useState(1);
   const params = route?.params ?? {};
   const launchParams =
     params.launchParams && typeof params.launchParams === "object"
@@ -22,7 +27,7 @@ export default function ConquianSetupScreen({ navigation, route }) {
 
   const handleStart = async () => {
     const playerName = launchParams.myName ?? "Player";
-    const players = buildPlayers(playerName);
+    const players = buildPlayers(playerName, aiCount);
 
     await promptIfSaved({
       saveKey: "@cardnight:save:conquian:default",
@@ -54,21 +59,48 @@ export default function ConquianSetupScreen({ navigation, route }) {
       >
         <Text style={styles.title}>Conquián</Text>
         <Text style={styles.subtitle}>
-          Classic Mexican rummy — meld 9 cards to win. 1v1 against the computer.
+          Classic Mexican rummy — be the first to meld your target and win.
         </Text>
 
         <View style={styles.panel}>
           <View style={styles.sectionBlock}>
             <Text style={styles.sectionLabel}>AI Opponents</Text>
             <View style={styles.pillRow}>
-              <View style={[styles.pill, styles.pillSelected]}>
-                <Text style={[styles.pillText, styles.pillTextSelected]}>
-                  1
-                </Text>
-              </View>
+              {[1, 2, 3].map((count) => {
+                const selected = count === aiCount;
+                return (
+                  <Pressable
+                    key={count}
+                    onPress={() => setAiCount(count)}
+                    style={({ pressed }) => [
+                      styles.pill,
+                      selected && styles.pillSelected,
+                      pressed && styles.pillPressed,
+                    ]}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${count} ${
+                      count === 1 ? "opponent" : "opponents"
+                    }`}
+                    accessibilityState={{ selected }}
+                  >
+                    <Text
+                      style={[
+                        styles.pillText,
+                        selected && styles.pillTextSelected,
+                      ]}
+                    >
+                      {count}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </View>
             <Text style={styles.constraintNote}>
-              Conquián is 1v1 — only one opponent.
+              {aiCount === 1
+                ? "2 players · 10 cards each · meld 11 to win"
+                : aiCount === 2
+                  ? "3 players · 8 cards each · meld 9 to win"
+                  : "4 players · 7 cards each · meld 8 to win"}
             </Text>
           </View>
 
