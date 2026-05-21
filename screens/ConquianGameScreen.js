@@ -119,9 +119,6 @@ export default function ConquianGameScreen({ navigation, route }) {
   const [borrowPool, setBorrowPool] = useState([]);
   const [borrowSelCardId, setBorrowSelCardId] = useState(null);
   const [borrowTargetedMeldIdx, setBorrowTargetedMeldIdx] = useState(null);
-  const borrowCardRefs = useRef({});
-  const borrowHandRowRef = useRef(null);
-  const borrowMeldRowRefs = useRef([]);
 
   // Wipe any legacy Conquián save (old key "@cardnight:save:rummy:conquian")
   // to rule out a stale-schema crash. Runs once on mount.
@@ -612,9 +609,6 @@ export default function ConquianGameScreen({ navigation, route }) {
     setBorrowPool([]);
     setBorrowSelCardId(null);
     setBorrowTargetedMeldIdx(null);
-    borrowCardRefs.current = {};
-    borrowHandRowRef.current = null;
-    borrowMeldRowRefs.current = [];
     setStatusMsg("");
   }
 
@@ -900,9 +894,6 @@ export default function ConquianGameScreen({ navigation, route }) {
     const nonEmpty = borrowGroups.filter((g) => g.length > 0);
     const allValid = nonEmpty.every((g) => isValidMeld(g));
     const canConfirm = allValid && nonEmpty.length > 0;
-    const draggedCardId = null;
-    const hoveredGroupIdx = -1;
-    const isHandHovered = false;
 
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -948,10 +939,6 @@ export default function ConquianGameScreen({ navigation, route }) {
             <View style={styles.borrowHeroRow}>
               {ac && !acIsPlaced ? (
                 <TouchableOpacity
-                  ref={(node) => {
-                    if (node) borrowCardRefs.current[ac.id] = node;
-                  }}
-                  collapsable={false}
                   onPress={() => handleBorrowCardTap(ac, { type: "hero" })}
                   style={[
                     styles.borrowHeroCardWrap,
@@ -1003,14 +990,9 @@ export default function ConquianGameScreen({ navigation, route }) {
                 const valid = group.length >= 3 && isValidMeld(group);
                 const invalid = group.length > 0 && !isValidMeld(group);
                 const isTargeted = borrowTargetedMeldIdx === idx;
-                const isHovered = hoveredGroupIdx === idx;
                 return (
                   <View
                     key={idx}
-                    ref={(node) => {
-                      borrowMeldRowRefs.current[idx] = node;
-                    }}
-                    collapsable={false}
                     style={[
                       styles.borrowMeldRow,
                       valid && styles.borrowMeldRowValid,
@@ -1050,11 +1032,6 @@ export default function ConquianGameScreen({ navigation, route }) {
                           return (
                             <TouchableOpacity
                               key={card.id}
-                              ref={(node) => {
-                                if (node)
-                                  borrowCardRefs.current[card.id] = node;
-                              }}
-                              collapsable={false}
                               onPress={() =>
                                 handleBorrowCardTap(card, {
                                   type: "group",
@@ -1093,14 +1070,7 @@ export default function ConquianGameScreen({ navigation, route }) {
           <View style={styles.borrowHandSection}>
             {/* Your Hand */}
             <Text style={styles.borrowSectionLabel}>Your Hand</Text>
-            <View
-              ref={borrowHandRowRef}
-              collapsable={false}
-              style={[
-                styles.borrowHandRow,
-                isHandHovered && styles.borrowHandRowTargeted,
-              ]}
-            >
+            <View style={[styles.borrowHandRow]}>
               {borrowPool.length === 0 ? (
                 <Text style={styles.borrowHandEmpty}>(empty)</Text>
               ) : (
@@ -1109,10 +1079,6 @@ export default function ConquianGameScreen({ navigation, route }) {
                   return (
                     <TouchableOpacity
                       key={card.id}
-                      ref={(node) => {
-                        if (node) borrowCardRefs.current[card.id] = node;
-                      }}
-                      collapsable={false}
                       onPress={() =>
                         handleBorrowCardTap(card, { type: "hand" })
                       }
