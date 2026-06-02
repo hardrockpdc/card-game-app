@@ -71,7 +71,7 @@
 ### 🚀 IMPROVEMENTS (post-launch)
 
 - [ ] **IMP-1** — `__DEV__` debug overlay
-- [~] **IMP-2** — Jest tests for game logic — STARTED 2026-06-01. Lean app-decoupled Jest setup (`npm test`); 130 tests across 6 of 7 pure logic modules: deck/blackjack, poker, conquian, rummy, lastCard, solitaire. Remaining: wildround.
+- [~] **IMP-2** — Jest tests for game logic — pure-logic layer DONE 2026-06-01/02. Lean app-decoupled Jest setup (`npm test`); 150 tests covering all 7 pure logic modules: deck/blackjack, poker, conquian, rummy, lastCard, solitaire, wildround. Not yet covered: reducers, AI move selection, and GameNetwork (kept open for future expansion).
 - [ ] **IMP-3** — Remote-loadable wildround cards (OTA content updates)
 - [ ] **IMP-4** — Centralized round-over helper
 - [ ] **IMP-5** — "Quick Match" button on Home
@@ -782,7 +782,7 @@ If you want a suggested path:
 - Task 0: oriented on the project; read CLAUDE.md, RESPONSIVE_LAYOUT_PLAN.md, KICKOFF.md, DEEP_REVIEW.md, PROJECT_NOTES.md, App.js, Card.js.
 - Task 0.5: hooks-order audit across all 9 game screens. **BUG-2 resolved** — only WildRound was broken (BackHandler `useEffect` below the `!gameState` guard); fixed in commit `9bd069a`.
 - Docs sync: corrected `expo-av` → `expo-audio`, refreshed the PROJECT_NOTES dependency list + file tree to match the actual `screens/` `components/` `game/` files, fixed CLAUDE.md "9 games" → "8 games / 9 screens", and annotated the portrait-vs-default orientation state. PROJECT_NOTES.md confirmed as the canonical "current state" doc.
-- Test foundation (IMP-2 started): added a lean, app-decoupled Jest setup (`npm test`) and 130 unit tests over 6 of 7 pure logic modules — deck/blackjack, poker (hand ranking), conquian (7-J run), rummy (melds/deadwood), lastCard (play legality), solitaire (move legality). Remaining: wildround.
+- Test foundation (IMP-2): added a lean, app-decoupled Jest setup (`npm test`) and 150 unit tests covering ALL 7 pure logic modules — deck/blackjack, poker (hand ranking), conquian (7-J run), rummy (melds/deadwood), lastCard (play legality), solitaire (move legality), wildround (round/scoring). `jest.setup.js` shims the `__DEV__` global. Not covered yet: reducers, AI, networking.
 - Notes: Tasks 1–4 (gesture/animation foundation + responsive Solitaire pilot + drag test) not yet started.
 
 ### Session N — [Date]
