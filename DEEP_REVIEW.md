@@ -27,11 +27,12 @@
 
 ### 🐛 BUGS (real or likely)
 
-- [ ] **BUG-1** — `MultiplayerGameScreen.js` still uses the OLD layout structure (v2's Session A code did NOT actually land — broken styles)
+- [x] **BUG-1** — RESOLVED (verified 2026-06-02). `MultiplayerGameScreen.js` now uses the new layout (`styles.section` + `styles.label` + `styles.hand` + `handWidth`); the old boxed-section styles (`sectionActive`/`sectionHeader`/`sectionName`/`sectionValue`/`handRow`/`actionRow`) are gone. Code parity confirmed; a device glance is still worthwhile but the v3 claim is no longer true.
 - [x] **BUG-2** — Audited all 9 game screens for hooks-after-early-return (2026-06-01). Only `WildRoundGameScreen` was affected; fixed in commit `9bd069a`. All other screens place every hook above every early return.
-- [ ] **BUG-3** — `LobbyScreen.js` host-side `useEffect` cleanup function (`return () => stopBroadcasting()`) misses the case where the lobby unmounts via navigating to a game — broadcast keeps running
+- [x] **BUG-3** — RESOLVED (verified 2026-06-02). `stopBroadcasting()` now runs in the lobby's unmount cleanup (`return () => stopBroadcasting()`), the Start-Game path, and the quit/back path. The broadcast no longer survives leaving the lobby.
 - [x] **BUG-4** — Auto-save throttle added to Rummy, GoFish, Poker, LastCard (same lastSaveRef 3s gate as Conquián). Commit `5748463`.
 - [ ] **BUG-5** — `WildRoundGameScreen` has no save/resume (documented as a known gap in PROJECT_NOTES.md, but still ships)
+- [ ] **BUG-6** — 🆕 **(high)** `GameNetwork.js` TCP handlers split incoming data on `\n` with NO per-socket buffering, so any message larger than one TCP segment (~1460 B) — e.g. full-state broadcasts in Poker/Conquián — fragments across `data` events, fails `JSON.parse`, and is silently dropped → multiplayer desync. See detailed section below.
 
 ### ⚡ PERFORMANCE
 
@@ -396,6 +397,77 @@ Add the standard save/resume pattern to WildRound:
 
 ---
 
+## BUG-6. TCP messages aren't reassembled — large messages get silently dropped (multiplayer desync)
+
+**Found:** Deep-dive review, 2026-06-02
+**Effort:** ~45 min (buffer + tests)
+**Severity:** High — intermittent multiplayer desync / dropped actions, worse as game state grows
+**Risk if ignored:** Clients miss state updates in Poker/Conquián/Last Card multiplayer; the board freezes or diverges with no error shown
+
+### What's happening
+
+`game/GameNetwork.js` reads incoming TCP data like this (both the server's per-client handler and the client handler):
+
+```javascript
+socket.on("data", (data) => {
+  data
+    .toString()
+    .split("\n")
+    .forEach((line) => {
+      if (!line.trim()) return;
+      try {
+        const msg = JSON.parse(line);
+        ...
+      } catch (_) {}   // <-- a fragmented message lands here and is dropped
+    });
+});
+```
+
+TCP is a **byte stream, not a message stream**. The OS can deliver a single `data` event that contains:
+
+- a partial message (a JSON object split across two packets), or
+- the tail of one message plus the head of the next.
+
+The newline framing is correct in spirit, but there's **no buffer to hold a partial line between `data` events**. When a message is larger than one TCP segment (~1460 bytes on a typical LAN MTU), it arrives in pieces. The trailing partial line fails `JSON.parse`, hits the empty `catch`, and is **silently discarded**.
+
+### Why this matters / when it bites
+
+- Small messages (JOIN, single ACTION, ASSIGNED_ID) usually fit in one segment, so 2-player Blackjack often looks fine — which is why this hasn't been obvious.
+- **Full-state broadcasts are large.** A Poker or Conquián `GAME_STATE` carries the deck plus every player's hand — easily over 1460 bytes. Those are exactly the messages that fragment and get dropped, so the more complex the game, the more likely a desync.
+- This **compounds with PERF-3** (the host broadcasts the entire state on every action): big, frequent messages are the worst case for the missing reassembly.
+
+### The fix
+
+Buffer per connection and only parse complete newline-terminated lines, keeping the remainder for the next event. Standard line-framing:
+
+```javascript
+// server: one buffer per client socket (declare inside createServer callback)
+// client: one module-level buffer for clientSocket
+let buffer = "";
+socket.on("data", (data) => {
+  buffer += data.toString();
+  let idx;
+  while ((idx = buffer.indexOf("\n")) !== -1) {
+    const line = buffer.slice(0, idx);
+    buffer = buffer.slice(idx + 1);
+    if (!line.trim()) continue;
+    try {
+      const msg = JSON.parse(line);
+      /* ...existing handling... */
+    } catch (_) {}
+  }
+});
+```
+
+The senders already append `"\n"` to every message (`broadcastToClients`, `sendToClient`, `sendToHost`, the `ASSIGNED_ID` write), so the framing contract is intact — only the **receiver** needs the buffer. UDP discovery is unaffected (datagrams are message-bounded).
+
+### Follow-up checks
+
+- This is networking code, so it can't be unit-tested the way the pure logic is, but it's verifiable on two devices: start a Poker or Conquián multiplayer game and confirm the client board stays in sync across several actions (previously prone to freezing/diverging).
+- Consider a tiny guard against an unbounded buffer (e.g. cap at a few hundred KB) — low priority on a trusted LAN.
+
+---
+
 # ⚡ PERFORMANCE
 
 ---
@@ -736,15 +808,14 @@ If you want a suggested path:
 ### Pre-launch (must do before submitting)
 1. **LAUNCH-1** — host the privacy policy file (~15 min)
 2. **LAUNCH-2** — EAS production build (~90 min including walkthrough)
-3. **BUG-1** — restore Session A visual parity for Multiplayer Blackjack (~30 min)
-4. **BUG-2** — audit + fix BackHandler useEffect placements across all game screens (~30 min)
+3. **BUG-6** — 🆕 add a TCP reassembly buffer in `GameNetwork.js` (multiplayer desync on large messages) (~45 min) — do this before shipping multiplayer
+- ✅ ~~BUG-1~~ (Session A parity verified in code), ✅ ~~BUG-2~~ (hooks audit, commit `9bd069a`)
 
 ### Polish (worth doing if you have an hour)
-5. **BUG-4** — save throttle for remaining 4 games: Rummy, GoFish, Poker, LastCard (~20 min; Conquián already done)
-6. **UX-1** — CardThemeScreen color cleanup (~5 min)
-7. **UX-2** — conditional modal delay (~10 min)
-8. **BUG-3** — defensive `stopBroadcasting` in lobby exits (~5 min)
-9. **ACC-1, ACC-2** — small accessibility holes (~25 min)
+- ✅ ~~BUG-4~~ (save throttle, `5748463`), ✅ ~~BUG-3~~ (lobby `stopBroadcasting`), ✅ ~~CQ-13~~ (`3eb638a`)
+4. **UX-1** — CardThemeScreen accent cleanup — needs an on-device pass (button contrast: blue bg needs dark text)
+5. **UX-2** — conditional modal delay (~10 min)
+6. **ACC-1, ACC-2** — small accessibility holes (~25 min)
 
 ### Post-launch (v1.1)
 10. **BUG-5** — WildRound save/resume (~1 hr)
@@ -784,6 +855,16 @@ If you want a suggested path:
 - Docs sync: corrected `expo-av` → `expo-audio`, refreshed the PROJECT_NOTES dependency list + file tree to match the actual `screens/` `components/` `game/` files, fixed CLAUDE.md "9 games" → "8 games / 9 screens", and annotated the portrait-vs-default orientation state. PROJECT_NOTES.md confirmed as the canonical "current state" doc.
 - Test foundation (IMP-2): added a lean, app-decoupled Jest setup (`npm test`) and 150 unit tests covering ALL 7 pure logic modules — deck/blackjack, poker (hand ranking), conquian (7-J run), rummy (melds/deadwood), lastCard (play legality), solitaire (move legality), wildround (round/scoring). `jest.setup.js` shims the `__DEV__` global. Not covered yet: reducers, AI, networking.
 - Notes: Tasks 1–4 (gesture/animation foundation + responsive Solitaire pilot + drag test) not yet started.
+
+### Session 3 — 2026-06-02 (safe-fixes batch + deep-dive review)
+- Fixes landed: **BUG-4** auto-save throttle ×4 screens (`5748463`); **CQ-13** removed the vestigial `typescript` dep (`3eb638a`).
+- **UX-1 held** — not the trivial color swap it looked like: white text on the pale accent `#7fb3ff` fails contrast on the "Use This Theme" button (~2.1:1). Needs the blue+dark-text picker convention + a per-state text tweak; deferred to an on-device pass.
+- **Deep-dive review** of GameNetwork, gameSaves, wallet, ErrorBoundary, MultiplayerGameScreen, LobbyScreen:
+  - **BUG-1 → resolved** (new multiplayer layout is in place; old section styles gone).
+  - **BUG-3 → resolved** (`stopBroadcasting()` now in all lobby exit paths).
+  - **BUG-6 (new, high)** — TCP messages aren't reassembled; large broadcasts fragment and get silently dropped → multiplayer desync. Fix recipe documented above.
+  - Verified still-open/deferred: CQ-14 (raw `JSON.parse`, no schema), PERF-3 (full-state broadcast — compounds BUG-6). `wallet.js` looks solid (write-serializing queue); `ErrorBoundary` fine.
+- Incidental: `react-native-reanimated` is already present in `node_modules` as a transitive dep (not in package.json) — relevant to KICKOFF Task 1.
 
 ### Session N — [Date]
 - [ ] ...
