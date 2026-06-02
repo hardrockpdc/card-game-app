@@ -82,7 +82,7 @@ This is a family-friendly card game. Keep all content, copy, and assets appropri
 
 - **Stack:** React Native 0.81.5, Expo SDK 54, React 19.1.0. JavaScript. Dev build via expo-dev-client.
 - **Distribution:** Android-only (Google Play). Privacy policy must be hosted for Play submission. Cross-platform code stays intact regardless.
-- **9 games:** Blackjack (single + multiplayer), Solitaire (Klondike/Spider/etc.), Conquián, Rummy, Go Fish, Poker, Last Card, Wild Round.
+- **8 games across 9 game screens** (Blackjack has separate single-player + multiplayer screens): Blackjack (single + multiplayer), Solitaire (Klondike/Spider/etc.), Conquián, Rummy, Go Fish, Poker, Last Card, Wild Round.
 - **Key files:**
   - `App.js` — root; provider nesting; navigation stack
   - `components/Card.js` — the card render + animation engine (flip via `animateReveal`, deal via `animateDeal`+`dealDelay`)

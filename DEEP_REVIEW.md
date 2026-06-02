@@ -28,7 +28,7 @@
 ### 🐛 BUGS (real or likely)
 
 - [ ] **BUG-1** — `MultiplayerGameScreen.js` still uses the OLD layout structure (v2's Session A code did NOT actually land — broken styles)
-- [ ] **BUG-2** — Multiple game screens have a UX-5 BackHandler `useEffect` placed AFTER an early return (same pattern as the recent Poker crash) — latent crash risk
+- [x] **BUG-2** — Audited all 9 game screens for hooks-after-early-return (2026-06-01). Only `WildRoundGameScreen` was affected; fixed in commit `9bd069a`. All other screens place every hook above every early return.
 - [ ] **BUG-3** — `LobbyScreen.js` host-side `useEffect` cleanup function (`return () => stopBroadcasting()`) misses the case where the lobby unmounts via navigating to a game — broadcast keeps running
 - [ ] **BUG-4** — Auto-save throttle needed in Rummy, GoFish, Poker, LastCard (Conquián already fixed — throttle confirmed in code)
 - [ ] **BUG-5** — `WildRoundGameScreen` has no save/resume (documented as a known gap in PROJECT_NOTES.md, but still ships)
@@ -254,6 +254,15 @@ Lower-risk path: a single combined prompt that does the Session A JSX refactor A
 ---
 
 ## BUG-2. UX-5 BackHandler useEffects placed AFTER early returns in some game screens
+
+> **✅ RESOLVED 2026-06-01.** Full hooks-order audit run across all 9 game screens
+> (KICKOFF Task 0.5). Result: only `WildRoundGameScreen` had a misplaced hook — its
+> UX-5 BackHandler `useEffect` sat *after* the `if (!gameState)` loading guard, which
+> crashes on entry because `gameState` starts null and is filled in async. Moved the
+> effect above the guard (commit `9bd069a`). Every other game screen — Conquián, Rummy,
+> Go Fish, Poker, Multiplayer Blackjack, single-player Blackjack — places all hooks above
+> all early returns. Solitaire and Last Card have no null-state early return at all, so
+> they're structurally immune. The remaining detail below is kept for historical context.
 
 **Effort:** 30 minutes total (audit + fixes)
 **Risk if ignored:** Same crash pattern that hit Poker recently — "Rendered more hooks than during the previous render"
@@ -768,6 +777,12 @@ If you want a suggested path:
 - v2 work confirmed complete (all v2 boxes were checked off and verified in code)
 - Major finding: MultiplayerGameScreen.js Session A visual refactor didn't actually land
 - Notable finding: BackHandler useEffect placements may be misplaced in multiple screens (Poker fix already done; others unaudited)
+
+### Session 2 — 2026-06-01 (KICKOFF Task 0 + 0.5 + docs sync)
+- Task 0: oriented on the project; read CLAUDE.md, RESPONSIVE_LAYOUT_PLAN.md, KICKOFF.md, DEEP_REVIEW.md, PROJECT_NOTES.md, App.js, Card.js.
+- Task 0.5: hooks-order audit across all 9 game screens. **BUG-2 resolved** — only WildRound was broken (BackHandler `useEffect` below the `!gameState` guard); fixed in commit `9bd069a`.
+- Docs sync: corrected `expo-av` → `expo-audio`, refreshed the PROJECT_NOTES dependency list + file tree to match the actual `screens/` `components/` `game/` files, fixed CLAUDE.md "9 games" → "8 games / 9 screens", and annotated the portrait-vs-default orientation state. PROJECT_NOTES.md confirmed as the canonical "current state" doc.
+- Notes: Tasks 1–4 (gesture/animation foundation + responsive Solitaire pilot + drag test) not yet started.
 
 ### Session N — [Date]
 - [ ] ...

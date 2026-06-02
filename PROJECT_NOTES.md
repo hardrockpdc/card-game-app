@@ -56,7 +56,7 @@ A cross-platform React Native mobile app for playing card games with friends and
   - **M7:** Settings gear link removed from HomeScreen (SettingsScreen kept as placeholder but unlisted)
   - **L8:** MultiplayerMenuScreen subtitle + button labels updated — "Not available yet" / "coming in a future update" instead of "Coming Soon"
   - **UX5:** `expo-clipboard` installed; HostSetupScreen IP card is now tappable → copies IP, shows ✓ Copied! feedback (awaits EAS build)
-  - **UX4:** `expo-av` installed; `game/sounds.js` preloads card_flip/card_deal/win/error sounds; wired into Blackjack (deal, hit, win) and Toast (error on any illegal move); silent WAV placeholders in `assets/sounds/` — replace with real audio files; `initSounds()` called from App.js (awaits EAS build)
+  - **UX4:** `expo-audio` installed; `game/sounds.js` preloads card_flip/card_deal/win/error sounds; wired into Blackjack (deal, hit, win) and Toast (error on any illegal move); silent WAV placeholders in `assets/sounds/` — replace with real audio files; `initSounds()` called from App.js (awaits EAS build)
 - 🔜 **Phase 5: Visual Theme Project (PAUSED)** ⏸️ paused until better PC available
   - Plan: Each game gets its own distinct theme (Blackjack=casino, Poker=premium black, Wild Round=neon party, etc.)
   - Theme switching: User can pick between themes per game
@@ -86,18 +86,25 @@ card-game-app/
 ├── assets/
 │   └── sounds/                    (card_flip.wav, card_deal.wav, win.wav, error.wav — silent placeholders, replace with real audio)
 ├── components/
-│   ├── Card.js                    (reusable playing card visual)
+│   ├── Card.js                    (reusable playing card visual + flip/deal animation engine)
 │   ├── VariantPicker.js           (shared tap-select picker UI)
-│   ├── PokerVariantWheel.js       (simple tap-select poker variant picker UI)
-│   ├── RummyVariantWheel.js       (simple tap-select rummy variant picker UI)
+│   ├── PokerVariantWheel.js       (poker variant picker UI + exports POKER_VARIANT_OPTIONS, used by Lobby/HowToPlay — still live)
+│   ├── RummyVariantWheel.js       (rummy variant picker UI — still live)
+│   ├── SolitaireVariantWheel.js   (solitaire variant picker UI — still live)
+│   ├── ScrollWheelPicker.js       (scroll-wheel selector used by LobbyScreen)
 │   ├── Toast.js                   (animated pill toast + useToast hook — illegal move feedback + error sound)
 │   ├── GameHeader.js              (standardized dark navy header card — ☰ expands in-place; props: gameId/title/subtitle/leftInfo/extraButton/menuItems)
 │   ├── GameMenu.js                (pure item-list renderer + MenuDivider — no modal; handles: divider/sound/restart/howto/theme/quit/generic)
+│   ├── StatsStrip.js              (single-row live-stats strip below GameHeader, accent from getTableTheme)
 │   ├── TutorialOverlay.js         (first-time tutorial modal — slide carousel, AsyncStorage seen-tracking, Skip/Got It)
-│   └── EndOfRoundModal.js         (reusable round-end modal — title, message, Continue/AdjustBet/Leave buttons, tableColor border tint)
+│   ├── EndOfRoundModal.js         (reusable round-end modal — title, message, Continue/AdjustBet/Leave buttons, tableColor border tint)
+│   ├── YourTurnBanner.js          (animated "your turn" banner — used by Last Card)
+│   ├── ErrorBoundary.js           (class component wrapping NavigationContainer — catches render crashes, shows dark fallback screen)
+│   └── TestBotToggle.js           (dev self-play bot toggle — imported into all 9 game screens; part of the testBot tooling slated for removal)
 ├── game/
 │   ├── deck.js                    (createDeck, shuffleDeck, calculateHandValue)
-│   ├── ThemeContext.js            (React context for card theme — single listener, shared across all Cards)
+│   ├── cardTheme.js               (module singleton — 265 static requires (5 themes × 53 images); setTheme/getTheme/subscribe/getCardImage/...)
+│   ├── ThemeContext.js            (React context wrapping cardTheme.js — single listener, shared across all Cards)
 │   ├── conquian.js                (Conquián game logic — pure functions)
 │   ├── wildround.js               (Wild Round game logic — pure functions)
 │   ├── lastCard.js                (Last Card game logic — pure functions)
@@ -106,11 +113,16 @@ card-game-app/
 │   ├── rummy.js                   (Rummy game logic — Gin Rummy, Rummy 500, Indian Rummy, Canasta)
 │   ├── wildroundCards.json        (100 prompts + 300 answers — Phase E complete)
 │   ├── GameNetwork.js             (TCP server/client + UDP discovery)
+│   ├── wallet.js                  (coin balance + lifetime earnings — plain AsyncStorage, local-only)
+│   ├── gameSaves.js               (saveGame/loadGame/clearGame/hasSave — AsyncStorage, JSON, error-safe)
+│   ├── useResumePrompt.js         (custom hook — the "Game in Progress?" save/resume Alert pattern)
 │   ├── logger.js                  (log/warn — no-ops in production builds via __DEV__)
-│   ├── profile.js                 (loadProfile, saveProfile, subscribeProfile, getDisplayName — AsyncStorage)
+│   ├── profile.js                 (loadProfile, saveProfile, subscribeProfile, getDisplayName, recordWin — AsyncStorage)
 │   ├── responsive.js              (scale(), scaleFont() — BASE_WIDTH 390, clamped factors)
 │   ├── sounds.js                  (initSounds/playSound/getMuted/setMuted — expo-audio; preloads 4 sounds on app start; graceful no-op if unavailable)
-│   └── tableThemes.js             (TABLE_THEMES map + getTableTheme(gameId) — table/accent colors for all 8 games)
+│   ├── tableThemes.js             (TABLE_THEMES map + getTableTheme(gameId) — table/accent colors for all 8 games)
+│   ├── testBotLogger.js           (botLog / botLogError — logging we keep)
+│   └── testBot.js                 (dev self-play test bot — TestBotProvider wraps the whole app in App.js; slated for removal, logging is separate)
 ├── screens/
 │   ├── HomeScreen.js              (main menu)
 │   ├── HostSetupScreen.js         (name from profile, starts TCP server, shows IP)
@@ -119,20 +131,22 @@ card-game-app/
 │   ├── BlackjackModePickerScreen.js (Free Play / Casino mode selector before entering Blackjack)
 │   ├── GameScreen.js              (single-player Blackjack — handles mode: 'free' | 'casino' route param)
 │   ├── MultiplayerGameScreen.js   (multiplayer Blackjack)
-│   ├── GoFishGameScreen.js        (multiplayer Go Fish)
+│   ├── GoFishGameScreen.js        (Go Fish — single + multiplayer)
+│   ├── GoFishPickerScreen.js      (Go Fish setup — variant card + AI count + difficulty)
 │   ├── PokerGameScreen.js         (Poker variants: Texas Hold'em, Omaha, Five Card Draw, Seven Card Stud)
 │   ├── PokerVariantPickerScreen.js (tap-select poker variant picker)
-│   ├── SolitaireVariantWheel.js   (simple tap-select solitaire variant picker UI)
 │   ├── SolitaireVariantPickerScreen.js (tap-select solitaire variant picker)
 │   ├── SolitaireGameScreen.js      (Solitaire — single-player only)
 │   ├── ConquianGameScreen.js      (Conquián — single + multiplayer)
+│   ├── ConquianSetupScreen.js     (Conquián setup screen — registered route "ConquianSetup")
 │   ├── WildRoundGameScreen.js     (Wild Round — single + multiplayer)
 │   ├── LastCardGameScreen.js      (Last Card — single + multiplayer)
 │   ├── SinglePlayerSetupScreen.js (single-player game + AI picker; Wild Round removed from carousel)
 │   ├── MultiplayerMenuScreen.js   (Host Online/Join Online = Coming Soon; Host Local/Join Local = functional)
 │   ├── RummyGameScreen.js         (Rummy — single + multiplayer)
-│   ├── RummyVariantPickerScreen.js (tap-select Rummy variant picker)
+│   ├── RummyVariantPickerScreen.js (tap-select Rummy variant picker; also launches Conquián)
 │   ├── ProfileScreen.js           (name, avatar/photo picker, card theme link; More section → Stats + About)
+│   ├── CardThemeScreen.js         (full-screen theme swiper — Ace of Spades preview, "Use This Theme")
 │   ├── HowToPlayScreen.js         (rules reference screen)
 │   ├── ResultsScreen.js           (real implementation — winner headline, scoreboard, Play Again / Back to Menu)
 │   ├── AboutScreen.js             (app name, version from app.json, credits, copyright, Privacy Policy link)
@@ -150,24 +164,34 @@ card-game-app/
 ## 📦 Dependencies
 
 ```
-@react-native-async-storage/async-storage  (profile persistence — added Phase 3, requires EAS build)
+dependencies:
+@react-native-async-storage/async-storage: ^2.2.0  (profile/save persistence — requires EAS build)
 @react-navigation/native: ^7.2.2
 @react-navigation/native-stack: ^7.14.11
 expo: ~54.0.33
-expo-av                                    (sound effects — added Month 2, requires EAS build)
-expo-clipboard                             (tap-to-copy IP — added Month 2, requires EAS build)
+expo-audio: ~1.1.1                         (sound effects — NOTE: expo-audio, not the older expo-av; requires EAS build)
+expo-clipboard: ~8.0.8                     (tap-to-copy IP — requires EAS build)
 expo-dev-client: ~6.0.20
-expo-image-manipulator                     (photo crop to 1:1 — added Phase 3, Expo-native, no extra native module)
-expo-image-picker                          (camera roll + camera access — added Phase 3, Expo-native)
+expo-image-manipulator: ~14.0.8            (photo crop to 1:1 — Expo-native, no extra native module)
+expo-image-picker: ~17.0.11               (camera roll + camera access — Expo-native)
 expo-network: ~8.0.8
 expo-status-bar: ~3.0.9
+expo-updates: ~29.0.17                     (OTA updates channel)
+fbjs: ^3.0.5
 react: 19.1.0
+react-dom: 19.1.0                          (web build only)
 react-native: 0.81.5
-react-native-draggable-flatlist: ^4.0.3   (reserved for planned Wild Round hand-sort polish)
+react-native-draggable-flatlist: ^4.0.3   (reserved for planned Wild Round hand-sort polish — NOT yet used)
 react-native-safe-area-context: ~5.6.0
 react-native-screens: ~4.16.0
 react-native-tcp-socket: ^6.4.1
 react-native-udp: ^4.1.7
+react-native-web: ^0.21.0                  (web build only)
+typescript: ^5.9.3                         (VESTIGIAL — no tsconfig.json, project is all JS; slated for removal, see DEEP_REVIEW CQ-13)
+
+devDependencies:
+prettier: ^3.8.3
+sharp: ^0.34.5                             (used by scripts/compress-cards.js)
 ```
 
 ## 🎨 Visual Style
@@ -261,6 +285,7 @@ both explicitly for LAN-only play.
 - Make key screens responsive with `useWindowDimensions()`.
 - Prefer `ScrollView` for screens that may overflow on smaller phones.
 - Avoid absolute positioning for important buttons or navigation links unless there is a strong reason.
+- **Orientation — current state vs. plan:** `app.json` currently sets `"orientation": "portrait"` (locked, from Update Phase 6). The active plan in `RESPONSIVE_LAYOUT_PLAN.md` + `KICKOFF.md` Task 3 is to **unlock** this to `"orientation": "default"` and drive layout off aspect ratio (`useLayoutMode()`), so the app works on phones, foldables, and tablets. Until that task lands, portrait-locked is the real current behavior — this is a pending change, not a mistake.
 
 ## 📍 Where We Are Right Now
 
