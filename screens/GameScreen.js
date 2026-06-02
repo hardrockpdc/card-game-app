@@ -224,7 +224,12 @@ export default function GameScreen({ navigation, route }) {
 
   // Bot: Deal once selectedBet lands on MIN_BET (fresh closure sees correct selectedBet)
   useEffect(() => {
-    if (!botEnabledRef.current || screenPhase !== "betting" || selectedBet !== MIN_BET) return;
+    if (
+      !botEnabledRef.current ||
+      screenPhase !== "betting" ||
+      selectedBet !== MIN_BET
+    )
+      return;
     handleDeal();
   }, [selectedBet]);
 
@@ -236,7 +241,11 @@ export default function GameScreen({ navigation, route }) {
       if (!botEnabledRef.current || gameStatus !== "playing") return;
       try {
         const total = calculateHandValue(playerHand);
-        botLog("MOVE_BOT", "Blackjack", { total, action: total < 17 ? "hit" : "stand", hand: playerHand.map((c) => `${c.rank}${c.suit}`).join(" ") });
+        botLog("MOVE_BOT", "Blackjack", {
+          total,
+          action: total < 17 ? "hit" : "stand",
+          hand: playerHand.map((c) => `${c.rank}${c.suit}`).join(" "),
+        });
         if (total < 17) handleHit();
         else handleStand();
       } catch (err) {
@@ -267,7 +276,12 @@ export default function GameScreen({ navigation, route }) {
   // ── Payout ────────────────────────────────────────────────────────
   // Called once per hand when it's fully resolved.
   // All result values are passed as parameters to avoid stale closure issues.
-  async function resolveHandPayout(mainResult, sResult, hadSplit) {
+  async function resolveHandPayout(
+    mainResult,
+    sResult,
+    hadSplit,
+    dealerPlayed = false,
+  ) {
     if (payoutDoneRef.current) return;
     payoutDoneRef.current = true;
 
@@ -326,13 +340,17 @@ export default function GameScreen({ navigation, route }) {
 
     botLog("GAMEOVER", "Blackjack", { result: mainResult, payout });
 
-    // Delay the result modal so the dealer hole-card flip animation can play in full
-    // before being covered. 2000ms covers the 260ms flip + a comfortable pause.
+    // UX-2: Delay the result modal so the dealer reveal can finish before it's
+    // covered. The full 2s is only needed when the dealer actually plays out a hand
+    // (extra cards may animate in). On an instant bust or a natural blackjack only
+    // the single hole-card flip (~260ms) plays, so use a short delay — the longer
+    // one just felt laggy on those paths.
+    const delayMs = dealerPlayed ? 2000 : 600;
     if (modalDelayTimerRef.current) clearTimeout(modalDelayTimerRef.current);
     modalDelayTimerRef.current = setTimeout(() => {
       setScreenPhase("result");
       modalDelayTimerRef.current = null;
-    }, 2000);
+    }, delayMs);
   }
 
   // ── Deal ──────────────────────────────────────────────────────────
@@ -343,7 +361,8 @@ export default function GameScreen({ navigation, route }) {
     }
     if (!selectedBet || screenPhase !== "betting") return;
 
-    if (!botEnabledRef.current) botLog("MOVE_USER", "Blackjack deal", { bet: selectedBet });
+    if (!botEnabledRef.current)
+      botLog("MOVE_USER", "Blackjack deal", { bet: selectedBet });
 
     const bet = selectedBet;
     currentBetRef.current = bet;
@@ -478,7 +497,7 @@ export default function GameScreen({ navigation, route }) {
     }
 
     setGameStatus("finished");
-    resolveHandPayout(finalMain, finalSplit, split !== null);
+    resolveHandPayout(finalMain, finalSplit, split !== null, true);
   }
 
   // ── Continue (same bet, deal immediately) ────────────────────────
