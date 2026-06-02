@@ -47,35 +47,42 @@ export function startServer() {
       }) + "\n",
     );
 
+    // BUG-6: TCP is a byte stream — a message can arrive split across multiple
+    // `data` events, or several messages can arrive in one. Buffer per socket and
+    // only parse complete newline-terminated lines, keeping any partial remainder
+    // for the next event. Without this, large messages (e.g. full-state broadcasts)
+    // fragment, fail JSON.parse, and are silently dropped -> multiplayer desync.
+    let buffer = "";
     socket.on("data", (data) => {
-      data
-        .toString()
-        .split("\n")
-        .forEach((line) => {
-          if (!line.trim()) return;
-          try {
-            const msg = JSON.parse(line);
+      buffer += data.toString();
+      let idx;
+      while ((idx = buffer.indexOf("\n")) !== -1) {
+        const line = buffer.slice(0, idx);
+        buffer = buffer.slice(idx + 1);
+        if (!line.trim()) continue;
+        try {
+          const msg = JSON.parse(line);
 
-            if (msg.protocolVersion !== PROTOCOL_VERSION) {
-              socket.write(
-                JSON.stringify({
-                  type: "VERSION_MISMATCH",
-                  serverVersion: PROTOCOL_VERSION,
-                  protocolVersion: PROTOCOL_VERSION,
-                }) + "\n",
-              );
-              socket.destroy();
-              return;
-            }
+          if (msg.protocolVersion !== PROTOCOL_VERSION) {
+            socket.write(
+              JSON.stringify({
+                type: "VERSION_MISMATCH",
+                serverVersion: PROTOCOL_VERSION,
+                protocolVersion: PROTOCOL_VERSION,
+              }) + "\n",
+            );
+            socket.destroy();
+            return;
+          }
 
-            // Auto-store player name whenever a JOIN message arrives
-            if (msg.type === "JOIN" && msg.name) {
-              playerNames.set(id, msg.name);
-            }
+          // Auto-store player name whenever a JOIN message arrives
+          if (msg.type === "JOIN" && msg.name) {
+            playerNames.set(id, msg.name);
+          }
 
-            serverListeners.onMessage?.(msg, id);
-          } catch (_) {}
-        });
+          serverListeners.onMessage?.(msg, id);
+        } catch (_) {}
+      }
     });
 
     const handleClose = () => {
@@ -174,33 +181,37 @@ export function connectToHost(ip, callbacks) {
     clientListeners.onConnected?.();
   });
 
+  // BUG-6: buffer the incoming byte stream and parse only complete lines (see the
+  // matching note on the server side). One buffer per connection.
+  let buffer = "";
   clientSocket.on("data", (data) => {
-    data
-      .toString()
-      .split("\n")
-      .forEach((line) => {
-        if (!line.trim()) return;
-        try {
-          const parsed = JSON.parse(line);
+    buffer += data.toString();
+    let idx;
+    while ((idx = buffer.indexOf("\n")) !== -1) {
+      const line = buffer.slice(0, idx);
+      buffer = buffer.slice(idx + 1);
+      if (!line.trim()) continue;
+      try {
+        const parsed = JSON.parse(line);
 
-          if (parsed.type === "ASSIGNED_ID") {
-            assignedClientId = parsed.clientId;
-            clientListeners.onMessage?.(parsed);
-            return;
-          }
-
-          if (parsed.type === "VERSION_MISMATCH") {
-            Alert.alert(
-              "Update Required",
-              "The host is running a different version of Card Night. Please update your app to join this game.",
-              [{ text: "OK" }],
-            );
-            return;
-          }
-
+        if (parsed.type === "ASSIGNED_ID") {
+          assignedClientId = parsed.clientId;
           clientListeners.onMessage?.(parsed);
-        } catch (_) {}
-      });
+          continue;
+        }
+
+        if (parsed.type === "VERSION_MISMATCH") {
+          Alert.alert(
+            "Update Required",
+            "The host is running a different version of Card Night. Please update your app to join this game.",
+            [{ text: "OK" }],
+          );
+          continue;
+        }
+
+        clientListeners.onMessage?.(parsed);
+      } catch (_) {}
+    }
   });
 
   clientSocket.on("close", () => {
