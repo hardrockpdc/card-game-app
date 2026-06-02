@@ -11,6 +11,8 @@
 // Run with: npm test
 module.exports = {
   testEnvironment: "node",
+  // Defines RN/Metro globals (e.g. __DEV__) that game/logger.js reads at load.
+  setupFiles: ["<rootDir>/jest.setup.js"],
   // Only look for tests we wrote; never descend into node_modules or native dirs.
   testMatch: ["<rootDir>/__tests__/**/*.test.js"],
   transform: {
