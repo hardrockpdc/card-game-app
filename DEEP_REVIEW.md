@@ -30,7 +30,7 @@
 - [ ] **BUG-1** — `MultiplayerGameScreen.js` still uses the OLD layout structure (v2's Session A code did NOT actually land — broken styles)
 - [ ] **BUG-2** — Multiple game screens have a UX-5 BackHandler `useEffect` placed AFTER an early return (same pattern as the recent Poker crash) — latent crash risk
 - [ ] **BUG-3** — `LobbyScreen.js` host-side `useEffect` cleanup function (`return () => stopBroadcasting()`) misses the case where the lobby unmounts via navigating to a game — broadcast keeps running
-- [ ] **BUG-4** — Conquián auto-save effect runs on every state change (no throttle) — same issue PERF-3 fixed for Solitaire
+- [ ] **BUG-4** — Auto-save throttle needed in Rummy, GoFish, Poker, LastCard (Conquián already fixed — throttle confirmed in code)
 - [ ] **BUG-5** — `WildRoundGameScreen` has no save/resume (documented as a known gap in PROJECT_NOTES.md, but still ships)
 
 ### ⚡ PERFORMANCE
@@ -314,35 +314,16 @@ In `LobbyScreen.js`, look for the `handleQuit` / leave-lobby paths and the UX-5 
 
 ---
 
-## BUG-4. Conquián auto-save fires on every state change (no throttle)
+## BUG-4. Auto-save throttle missing in multiple game screens (Conquián already fixed)
 
 **Effort:** 5 minutes
 **Risk if ignored:** Battery and performance impact on long games — every meld, every pass, every selection writes to AsyncStorage
 
 ### What's happening
 
-`ConquianGameScreen.js` has this:
+**Conquián is already fixed** — `ConquianGameScreen.js` has a `lastSaveRef` 3-second throttle in place (confirmed via code inspection, lines 255-265).
 
-```javascript
-useEffect(() => {
-  if (!isSinglePlayer || !fullRef.current) return;
-  if (gameState?.phase === "results") {
-    clearGame(SAVE_KEY_CONQUIAN);
-    return;
-  }
-  saveGame(SAVE_KEY_CONQUIAN, { fullState: fullRef.current });
-}, [gameState]);
-```
-
-This fires on every `gameState` change. In Conquián that includes:
-- Every card selection
-- Every meld preview
-- Every pass action
-- Every state broadcast from network in multi (though this is gated by `isSinglePlayer`)
-
-In single-player practice, you'd see maybe 30-60 AsyncStorage writes per game. Each write costs ~5-20ms on low-end Android. Not catastrophic, but the same pattern that PERF-3 fixed for Solitaire by adding a 3-second throttle.
-
-The same pattern exists in:
+The un-throttled pattern still exists in:
 - `RummyGameScreen.js` (auto-save fires on every `gameState` change)
 - `GoFishGameScreen.js` (auto-save fires on every `gameState` change)
 - `PokerGameScreen.js` (auto-save fires on `[gameState, tournamentWinner]`)
@@ -397,7 +378,7 @@ It's a feature gap that users will notice. Not technically a bug, but listed in 
 
 Add the standard save/resume pattern to WildRound:
 1. `SAVE_KEY_WILDROUND` constant
-2. Auto-save useEffect (throttled, per BUG-4)
+2. Auto-save useEffect (throttled with `lastSaveRef` 3s gate — see BUG-4 for the pattern)
 3. Resume check on mount
 4. Save & Exit menu item
 5. Wire resume prompt in `WildRoundVariantPickerScreen` (or wherever WildRound is launched from)
@@ -750,7 +731,7 @@ If you want a suggested path:
 4. **BUG-2** — audit + fix BackHandler useEffect placements across all game screens (~30 min)
 
 ### Polish (worth doing if you have an hour)
-5. **BUG-4** — save throttle for 5 games (~25 min)
+5. **BUG-4** — save throttle for remaining 4 games: Rummy, GoFish, Poker, LastCard (~20 min; Conquián already done)
 6. **UX-1** — CardThemeScreen color cleanup (~5 min)
 7. **UX-2** — conditional modal delay (~10 min)
 8. **BUG-3** — defensive `stopBroadcasting` in lobby exits (~5 min)

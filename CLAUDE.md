@@ -35,10 +35,10 @@ Ask **one focused question at a time** when something is genuinely ambiguous. Do
 ### 2.1 Hooks order — the #1 recurring bug
 **Every `useState`, `useRef`, `useEffect`, `useMemo`, `useContext` call MUST appear BEFORE every early `return` in a component.** A hook placed after an `if (...) return ...` causes "Rendered more hooks than during the previous render" and crashes the screen.
 
-This has bitten this project at least three times (Poker, Conquián twice). Whenever you add or move a hook in a game screen, **verify top-to-bottom that all hooks are above all early returns.** When editing a game screen, proactively scan for this even if it's not what I asked about.
+This has bitten this project at least four times (Poker, Conquián twice, Rummy). Whenever you add or move a hook in a game screen, **verify top-to-bottom that all hooks are above all early returns.** When editing a game screen, proactively scan for this even if it's not what I asked about.
 
 ### 2.2 This is a JavaScript project, not TypeScript
-There is no `tsconfig.json` and the project is all `.js`. **Do not run `tsc`** to "verify" — it produces hundreds of fake errors because the project was never set up for TypeScript. Verify by checking that Metro bundles / the app runs, not by type-checking. (The `typescript` dependency is vestigial and slated for removal.)
+There is no `tsconfig.json` and the project is all `.js`. **Do not run `tsc`** to "verify" — it produces hundreds of fake errors because the project was never set up for TypeScript. Verify by checking that Metro bundles / the app runs, not by type-checking. (The `typescript` dependency is vestigial — no tsconfig.json, slated for removal but not yet done.)
 
 ### 2.3 Don't strip cross-platform code
 Even though distribution is currently **Android-only**, the codebase stays cross-platform (React Native). Do NOT remove `Platform.select` branches, iOS config, or platform abstractions to "simplify." They cost nothing to keep and preserve the option to ship iOS later. Android-only is a *distribution* decision, not a *code* decision.
@@ -65,6 +65,9 @@ End each completed change with a git commit using a clear, conventional message 
 ### 3.3 Always tell me what to test
 After implementing, give me a short, concrete list of what to check on my device to confirm it worked — including likely failure modes to watch for.
 
+### 3.5 Batch native changes before requesting a rebuild
+Never prompt for a dev-client rebuild after each individual native-touching change. Collect all native changes for a logical unit of work first, then request a single rebuild. Rebuilds are slow — one per batch, not one per commit.
+
 ### 3.4 Verify before claiming done
 Confirm the files compile (Metro/bundler, not tsc), confirm the specific changes landed, and report honestly what changed vs. what was skipped and why.
 
@@ -90,7 +93,7 @@ This is a family-friendly card game. Keep all content, copy, and assets appropri
   - `game/testBot.js` — the dev self-play test bot (slated for removal; logging is separate)
   - `screens/*GameScreen.js` — per-game screens
 - **Standard patterns:**
-  - `hasMountedRef` set true *before* the fresh-deal `applyState` (so deals animate) and *after* the resume `applyState` (so restored games don't animate).
+  - `hasMountedRef` set true *before* the fresh-deal `applyState` (so deals animate) and *after* the resume `applyState` (so restored games don't animate). Used in `ConquianGameScreen.js` and `RummyGameScreen.js`; Solitaire uses a different approach (`initialGameDispatched` ref).
   - Auto-save effects throttled to one write / 3s via a `lastSaveRef`.
   - Accent color `#7fb3ff` blue (error text stays `#e94560` red).
   - Responsive sizing via `scale()` / `scaleFont()` from `game/responsive.js`.
