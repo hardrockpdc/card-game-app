@@ -28,9 +28,8 @@ import {
   disconnectFromHost,
 } from "../game/GameNetwork";
 import { getTableTheme } from "../game/tableThemes";
-import TestBotToggle from "../components/TestBotToggle";
-import { useTestBot, TEST_BOT_DELAY_MS } from "../game/testBot";
-import { botLog, botLogError } from "../game/testBotLogger";
+
+const AI_MOVE_DELAY_MS = 700; // delay between AI opponent moves (ms)
 
 const BG = getTableTheme("poker").table;
 
@@ -568,10 +567,7 @@ export default function PokerGameScreen({ navigation, route }) {
   const coinRewardedRef = useRef(false);
   const aiTimerRef = useRef(null);
   const hasMountedRef = useRef(false);
-  const botRestartTimerRef = useRef(null);
   const lastSaveRef = useRef(0); // BUG-4: auto-save throttle (once / 3s)
-  const { enabled: botEnabled } = useTestBot();
-  const botEnabledRef = useRef(false);
 
   function applyState(next) {
     fullRef.current = next;
@@ -601,30 +597,21 @@ export default function PokerGameScreen({ navigation, route }) {
   function scheduleAI(state) {
     if (!isHost || state.phase === "showdown") return;
     const currentP = state.players[state.currentPlayerIndex];
-    if (!currentP?.isAI && !(botEnabledRef.current && isSinglePlayer)) return;
+    if (!currentP?.isAI) return;
     if (aiTimerRef.current) clearTimeout(aiTimerRef.current);
     aiTimerRef.current = setTimeout(() => {
       const s = fullRef.current;
       if (!s || s.phase === "showdown") return;
       const cp = s.players[s.currentPlayerIndex];
-      if (!cp?.isAI && !(botEnabledRef.current && isSinglePlayer)) return;
+      if (!cp?.isAI) return;
       const pid = String(cp.id);
       try {
         const next = pokerAIAction(s, pid, difficulty);
         if (next !== s) {
-          const _category =
-            botEnabledRef.current && isSinglePlayer ? "MOVE_BOT" : "MOVE_AI";
-          botLog(_category, "Poker", {
-            player: cp.name,
-            action: next.lastAction,
-            phase: s.phase,
-          });
           applyState(next);
         }
-      } catch (err) {
-        botLogError("CRASH", "Poker", err);
-      }
-    }, TEST_BOT_DELAY_MS);
+      } catch (err) {}
+    }, AI_MOVE_DELAY_MS);
   }
 
   useEffect(() => {
@@ -632,10 +619,6 @@ export default function PokerGameScreen({ navigation, route }) {
       if (aiTimerRef.current) clearTimeout(aiTimerRef.current);
     };
   }, []);
-
-  useEffect(() => {
-    botEnabledRef.current = botEnabled;
-  }, [botEnabled]);
 
   // Auto-save after each state change in single-player.
   useEffect(() => {
@@ -664,11 +647,6 @@ export default function PokerGameScreen({ navigation, route }) {
           return;
         }
       }
-      botLog("GAMESTART", "Poker", {
-        players: initialPlayers.length,
-        difficulty,
-        variant,
-      });
       hasMountedRef.current = true;
       applyState(initDeal(initialPlayers, 0, null, startingChips));
       // Deduct the buy-in from the wallet when a single-player casino tournament starts.
@@ -762,25 +740,7 @@ export default function PokerGameScreen({ navigation, route }) {
     return () => sub.remove();
   }, [navigation, isSinglePlayer, isHost]);
 
-  // Bot: Auto-restart when tournament ends
-  useEffect(() => {
-    if (tournamentWinner === null || !botEnabledRef.current || !isSinglePlayer)
-      return;
-    if (botRestartTimerRef.current) clearTimeout(botRestartTimerRef.current);
-    botRestartTimerRef.current = setTimeout(() => {
-      if (botEnabledRef.current) handleRestart();
-    }, 1500);
-    return () => {
-      if (botRestartTimerRef.current) clearTimeout(botRestartTimerRef.current);
-    };
-  }, [tournamentWinner]);
-
   function act(action) {
-    if (!botEnabledRef.current)
-      botLog("MOVE_USER", "Poker", {
-        action: action.action,
-        amount: action.amount,
-      });
     if (isHost) {
       const state = fullRef.current;
       if (!state) return;
@@ -796,7 +756,6 @@ export default function PokerGameScreen({ navigation, route }) {
           // watch computers play each other out.
           if (isSinglePlayer) {
             const winner = hostIsOut ? null : (activePlayers[0] ?? null);
-            botLog("GAMEOVER", "Poker", { winner: winner?.id ?? null });
             setTournamentWinner(winner ?? { id: "__none__", name: "Nobody" });
             if (
               winner &&
@@ -964,7 +923,6 @@ export default function PokerGameScreen({ navigation, route }) {
             </View>
           </View>
         }
-        extraButton={<TestBotToggle />}
         menuItems={menuItems}
       />
       <StatsStrip

@@ -38,7 +38,6 @@ import { setTheme } from "./game/cardTheme";
 import { warn } from "./game/logger";
 import { initSounds } from "./game/sounds";
 import { ThemeProvider } from "./game/ThemeContext";
-import { TestBotProvider } from "./game/testBot";
 import ErrorBoundary from "./components/ErrorBoundary";
 import {
   stopServer,
@@ -83,164 +82,162 @@ export default function App() {
     <ErrorBoundary>
       <SafeAreaProvider>
         <ThemeProvider>
-          <TestBotProvider>
-            <NavigationContainer>
-              <Stack.Navigator
-                initialRouteName="Home"
-                screenOptions={{
-                  headerStyle: { backgroundColor: "#1a1a2e" },
-                  headerTintColor: "#ffffff",
-                  headerTitleStyle: { fontWeight: "bold" },
-                }}
-              >
-                <Stack.Screen
-                  name="Home"
-                  component={HomeScreen}
-                  options={{ headerShown: false }}
-                />
-                <Stack.Screen
-                  name="HostSetup"
-                  component={HostSetupScreen}
-                  options={{ title: "Host a Game" }}
-                />
-                <Stack.Screen
-                  name="Join"
-                  component={JoinScreen}
-                  options={{ title: "Join a Game" }}
-                />
-                <Stack.Screen
-                  name="Lobby"
-                  component={LobbyScreen}
-                  options={{ title: "Lobby" }}
-                />
-                <Stack.Screen
-                  name="BlackjackModePicker"
-                  component={BlackjackModePickerScreen}
-                  options={{ title: "Blackjack" }}
-                />
-                <Stack.Screen
-                  name="Game"
-                  component={GameScreen}
-                  options={{ headerShown: false }}
-                />
-                <Stack.Screen
-                  name="Results"
-                  component={ResultsScreen}
-                  options={{ title: "Results" }}
-                />
-                <Stack.Screen
-                  name="Settings"
-                  component={SettingsScreen}
-                  options={{ title: "Settings" }}
-                />
-                <Stack.Screen
-                  name="MultiplayerGame"
-                  component={MultiplayerGameScreen}
-                  options={{ headerShown: false }}
-                />
-                <Stack.Screen
-                  name="GoFishGame"
-                  component={GoFishGameScreen}
-                  options={{ headerShown: false }}
-                />
-                <Stack.Screen
-                  name="ConquianSetup"
-                  component={ConquianSetupScreen}
-                  options={{ title: "Conquián" }}
-                />
-                <Stack.Screen
-                  name="ConquianGame"
-                  component={ConquianGameScreen}
-                  options={{ headerShown: false }}
-                />
-                <Stack.Screen
-                  name="PokerGame"
-                  component={PokerGameScreen}
-                  options={{ headerShown: false }}
-                />
-                <Stack.Screen
-                  name="PokerVariantPicker"
-                  component={PokerVariantPickerScreen}
-                  options={{ title: "Poker Variant" }}
-                />
-                <Stack.Screen
-                  name="SolitaireVariantPicker"
-                  component={SolitaireVariantPickerScreen}
-                  options={{ title: "Solitaire" }}
-                />
-                <Stack.Screen
-                  name="SolitaireGame"
-                  component={SolitaireGameScreen}
-                  options={{ headerShown: false }}
-                />
-                <Stack.Screen
-                  name="RummyVariantPicker"
-                  component={RummyVariantPickerScreen}
-                  options={{ title: "Rummy Variant" }}
-                />
-                <Stack.Screen
-                  name="RummyGame"
-                  component={RummyGameScreen}
-                  options={{ headerShown: false }}
-                />
-                <Stack.Screen
-                  name="SinglePlayerSetup"
-                  component={SinglePlayerSetupScreen}
-                  options={{ title: "Single Player" }}
-                />
-                <Stack.Screen
-                  name="HowToPlay"
-                  component={HowToPlayScreen}
-                  options={{ title: "How to Play" }}
-                />
-                <Stack.Screen
-                  name="WildRoundGame"
-                  component={WildRoundGameScreen}
-                  options={{ headerShown: false }}
-                />
-                <Stack.Screen
-                  name="LastCardGame"
-                  component={LastCardGameScreen}
-                  options={{ headerShown: false }}
-                />
-                <Stack.Screen
-                  name="GameSetup"
-                  component={GameSetupScreen}
-                  options={{ title: "Game Setup" }}
-                />
-                <Stack.Screen
-                  name="GoFishPicker"
-                  component={GoFishPickerScreen}
-                  options={{ title: "Go Fish" }}
-                />
-                <Stack.Screen
-                  name="CardThemes"
-                  component={CardThemeScreen}
-                  options={{ title: "Card Themes" }}
-                />
-                <Stack.Screen
-                  name="MultiplayerMenu"
-                  component={MultiplayerMenuScreen}
-                  options={{ title: "Multiplayer" }}
-                />
-                <Stack.Screen
-                  name="Profile"
-                  component={ProfileScreen}
-                  options={{ title: "Profile" }}
-                />
-                <Stack.Screen
-                  name="About"
-                  component={AboutScreen}
-                  options={{ title: "About" }}
-                />
-                <Stack.Screen
-                  name="Stats"
-                  component={StatsScreen}
-                  options={{ title: "Stats" }}
-                />
-              </Stack.Navigator>
-            </NavigationContainer>
-          </TestBotProvider>
+          <NavigationContainer>
+            <Stack.Navigator
+              initialRouteName="Home"
+              screenOptions={{
+                headerStyle: { backgroundColor: "#1a1a2e" },
+                headerTintColor: "#ffffff",
+                headerTitleStyle: { fontWeight: "bold" },
+              }}
+            >
+              <Stack.Screen
+                name="Home"
+                component={HomeScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="HostSetup"
+                component={HostSetupScreen}
+                options={{ title: "Host a Game" }}
+              />
+              <Stack.Screen
+                name="Join"
+                component={JoinScreen}
+                options={{ title: "Join a Game" }}
+              />
+              <Stack.Screen
+                name="Lobby"
+                component={LobbyScreen}
+                options={{ title: "Lobby" }}
+              />
+              <Stack.Screen
+                name="BlackjackModePicker"
+                component={BlackjackModePickerScreen}
+                options={{ title: "Blackjack" }}
+              />
+              <Stack.Screen
+                name="Game"
+                component={GameScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="Results"
+                component={ResultsScreen}
+                options={{ title: "Results" }}
+              />
+              <Stack.Screen
+                name="Settings"
+                component={SettingsScreen}
+                options={{ title: "Settings" }}
+              />
+              <Stack.Screen
+                name="MultiplayerGame"
+                component={MultiplayerGameScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="GoFishGame"
+                component={GoFishGameScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="ConquianSetup"
+                component={ConquianSetupScreen}
+                options={{ title: "Conquián" }}
+              />
+              <Stack.Screen
+                name="ConquianGame"
+                component={ConquianGameScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="PokerGame"
+                component={PokerGameScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="PokerVariantPicker"
+                component={PokerVariantPickerScreen}
+                options={{ title: "Poker Variant" }}
+              />
+              <Stack.Screen
+                name="SolitaireVariantPicker"
+                component={SolitaireVariantPickerScreen}
+                options={{ title: "Solitaire" }}
+              />
+              <Stack.Screen
+                name="SolitaireGame"
+                component={SolitaireGameScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="RummyVariantPicker"
+                component={RummyVariantPickerScreen}
+                options={{ title: "Rummy Variant" }}
+              />
+              <Stack.Screen
+                name="RummyGame"
+                component={RummyGameScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="SinglePlayerSetup"
+                component={SinglePlayerSetupScreen}
+                options={{ title: "Single Player" }}
+              />
+              <Stack.Screen
+                name="HowToPlay"
+                component={HowToPlayScreen}
+                options={{ title: "How to Play" }}
+              />
+              <Stack.Screen
+                name="WildRoundGame"
+                component={WildRoundGameScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="LastCardGame"
+                component={LastCardGameScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="GameSetup"
+                component={GameSetupScreen}
+                options={{ title: "Game Setup" }}
+              />
+              <Stack.Screen
+                name="GoFishPicker"
+                component={GoFishPickerScreen}
+                options={{ title: "Go Fish" }}
+              />
+              <Stack.Screen
+                name="CardThemes"
+                component={CardThemeScreen}
+                options={{ title: "Card Themes" }}
+              />
+              <Stack.Screen
+                name="MultiplayerMenu"
+                component={MultiplayerMenuScreen}
+                options={{ title: "Multiplayer" }}
+              />
+              <Stack.Screen
+                name="Profile"
+                component={ProfileScreen}
+                options={{ title: "Profile" }}
+              />
+              <Stack.Screen
+                name="About"
+                component={AboutScreen}
+                options={{ title: "About" }}
+              />
+              <Stack.Screen
+                name="Stats"
+                component={StatsScreen}
+                options={{ title: "Stats" }}
+              />
+            </Stack.Navigator>
+          </NavigationContainer>
         </ThemeProvider>
       </SafeAreaProvider>
     </ErrorBoundary>

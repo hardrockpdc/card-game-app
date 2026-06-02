@@ -22,9 +22,6 @@ import TutorialOverlay, { hasSeen } from "../components/TutorialOverlay";
 import EndOfRoundModal from "../components/EndOfRoundModal";
 import StatsStrip from "../components/StatsStrip";
 import { getTableTheme } from "../game/tableThemes";
-import TestBotToggle from "../components/TestBotToggle";
-import { useTestBot, TEST_BOT_DELAY_MS } from "../game/testBot";
-import { botLog, botLogError } from "../game/testBotLogger";
 const BG = getTableTheme("blackjack").table;
 const ACCENT = getTableTheme("blackjack").accent;
 
@@ -88,9 +85,6 @@ export default function GameScreen({ navigation, route }) {
   const payoutDoneRef = useRef(false);
   const modalDelayTimerRef = useRef(null);
   const hasMountedRef = useRef(false);
-  const botTimerRef = useRef(null);
-  const { enabled: botEnabled } = useTestBot();
-  const botEnabledRef = useRef(false);
 
   // ── Screen phase: 'betting' | 'playing' | 'result' ───────────────
   const [screenPhase, setScreenPhase] = useState("betting");
@@ -199,79 +193,8 @@ export default function GameScreen({ navigation, route }) {
         clearTimeout(modalDelayTimerRef.current);
         modalDelayTimerRef.current = null;
       }
-      if (botTimerRef.current) clearTimeout(botTimerRef.current);
     };
   }, []);
-
-  useEffect(() => {
-    botEnabledRef.current = botEnabled;
-  }, [botEnabled]);
-
-  // Bot: Select bet when on the betting screen (deal is triggered by the effect below)
-  useEffect(() => {
-    if (!botEnabledRef.current || screenPhase !== "betting") return;
-    if (coins === null || coins < MIN_BET) return;
-    if (botTimerRef.current) clearTimeout(botTimerRef.current);
-    botTimerRef.current = setTimeout(() => {
-      if (!botEnabledRef.current) return;
-      botLog("MOVE_BOT", "Blackjack bet", { amount: MIN_BET, coins });
-      setSelectedBet(MIN_BET);
-    }, TEST_BOT_DELAY_MS);
-    return () => {
-      if (botTimerRef.current) clearTimeout(botTimerRef.current);
-    };
-  }, [botEnabled, screenPhase, coins]);
-
-  // Bot: Deal once selectedBet lands on MIN_BET (fresh closure sees correct selectedBet)
-  useEffect(() => {
-    if (
-      !botEnabledRef.current ||
-      screenPhase !== "betting" ||
-      selectedBet !== MIN_BET
-    )
-      return;
-    handleDeal();
-  }, [selectedBet]);
-
-  // Bot: Auto-play during the hand
-  useEffect(() => {
-    if (!botEnabledRef.current || gameStatus !== "playing") return;
-    if (botTimerRef.current) clearTimeout(botTimerRef.current);
-    botTimerRef.current = setTimeout(() => {
-      if (!botEnabledRef.current || gameStatus !== "playing") return;
-      try {
-        const total = calculateHandValue(playerHand);
-        botLog("MOVE_BOT", "Blackjack", {
-          total,
-          action: total < 17 ? "hit" : "stand",
-          hand: playerHand.map((c) => `${c.rank}${c.suit}`).join(" "),
-        });
-        if (total < 17) handleHit();
-        else handleStand();
-      } catch (err) {
-        botLogError("CRASH", "Blackjack", err);
-      }
-    }, TEST_BOT_DELAY_MS);
-    return () => {
-      if (botTimerRef.current) clearTimeout(botTimerRef.current);
-    };
-  }, [botEnabled, gameStatus, playerHand]);
-
-  // Bot: Auto-continue after hand resolves
-  useEffect(() => {
-    if (!botEnabledRef.current) return;
-    if (gameStatus !== "finished" && gameStatus !== "bust") return;
-    if (botTimerRef.current) clearTimeout(botTimerRef.current);
-    botTimerRef.current = setTimeout(() => {
-      if (botEnabledRef.current) {
-        botLog("RESTART", "Blackjack");
-        handleContinueSameBet();
-      }
-    }, 1500);
-    return () => {
-      if (botTimerRef.current) clearTimeout(botTimerRef.current);
-    };
-  }, [botEnabled, gameStatus]);
 
   // ── Payout ────────────────────────────────────────────────────────
   // Called once per hand when it's fully resolved.
@@ -338,8 +261,6 @@ export default function GameScreen({ navigation, route }) {
       recordWin("blackjack");
     }
 
-    botLog("GAMEOVER", "Blackjack", { result: mainResult, payout });
-
     // UX-2: Delay the result modal so the dealer reveal can finish before it's
     // covered. The full 2s is only needed when the dealer actually plays out a hand
     // (extra cards may animate in). On an instant bust or a natural blackjack only
@@ -360,9 +281,6 @@ export default function GameScreen({ navigation, route }) {
       modalDelayTimerRef.current = null;
     }
     if (!selectedBet || screenPhase !== "betting") return;
-
-    if (!botEnabledRef.current)
-      botLog("MOVE_USER", "Blackjack deal", { bet: selectedBet });
 
     const bet = selectedBet;
     currentBetRef.current = bet;
@@ -411,7 +329,6 @@ export default function GameScreen({ navigation, route }) {
   async function handleSplit() {
     if (coins === null || coins < currentBetRef.current) return;
 
-    if (!botEnabledRef.current) botLog("MOVE_USER", "Blackjack split");
     const newCoins = await subtractCoins(currentBetRef.current);
     setCoins(newCoins);
     const newCard0 = deck[0];
@@ -424,7 +341,6 @@ export default function GameScreen({ navigation, route }) {
 
   // ── Hit ───────────────────────────────────────────────────────────
   function handleHit() {
-    if (!botEnabledRef.current) botLog("MOVE_USER", "Blackjack hit");
     playSound("card_flip");
     const newCard = deck[0];
     const remainingDeck = deck.slice(1);
@@ -454,7 +370,6 @@ export default function GameScreen({ navigation, route }) {
 
   // ── Stand ─────────────────────────────────────────────────────────
   function handleStand() {
-    if (!botEnabledRef.current) botLog("MOVE_USER", "Blackjack stand");
     if (splitHand !== null && activeHand === 0) {
       setActiveHand(1);
     } else {
@@ -715,7 +630,6 @@ export default function GameScreen({ navigation, route }) {
           gameId="blackjack"
           title="Blackjack"
           subtitle={isFree ? "Free Play" : "Casino"}
-          extraButton={<TestBotToggle />}
           menuItems={menuItems}
         />
         <StatsStrip

@@ -37,9 +37,8 @@ import {
   getRummyVariantLabel,
   calculateRummyDeadwood,
 } from "../game/rummy";
-import TestBotToggle from "../components/TestBotToggle";
-import { useTestBot, TEST_BOT_DELAY_MS } from "../game/testBot";
-import { botLog, botLogError } from "../game/testBotLogger";
+
+const AI_MOVE_DELAY_MS = 700; // delay between AI opponent moves (ms)
 
 const BG = getTableTheme("rummy").table;
 
@@ -218,10 +217,7 @@ export default function RummyGameScreen({ navigation, route }) {
   const aiTimerRef = useRef(null);
   const coinRewardedRef = useRef(false);
   const hasMountedRef = useRef(false);
-  const botRestartTimerRef = useRef(null);
   const lastSaveRef = useRef(0); // BUG-4: auto-save throttle (once / 3s)
-  const { enabled: botEnabled } = useTestBot();
-  const botEnabledRef = useRef(false);
   const {
     show: showToast,
     message: toastMessage,
@@ -272,11 +268,6 @@ export default function RummyGameScreen({ navigation, route }) {
             { id: "host", name: myName, isAI: false },
             { id: "ai_1", name: "Computer", isAI: true },
           ];
-    botLog("GAMESTART", "Rummy", {
-      players: initPlayers.length,
-      difficulty,
-      variantId,
-    });
     applyState(
       createRummyState({ variantId, players: initPlayers, difficulty }),
     );
@@ -347,7 +338,7 @@ export default function RummyGameScreen({ navigation, route }) {
     }
 
     const current = state.players?.[state.currentPlayerIndex];
-    if (!current?.isAI && !(botEnabledRef.current && isSinglePlayer)) {
+    if (!current?.isAI) {
       return;
     }
 
@@ -362,7 +353,7 @@ export default function RummyGameScreen({ navigation, route }) {
       }
 
       const active = latest.players?.[latest.currentPlayerIndex];
-      if (!active?.isAI && !(botEnabledRef.current && isSinglePlayer)) {
+      if (!active?.isAI) {
         return;
       }
 
@@ -380,19 +371,10 @@ export default function RummyGameScreen({ navigation, route }) {
         });
 
         if (next !== latest) {
-          const _category =
-            botEnabledRef.current && isSinglePlayer ? "MOVE_BOT" : "MOVE_AI";
-          botLog(_category, "Rummy", {
-            player: latest.currentPlayerIndex,
-            move: move.type,
-            msg: next.statusMessage,
-          });
           applyState(next);
         }
-      } catch (err) {
-        botLogError("CRASH", "Rummy", err);
-      }
-    }, TEST_BOT_DELAY_MS);
+      } catch (err) {}
+    }, AI_MOVE_DELAY_MS);
   }
 
   function applyState(nextState) {
@@ -468,11 +450,6 @@ export default function RummyGameScreen({ navigation, route }) {
           return;
         }
       }
-      botLog("GAMESTART", "Rummy", {
-        players: initialPlayers.length,
-        difficulty,
-        variantId,
-      });
       hasMountedRef.current = true;
       applyState(
         createRummyState({ variantId, players: initialPlayers, difficulty }),
@@ -676,7 +653,6 @@ export default function RummyGameScreen({ navigation, route }) {
       return;
     }
 
-    if (!botEnabledRef.current) botLog("MOVE_USER", "Rummy draw stock");
     dispatchAction("draw-card");
   }
 
@@ -685,10 +661,6 @@ export default function RummyGameScreen({ navigation, route }) {
       return;
     }
 
-    if (!botEnabledRef.current)
-      botLog("MOVE_USER", "Rummy take discard", {
-        card: discardTop ? `${discardTop.rank}${discardTop.suit}` : null,
-      });
     dispatchAction("draw-card", { from: "discard" });
   }
 
@@ -697,13 +669,6 @@ export default function RummyGameScreen({ navigation, route }) {
       return;
     }
 
-    if (!botEnabledRef.current)
-      botLog("MOVE_USER", "Rummy lay meld", {
-        cards: selectedHandIndexes.map((i) => {
-          const c = myHand[i];
-          return c ? `${c.rank}${c.suit}` : i;
-        }),
-      });
     dispatchAction("lay-meld", { cardIndexes: selectedHandIndexes }, () =>
       showToast("Invalid meld — cards must form a valid set or run"),
     );
@@ -714,7 +679,6 @@ export default function RummyGameScreen({ navigation, route }) {
       return;
     }
 
-    if (!botEnabledRef.current) botLog("MOVE_USER", "Rummy extend meld");
     dispatchAction(
       "extend-meld",
       { meldIndex: selectedMeldIndex, cardIndex: selectedHandIndexes[0] },
@@ -727,12 +691,6 @@ export default function RummyGameScreen({ navigation, route }) {
       return;
     }
 
-    if (!botEnabledRef.current) {
-      const _dc = myHand[selectedHandIndexes[0]];
-      botLog("MOVE_USER", "Rummy discard", {
-        card: _dc ? `${_dc.rank}${_dc.suit}` : null,
-      });
-    }
     dispatchAction("discard-card", { cardIndex: selectedHandIndexes[0] }, () =>
       showToast("Draw a card before discarding"),
     );
@@ -743,7 +701,6 @@ export default function RummyGameScreen({ navigation, route }) {
       return;
     }
 
-    if (!botEnabledRef.current) botLog("MOVE_USER", "Rummy knock");
     dispatchAction("knock", {}, () =>
       showToast("Can't knock yet — deadwood too high"),
     );
@@ -757,11 +714,6 @@ export default function RummyGameScreen({ navigation, route }) {
     coinRewardedRef.current = false;
     setCoinsEarned(0);
     clearGame(`@cardnight:save:rummy:${variantId}`);
-    botLog("GAMESTART", "Rummy", {
-      players: fullRef.current.players.length,
-      difficulty: fullRef.current.difficulty,
-      variantId: fullRef.current.variantId,
-    });
     applyState(
       createRummyState({
         variantId: fullRef.current.variantId,
@@ -836,34 +788,9 @@ export default function RummyGameScreen({ navigation, route }) {
       gameState?.winner != null ||
       gameState?.tie;
     if (isOver) {
-      botLog("GAMEOVER", "Rummy", {
-        winner: gameState?.winner,
-        tie: gameState?.tie,
-      });
       setShowRoundModal(true);
     }
   }, [gameState?.phase, gameState?.winner, gameState?.tie]);
-
-  useEffect(() => {
-    botEnabledRef.current = botEnabled;
-  }, [botEnabled]);
-
-  // Bot: Auto-restart when game ends
-  useEffect(() => {
-    if (
-      gameState?.phase !== "game-over" ||
-      !botEnabledRef.current ||
-      !isSinglePlayer
-    )
-      return;
-    if (botRestartTimerRef.current) clearTimeout(botRestartTimerRef.current);
-    botRestartTimerRef.current = setTimeout(() => {
-      if (botEnabledRef.current) handleRestart();
-    }, 1500);
-    return () => {
-      if (botRestartTimerRef.current) clearTimeout(botRestartTimerRef.current);
-    };
-  }, [gameState?.phase]);
 
   useEffect(() => {
     if (variantId !== "ginRummy") return;
@@ -951,7 +878,6 @@ export default function RummyGameScreen({ navigation, route }) {
         gameId="rummy"
         title={variantLabel}
         subtitle={isSinglePlayer ? "Single Player" : "Multiplayer"}
-        extraButton={<TestBotToggle />}
         menuItems={menuItems}
       />
       <StatsStrip

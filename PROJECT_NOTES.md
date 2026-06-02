@@ -99,8 +99,7 @@ card-game-app/
 │   ├── TutorialOverlay.js         (first-time tutorial modal — slide carousel, AsyncStorage seen-tracking, Skip/Got It)
 │   ├── EndOfRoundModal.js         (reusable round-end modal — title, message, Continue/AdjustBet/Leave buttons, tableColor border tint)
 │   ├── YourTurnBanner.js          (animated "your turn" banner — used by Last Card)
-│   ├── ErrorBoundary.js           (class component wrapping NavigationContainer — catches render crashes, shows dark fallback screen)
-│   └── TestBotToggle.js           (dev self-play bot toggle — imported into all 9 game screens; part of the testBot tooling slated for removal)
+│   └── ErrorBoundary.js           (class component wrapping NavigationContainer — catches render crashes, shows dark fallback screen)
 ├── game/
 │   ├── deck.js                    (createDeck, shuffleDeck, calculateHandValue)
 │   ├── cardTheme.js               (module singleton — 265 static requires (5 themes × 53 images); setTheme/getTheme/subscribe/getCardImage/...)
@@ -120,9 +119,7 @@ card-game-app/
 │   ├── profile.js                 (loadProfile, saveProfile, subscribeProfile, getDisplayName, recordWin — AsyncStorage)
 │   ├── responsive.js              (scale(), scaleFont() — BASE_WIDTH 390, clamped factors)
 │   ├── sounds.js                  (initSounds/playSound/getMuted/setMuted — expo-audio; preloads 4 sounds on app start; graceful no-op if unavailable)
-│   ├── tableThemes.js             (TABLE_THEMES map + getTableTheme(gameId) — table/accent colors for all 8 games)
-│   ├── testBotLogger.js           (botLog / botLogError — logging we keep)
-│   └── testBot.js                 (dev self-play test bot — TestBotProvider wraps the whole app in App.js; slated for removal, logging is separate)
+│   └── tableThemes.js             (TABLE_THEMES map + getTableTheme(gameId) — table/accent colors for all 8 games)
 ├── screens/
 │   ├── HomeScreen.js              (main menu)
 │   ├── HostSetupScreen.js         (name from profile, starts TCP server, shows IP)

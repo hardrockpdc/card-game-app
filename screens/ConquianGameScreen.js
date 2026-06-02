@@ -45,9 +45,8 @@ import { addCoins } from "../game/wallet";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import { recordWin } from "../game/profile";
 import { getTableTheme } from "../game/tableThemes";
-import TestBotToggle from "../components/TestBotToggle";
-import { useTestBot, TEST_BOT_DELAY_MS } from "../game/testBot";
-import { botLog, botLogError } from "../game/testBotLogger";
+
+const AI_MOVE_DELAY_MS = 700; // delay between AI opponent moves (ms)
 
 const BG = getTableTheme("conquian").table;
 const SAVE_KEY_CONQUIAN = "@cardnight:save:conquian:default";
@@ -100,9 +99,6 @@ export default function ConquianGameScreen({ navigation, route }) {
   const hasMountedRef = useRef(false);
   const lastSaveRef = useRef(0);
   const activeCardShakeRef = useRef(new Animated.Value(0)).current;
-  const botRestartTimerRef = useRef(null);
-  const { enabled: botEnabled } = useTestBot();
-  const botEnabledRef = useRef(false);
   const [gameState, setGameState] = useState(null);
   const [myHand, setMyHand] = useState([]);
   const [selectedHandIds, setSelectedHandIds] = useState(new Set());
@@ -163,25 +159,17 @@ export default function ConquianGameScreen({ navigation, route }) {
   function scheduleAI(state) {
     if (!isHost || state.phase !== "playing") return;
     const cp = state.players[state.currentPlayerIndex];
-    if (!cp?.isAI && !(botEnabledRef.current && isSinglePlayer)) return;
+    if (!cp?.isAI) return;
     if (aiTimerRef.current) clearTimeout(aiTimerRef.current);
     aiTimerRef.current = setTimeout(() => {
       const s = fullRef.current;
       if (!s || s.phase !== "playing") return;
       const cp2 = s.players[s.currentPlayerIndex];
-      if (!cp2?.isAI && !(botEnabledRef.current && isSinglePlayer)) return;
+      if (!cp2?.isAI) return;
       try {
-        const _category =
-          botEnabledRef.current && isSinglePlayer ? "MOVE_BOT" : "MOVE_AI";
-        botLog(_category, "Conquian", {
-          player: cp2.id,
-          turnPhase: s.turnPhase,
-        });
         runAITurn(s);
-      } catch (err) {
-        botLogError("CRASH", "Conquian", err);
-      }
-    }, TEST_BOT_DELAY_MS);
+      } catch (err) {}
+    }, AI_MOVE_DELAY_MS);
   }
 
   useEffect(() => {
@@ -189,10 +177,6 @@ export default function ConquianGameScreen({ navigation, route }) {
       if (aiTimerRef.current) clearTimeout(aiTimerRef.current);
     };
   }, []);
-
-  useEffect(() => {
-    botEnabledRef.current = botEnabled;
-  }, [botEnabled]);
 
   function runAITurn(state) {
     const cp = state.players[state.currentPlayerIndex];
@@ -276,10 +260,6 @@ export default function ConquianGameScreen({ navigation, route }) {
           return;
         }
       }
-      botLog("GAMESTART", "Conquian", {
-        players: initialPlayers.length,
-        difficulty,
-      });
       hasMountedRef.current = true;
       applyState(deal(initialPlayers));
     }
@@ -398,7 +378,6 @@ export default function ConquianGameScreen({ navigation, route }) {
   }
 
   function handleDraw() {
-    if (!botEnabledRef.current) botLog("MOVE_USER", "Conquian draw");
     if (isHost) {
       const s = fullRef.current;
       if (!s) return;
@@ -532,7 +511,6 @@ export default function ConquianGameScreen({ navigation, route }) {
   }
 
   function handlePass() {
-    if (!botEnabledRef.current) botLog("MOVE_USER", "Conquian pass");
     if (isHost) {
       applyState(doPassActiveCard(fullRef.current));
     } else {
@@ -541,14 +519,6 @@ export default function ConquianGameScreen({ navigation, route }) {
   }
 
   function handleDiscard(cardId) {
-    if (!botEnabledRef.current) {
-      const _c = (fullRef.current?.hands?.[myPid] ?? []).find(
-        (x) => x.id === cardId,
-      );
-      botLog("MOVE_USER", "Conquian discard", {
-        card: _c ? `${_c.rank}${_c.suit}` : cardId,
-      });
-    }
     if (isHost) {
       const s = fullRef.current;
       if (!s) return;
@@ -569,10 +539,6 @@ export default function ConquianGameScreen({ navigation, route }) {
     setCoinsEarned(0);
     setPassCardId(null);
     clearGame(SAVE_KEY_CONQUIAN);
-    botLog("GAMESTART", "Conquian", {
-      players: initialPlayers.length,
-      difficulty,
-    });
 
     // Spec: subsequent games' dealer = previous game's winner. Fall back to random if there was no winner (tie).
     const prevWinner = fullRef.current?.winner;
@@ -769,10 +735,6 @@ export default function ConquianGameScreen({ navigation, route }) {
 
   useEffect(() => {
     if (gameState?.phase === "results") {
-      botLog("GAMEOVER", "Conquian", {
-        winner: gameState?.winner?.id ?? null,
-        tie: gameState?.tie,
-      });
       setShowRoundModal(true);
     }
   }, [gameState?.phase]);
@@ -808,23 +770,6 @@ export default function ConquianGameScreen({ navigation, route }) {
     return () => sub.remove();
   }, [navigation, isSinglePlayer, isHost]);
 
-  // Bot: Auto-restart when game ends
-  useEffect(() => {
-    if (
-      gameState?.phase !== "results" ||
-      !botEnabledRef.current ||
-      !isSinglePlayer
-    )
-      return;
-    if (botRestartTimerRef.current) clearTimeout(botRestartTimerRef.current);
-    botRestartTimerRef.current = setTimeout(() => {
-      if (botEnabledRef.current) handleRestart();
-    }, 1500);
-    return () => {
-      if (botRestartTimerRef.current) clearTimeout(botRestartTimerRef.current);
-    };
-  }, [gameState?.phase]);
-
   // ─── Guards ──────────────────────────────────────────────────────────────────
 
   if (!gameState) {
@@ -851,11 +796,6 @@ export default function ConquianGameScreen({ navigation, route }) {
             (p) => String(p.id) === String(prevWinner.id),
           )
         : -1;
-
-    botLog("GAMESTART", "Conquian", {
-      players: initialPlayers.length,
-      difficulty,
-    });
     applyState(
       deal(initialPlayers, {
         dealerIndex: nextDealerIndex >= 0 ? nextDealerIndex : undefined,
@@ -1234,7 +1174,6 @@ export default function ConquianGameScreen({ navigation, route }) {
         gameId="conquian"
         title="Conquian"
         subtitle={isSinglePlayer ? "Single Player" : "Multiplayer"}
-        extraButton={<TestBotToggle />}
         menuItems={menuItems}
       />
       <StatsStrip

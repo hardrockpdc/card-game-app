@@ -89,8 +89,6 @@ This is a family-friendly card game. Keep all content, copy, and assets appropri
   - `game/conquian.js`, `game/rummy.js`, `game/solitaire.js`, etc. — pure game logic
   - `game/GameNetwork.js` — local TCP/UDP multiplayer
   - `game/tableThemes.js` — per-game table colors
-  - `game/testBotLogger.js` — defines `botLog` / `botLogError` (logging we keep)
-  - `game/testBot.js` — the dev self-play test bot (slated for removal; logging is separate)
   - `screens/*GameScreen.js` — per-game screens
 - **Standard patterns:**
   - `hasMountedRef` set true *before* the fresh-deal `applyState` (so deals animate) and *after* the resume `applyState` (so restored games don't animate). Used in `ConquianGameScreen.js` and `RummyGameScreen.js`; Solitaire uses a different approach (`initialGameDispatched` ref).
