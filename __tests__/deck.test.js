@@ -1,8 +1,4 @@
-import {
-  createDeck,
-  shuffleDeck,
-  calculateHandValue,
-} from "../game/deck";
+import { createDeck, shuffleDeck, calculateHandValue } from "../game/deck";
 
 // Helper: build a hand from rank strings. calculateHandValue only reads `rank`,
 // but we include a suit so the cards are shaped like real deck cards.
