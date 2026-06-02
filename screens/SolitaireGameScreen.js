@@ -771,6 +771,8 @@ export default function SolitaireGameScreen({ navigation, route }) {
               <Animated.View
                 key={ghost.cardId}
                 pointerEvents="none"
+                accessibilityElementsHidden={true}
+                importantForAccessibility="no-hide-descendants"
                 style={{
                   position: "absolute",
                   left: ghost.x,

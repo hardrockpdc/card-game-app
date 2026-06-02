@@ -864,7 +864,11 @@ export default function WildRoundGameScreen({ navigation, route }) {
             {deckIndex + 1} / {myHand.length}
           </Text>
 
-          <View style={styles.submissionDotsRow}>
+          <View
+            style={styles.submissionDotsRow}
+            accessibilityElementsHidden={true}
+            importantForAccessibility="no-hide-descendants"
+          >
             {myHand.map((card, index) => (
               <View
                 key={String(card.id)}
@@ -1141,7 +1145,11 @@ export default function WildRoundGameScreen({ navigation, route }) {
                     )}
                   />
 
-                  <View style={styles.revealDotsRow}>
+                  <View
+                    style={styles.revealDotsRow}
+                    accessibilityElementsHidden={true}
+                    importantForAccessibility="no-hide-descendants"
+                  >
                     {revealCards.map((card, index) => (
                       <View
                         key={String(card.cardId)}
