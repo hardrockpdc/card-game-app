@@ -470,6 +470,36 @@ export default function WildRoundGameScreen({ navigation, route }) {
     setRevealIndex(0);
   }, [gameState?.phase]);
 
+  // UX-5: Android hardware back confirmation.
+  // Must stay ABOVE the `if (!gameState)` loading guard below — all hooks must
+  // run before any early return, or the hook count changes between renders and
+  // the screen crashes (see CLAUDE.md §2.1).
+  useEffect(() => {
+    const onBack = () => {
+      Alert.alert(
+        "Leave Game?",
+        isHost
+          ? "You'll end the game for everyone."
+          : "You'll disconnect from the host.",
+        [
+          { text: "Stay", style: "cancel" },
+          {
+            text: "Leave",
+            style: "destructive",
+            onPress: () => {
+              if (isHost) stopServer();
+              else disconnectFromHost();
+              navigation.navigate("Home");
+            },
+          },
+        ],
+      );
+      return true;
+    };
+    const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
+    return () => sub.remove();
+  }, [navigation, isHost]);
+
   // ── AI automation (singleplayer only) ──────────────────────────────────────
   const aiPhase = gameState?.phase;
   const aiJudgeIndex = gameState?.judgeIndex;
@@ -652,33 +682,6 @@ export default function WildRoundGameScreen({ navigation, route }) {
   const pendingCount = nonJudges.length - (gs.submissionCount ?? 0);
   const displayPrompt =
     isJudge && gs.phase === "judgeSkip" ? privateJudgePrompt : gs.currentPrompt;
-
-  // UX-5: Android hardware back confirmation
-  useEffect(() => {
-    const onBack = () => {
-      Alert.alert(
-        "Leave Game?",
-        isHost
-          ? "You'll end the game for everyone."
-          : "You'll disconnect from the host.",
-        [
-          { text: "Stay", style: "cancel" },
-          {
-            text: "Leave",
-            style: "destructive",
-            onPress: () => {
-              if (isHost) stopServer();
-              else disconnectFromHost();
-              navigation.navigate("Home");
-            },
-          },
-        ]
-      );
-      return true;
-    };
-    const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
-    return () => sub.remove();
-  }, [navigation, isHost]);
 
   // ── Main game ───────────────────────────────────────────────────────────────
   const menuItems = [
