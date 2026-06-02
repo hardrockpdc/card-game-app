@@ -32,7 +32,7 @@
 - [x] **BUG-3** — RESOLVED (verified 2026-06-02). `stopBroadcasting()` now runs in the lobby's unmount cleanup (`return () => stopBroadcasting()`), the Start-Game path, and the quit/back path. The broadcast no longer survives leaving the lobby.
 - [x] **BUG-4** — Auto-save throttle added to Rummy, GoFish, Poker, LastCard (same lastSaveRef 3s gate as Conquián). Commit `5748463`.
 - [ ] **BUG-5** — `WildRoundGameScreen` has no save/resume (documented as a known gap in PROJECT_NOTES.md, but still ships)
-- [ ] **BUG-6** — 🆕 **(high)** `GameNetwork.js` TCP handlers split incoming data on `\n` with NO per-socket buffering, so any message larger than one TCP segment (~1460 B) — e.g. full-state broadcasts in Poker/Conquián — fragments across `data` events, fails `JSON.parse`, and is silently dropped → multiplayer desync. See detailed section below.
+- [x] **BUG-6** — ✅ FIXED (commit `734dae9`, was **high**) — added a per-connection receive buffer to both TCP handlers in `GameNetwork.js` so messages larger than one segment reassemble instead of being silently dropped. Verify on two devices in a Poker/Conquián game.
 
 ### ⚡ PERFORMANCE
 
@@ -42,13 +42,13 @@
 
 ### ♿ ACCESSIBILITY
 
-- [ ] **ACC-1** — Wild Round carousel dots and Spider fly-away ghost cards have no accessibility labels (low-impact)
-- [ ] **ACC-2** — Deal animation may interfere with screen reader focus on rapidly-mounting cards (Rummy/Conquián 10-card initial deal)
+- [x] **ACC-1** — Wild Round pagination dots + Spider fly-away ghosts now hidden from screen readers (decorative; the "X / Y" counter already announces position). Commit `79bc656`.
+- [ ] **ACC-2** — Deal animation may interfere with screen reader focus (Rummy/Conquián 10-card deal). ⚠️ NOTE (2026-06-02): the v3 recipe `accessibilityElementsHidden={!hasMountedRef.current}` keys off a **ref**, which doesn't trigger a re-render — the hand would stay hidden after the deal. Needs a state flag instead. Deferred.
 
 ### 🎨 UX POLISH
 
-- [ ] **UX-1** — `CardThemeScreen.js` still uses `#e94560` red as its accent color while the rest of the app standardized on `#7fb3ff` blue
-- [ ] **UX-2** — Result modal in single-player Blackjack appears after a fixed 2s delay even when there's nothing to wait for (instant bust, no dealer reveal)
+- [x] **UX-1** — CardThemeScreen accent swapped to `#7fb3ff` blue (dot + "Use This Theme" button); button uses dark text for contrast, dimmed state recolored. Commit `aeeca46`.
+- [x] **UX-2** — Blackjack result-modal delay now conditional: 2s only when the dealer actually plays, 600ms on an instant bust / natural blackjack. Commit `fd37a71`.
 - [ ] **UX-3** — Deal animation runs every time the player navigates back to a single-player game screen (e.g. closing How To Play modal can cause re-mount)
 - [ ] **UX-4** — No visual "loading" or "dealing" state during the 50ms `hasMountedRef` delay — usually invisible, occasionally noticeable
 
@@ -398,6 +398,8 @@ Add the standard save/resume pattern to WildRound:
 ---
 
 ## BUG-6. TCP messages aren't reassembled — large messages get silently dropped (multiplayer desync)
+
+> **✅ FIXED 2026-06-02 (commit `734dae9`).** Both TCP receive handlers now buffer the incoming byte stream and parse only complete newline-terminated lines, carrying any partial remainder forward. Detail retained below for context. Still wants a two-device verification in a Poker/Conquián game.
 
 **Found:** Deep-dive review, 2026-06-02
 **Effort:** ~45 min (buffer + tests)
@@ -808,14 +810,11 @@ If you want a suggested path:
 ### Pre-launch (must do before submitting)
 1. **LAUNCH-1** — host the privacy policy file (~15 min)
 2. **LAUNCH-2** — EAS production build (~90 min including walkthrough)
-3. **BUG-6** — 🆕 add a TCP reassembly buffer in `GameNetwork.js` (multiplayer desync on large messages) (~45 min) — do this before shipping multiplayer
-- ✅ ~~BUG-1~~ (Session A parity verified in code), ✅ ~~BUG-2~~ (hooks audit, commit `9bd069a`)
+- ✅ ~~BUG-6~~ (TCP reassembly buffer, `734dae9`), ✅ ~~BUG-1~~ (Session A parity verified in code), ✅ ~~BUG-2~~ (hooks audit, `9bd069a`)
 
-### Polish (worth doing if you have an hour)
-- ✅ ~~BUG-4~~ (save throttle, `5748463`), ✅ ~~BUG-3~~ (lobby `stopBroadcasting`), ✅ ~~CQ-13~~ (`3eb638a`)
-4. **UX-1** — CardThemeScreen accent cleanup — needs an on-device pass (button contrast: blue bg needs dark text)
-5. **UX-2** — conditional modal delay (~10 min)
-6. **ACC-1, ACC-2** — small accessibility holes (~25 min)
+### Polish
+- ✅ ~~BUG-4~~ (`5748463`), ✅ ~~BUG-3~~ (lobby `stopBroadcasting`), ✅ ~~CQ-13~~ (`3eb638a`), ✅ ~~UX-1~~ (`aeeca46`), ✅ ~~UX-2~~ (`fd37a71`), ✅ ~~ACC-1~~ (`79bc656`)
+3. **ACC-2** — screen-reader focus during the deal — needs a state flag (not a ref); see the tracker note
 
 ### Post-launch (v1.1)
 10. **BUG-5** — WildRound save/resume (~1 hr)
@@ -858,13 +857,14 @@ If you want a suggested path:
 
 ### Session 3 — 2026-06-02 (safe-fixes batch + deep-dive review)
 - Fixes landed: **BUG-4** auto-save throttle ×4 screens (`5748463`); **CQ-13** removed the vestigial `typescript` dep (`3eb638a`).
-- **UX-1 held** — not the trivial color swap it looked like: white text on the pale accent `#7fb3ff` fails contrast on the "Use This Theme" button (~2.1:1). Needs the blue+dark-text picker convention + a per-state text tweak; deferred to an on-device pass.
+- **UX-1** — initially looked like a trivial color swap but white-on-`#7fb3ff` fails contrast (~2.1:1); implemented properly with blue bg + dark button text + a per-state text style. Commit `aeeca46`.
 - **Deep-dive review** of GameNetwork, gameSaves, wallet, ErrorBoundary, MultiplayerGameScreen, LobbyScreen:
   - **BUG-1 → resolved** (new multiplayer layout is in place; old section styles gone).
   - **BUG-3 → resolved** (`stopBroadcasting()` now in all lobby exit paths).
   - **BUG-6 (new, high)** — TCP messages aren't reassembled; large broadcasts fragment and get silently dropped → multiplayer desync. Fix recipe documented above.
   - Verified still-open/deferred: CQ-14 (raw `JSON.parse`, no schema), PERF-3 (full-state broadcast — compounds BUG-6). `wallet.js` looks solid (write-serializing queue); `ErrorBoundary` fine.
 - Incidental: `react-native-reanimated` is already present in `node_modules` as a transitive dep (not in package.json) — relevant to KICKOFF Task 1.
+- **Fixes landed same day** (all device-free to write, verify on device): **BUG-6** TCP reassembly buffer (`734dae9`), **UX-1** theme accent + contrast (`aeeca46`), **UX-2** conditional Blackjack modal delay (`fd37a71`), **ACC-1** hide decorative dots/ghosts from screen readers (`79bc656`). **ACC-2 deferred** (ref → no re-render; needs a state flag). Remaining open bug: **BUG-5** (WildRound save/resume — a feature, needs a design pass). Deliberately not touched: CQ-1…12 refactors, PERF-1/2 image rework, CQ-14 (v1.1 schema versioning).
 
 ### Session N — [Date]
 - [ ] ...
