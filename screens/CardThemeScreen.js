@@ -139,7 +139,16 @@ export default function CardThemeScreen() {
           onPress={handleApply}
           disabled={isCurrentActive && !confirmed}
         >
-          <Text style={styles.applyBtnText}>{buttonLabel()}</Text>
+          <Text
+            style={[
+              styles.applyBtnText,
+              // Blue button uses dark text; the dimmed/confirmed states have
+              // dark/green backgrounds and keep light text for contrast.
+              (isCurrentActive || confirmed) && styles.applyBtnTextLight,
+            ]}
+          >
+            {buttonLabel()}
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -215,7 +224,7 @@ const styles = StyleSheet.create({
   },
   dotActive: {
     width: 22,
-    backgroundColor: "#e94560",
+    backgroundColor: "#7fb3ff",
     borderRadius: 4,
   },
   bottomArea: {
@@ -223,20 +232,23 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   applyBtn: {
-    backgroundColor: "#e94560",
+    backgroundColor: "#7fb3ff",
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: "center",
   },
   applyBtnDimmed: {
-    backgroundColor: "#3a1a2a",
+    backgroundColor: "#2a3340",
   },
   applyBtnConfirmed: {
     backgroundColor: "#4caf50",
   },
   applyBtnText: {
-    color: "#ffffff",
+    color: "#08111f",
     fontSize: 18,
     fontWeight: "bold",
+  },
+  applyBtnTextLight: {
+    color: "#ffffff",
   },
 });
