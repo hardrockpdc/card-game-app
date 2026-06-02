@@ -187,9 +187,12 @@ react-native-screens: ~4.16.0
 react-native-tcp-socket: ^6.4.1
 react-native-udp: ^4.1.7
 react-native-web: ^0.21.0                  (web build only)
-typescript: ^5.9.3                         (VESTIGIAL — no tsconfig.json, project is all JS; slated for removal, see DEEP_REVIEW CQ-13)
 
 devDependencies:
+jest: ^29.7.0                              (unit tests for pure game logic — `npm test`)
+babel-jest: ^29.7.0
+@babel/core: ^7.x
+@babel/preset-env: ^7.x
 prettier: ^3.8.3
 sharp: ^0.34.5                             (used by scripts/compress-cards.js)
 ```

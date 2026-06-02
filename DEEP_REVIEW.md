@@ -30,7 +30,7 @@
 - [ ] **BUG-1** — `MultiplayerGameScreen.js` still uses the OLD layout structure (v2's Session A code did NOT actually land — broken styles)
 - [x] **BUG-2** — Audited all 9 game screens for hooks-after-early-return (2026-06-01). Only `WildRoundGameScreen` was affected; fixed in commit `9bd069a`. All other screens place every hook above every early return.
 - [ ] **BUG-3** — `LobbyScreen.js` host-side `useEffect` cleanup function (`return () => stopBroadcasting()`) misses the case where the lobby unmounts via navigating to a game — broadcast keeps running
-- [ ] **BUG-4** — Auto-save throttle needed in Rummy, GoFish, Poker, LastCard (Conquián already fixed — throttle confirmed in code)
+- [x] **BUG-4** — Auto-save throttle added to Rummy, GoFish, Poker, LastCard (same lastSaveRef 3s gate as Conquián). Commit `5748463`.
 - [ ] **BUG-5** — `WildRoundGameScreen` has no save/resume (documented as a known gap in PROJECT_NOTES.md, but still ships)
 
 ### ⚡ PERFORMANCE
@@ -65,7 +65,7 @@
 - [ ] **CQ-10** — Verify `lastCard.js` action functions are pure (was L-11)
 - [ ] **CQ-11** — Resolve Conquián's half-state in RummyVariantPicker (was L-4)
 - [ ] **CQ-12** — Network message shape inconsistencies (was HI-5)
-- [ ] **CQ-13** — TypeScript dependency installed but unused — remove to clean up
+- [x] **CQ-13** — Removed the unused `typescript` dependency. Commit `3eb638a`.
 - [ ] **CQ-14** — Several save effects use raw `JSON.parse(...)` without schema validation — could fail silently on schema changes
 
 ### 🚀 IMPROVEMENTS (post-launch)

@@ -38,7 +38,7 @@ Ask **one focused question at a time** when something is genuinely ambiguous. Do
 This has bitten this project at least four times (Poker, Conquián twice, Rummy). Whenever you add or move a hook in a game screen, **verify top-to-bottom that all hooks are above all early returns.** When editing a game screen, proactively scan for this even if it's not what I asked about.
 
 ### 2.2 This is a JavaScript project, not TypeScript
-There is no `tsconfig.json` and the project is all `.js`. **Do not run `tsc`** to "verify" — it produces hundreds of fake errors because the project was never set up for TypeScript. Verify by checking that Metro bundles / the app runs, not by type-checking. (The `typescript` dependency is vestigial — no tsconfig.json, slated for removal but not yet done.)
+There is no `tsconfig.json` and the project is all `.js`. **Do not run `tsc`** to "verify" — it produces hundreds of fake errors because the project was never set up for TypeScript. Verify by checking that Metro bundles / the app runs, not by type-checking. (The `typescript` dependency was removed on 2026-06-02 — the project remains all-JS with no tsconfig.json. The rule still stands: don't run `tsc`.)
 
 ### 2.3 Don't strip cross-platform code
 Even though distribution is currently **Android-only**, the codebase stays cross-platform (React Native). Do NOT remove `Platform.select` branches, iOS config, or platform abstractions to "simplify." They cost nothing to keep and preserve the option to ship iOS later. Android-only is a *distribution* decision, not a *code* decision.
