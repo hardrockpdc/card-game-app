@@ -52,9 +52,6 @@ export default function GameScreen({ navigation, route }) {
   // scroll padding 12*2=24, table horizontal padding 12*2=24
   const handWidth = width - 48;
 
-  const isFree = route?.params?.mode === "free";
-  const freeCoinsRef = useRef(1000);
-
   // ── Wallet state ──────────────────────────────────────────────────
   const [coins, setCoins] = useState(null);
   const [selectedBet, setSelectedBet] = useState(null);
@@ -63,22 +60,13 @@ export default function GameScreen({ navigation, route }) {
   const [showGameOver, setShowGameOver] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
 
-  // Casino mode streak (wins/losses in a row) — hidden in Free Play.
+  // Win/loss streak (wins or losses in a row).
   const streakRef = useRef({ type: null, count: 0 }); // type: "W" | "L" | null
   const [streakLabel, setStreakLabel] = useState("—");
-
-  // Free Play session hands counter — hidden in Casino.
-  const handsCountRef = useRef(0);
-  const [handsCount, setHandsCount] = useState(0);
 
   function resetStreak() {
     streakRef.current = { type: null, count: 0 };
     setStreakLabel("—");
-  }
-
-  function resetHandsCounter() {
-    handsCountRef.current = 0;
-    setHandsCount(0);
   }
 
   const currentBetRef = useRef(0);
@@ -102,18 +90,13 @@ export default function GameScreen({ navigation, route }) {
 
   // ── Load wallet + check for saved game on mount ───────────────────
   useEffect(() => {
-    if (isFree) {
-      freeCoinsRef.current = 1000;
-      setCoins(1000);
-    } else {
-      getCoins().then(setCoins);
-    }
+    getCoins().then(setCoins);
     hasSeen("blackjack").then((seen) => {
       if (!seen) setShowTutorial(true);
     });
 
     async function checkResume() {
-      if (isFree || !route?.params?.resumeFromSave) return;
+      if (!route?.params?.resumeFromSave) return;
       const saved = await loadGame(SAVE_KEY);
       if (!saved) return;
       const bet = saved.currentBet ?? 0;
@@ -136,7 +119,7 @@ export default function GameScreen({ navigation, route }) {
 
   // ── Auto-save during active hand ──────────────────────────────────
   useEffect(() => {
-    if (isFree || screenPhase === "betting") return;
+    if (screenPhase === "betting") return;
     saveGame(SAVE_KEY, {
       screenPhase,
       currentBet: currentBetRef.current,
@@ -220,40 +203,30 @@ export default function GameScreen({ navigation, route }) {
       else if (sResult === "push") payout += bet;
     }
 
-    if (isFree) {
-      freeCoinsRef.current += payout;
-      setCoins(freeCoinsRef.current);
+    let newCoins;
+    if (payout > 0) {
+      newCoins = await addCoins(payout);
     } else {
-      let newCoins;
-      if (payout > 0) {
-        newCoins = await addCoins(payout);
-      } else {
-        newCoins = await getCoins();
-      }
-      setCoins(newCoins);
+      newCoins = await getCoins();
     }
+    setCoins(newCoins);
 
     const totalBet = hadSplit ? bet * 2 : bet;
     const coinsDeltaNet = payout - totalBet;
     setCoinsDelta(coinsDeltaNet);
 
-    if (isFree) {
-      handsCountRef.current += 1;
-      setHandsCount(handsCountRef.current);
+    // Streak rules:
+    // - coinsDeltaNet === 0 (push / bet returned) breaks the streak → "—"
+    // - coinsDeltaNet > 0 => win streak ("W")
+    // - coinsDeltaNet < 0 => loss streak ("L")
+    if (coinsDeltaNet === 0) {
+      resetStreak();
     } else {
-      // Casino streak rules:
-      // - coinsDeltaNet === 0 (push / bet returned) breaks the streak → "—"
-      // - coinsDeltaNet > 0 => win streak ("W")
-      // - coinsDeltaNet < 0 => loss streak ("L")
-      if (coinsDeltaNet === 0) {
-        resetStreak();
-      } else {
-        const nextType = coinsDeltaNet > 0 ? "W" : "L";
-        const prev = streakRef.current;
-        const nextCount = prev.type === nextType ? prev.count + 1 : 1;
-        streakRef.current = { type: nextType, count: nextCount };
-        setStreakLabel(`${nextCount}${nextType}`);
-      }
+      const nextType = coinsDeltaNet > 0 ? "W" : "L";
+      const prev = streakRef.current;
+      const nextCount = prev.type === nextType ? prev.count + 1 : 1;
+      streakRef.current = { type: nextType, count: nextCount };
+      setStreakLabel(`${nextCount}${nextType}`);
     }
 
     if (payout > totalBet) {
@@ -306,13 +279,8 @@ export default function GameScreen({ navigation, route }) {
     setScreenPhase("playing");
     playSound("card_deal");
 
-    if (isFree) {
-      freeCoinsRef.current -= bet;
-      setCoins(freeCoinsRef.current);
-    } else {
-      const newCoins = await subtractCoins(bet);
-      setCoins(newCoins);
-    }
+    const newCoins = await subtractCoins(bet);
+    setCoins(newCoins);
 
     // Check for natural blackjack (21 on the first two cards)
     const playerVal = calculateHandValue(playerCards);
@@ -424,28 +392,22 @@ export default function GameScreen({ navigation, route }) {
     const bet = currentBetRef.current;
     let freshCoins;
 
-    if (isFree) {
-      if (freeCoinsRef.current < MIN_BET) freeCoinsRef.current = 1000;
-      freshCoins = freeCoinsRef.current;
-      setCoins(freshCoins);
-    } else {
-      clearGame(SAVE_KEY);
-      freshCoins = await getCoins();
-      setCoins(freshCoins);
-      if (freshCoins < MIN_BET) {
-        setShowGameOver(true);
-        return;
-      }
-      // If they can no longer afford the same bet, fall back to betting screen.
-      if (freshCoins < bet) {
-        setCoinsDelta(0);
-        setResult("");
-        setSplitResult("");
-        setGameStatus("idle");
-        setSplitHand(null);
-        setScreenPhase("betting");
-        return;
-      }
+    clearGame(SAVE_KEY);
+    freshCoins = await getCoins();
+    setCoins(freshCoins);
+    if (freshCoins < MIN_BET) {
+      setShowGameOver(true);
+      return;
+    }
+    // If they can no longer afford the same bet, fall back to betting screen.
+    if (freshCoins < bet) {
+      setCoinsDelta(0);
+      setResult("");
+      setSplitResult("");
+      setGameStatus("idle");
+      setSplitHand(null);
+      setScreenPhase("betting");
+      return;
     }
 
     payoutDoneRef.current = false;
@@ -467,13 +429,8 @@ export default function GameScreen({ navigation, route }) {
     setScreenPhase("playing");
     playSound("card_deal");
 
-    if (isFree) {
-      freeCoinsRef.current -= bet;
-      setCoins(freeCoinsRef.current);
-    } else {
-      const newCoins = await subtractCoins(bet);
-      setCoins(newCoins);
-    }
+    const newCoins = await subtractCoins(bet);
+    setCoins(newCoins);
 
     const playerVal = calculateHandValue(playerCards);
     const dealerVal = calculateHandValue(dealerCards);
@@ -491,25 +448,16 @@ export default function GameScreen({ navigation, route }) {
       clearTimeout(modalDelayTimerRef.current);
       modalDelayTimerRef.current = null;
     }
-    if (isFree) {
-      if (freeCoinsRef.current < MIN_BET) {
-        freeCoinsRef.current = 1000;
-        setCoins(1000);
-      }
-    } else {
-      clearGame(SAVE_KEY);
-      const freshCoins = await getCoins();
-      setCoins(freshCoins);
-      if (freshCoins < MIN_BET) {
-        setShowGameOver(true);
-        return;
-      }
+    clearGame(SAVE_KEY);
+    const freshCoins = await getCoins();
+    setCoins(freshCoins);
+    if (freshCoins < MIN_BET) {
+      setShowGameOver(true);
+      return;
     }
 
-    // Spec: streak resets to "—" when adjusting bet (casino mode).
-    if (!isFree) {
-      resetStreak();
-    }
+    // Streak resets to "—" when adjusting bet.
+    resetStreak();
 
     setCoinsDelta(0);
     setResult("");
@@ -525,9 +473,6 @@ export default function GameScreen({ navigation, route }) {
 
     // Reset session stats on restart.
     resetStreak();
-    resetHandsCounter();
-
-    if (isFree) freeCoinsRef.current = 1000;
     payoutDoneRef.current = false;
     setDeck([]);
     setPlayerHand([]);
@@ -629,7 +574,7 @@ export default function GameScreen({ navigation, route }) {
         <GameHeader
           gameId="blackjack"
           title="Blackjack"
-          subtitle={isFree ? "Free Play" : "Casino"}
+          subtitle="Casino"
           menuItems={menuItems}
         />
         <StatsStrip
@@ -645,8 +590,8 @@ export default function GameScreen({ navigation, route }) {
             },
             {
               label: "Streak",
-              value: isFree ? "—" : streakLabel,
-              accent: !isFree && streakRef.current.type === "W",
+              value: streakLabel,
+              accent: streakRef.current.type === "W",
             },
           ]}
         />
@@ -654,10 +599,6 @@ export default function GameScreen({ navigation, route }) {
           contentContainerStyle={styles.bettingContainer}
           showsVerticalScrollIndicator={false}
         >
-          {isFree && (
-            <Text style={styles.freePlayBadge}>🎮 Free Play — Play Money</Text>
-          )}
-
           <Text style={styles.betLabel}>Select Your Bet</Text>
           <View style={styles.betRow}>
             {BET_OPTIONS.map((amount) => {
@@ -733,27 +674,20 @@ export default function GameScreen({ navigation, route }) {
       <GameHeader
         gameId="blackjack"
         title="Blackjack"
-        subtitle={isFree ? "Free Play" : "Casino"}
+        subtitle="Casino"
         menuItems={menuItems}
       />
       <StatsStrip
         gameId="blackjack"
-        items={
-          isFree
-            ? [
-                { label: "Mode", value: "Free Play", accent: true },
-                { label: "Hands", value: handsCount },
-              ]
-            : [
-                { label: "Coins", value: coins ?? "—", accent: true },
-                { label: "Bet", value: currentBet },
-                {
-                  label: "Streak",
-                  value: streakLabel,
-                  accent: streakRef.current.type === "W",
-                },
-              ]
-        }
+        items={[
+          { label: "Coins", value: coins ?? "—", accent: true },
+          { label: "Bet", value: currentBet },
+          {
+            label: "Streak",
+            value: streakLabel,
+            accent: streakRef.current.type === "W",
+          },
+        ]}
       />
 
       <ScrollView
@@ -956,13 +890,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: scale(20),
     paddingVertical: scale(24),
-  },
-  freePlayBadge: {
-    color: "#7fb3ff",
-    fontSize: scaleFont(13),
-    fontWeight: "700",
-    textAlign: "center",
-    marginTop: scale(-8),
   },
   walletDisplay: {
     backgroundColor: "#0a4a24",

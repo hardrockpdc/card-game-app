@@ -62,7 +62,6 @@ function PokerVariantPickerScreen({ navigation, route }) {
   const [difficulty, setDifficulty] = useState("medium");
   const [coins, setCoins] = useState(null);
   const [buyIn, setBuyIn] = useState(100);
-  const [freePlay, setFreePlay] = useState(false);
   const promptIfSaved = useResumePrompt();
 
   // Refresh wallet balance each time this screen comes into focus.
@@ -109,7 +108,7 @@ function PokerVariantPickerScreen({ navigation, route }) {
   const isLobby = mode === "lobby";
   const coinsLoaded = coins !== null;
   const canAffordMin = !coinsLoaded || coins >= 100;
-  const canPlay = isLobby || freePlay || canAffordMin;
+  const canPlay = isLobby || canAffordMin;
 
   const handleContinue = async () => {
     if (isLobby) {
@@ -138,7 +137,6 @@ function PokerVariantPickerScreen({ navigation, route }) {
       difficulty,
       variant: selectedVariant,
       buyIn,
-      freePlay,
     };
     await promptIfSaved({
       saveKey,
@@ -237,53 +235,6 @@ function PokerVariantPickerScreen({ navigation, route }) {
               </View>
 
               <View style={styles.sectionBlock}>
-                <Text style={styles.sectionLabel}>Play Mode</Text>
-                {[
-                  {
-                    id: "free",
-                    label: "Free Play",
-                    description: "Practice mode. No coins won or lost.",
-                  },
-                  {
-                    id: "casino",
-                    label: "Casino Play",
-                    description: "Buy-in deducted. Winnings added to wallet.",
-                  },
-                ].map((m) => {
-                  const selected = m.id === "free" ? freePlay : !freePlay;
-                  return (
-                    <Pressable
-                      key={m.id}
-                      onPress={() => setFreePlay(m.id === "free")}
-                      style={({ pressed }) => [
-                        styles.modeCard,
-                        selected && styles.modeCardSelected,
-                        pressed && styles.modeCardPressed,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.modeLabel,
-                          selected && styles.modeLabelSelected,
-                        ]}
-                      >
-                        {m.label}
-                      </Text>
-                      <Text style={styles.modeDescription}>
-                        {m.description}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-
-              <View
-                style={[
-                  styles.sectionBlock,
-                  freePlay && styles.sectionDisabled,
-                ]}
-                pointerEvents={freePlay ? "none" : "auto"}
-              >
                 <View style={styles.buyInHeader}>
                   <Text style={styles.sectionLabel}>Buy-In</Text>
                   {coinsLoaded ? (
@@ -324,7 +275,7 @@ function PokerVariantPickerScreen({ navigation, route }) {
                     );
                   })}
                 </View>
-                {!freePlay && coinsLoaded && coins < 100 ? (
+                {coinsLoaded && coins < 100 ? (
                   <Text style={styles.noCoinsWarning}>
                     You need at least 🪙 100 to play. Visit your Profile to
                     reset your coins.

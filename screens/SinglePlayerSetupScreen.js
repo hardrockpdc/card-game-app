@@ -255,7 +255,12 @@ export default function SinglePlayerSetupScreen({ navigation }) {
   // ─── Play handler ───────────────────────────────────────────────────────────
   async function handlePlay() {
     if (game.id === "blackjack") {
-      navigation.navigate("BlackjackModePicker");
+      await promptIfSaved({
+        saveKey: "@cardnight:save:blackjack",
+        gameName: "Blackjack",
+        onFresh: () => navigation.navigate("Game", { resumeFromSave: false }),
+        onResume: () => navigation.navigate("Game", { resumeFromSave: true }),
+      });
       return;
     }
 

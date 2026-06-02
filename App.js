@@ -9,7 +9,6 @@ import HostSetupScreen from "./screens/HostSetupScreen";
 import JoinScreen from "./screens/JoinScreen";
 import LobbyScreen from "./screens/LobbyScreen";
 import GameScreen from "./screens/GameScreen";
-import BlackjackModePickerScreen from "./screens/BlackjackModePickerScreen";
 import ResultsScreen from "./screens/ResultsScreen";
 import SettingsScreen from "./screens/SettingsScreen";
 import MultiplayerGameScreen from "./screens/MultiplayerGameScreen";
@@ -110,11 +109,6 @@ export default function App() {
                 name="Lobby"
                 component={LobbyScreen}
                 options={{ title: "Lobby" }}
-              />
-              <Stack.Screen
-                name="BlackjackModePicker"
-                component={BlackjackModePickerScreen}
-                options={{ title: "Blackjack" }}
               />
               <Stack.Screen
                 name="Game"
