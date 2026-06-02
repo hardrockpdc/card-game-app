@@ -569,6 +569,7 @@ export default function PokerGameScreen({ navigation, route }) {
   const aiTimerRef = useRef(null);
   const hasMountedRef = useRef(false);
   const botRestartTimerRef = useRef(null);
+  const lastSaveRef = useRef(0); // BUG-4: auto-save throttle (once / 3s)
   const { enabled: botEnabled } = useTestBot();
   const botEnabledRef = useRef(false);
 
@@ -643,6 +644,10 @@ export default function PokerGameScreen({ navigation, route }) {
       clearGame(saveKey);
       return;
     }
+    // BUG-4: throttle to once / 3s.
+    const now = Date.now();
+    if (now - lastSaveRef.current < 3000) return;
+    lastSaveRef.current = now;
     saveGame(saveKey, { fullState: fullRef.current });
   }, [gameState, tournamentWinner]);
 

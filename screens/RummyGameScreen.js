@@ -219,6 +219,7 @@ export default function RummyGameScreen({ navigation, route }) {
   const coinRewardedRef = useRef(false);
   const hasMountedRef = useRef(false);
   const botRestartTimerRef = useRef(null);
+  const lastSaveRef = useRef(0); // BUG-4: auto-save throttle (once / 3s)
   const { enabled: botEnabled } = useTestBot();
   const botEnabledRef = useRef(false);
   const {
@@ -805,6 +806,10 @@ export default function RummyGameScreen({ navigation, route }) {
       clearGame(key);
       return;
     }
+    // BUG-4: throttle to once / 3s (state mutates often during a turn).
+    const now = Date.now();
+    if (now - lastSaveRef.current < 3000) return;
+    lastSaveRef.current = now;
     saveGame(key, { fullState: fullRef.current });
   }, [gameState]);
 

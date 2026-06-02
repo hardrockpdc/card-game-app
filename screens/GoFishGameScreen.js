@@ -290,6 +290,7 @@ export default function GoFishGameScreen({ navigation, route }) {
   const aiTimerRef = useRef(null);
   const hasMountedRef = useRef(false);
   const botRestartTimerRef = useRef(null);
+  const lastSaveRef = useRef(0); // BUG-4: auto-save throttle (once / 3s)
   const { enabled: botEnabled } = useTestBot();
   const botEnabledRef = useRef(false);
   function applyState(next) {
@@ -362,6 +363,10 @@ export default function GoFishGameScreen({ navigation, route }) {
       clearGame(SAVE_KEY_GOFISH);
       return;
     }
+    // BUG-4: throttle to once / 3s.
+    const now = Date.now();
+    if (now - lastSaveRef.current < 3000) return;
+    lastSaveRef.current = now;
     saveGame(SAVE_KEY_GOFISH, { fullState: fullRef.current });
   }, [gameState]);
 

@@ -323,6 +323,7 @@ export default function LastCardGameScreen({ navigation, route }) {
   const [showRoundModal, setShowRoundModal] = useState(false);
   const shakeAnim = useRef(new Animated.Value(0)).current;
   const coinRewardedRef = useRef(false);
+  const lastSaveRef = useRef(0); // BUG-4: auto-save throttle (once / 3s)
 
   useEffect(
     () => () => {
@@ -365,6 +366,10 @@ export default function LastCardGameScreen({ navigation, route }) {
   // Auto-save after each state update in single-player.
   useEffect(() => {
     if (!isSinglePlayer || !fullRef.current) return;
+    // BUG-4: throttle to once / 3s.
+    const now = Date.now();
+    if (now - lastSaveRef.current < 3000) return;
+    lastSaveRef.current = now;
     saveGame(SAVE_KEY_LASTCARD, { fullState: fullRef.current });
   }, [gameState]);
 
