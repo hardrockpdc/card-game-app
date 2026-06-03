@@ -213,7 +213,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
     useCallback(() => {
       if (
         !ScreenOrientation ||
-        !["klondike", "freecell"].includes(routeVariantId)
+        !["klondike", "freecell", "spider"].includes(routeVariantId)
       ) {
         return undefined;
       }
@@ -250,7 +250,8 @@ export default function SolitaireGameScreen({ navigation, route }) {
     // Rail = stats row + slot rows; size each slot from the available height so
     // all rows fit. FreeCell needs 4 rows (free cells 2x2 + foundations 2x2);
     // Klondike needs 3 (Stock/Waste + foundations 2x2).
-    const railRows = routeVariantId === "freecell" ? 4 : 3;
+    const railRows =
+      routeVariantId === "freecell" ? 4 : routeVariantId === "spider" ? 2 : 3;
     const slotBudgetH = (availH - 36 - railRows * 8) / railRows;
     slotW = Math.max(Math.min(Math.round(slotBudgetH / 1.43), 96), 40);
   } else {
@@ -889,154 +890,225 @@ export default function SolitaireGameScreen({ navigation, route }) {
     );
   };
 
-  const renderSpider = () => (
-    <View style={styles.boardCard}>
-      <View style={styles.topRow}>
-        <StockSlot
-          label={
-            state.stock.length > 0 ? `Deal ${state.stock.length}` : "No deal"
-          }
-          onPress={() => dispatch(tapAction({ type: "stock" }))}
-        />
+  const renderSpider = () => {
+    const ghosts = spiderFlyAwayCards.map((ghost) => {
+      const anim = spiderFlyAwayAnimValuesRef.current.get(ghost.cardId);
+      if (!anim) return null;
 
-        <View style={styles.metaPill}>
-          <Text style={styles.metaPillLabel}>Runs</Text>
-          <Text style={styles.metaPillValue}>{state.completedRuns || 0}/8</Text>
-        </View>
-      </View>
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.spiderScrollContent}
-      >
-        <View
-          style={[
-            styles.tableauRow,
-            styles.spiderTableauRow,
-            { width: spiderBoardWidth, position: "relative" },
-          ]}
+      return (
+        <Animated.View
+          key={ghost.cardId}
+          pointerEvents="none"
+          accessibilityElementsHidden={true}
+          importantForAccessibility="no-hide-descendants"
+          style={{
+            position: "absolute",
+            left: ghost.x,
+            top: ghost.y,
+            width: ghost.w,
+            height: ghost.h,
+            opacity: anim.opacity,
+            transform: [{ translateY: anim.translateY }, { scale: anim.scale }],
+            zIndex: 50,
+          }}
         >
-          {spiderFlyAwayCards.map((ghost) => {
-            const anim = spiderFlyAwayAnimValuesRef.current.get(ghost.cardId);
-            if (!anim) return null;
+          <Card
+            rank={ghost.card.rankLabel}
+            suit={ghost.card.symbol}
+            faceDown={!ghost.card.faceUp}
+            animateReveal={true}
+            small={true}
+            sizeScale={isLandscape ? tabCardScale : 1.1}
+          />
+        </Animated.View>
+      );
+    });
+
+    const columns = state.tableau.map((pile, pileIndex) => {
+      const margins = isLandscape ? tableauColumnMargins(pile) : null;
+      return (
+        <View
+          key={`spider-${pileIndex}`}
+          style={styles.tableauColumn}
+          onLayout={(e) => {
+            const layout = e.nativeEvent.layout;
+            spiderColumnLayoutsRef.current[pileIndex] = {
+              x: layout.x,
+              y: layout.y,
+              w: layout.width,
+              h: layout.height,
+            };
+          }}
+        >
+          {pile.length === 0 ? (
+            <Pressable
+              onPress={() =>
+                dispatch(
+                  tapAction({
+                    type: "tableau",
+                    index: pileIndex,
+                    cardIndex: 0,
+                  }),
+                )
+              }
+              style={({ pressed }) => [
+                styles.emptyColumnSlot,
+                pressed && styles.cardTouchPressed,
+                isLandscape && {
+                  width: Math.round(tabCardW * 0.8),
+                  height: Math.round(tabCardH * 0.8),
+                  minWidth: Math.round(tabCardW * 0.8),
+                  minHeight: Math.round(tabCardH * 0.8),
+                },
+              ]}
+            >
+              <Text style={styles.emptyColumnText}>Open</Text>
+            </Pressable>
+          ) : (
+            <View
+              style={[
+                styles.tableauTopSpacer,
+                isLandscape && styles.tableauTopSpacerLandscape,
+              ]}
+            />
+          )}
+
+          {pile.map((card, cardIndex) => {
+            const selected = isSpiderSelection(
+              state.selected,
+              pileIndex,
+              cardIndex,
+            );
 
             return (
-              <Animated.View
-                key={ghost.cardId}
-                pointerEvents="none"
-                accessibilityElementsHidden={true}
-                importantForAccessibility="no-hide-descendants"
-                style={{
-                  position: "absolute",
-                  left: ghost.x,
-                  top: ghost.y,
-                  width: ghost.w,
-                  height: ghost.h,
-                  opacity: anim.opacity,
-                  transform: [
-                    { translateY: anim.translateY },
-                    { scale: anim.scale },
-                  ],
-                  zIndex: 50,
+              <CardSlot
+                key={card.id}
+                card={card}
+                label=""
+                animateReveal={true}
+                sizeScale={isLandscape ? tabCardScale : undefined}
+                onPress={() =>
+                  dispatch(
+                    tapAction({
+                      type: "tableau",
+                      index: pileIndex,
+                      cardIndex,
+                    }),
+                  )
+                }
+                selected={selected}
+                disabled={!card.faceUp}
+                onCardLayout={(e) => {
+                  const layout = e.nativeEvent.layout;
+                  spiderCardLayoutsRef.current[card.id] = {
+                    x: layout.x,
+                    y: layout.y,
+                    w: layout.width,
+                    h: layout.height,
+                    pileIndex,
+                    cardIndex,
+                  };
                 }}
-              >
-                <Card
-                  rank={ghost.card.rankLabel}
-                  suit={ghost.card.symbol}
-                  faceDown={!ghost.card.faceUp}
-                  animateReveal={true}
-                  small={true}
-                  sizeScale={1.1}
-                />
-              </Animated.View>
+                style={[
+                  styles.stackCard,
+                  isLandscape
+                    ? cardIndex > 0 && { marginTop: margins[cardIndex] }
+                    : cardIndex > 0 && styles.stackCardOverlapSpider,
+                ]}
+              />
             );
           })}
-
-          {state.tableau.map((pile, pileIndex) => (
-            <View
-              key={`spider-${pileIndex}`}
-              style={styles.tableauColumn}
-              onLayout={(e) => {
-                const layout = e.nativeEvent.layout;
-                spiderColumnLayoutsRef.current[pileIndex] = {
-                  x: layout.x,
-                  y: layout.y,
-                  w: layout.width,
-                  h: layout.height,
-                };
-              }}
-            >
-              {pile.length === 0 ? (
-                <Pressable
-                  onPress={() =>
-                    dispatch(
-                      tapAction({
-                        type: "tableau",
-                        index: pileIndex,
-                        cardIndex: 0,
-                      }),
-                    )
-                  }
-                  style={({ pressed }) => [
-                    styles.emptyColumnSlot,
-                    pressed && styles.cardTouchPressed,
-                  ]}
-                >
-                  <Text style={styles.emptyColumnText}>Open</Text>
-                </Pressable>
-              ) : (
-                <View style={styles.tableauTopSpacer} />
-              )}
-
-              {pile.map((card, cardIndex) => {
-                const selected = isSpiderSelection(
-                  state.selected,
-                  pileIndex,
-                  cardIndex,
-                );
-
-                return (
-                  <CardSlot
-                    key={card.id}
-                    card={card}
-                    label=""
-                    animateReveal={true}
-                    onPress={() =>
-                      dispatch(
-                        tapAction({
-                          type: "tableau",
-                          index: pileIndex,
-                          cardIndex,
-                        }),
-                      )
-                    }
-                    selected={selected}
-                    disabled={!card.faceUp}
-                    onCardLayout={(e) => {
-                      const layout = e.nativeEvent.layout;
-                      spiderCardLayoutsRef.current[card.id] = {
-                        x: layout.x,
-                        y: layout.y,
-                        w: layout.width,
-                        h: layout.height,
-                        pileIndex,
-                        cardIndex,
-                      };
-                    }}
-                    style={[
-                      styles.stackCard,
-                      cardIndex > 0 && styles.stackCardOverlapSpider,
-                    ]}
-                  />
-                );
-              })}
-            </View>
-          ))}
         </View>
-      </ScrollView>
-    </View>
-  );
+      );
+    });
+
+    // Landscape: 10 columns fill the left (no overflow clip so the run fly-away
+    // isn't cut off); a compact right rail holds the deal pile + runs count.
+    if (isLandscape) {
+      return (
+        <View
+          style={[styles.boardCard, styles.boardCardFill, styles.boardCardRow]}
+        >
+          <View
+            style={styles.tableauRowSpiderLandscape}
+            onLayout={(e) => {
+              const w = Math.round(e.nativeEvent.layout.width);
+              const h = Math.round(e.nativeEvent.layout.height);
+              setTableauBoxW((prev) => (Math.abs(prev - w) > 1 ? w : prev));
+              setTableauBoxH((prev) => (Math.abs(prev - h) > 1 ? h : prev));
+            }}
+          >
+            {ghosts}
+            {columns}
+          </View>
+
+          <View style={styles.rightRail}>
+            <View style={styles.landscapeHeaderRight}>
+              <StatsStrip gameId="solitaire" items={statsItems} bare />
+              <GameMenuButton menuItems={menuItems} />
+            </View>
+            <View style={styles.railSlotRow}>
+              <StockSlot
+                label={
+                  state.stock.length > 0
+                    ? `Deal ${state.stock.length}`
+                    : "No deal"
+                }
+                onPress={() => dispatch(tapAction({ type: "stock" }))}
+                style={{ width: slotW, height: slotH }}
+              />
+            </View>
+            <View style={[styles.railSlotRow, styles.railFoundationsTop]}>
+              <View style={styles.metaPill}>
+                <Text style={styles.metaPillLabel}>Runs</Text>
+                <Text style={styles.metaPillValue}>
+                  {state.completedRuns || 0}/8
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      );
+    }
+
+    // Portrait: deal + runs row, then the horizontal-scroll tableau.
+    return (
+      <View style={styles.boardCard}>
+        <View style={styles.topRow}>
+          <StockSlot
+            label={
+              state.stock.length > 0 ? `Deal ${state.stock.length}` : "No deal"
+            }
+            onPress={() => dispatch(tapAction({ type: "stock" }))}
+          />
+
+          <View style={styles.metaPill}>
+            <Text style={styles.metaPillLabel}>Runs</Text>
+            <Text style={styles.metaPillValue}>
+              {state.completedRuns || 0}/8
+            </Text>
+          </View>
+        </View>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.spiderScrollContent}
+        >
+          <View
+            style={[
+              styles.tableauRow,
+              styles.spiderTableauRow,
+              { width: spiderBoardWidth, position: "relative" },
+            ]}
+          >
+            {ghosts}
+            {columns}
+          </View>
+        </ScrollView>
+      </View>
+    );
+  };
 
   const renderFreeCell = () => {
     const railSlotStyle = {
@@ -1401,8 +1473,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
 
   // Column-based variants with a dedicated landscape rail layout.
   const railLandscape =
-    isLandscape &&
-    (state.variantId === "klondike" || state.variantId === "freecell");
+    isLandscape && ["klondike", "freecell", "spider"].includes(state.variantId);
 
   const endOfRoundModal = (
     <EndOfRoundModal
@@ -1444,6 +1515,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
           {endOfRoundModal}
           {state.variantId === "klondike" ? renderKlondike() : null}
           {state.variantId === "freecell" ? renderFreeCell() : null}
+          {state.variantId === "spider" ? renderSpider() : null}
         </View>
       ) : (
         <ScrollView
@@ -1493,6 +1565,15 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 4, // condensed column spacing in landscape (matches KGAP)
     overflow: "hidden",
+  },
+  // Spider landscape: same fill, but NO overflow clip and position:relative so
+  // the run-complete fly-away cards (absolute children) aren't cut off.
+  tableauRowSpiderLandscape: {
+    flex: 1,
+    flexDirection: "row",
+    gap: 4,
+    alignItems: "flex-start",
+    position: "relative",
   },
   rightRail: {
     gap: 8,
