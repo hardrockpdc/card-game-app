@@ -226,6 +226,10 @@ export default function SolitaireGameScreen({ navigation, route }) {
     }, [routeVariantId]),
   );
 
+  const [state, dispatch] = useReducer(solitaireReducerWithRestore, null, () =>
+    createSolitaireState(routeVariantId, { spiderMode: routeSpiderMode }),
+  );
+
   // ── Responsive tableau sizing (landscape rail layout) ───────────────────────
   // Shared by the column-based variants (Klondike, FreeCell). Card.js small-card
   // width = 42 * clamp(width/390, 0.85, 1.5) * sizeScale, so we derive sizeScale.
@@ -249,13 +253,24 @@ export default function SolitaireGameScreen({ navigation, route }) {
     const availW = tableauBoxW > 0 ? tableauBoxW : width * 0.68;
     const availH = tableauBoxH > 0 ? tableauBoxH : Math.max(height - 30, 150);
     const widthFillW = (availW - (TAB_COLS - 1) * KGAP) / TAB_COLS;
-    // Size cards so a DESIGN_LEN-card column fits at the comfortable overlap
-    // (including the 6px/card chrome). Shorter columns just leave space below;
-    // longer ones fall back to mild compression in tableauColumnMargins.
-    const DESIGN_LEN =
-      { klondike: 13, freecell: 13, spider: 15 }[routeVariantId] || 13;
-    const fitH = (availH - 6 * DESIGN_LEN) / (1 + (DESIGN_LEN - 1) * FU_FRAC);
-    const heightFitW = Math.max(fitH, 50) / 1.43;
+    // DYNAMIC: size cards so the CURRENT longest column fits at the comfortable
+    // overlap. A column's height is cardH*units + chrome, where units = 1 + the
+    // sum of the visible fractions of its overlapped cards. Cards are big when
+    // columns are short and shrink only as a column grows — the overlap itself
+    // never tightens. (Columns longer than this still get the compression
+    // fallback in tableauColumnMargins, but it rarely triggers now.)
+    let colFitH = Infinity;
+    for (const pile of state.tableau || []) {
+      const n = pile.length;
+      if (!n) continue;
+      let units = 1; // first card is full height
+      for (let i = 1; i < n; i++) {
+        units += pile[i - 1].faceUp ? FU_FRAC : FD_FRAC;
+      }
+      colFitH = Math.min(colFitH, (availH - 10) / units);
+    }
+    if (!Number.isFinite(colFitH)) colFitH = availH;
+    const heightFitW = Math.max(colFitH, 50) / 1.43;
     // 0.95 = a touch smaller than the cap, leaving breathing room.
     tabCardW = Math.max(Math.min(widthFillW, heightFitW, 100) * 0.95, 34);
     // Rail = stats row + slot rows; size each slot from the available height so
@@ -316,9 +331,6 @@ export default function SolitaireGameScreen({ navigation, route }) {
     );
   };
 
-  const [state, dispatch] = useReducer(solitaireReducerWithRestore, null, () =>
-    createSolitaireState(routeVariantId, { spiderMode: routeSpiderMode }),
-  );
   const coinRewardedRef = useRef(false);
   const wonClearedRef = useRef(false);
   const lastSaveRef = useRef(0);
