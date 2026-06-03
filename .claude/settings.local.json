@@ -49,7 +49,12 @@
       "Bash(git --no-pager diff screens/)",
       "Bash(npm uninstall *)",
       "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\('typescript in deps?', !!\\(p.dependencies && p.dependencies.typescript\\)\\); console.log\\('typescript in devDeps?', !!\\(p.devDependencies && p.devDependencies.typescript\\)\\);\")",
-      "Bash(git --no-pager log --oneline -6)"
+      "Bash(git --no-pager log --oneline -6)",
+      "Bash(git --no-pager diff --stat screens/CardThemeScreen.js)",
+      "Bash(git --no-pager diff --stat screens/GameScreen.js)",
+      "Bash(git --no-pager diff --stat screens/WildRoundGameScreen.js screens/SolitaireGameScreen.js)",
+      "Bash(git --no-pager log --oneline -8)",
+      "Bash(git rm *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\hardr\\.claude\\projects\\c--Users-hardr-OneDrive-Documents-Projects-card-game-app"
