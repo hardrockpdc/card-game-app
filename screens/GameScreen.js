@@ -496,9 +496,8 @@ export default function GameScreen({ navigation, route }) {
       onQuit: () => {
         clearGame(SAVE_KEY);
 
-        // Spec: reset streak/hands on quit.
+        // Spec: reset streak on quit.
         resetStreak();
-        resetHandsCounter();
 
         navigation.navigate("Home");
       },
@@ -853,18 +852,16 @@ export default function GameScreen({ navigation, route }) {
           if (showGameOver) {
             setShowGameOver(false);
 
-            // Spec: reset streak/hands on quit/leave.
+            // Spec: reset streak on quit/leave.
             resetStreak();
-            resetHandsCounter();
 
             navigation.navigate("Profile");
             return;
           }
           clearGame(SAVE_KEY);
 
-          // Spec: reset streak/hands on quit/leave.
+          // Spec: reset streak on quit/leave.
           resetStreak();
-          resetHandsCounter();
 
           navigation.navigate("Home");
         }}
