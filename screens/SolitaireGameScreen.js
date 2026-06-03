@@ -202,7 +202,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
   // shows only a thin sliver; a face-up card shows enough to read its corner
   // index. The overlap for card N is driven by how much of card N-1 to reveal.
   const faceUpPeek = Math.round(klondikeCardH * 0.3);
-  const faceDownPeek = Math.round(klondikeCardH * 0.16);
+  const faceDownPeek = Math.round(klondikeCardH * 0.05);
 
   // Top row (Klondike): 6 equal slots sharing the tableau card footprint.
   const topSlotW = Math.round(klondikeCardW);
