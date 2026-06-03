@@ -233,6 +233,11 @@ export default function SolitaireGameScreen({ navigation, route }) {
     { klondike: 7, freecell: 8, spider: 10 }[routeVariantId] || 7;
   const KGAP = isLandscape ? 4 : 8; // tighter column spacing in landscape
   const cardClamp = Math.min(Math.max(width / 390, 0.85), 1.5);
+  // Comfortable, CONSTANT overlap (the fraction of each stacked card left
+  // visible). Cards are sized so a full column fits at this spacing rather than
+  // the spacing being crushed to fit — easier to read and to drag-and-drop.
+  const FU_FRAC = 0.3; // face-up: how much of each card stays visible
+  const FD_FRAC = 0.16; // face-down: a smaller sliver
 
   let tabCardW;
   let slotW; // free cell / foundation / stock / waste slot size
@@ -244,9 +249,15 @@ export default function SolitaireGameScreen({ navigation, route }) {
     const availW = tableauBoxW > 0 ? tableauBoxW : width * 0.68;
     const availH = tableauBoxH > 0 ? tableauBoxH : Math.max(height - 30, 150);
     const widthFillW = (availW - (TAB_COLS - 1) * KGAP) / TAB_COLS;
-    const heightCapW = (availH * 0.62) / 1.43;
-    // 0.95 = a touch smaller than a full width-fill, leaving breathing room.
-    tabCardW = Math.max(Math.min(widthFillW, heightCapW, 100) * 0.95, 34);
+    // Size cards so a DESIGN_LEN-card column fits at the comfortable overlap
+    // (including the 6px/card chrome). Shorter columns just leave space below;
+    // longer ones fall back to mild compression in tableauColumnMargins.
+    const DESIGN_LEN =
+      { klondike: 13, freecell: 13, spider: 15 }[routeVariantId] || 13;
+    const fitH = (availH - 6 * DESIGN_LEN) / (1 + (DESIGN_LEN - 1) * FU_FRAC);
+    const heightFitW = Math.max(fitH, 50) / 1.43;
+    // 0.95 = a touch smaller than the cap, leaving breathing room.
+    tabCardW = Math.max(Math.min(widthFillW, heightFitW, 100) * 0.95, 34);
     // Rail = stats row + slot rows; size each slot from the available height so
     // all rows fit. FreeCell needs 4 rows (free cells 2x2 + foundations 2x2);
     // Klondike needs 3 (Stock/Waste + foundations 2x2).
@@ -267,10 +278,10 @@ export default function SolitaireGameScreen({ navigation, route }) {
   const tabCardH = tabCardW * 1.43;
   const slotH = Math.round(slotW * 1.43);
   const slotScale = slotW / (42 * cardClamp);
-  // Overlap: face-up cards reveal ~10%, face-down only a 2% sliver. Long columns
-  // shrink these further (per column) to fit — see tableauColumnMargins.
-  const faceUpPeek = Math.round(tabCardH * 0.1);
-  const faceDownPeek = Math.round(tabCardH * 0.02);
+  // Comfortable constant overlap; columns longer than DESIGN_LEN compress a bit
+  // (per column) as a fallback — see tableauColumnMargins.
+  const faceUpPeek = Math.round(tabCardH * FU_FRAC);
+  const faceDownPeek = Math.round(tabCardH * FD_FRAC);
 
   if (isLandscape) {
     const availH = tableauBoxH > 0 ? tableauBoxH : Math.max(height - 30, 150);
