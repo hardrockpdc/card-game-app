@@ -24,11 +24,13 @@ function toRgba(hex, alpha) {
  * - gameId: string (used to pull accent color from getTableTheme)
  * - items: Array<{ label: string, value: string | number, accent?: boolean }>
  */
-export default function StatsStrip({ gameId, items }) {
+export default function StatsStrip({ gameId, items, bare }) {
   const theme = getTableTheme(gameId);
   const accent = theme.accent;
   // Landscape: lay each stat out as "LABEL value" on one line and trim the
   // strip's padding, so it occupies a single short row instead of two.
+  // `bare` drops the outer border/background so the strip can be embedded
+  // inside another container (e.g. the game header) without a box-in-box look.
   const { width, height } = useWindowDimensions();
   const dense = width > height;
   return (
@@ -36,7 +38,7 @@ export default function StatsStrip({ gameId, items }) {
       style={[
         styles.strip,
         dense && styles.stripDense,
-        { borderColor: toRgba(theme.accent, 0.12) },
+        bare ? styles.stripBare : { borderColor: toRgba(theme.accent, 0.12) },
       ]}
     >
       <View style={styles.row}>
@@ -89,6 +91,14 @@ const styles = StyleSheet.create({
   stripDense: {
     paddingVertical: scale(3),
     marginTop: scale(4),
+  },
+  stripBare: {
+    borderWidth: 0,
+    backgroundColor: "transparent",
+    marginTop: 0,
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+    borderRadius: 0,
   },
   row: {
     flexDirection: "row",

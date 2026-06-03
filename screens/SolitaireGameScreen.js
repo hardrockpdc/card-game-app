@@ -607,7 +607,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
     },
   ];
 
-  const renderStatsBar = () => {
+  const statsItems = (() => {
     const vid = state.variantId;
     const thirdItem =
       vid === "klondike" || vid === "spider"
@@ -624,7 +624,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
               ? { label: "Combo", value: state.combo ?? 0, accent: false }
               : null;
 
-    const items = [
+    return [
       { label: "Moves", value: state.moves, accent: true },
       { label: "Time", value: formatTime(elapsed), accent: false },
       thirdItem,
@@ -632,13 +632,15 @@ export default function SolitaireGameScreen({ navigation, route }) {
         ? { label: "Runs", value: state.completedRuns ?? 0, accent: false }
         : null,
     ].filter(Boolean);
+  })();
 
-    return (
-      <View style={styles.statsBar}>
-        <StatsStrip gameId="solitaire" items={items} />
-      </View>
-    );
-  };
+  // Landscape: the stats live inside the header (replacing the title) so the
+  // standalone stats bar can be dropped — see the header's leftInfo below.
+  const renderStatsBar = () => (
+    <View style={styles.statsBar}>
+      <StatsStrip gameId="solitaire" items={statsItems} />
+    </View>
+  );
 
   const renderKlondike = () => {
     const wasteTop = getTopCard(state.waste);
@@ -1198,6 +1200,11 @@ export default function SolitaireGameScreen({ navigation, route }) {
       <GameHeader
         gameId="solitaire"
         title={variant.label}
+        leftInfo={
+          isLandscape ? (
+            <StatsStrip gameId="solitaire" items={statsItems} bare />
+          ) : null
+        }
         menuItems={menuItems}
       />
       <ScrollView
@@ -1206,7 +1213,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
           isLandscape && styles.contentLandscape,
         ]}
       >
-        {renderStatsBar()}
+        {!isLandscape && renderStatsBar()}
         <EndOfRoundModal
           visible={showRoundModal}
           title="🏆 You Won!"
