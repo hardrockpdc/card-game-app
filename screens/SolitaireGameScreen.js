@@ -213,7 +213,9 @@ export default function SolitaireGameScreen({ navigation, route }) {
     useCallback(() => {
       if (
         !ScreenOrientation ||
-        !["klondike", "freecell", "spider"].includes(routeVariantId)
+        !["klondike", "freecell", "spider", "pyramid", "tripeaks"].includes(
+          routeVariantId,
+        )
       ) {
         return undefined;
       }
@@ -277,7 +279,11 @@ export default function SolitaireGameScreen({ navigation, route }) {
     // all rows fit. FreeCell needs 4 rows (free cells 2x2 + foundations 2x2);
     // Klondike needs 3 (Stock/Waste + foundations 2x2).
     const railRows =
-      routeVariantId === "freecell" ? 4 : routeVariantId === "spider" ? 2 : 3;
+      routeVariantId === "freecell"
+        ? 4
+        : ["spider", "pyramid", "tripeaks"].includes(routeVariantId)
+          ? 2
+          : 3;
     const slotBudgetH = (availH - 36 - railRows * 8) / railRows;
     slotW = Math.max(Math.min(Math.round(slotBudgetH / 1.43), 96), 40);
   } else {
@@ -1333,6 +1339,134 @@ export default function SolitaireGameScreen({ navigation, route }) {
         )
       : 0;
 
+    // Landscape: scaled + vertically-nested pyramid centered on the left, with
+    // stock/waste/cleared + stats/menu in the right rail. No scroll.
+    if (isLandscape) {
+      const availW = tableauBoxW > 0 ? tableauBoxW : width * 0.66;
+      const availH = tableauBoxH > 0 ? tableauBoxH : Math.max(height - 30, 150);
+      const rows = state.pyramidRows;
+      const nRows = rows.length || 7;
+      const HGAP = 4;
+      const VFRAC = 0.46; // each row reveals 46% of the row above
+      const pcW = Math.max(
+        Math.min(
+          (availW - (nRows - 1) * HGAP) / nRows,
+          availH / (1 + (nRows - 1) * VFRAC) / 1.43,
+          96,
+        ),
+        30,
+      );
+      const pcH = pcW * 1.43;
+      const pcScale = pcW / (42 * cardClamp);
+      const rowMargin = -Math.round(pcH * (1 - VFRAC));
+
+      return (
+        <View
+          style={[styles.boardCard, styles.boardCardFill, styles.boardCardRow]}
+        >
+          <View
+            style={styles.shapeArea}
+            onLayout={(e) => {
+              const w = Math.round(e.nativeEvent.layout.width);
+              const h = Math.round(e.nativeEvent.layout.height);
+              setTableauBoxW((prev) => (Math.abs(prev - w) > 1 ? w : prev));
+              setTableauBoxH((prev) => (Math.abs(prev - h) > 1 ? h : prev));
+            }}
+          >
+            <View style={styles.shapeCenter}>
+              {rows.map((row, rowIndex) => (
+                <View
+                  key={`pyr-${rowIndex}`}
+                  style={[
+                    styles.shapeRow,
+                    { gap: HGAP, marginTop: rowIndex === 0 ? 0 : rowMargin },
+                  ]}
+                >
+                  {row.map((card, colIndex) => {
+                    if (!card) {
+                      return (
+                        <View
+                          key={`pyr-sp-${rowIndex}-${colIndex}`}
+                          style={{ width: pcW, height: pcH }}
+                        />
+                      );
+                    }
+                    const selected = isPyramidSelection(
+                      state.selected,
+                      rowIndex,
+                      colIndex,
+                    );
+                    return (
+                      <CardSlot
+                        key={card.id}
+                        card={card}
+                        label=""
+                        animateReveal={true}
+                        sizeScale={pcScale}
+                        onPress={() =>
+                          dispatch(
+                            tapAction({
+                              type: "pyramid",
+                              row: rowIndex,
+                              col: colIndex,
+                            }),
+                          )
+                        }
+                        selected={selected}
+                        disabled={!card.faceUp}
+                        style={{
+                          width: pcW,
+                          height: pcH,
+                          minWidth: pcW,
+                          minHeight: pcH,
+                        }}
+                      />
+                    );
+                  })}
+                </View>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.rightRail}>
+            <View style={styles.landscapeHeaderRight}>
+              <StatsStrip gameId="solitaire" items={statsItems} bare />
+              <GameMenuButton menuItems={menuItems} />
+            </View>
+            <View style={styles.railSlotRow}>
+              <StockSlot
+                label={
+                  state.stock.length > 0 ? `Stock ${state.stock.length}` : "↻"
+                }
+                onPress={() => dispatch(tapAction({ type: "stock" }))}
+                style={{ width: slotW, height: slotH }}
+              />
+              <CardSlot
+                card={wasteTop}
+                label="Waste"
+                sizeScale={slotScale}
+                onPress={() => dispatch(tapAction({ type: "waste" }))}
+                selected={sameTarget(state.selected, { type: "waste" })}
+                style={{
+                  width: slotW,
+                  height: slotH,
+                  minWidth: slotW,
+                  minHeight: slotH,
+                }}
+              />
+            </View>
+            <View style={[styles.railSlotRow, styles.railFoundationsTop]}>
+              <View style={styles.metaPill}>
+                <Text style={styles.metaPillLabel}>Cleared</Text>
+                <Text style={styles.metaPillValue}>{cleared}/28</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      );
+    }
+
+    // Portrait: existing pyramid (top row + horizontal-scroll board).
     return (
       <View style={styles.boardCard}>
         <View style={styles.topRow}>
@@ -1421,6 +1555,141 @@ export default function SolitaireGameScreen({ navigation, route }) {
         )
       : 0;
 
+    // Landscape: scaled + nested peaks centered on the left, with
+    // stock/waste/cleared + stats/menu in the right rail. No scroll.
+    if (isLandscape) {
+      const availW = tableauBoxW > 0 ? tableauBoxW : width * 0.66;
+      const availH = tableauBoxH > 0 ? tableauBoxH : Math.max(height - 30, 150);
+      const rows = state.boardRows;
+      const nRows = rows.length || 4;
+      const maxLen = Math.max(...rows.map((r) => r.length), 1);
+      const HGAP = 3;
+      const VFRAC = 0.5; // each row reveals 50% of the row above
+      const ML_FRAC = 0.17; // per-row right offset, as a fraction of card width
+      const pcW = Math.max(
+        Math.min(
+          (availW - (maxLen - 1) * HGAP) / (maxLen + (nRows - 1) * ML_FRAC),
+          availH / (1 + (nRows - 1) * VFRAC) / 1.43,
+          96,
+        ),
+        28,
+      );
+      const pcH = pcW * 1.43;
+      const pcScale = pcW / (42 * cardClamp);
+      const rowMargin = -Math.round(pcH * (1 - VFRAC));
+      const mlUnit = pcW * ML_FRAC;
+
+      return (
+        <View
+          style={[styles.boardCard, styles.boardCardFill, styles.boardCardRow]}
+        >
+          <View
+            style={styles.shapeArea}
+            onLayout={(e) => {
+              const w = Math.round(e.nativeEvent.layout.width);
+              const h = Math.round(e.nativeEvent.layout.height);
+              setTableauBoxW((prev) => (Math.abs(prev - w) > 1 ? w : prev));
+              setTableauBoxH((prev) => (Math.abs(prev - h) > 1 ? h : prev));
+            }}
+          >
+            <View style={styles.shapeCenter}>
+              {rows.map((row, rowIndex) => (
+                <View
+                  key={`tp-${rowIndex}`}
+                  style={[
+                    styles.shapeRow,
+                    {
+                      gap: HGAP,
+                      marginTop: rowIndex === 0 ? 0 : rowMargin,
+                      marginLeft: rowIndex * mlUnit,
+                    },
+                  ]}
+                >
+                  {row.map((card, colIndex) => {
+                    if (!card) {
+                      return (
+                        <View
+                          key={`tp-sp-${rowIndex}-${colIndex}`}
+                          style={{ width: pcW, height: pcH }}
+                        />
+                      );
+                    }
+                    const selected = isTriPeaksSelection(
+                      state.selected,
+                      rowIndex,
+                      colIndex,
+                    );
+                    return (
+                      <CardSlot
+                        key={card.id}
+                        card={card}
+                        label=""
+                        animateReveal={true}
+                        sizeScale={pcScale}
+                        onPress={() =>
+                          dispatch(
+                            tapAction({
+                              type: "tripeaks",
+                              row: rowIndex,
+                              col: colIndex,
+                            }),
+                          )
+                        }
+                        selected={selected}
+                        disabled={!card.faceUp}
+                        style={{
+                          width: pcW,
+                          height: pcH,
+                          minWidth: pcW,
+                          minHeight: pcH,
+                        }}
+                      />
+                    );
+                  })}
+                </View>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.rightRail}>
+            <View style={styles.landscapeHeaderRight}>
+              <StatsStrip gameId="solitaire" items={statsItems} bare />
+              <GameMenuButton menuItems={menuItems} />
+            </View>
+            <View style={styles.railSlotRow}>
+              <StockSlot
+                label={
+                  state.stock.length > 0 ? `Stock ${state.stock.length}` : "↻"
+                }
+                onPress={() => dispatch(tapAction({ type: "stock" }))}
+                style={{ width: slotW, height: slotH }}
+              />
+              <CardSlot
+                card={wasteTop}
+                label="Waste"
+                sizeScale={slotScale}
+                onPress={() => dispatch(tapAction({ type: "waste" }))}
+                selected={sameTarget(state.selected, { type: "waste" })}
+                style={{
+                  width: slotW,
+                  height: slotH,
+                  minWidth: slotW,
+                  minHeight: slotH,
+                }}
+              />
+            </View>
+            <View style={[styles.railSlotRow, styles.railFoundationsTop]}>
+              <View style={styles.metaPill}>
+                <Text style={styles.metaPillLabel}>Cleared</Text>
+                <Text style={styles.metaPillValue}>{cleared}/28</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      );
+    }
+
+    // Portrait: existing tri-peaks (top row + horizontal-scroll board).
     return (
       <View style={styles.boardCard}>
         <View style={styles.topRow}>
@@ -1501,7 +1770,10 @@ export default function SolitaireGameScreen({ navigation, route }) {
 
   // Column-based variants with a dedicated landscape rail layout.
   const railLandscape =
-    isLandscape && ["klondike", "freecell", "spider"].includes(state.variantId);
+    isLandscape &&
+    ["klondike", "freecell", "spider", "pyramid", "tripeaks"].includes(
+      state.variantId,
+    );
 
   const endOfRoundModal = (
     <EndOfRoundModal
@@ -1544,6 +1816,8 @@ export default function SolitaireGameScreen({ navigation, route }) {
           {state.variantId === "klondike" ? renderKlondike() : null}
           {state.variantId === "freecell" ? renderFreeCell() : null}
           {state.variantId === "spider" ? renderSpider() : null}
+          {state.variantId === "pyramid" ? renderPyramid() : null}
+          {state.variantId === "tripeaks" ? renderTriPeaks() : null}
         </View>
       ) : (
         <ScrollView
@@ -1805,6 +2079,20 @@ const styles = StyleSheet.create({
   },
   stackCardOverlapSpider: {
     marginTop: -38,
+  },
+  // Landscape spatial shapes (Pyramid / TriPeaks): centered, scaled, nested.
+  shapeArea: {
+    flex: 1,
+    overflow: "hidden",
+  },
+  shapeCenter: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  shapeRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
   },
   pyramidBoard: {
     paddingTop: 4,
