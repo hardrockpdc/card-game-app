@@ -281,21 +281,26 @@ export default function SolitaireGameScreen({ navigation, route }) {
   // natural height would overflow the available height (landscape), its overlaps
   // compress by one factor so it fits — short columns stay spread, long ones
   // bunch, nothing scrolls. Returns a marginTop per card index (0 for the first).
+  //
+  // Each rendered card box is the card plus the cardTouch chrome (padding 2 +
+  // border 1 = 6px). The margin math MUST use that real box height, or the
+  // unaccounted 6px/card accumulates and a long column spills off-screen.
+  const CARD_CHROME = 6;
   const tableauColumnMargins = (pile) => {
-    let natural = tabCardH;
+    const boxH = tabCardH + CARD_CHROME;
+    let natural = boxH;
     for (let i = 1; i < pile.length; i++) {
       natural += pile[i - 1].faceUp ? faceUpPeek : faceDownPeek;
     }
     let factor = 1;
-    if (isLandscape && natural > tableauAvailH && natural > tabCardH) {
-      factor = Math.max((tableauAvailH - tabCardH) / (natural - tabCardH), 0.1);
+    if (isLandscape && natural > tableauAvailH && natural > boxH) {
+      factor = Math.max((tableauAvailH - boxH) / (natural - boxH), 0.04);
     }
     return pile.map((card, i) =>
       i === 0
         ? 0
         : -Math.round(
-            tabCardH -
-              (pile[i - 1].faceUp ? faceUpPeek : faceDownPeek) * factor,
+            boxH - (pile[i - 1].faceUp ? faceUpPeek : faceDownPeek) * factor,
           ),
     );
   };
