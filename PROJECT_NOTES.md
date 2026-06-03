@@ -107,6 +107,7 @@ card-game-app/
 │   ├── conquian.js                (Conquián game logic — pure functions)
 │   ├── wildround.js               (Wild Round game logic — pure functions)
 │   ├── lastCard.js                (Last Card game logic — pure functions)
+│   ├── gofish.js                  (Go Fish game logic — pure functions; extracted from the screen 2026-06-02)
 │   ├── poker.js                  (Poker variant logic — Texas Hold'em, Omaha, Five Card Draw, Seven Card Stud)
 │   ├── solitaire.js               (Solitaire game logic — Klondike, Spider, FreeCell, Pyramid, TriPeaks)
 │   ├── rummy.js                   (Rummy game logic — Gin Rummy, Rummy 500, Indian Rummy, Canasta)
