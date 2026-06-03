@@ -202,22 +202,21 @@ export default function SolitaireGameScreen({ navigation, route }) {
   let tableauAvailH = Infinity; // landscape: the height a column must fit within
 
   if (isLandscape) {
-    // Fill the 7 columns across the REAL available width, but ALSO cap the card
-    // height to a fraction of the available tableau height (measured) so there's
-    // always room to overlap several cards down a column. Both are proportional
-    // to real measured space, so it looks consistent on any phone size.
+    // Card height is capped to a fraction of the tableau height derived from the
+    // WINDOW size (a STABLE input). It must NOT depend on the measured tableau
+    // box, or sizing would change the top-row height, which changes the measured
+    // box, which resizes the cards… = vibration. The measured box is used only
+    // for the overlap fit below, which can't feed back into layout.
     const contentW = width - 2 * 8 - 2 * 12; // content padding + boardCard padding
     const widthFillW = (contentW - (KLONDIKE_COLS - 1) * KGAP) / KLONDIKE_COLS;
-    const availForCards =
-      tableauBoxH > 0 ? tableauBoxH : Math.max(height - 180, 160);
-    const heightCapW = (availForCards * 0.62) / 1.43;
-    klondikeCardW = Math.max(Math.min(widthFillW, heightCapW, 120), 34);
-    // Top slots: no bigger than tableau cards, and small enough that the 6 slots
-    // plus the inline stats/menu still fit the row. Reserve the MEASURED width of
-    // the stats+menu (fallback 210 until measured) so they never overlap F4.
+    const availEstimate = Math.max(height - 170, 150);
+    const heightCapW = (availEstimate * 0.5) / 1.43;
+    klondikeCardW = Math.max(Math.min(widthFillW, heightCapW, 100), 34);
+    // Stock/Waste/F1-F4 a touch smaller than tableau cards, and small enough
+    // that they + the inline stats/menu (measured width) still fit the row.
     const reserve = headerRightW > 0 ? headerRightW + 16 : 210;
     topSlotW = Math.max(
-      Math.min(klondikeCardW, (contentW - reserve - 5 * 4) / 6),
+      Math.min(klondikeCardW * 0.9, (contentW - reserve - 5 * 4) / 6),
       30,
     );
   } else {
@@ -755,9 +754,10 @@ export default function SolitaireGameScreen({ navigation, route }) {
             <View style={styles.klondikeSlotsGroup}>{topSlots}</View>
             <View
               style={styles.landscapeHeaderRight}
-              onLayout={(e) =>
-                setHeaderRightW(Math.round(e.nativeEvent.layout.width))
-              }
+              onLayout={(e) => {
+                const w = Math.round(e.nativeEvent.layout.width);
+                setHeaderRightW((prev) => (Math.abs(prev - w) > 1 ? w : prev));
+              }}
             >
               <StatsStrip gameId="solitaire" items={statsItems} bare />
               <GameMenuButton menuItems={menuItems} />
@@ -771,7 +771,10 @@ export default function SolitaireGameScreen({ navigation, route }) {
           style={[styles.tableauRow, isLandscape && styles.tableauRowFill]}
           onLayout={
             isLandscape
-              ? (e) => setTableauBoxH(Math.round(e.nativeEvent.layout.height))
+              ? (e) => {
+                  const h = Math.round(e.nativeEvent.layout.height);
+                  setTableauBoxH((prev) => (Math.abs(prev - h) > 1 ? h : prev));
+                }
               : undefined
           }
         >
