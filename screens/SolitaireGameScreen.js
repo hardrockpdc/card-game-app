@@ -646,9 +646,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
       <View style={styles.boardCard}>
         <View style={[styles.topRow, styles.klondikeTopRow]}>
           <StockSlot
-            label={
-              state.stock.length > 0 ? `Stock ${state.stock.length}` : "Recycle"
-            }
+            label={state.stock.length > 0 ? `Stock ${state.stock.length}` : "↻"}
             onPress={() => dispatch(tapAction({ type: "stock" }))}
             style={{ width: topSlotW, height: topSlotH }}
           />
@@ -1032,9 +1030,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
       <View style={styles.boardCard}>
         <View style={styles.topRow}>
           <StockSlot
-            label={
-              state.stock.length > 0 ? `Stock ${state.stock.length}` : "Recycle"
-            }
+            label={state.stock.length > 0 ? `Stock ${state.stock.length}` : "↻"}
             onPress={() => dispatch(tapAction({ type: "stock" }))}
           />
 
@@ -1122,9 +1118,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
       <View style={styles.boardCard}>
         <View style={styles.topRow}>
           <StockSlot
-            label={
-              state.stock.length > 0 ? `Stock ${state.stock.length}` : "Recycle"
-            }
+            label={state.stock.length > 0 ? `Stock ${state.stock.length}` : "↻"}
             onPress={() => dispatch(tapAction({ type: "stock" }))}
           />
 
