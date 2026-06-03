@@ -56,6 +56,7 @@ export default function StatsStrip({ gameId, items, bare }) {
                 styles.item,
                 showDivider ? styles.itemDivider : null,
                 dense && styles.itemDense,
+                bare && styles.itemBare,
               ]}
             >
               <Text
@@ -95,6 +96,7 @@ const styles = StyleSheet.create({
     marginTop: scale(4),
   },
   stripBare: {
+    width: "auto",
     borderWidth: 0,
     backgroundColor: "transparent",
     marginTop: 0,
@@ -118,6 +120,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: scale(5),
     paddingVertical: 0,
+  },
+  // Embedded (in the header row): size to content so the strip doesn't stretch
+  // full width and push a neighbouring control (e.g. the menu button) away.
+  itemBare: {
+    flex: 0,
   },
   labelDense: {
     marginBottom: 0,

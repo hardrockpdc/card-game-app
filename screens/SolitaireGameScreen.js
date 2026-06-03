@@ -15,6 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import Card from "../components/Card";
 import GameHeader from "../components/GameHeader";
+import GameMenuButton from "../components/GameMenuButton";
 import EndOfRoundModal from "../components/EndOfRoundModal";
 import StatsStrip from "../components/StatsStrip";
 import { useLayoutMode } from "../game/useLayoutMode";
@@ -623,54 +624,68 @@ export default function SolitaireGameScreen({ navigation, route }) {
   const renderKlondike = () => {
     const wasteTop = getTopCard(state.waste);
 
+    const topSlots = (
+      <>
+        <StockSlot
+          label={state.stock.length > 0 ? `Stock ${state.stock.length}` : "↻"}
+          onPress={() => dispatch(tapAction({ type: "stock" }))}
+          style={{ width: topSlotW, height: topSlotH }}
+        />
+
+        <CardSlot
+          card={wasteTop}
+          label="Waste"
+          sizeScale={klondikeCardScale}
+          onPress={() => dispatch(tapAction({ type: "waste" }))}
+          selected={sameTarget(state.selected, { type: "waste" })}
+          style={{
+            width: topSlotW,
+            height: topSlotH,
+            minWidth: topSlotW,
+            minHeight: topSlotH,
+          }}
+        />
+
+        {state.foundations.map((foundation, index) => {
+          const top = getTopCard(foundation);
+          const selected =
+            state.selected?.type === "foundation" &&
+            state.selected.index === index;
+          return (
+            <CardSlot
+              key={`foundation-${index}`}
+              card={top}
+              label={`F${index + 1}`}
+              sizeScale={klondikeCardScale}
+              onPress={() => dispatch(tapAction({ type: "foundation", index }))}
+              selected={selected}
+              style={{
+                width: topSlotW,
+                height: topSlotH,
+                minWidth: topSlotW,
+                minHeight: topSlotH,
+              }}
+            />
+          );
+        })}
+      </>
+    );
+
     return (
       <View style={styles.boardCard}>
-        <View style={[styles.topRow, styles.klondikeTopRow]}>
-          <StockSlot
-            label={state.stock.length > 0 ? `Stock ${state.stock.length}` : "↻"}
-            onPress={() => dispatch(tapAction({ type: "stock" }))}
-            style={{ width: topSlotW, height: topSlotH }}
-          />
-
-          <CardSlot
-            card={wasteTop}
-            label="Waste"
-            sizeScale={klondikeCardScale}
-            onPress={() => dispatch(tapAction({ type: "waste" }))}
-            selected={sameTarget(state.selected, { type: "waste" })}
-            style={{
-              width: topSlotW,
-              height: topSlotH,
-              minWidth: topSlotW,
-              minHeight: topSlotH,
-            }}
-          />
-
-          {state.foundations.map((foundation, index) => {
-            const top = getTopCard(foundation);
-            const selected =
-              state.selected?.type === "foundation" &&
-              state.selected.index === index;
-            return (
-              <CardSlot
-                key={`foundation-${index}`}
-                card={top}
-                label={`F${index + 1}`}
-                sizeScale={klondikeCardScale}
-                onPress={() =>
-                  dispatch(tapAction({ type: "foundation", index }))
-                }
-                selected={selected}
-                style={{
-                  width: topSlotW,
-                  height: topSlotH,
-                  minWidth: topSlotW,
-                  minHeight: topSlotH,
-                }}
-              />
-            );
-          })}
-        </View>
+        {/* Landscape: drop the header bar and put the stats + menu on the right
+            end of the slot row, using the otherwise-empty horizontal space. */}
+        {isLandscape ? (
+          <View style={[styles.topRow, styles.klondikeTopRowLandscape]}>
+            <View style={styles.klondikeSlotsGroup}>{topSlots}</View>
+            <View style={styles.landscapeHeaderRight}>
+              <StatsStrip gameId="solitaire" items={statsItems} bare />
+              <GameMenuButton menuItems={menuItems} />
+            </View>
+          </View>
+        ) : (
+          <View style={[styles.topRow, styles.klondikeTopRow]}>{topSlots}</View>
+        )}
 
         <View style={styles.tableauRow}>
           {state.tableau.map((pile, pileIndex) => (
@@ -1182,12 +1197,16 @@ export default function SolitaireGameScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <GameHeader
-        gameId="solitaire"
-        title={variant.label}
-        leftInfo={<StatsStrip gameId="solitaire" items={statsItems} bare />}
-        menuItems={menuItems}
-      />
+      {/* Klondike landscape moves the stats + menu into the slot row, so the
+          header bar is dropped there. Every other case keeps the header. */}
+      {!(isLandscape && state.variantId === "klondike") && (
+        <GameHeader
+          gameId="solitaire"
+          title={variant.label}
+          leftInfo={<StatsStrip gameId="solitaire" items={statsItems} bare />}
+          menuItems={menuItems}
+        />
+      )}
       <ScrollView
         contentContainerStyle={[
           styles.content,
@@ -1293,6 +1312,25 @@ const styles = StyleSheet.create({
     gap: 4,
     flexWrap: "nowrap",
     justifyContent: "space-between",
+  },
+  klondikeTopRowLandscape: {
+    gap: scale(8),
+    flexWrap: "nowrap",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+  klondikeSlotsGroup: {
+    flexDirection: "row",
+    gap: 4,
+    alignItems: "flex-start",
+    flexShrink: 1,
+  },
+  landscapeHeaderRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: scale(12),
+    alignSelf: "center",
+    flexShrink: 0,
   },
   stockSlot: {
     width: 70,
