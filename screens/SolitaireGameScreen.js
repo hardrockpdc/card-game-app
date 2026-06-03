@@ -830,7 +830,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
               {stockSlot}
               {wasteSlot}
             </View>
-            <View style={styles.railSlotRow}>
+            <View style={[styles.railSlotRow, styles.railFoundationsTop]}>
               {foundationSlots[0]}
               {foundationSlots[1]}
             </View>
@@ -1387,8 +1387,11 @@ const styles = StyleSheet.create({
   },
   railSlotRow: {
     flexDirection: "row",
-    gap: 6,
-    justifyContent: "space-between",
+    gap: 12,
+    justifyContent: "center",
+  },
+  railFoundationsTop: {
+    marginTop: 6, // small gap between the Stock/Waste row and the foundations
   },
   statsBar: {
     flexDirection: "row",
