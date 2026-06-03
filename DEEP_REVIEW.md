@@ -67,7 +67,7 @@
 - [ ] **CQ-11** — Resolve Conquián's half-state in RummyVariantPicker (was L-4)
 - [ ] **CQ-12** — Network message shape inconsistencies (was HI-5)
 - [x] **CQ-13** — Removed the unused `typescript` dependency. Commit `3eb638a`.
-- [ ] **CQ-14** — Several save effects use raw `JSON.parse(...)` without schema validation — could fail silently on schema changes
+- [x] **CQ-14** — ✅ RESOLVED (commit `ba929a5`). Game saves now carry a `SAVE_VERSION` wrapper; a shared validator (used by `loadGame` *and* `hasSave`) discards saves that are missing/corrupt/incompatible-version and wipes them, so an outdated shape starts fresh instead of crashing the screen, and the resume prompt stays consistent. Legacy unwrapped saves treated as v1. Tested.
 
 ### 🚀 IMPROVEMENTS (post-launch)
 
