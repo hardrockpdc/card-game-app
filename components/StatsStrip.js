@@ -31,8 +31,10 @@ export default function StatsStrip({ gameId, items, bare }) {
   // strip's padding, so it occupies a single short row instead of two.
   // `bare` drops the outer border/background so the strip can be embedded
   // inside another container (e.g. the game header) without a box-in-box look.
+  // Inline "LABEL value" rows when landscape, or whenever embedded (`bare`)
+  // so a header-merged strip stays a single compact line in any orientation.
   const { width, height } = useWindowDimensions();
-  const dense = width > height;
+  const dense = width > height || bare;
   return (
     <View
       style={[

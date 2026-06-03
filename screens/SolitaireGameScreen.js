@@ -607,40 +607,13 @@ export default function SolitaireGameScreen({ navigation, route }) {
     },
   ];
 
-  const statsItems = (() => {
-    const vid = state.variantId;
-    const thirdItem =
-      vid === "klondike" || vid === "spider"
-        ? { label: "Stock", value: state.stock?.length ?? 0, accent: false }
-        : vid === "freecell"
-          ? {
-              label: "Free Cells",
-              value: (state.freecells || []).filter((c) => !c).length,
-              accent: false,
-            }
-          : vid === "pyramid"
-            ? { label: "Pairs", value: state.pairs ?? 0, accent: false }
-            : vid === "tripeaks"
-              ? { label: "Combo", value: state.combo ?? 0, accent: false }
-              : null;
-
-    return [
-      { label: "Moves", value: state.moves, accent: true },
-      { label: "Time", value: formatTime(elapsed), accent: false },
-      thirdItem,
-      vid === "spider"
-        ? { label: "Runs", value: state.completedRuns ?? 0, accent: false }
-        : null,
-    ].filter(Boolean);
-  })();
-
-  // Landscape: the stats live inside the header (replacing the title) so the
-  // standalone stats bar can be dropped — see the header's leftInfo below.
-  const renderStatsBar = () => (
-    <View style={styles.statsBar}>
-      <StatsStrip gameId="solitaire" items={statsItems} />
-    </View>
-  );
+  // Moves + Time only. Per-variant counts (stock, free cells, etc.) are already
+  // visible on the board, so they'd be redundant here. These live inside the
+  // header (replacing the title) in every orientation — see leftInfo below.
+  const statsItems = [
+    { label: "Moves", value: state.moves, accent: true },
+    { label: "Time", value: formatTime(elapsed), accent: false },
+  ];
 
   const renderKlondike = () => {
     const wasteTop = getTopCard(state.waste);
@@ -1200,11 +1173,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
       <GameHeader
         gameId="solitaire"
         title={variant.label}
-        leftInfo={
-          isLandscape ? (
-            <StatsStrip gameId="solitaire" items={statsItems} bare />
-          ) : null
-        }
+        leftInfo={<StatsStrip gameId="solitaire" items={statsItems} bare />}
         menuItems={menuItems}
       />
       <ScrollView
@@ -1213,7 +1182,6 @@ export default function SolitaireGameScreen({ navigation, route }) {
           isLandscape && styles.contentLandscape,
         ]}
       >
-        {!isLandscape && renderStatsBar()}
         <EndOfRoundModal
           visible={showRoundModal}
           title="🏆 You Won!"
