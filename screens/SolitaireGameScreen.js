@@ -749,10 +749,10 @@ export default function SolitaireGameScreen({ navigation, route }) {
                   styles.emptyColumnSlot,
                   pressed && styles.cardTouchPressed,
                   {
-                    width: Math.round(klondikeCardW),
-                    height: Math.round(klondikeCardH),
-                    minWidth: Math.round(klondikeCardW),
-                    minHeight: Math.round(klondikeCardH),
+                    width: Math.round(klondikeCardW * 0.8),
+                    height: Math.round(klondikeCardH * 0.8),
+                    minWidth: Math.round(klondikeCardW * 0.8),
+                    minHeight: Math.round(klondikeCardH * 0.8),
                   },
                 ]}
               >
