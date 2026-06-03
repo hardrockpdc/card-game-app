@@ -1,5 +1,11 @@
 import React, { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useResumePrompt } from "../game/useResumePrompt";
 import { scale, scaleFont } from "../game/responsive";
@@ -24,6 +30,8 @@ export default function ConquianSetupScreen({ navigation, route }) {
       : {};
 
   const promptIfSaved = useResumePrompt();
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
 
   const handleStart = async () => {
     const playerName = launchParams.myName ?? "Player";
@@ -53,139 +61,182 @@ export default function ConquianSetupScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView
-        contentContainerStyle={styles.container}
-        showsVerticalScrollIndicator={false}
-      >
-        <Text style={styles.title}>Conquián</Text>
-        <Text style={styles.subtitle}>
-          Classic Mexican rummy — be the first to meld your target and win.
+      <View style={[styles.content, isLandscape && styles.contentLandscape]}>
+        <Text style={[styles.title, isLandscape && styles.titleLandscape]}>
+          Conquián
         </Text>
+        {!isLandscape ? (
+          <Text style={styles.subtitle}>
+            Classic Mexican rummy — be the first to meld your target and win.
+          </Text>
+        ) : null}
 
-        <View style={styles.panel}>
-          <View style={styles.sectionBlock}>
-            <Text style={styles.sectionLabel}>AI Opponents</Text>
-            <View style={styles.pillRow}>
-              {[1, 2, 3].map((count) => {
-                const selected = count === aiCount;
-                return (
-                  <Pressable
-                    key={count}
-                    onPress={() => setAiCount(count)}
-                    style={({ pressed }) => [
-                      styles.pill,
-                      selected && styles.pillSelected,
-                      pressed && styles.pillPressed,
-                    ]}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${count} ${
-                      count === 1 ? "opponent" : "opponents"
-                    }`}
-                    accessibilityState={{ selected }}
-                  >
-                    <Text
-                      style={[
-                        styles.pillText,
-                        selected && styles.pillTextSelected,
+        <View style={[styles.panel, isLandscape && styles.panelLandscape]}>
+          <View style={styles.paneStack}>
+            <View style={styles.sectionBlock}>
+              <Text style={styles.sectionLabel}>AI Opponents</Text>
+              <View style={styles.pillRow}>
+                {[1, 2, 3].map((count) => {
+                  const selected = count === aiCount;
+                  return (
+                    <Pressable
+                      key={count}
+                      onPress={() => setAiCount(count)}
+                      style={({ pressed }) => [
+                        styles.pill,
+                        selected && styles.pillSelected,
+                        pressed && styles.pillPressed,
                       ]}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${count} ${
+                        count === 1 ? "opponent" : "opponents"
+                      }`}
+                      accessibilityState={{ selected }}
                     >
-                      {count}
-                    </Text>
-                  </Pressable>
-                );
-              })}
+                      <Text
+                        style={[
+                          styles.pillText,
+                          selected && styles.pillTextSelected,
+                        ]}
+                      >
+                        {count}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              <Text style={styles.constraintNote}>
+                {aiCount === 1
+                  ? "2 players · 10 cards each · meld 11 to win"
+                  : aiCount === 2
+                    ? "3 players · 8 cards each · meld 9 to win"
+                    : "4 players · 7 cards each · meld 8 to win"}
+              </Text>
             </View>
-            <Text style={styles.constraintNote}>
-              {aiCount === 1
-                ? "2 players · 10 cards each · meld 11 to win"
-                : aiCount === 2
-                  ? "3 players · 8 cards each · meld 9 to win"
-                  : "4 players · 7 cards each · meld 8 to win"}
-            </Text>
           </View>
 
           <Pressable
             onPress={handleStart}
             style={({ pressed }) => [
-              styles.startBtn,
-              pressed && styles.startBtnPressed,
+              styles.playButton,
+              pressed && styles.playButtonPressed,
             ]}
             accessibilityRole="button"
             accessibilityLabel="Start Game"
           >
-            <Text style={styles.startBtnText}>Start Game</Text>
+            <Text style={styles.playButtonText}>Start Game</Text>
           </Pressable>
         </View>
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#1a1a2e" },
-  container: { padding: scale(20), alignItems: "stretch" },
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#0f1115",
+  },
+  content: {
+    flex: 1,
+    padding: scale(14),
+    gap: scale(10),
+  },
+  contentLandscape: {
+    padding: scale(10),
+    gap: scale(6),
+  },
   title: {
-    color: "#ffffff",
-    fontSize: scaleFont(28),
-    fontWeight: "bold",
+    color: "#f5f7fb",
+    fontSize: scaleFont(34),
+    fontWeight: "900",
     textAlign: "center",
-    marginTop: scale(8),
+  },
+  titleLandscape: {
+    fontSize: scaleFont(22),
   },
   subtitle: {
-    color: "#c4c4d4",
-    fontSize: scaleFont(14),
+    color: "#a8b5c8",
+    fontSize: scaleFont(15),
+    lineHeight: scale(21),
     textAlign: "center",
-    marginTop: scale(8),
-    marginBottom: scale(20),
   },
   panel: {
-    backgroundColor: "#16213e",
-    borderRadius: scale(12),
-    padding: scale(16),
-  },
-  sectionBlock: { marginVertical: scale(10) },
-  sectionLabel: {
-    color: "#c4c4d4",
-    fontSize: scaleFont(12),
-    fontWeight: "bold",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-    marginBottom: scale(8),
-  },
-  pillRow: { flexDirection: "row", flexWrap: "wrap", gap: scale(8) },
-  pill: {
-    backgroundColor: "#1a1a2e",
-    paddingVertical: scale(8),
-    paddingHorizontal: scale(16),
-    borderRadius: scale(20),
+    flex: 1,
+    borderRadius: scale(22),
     borderWidth: 1,
-    borderColor: "#2a2a4a",
+    borderColor: "#243042",
+    backgroundColor: "#151a24",
+    padding: scale(14),
+    gap: scale(12),
   },
-  pillSelected: { backgroundColor: "#7fb3ff", borderColor: "#7fb3ff" },
-  pillPressed: { opacity: 0.7 },
-  pillText: {
-    color: "#c4c4d4",
-    fontSize: scaleFont(14),
-    fontWeight: "bold",
+  panelLandscape: {
+    padding: scale(10),
+    gap: scale(8),
   },
-  pillTextSelected: { color: "#0a0a1a" },
-  constraintNote: {
-    color: "#9090a8",
-    fontSize: scaleFont(12),
-    marginTop: scale(6),
-    fontStyle: "italic",
+  paneStack: {
+    flex: 1,
+    gap: scale(12),
+    justifyContent: "center",
   },
-  startBtn: {
-    backgroundColor: "#7fb3ff",
-    paddingVertical: scale(14),
-    borderRadius: scale(10),
+  sectionBlock: {
+    gap: scale(8),
+  },
+  sectionLabel: {
+    color: "#a8b5c8",
+    fontSize: scaleFont(11),
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 1.2,
+  },
+  pillRow: {
+    flexDirection: "row",
+    gap: scale(8),
+  },
+  pill: {
+    flex: 1,
+    minHeight: scale(48),
+    borderRadius: scale(999),
+    borderWidth: 1.5,
+    borderColor: "#2c3750",
+    backgroundColor: "#182131",
     alignItems: "center",
-    marginTop: scale(20),
+    justifyContent: "center",
   },
-  startBtnPressed: { opacity: 0.85 },
-  startBtnText: {
-    color: "#0a0a1a",
+  pillSelected: {
+    borderColor: "#77aef7",
+    backgroundColor: "#21314a",
+  },
+  pillPressed: {
+    opacity: 0.88,
+  },
+  pillText: {
+    color: "#d3dcec",
+    fontSize: scaleFont(14),
+    fontWeight: "800",
+  },
+  pillTextSelected: {
+    color: "#eef4ff",
+  },
+  constraintNote: {
+    color: "#6a7d96",
+    fontSize: scaleFont(12),
+    marginTop: scale(2),
+    textAlign: "center",
+  },
+  playButton: {
+    borderRadius: scale(16),
+    backgroundColor: "#77aef7",
+    alignItems: "center",
+    paddingVertical: scale(14),
+    marginTop: scale(4),
+  },
+  playButtonPressed: {
+    opacity: 0.92,
+  },
+  playButtonText: {
+    color: "#08111f",
     fontSize: scaleFont(16),
-    fontWeight: "bold",
+    fontWeight: "900",
   },
 });
