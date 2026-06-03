@@ -1,5 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useResumePrompt } from "../game/useResumePrompt";
 import {
@@ -35,6 +41,8 @@ export default function GoFishPickerScreen({ navigation }) {
   const [aiCount, setAiCount] = useState(1);
   const [difficulty, setDifficulty] = useState("medium");
   const promptIfSaved = useResumePrompt();
+  const { width: winW, height: winH } = useWindowDimensions();
+  const isLandscape = winW > winH;
 
   useEffect(() => {
     let isMounted = true;
@@ -75,74 +83,90 @@ export default function GoFishPickerScreen({ navigation }) {
     });
   };
 
+  const variantGrid = (
+    <VariantOptionGrid
+      value="gofish"
+      onChange={() => {}}
+      options={GO_FISH_VARIANTS}
+      singleColumn={isLandscape}
+    />
+  );
+
+  const controls = (
+    <>
+      <View style={styles.sectionBlock}>
+        <Text style={styles.sectionLabel}>AI Opponents</Text>
+        <View style={styles.pillRow}>
+          {[1, 2, 3].map((count) => (
+            <Pressable
+              key={count}
+              onPress={() => setAiCount(count)}
+              style={({ pressed }) => [
+                styles.pill,
+                aiCount === count && styles.pillSelected,
+                pressed && styles.pillPressed,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.pillText,
+                  aiCount === count && styles.pillTextSelected,
+                ]}
+              >
+                {count}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
+      <View style={styles.sectionBlock}>
+        <Text style={styles.sectionLabel}>Difficulty</Text>
+        <View style={styles.pillRow}>
+          {[
+            { id: "easy", label: "Easy" },
+            { id: "medium", label: "Medium" },
+            { id: "hard", label: "Hard" },
+          ].map((option) => {
+            const selected = option.id === difficulty;
+            return (
+              <Pressable
+                key={option.id}
+                onPress={() => setDifficulty(option.id)}
+                style={({ pressed }) => [
+                  styles.pill,
+                  selected && styles.pillSelected,
+                  pressed && styles.pillPressed,
+                ]}
+              >
+                <Text
+                  style={[styles.pillText, selected && styles.pillTextSelected]}
+                >
+                  {option.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+    </>
+  );
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.panel}>
-          <VariantOptionGrid
-            value="gofish"
-            onChange={() => {}}
-            options={GO_FISH_VARIANTS}
-          />
-
-          <View style={styles.sectionBlock}>
-            <Text style={styles.sectionLabel}>AI Opponents</Text>
-            <View style={styles.pillRow}>
-              {[1, 2, 3].map((count) => (
-                <Pressable
-                  key={count}
-                  onPress={() => setAiCount(count)}
-                  style={({ pressed }) => [
-                    styles.pill,
-                    aiCount === count && styles.pillSelected,
-                    pressed && styles.pillPressed,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.pillText,
-                      aiCount === count && styles.pillTextSelected,
-                    ]}
-                  >
-                    {count}
-                  </Text>
-                </Pressable>
-              ))}
+      <View style={[styles.content, isLandscape && styles.contentLandscape]}>
+        <View style={[styles.panel, isLandscape && styles.panelLandscape]}>
+          {isLandscape ? (
+            <View style={styles.paneRow}>
+              <View style={styles.pane}>{variantGrid}</View>
+              <View style={styles.pane}>{controls}</View>
             </View>
-          </View>
-
-          <View style={styles.sectionBlock}>
-            <Text style={styles.sectionLabel}>Difficulty</Text>
-            <View style={styles.pillRow}>
-              {[
-                { id: "easy", label: "Easy" },
-                { id: "medium", label: "Medium" },
-                { id: "hard", label: "Hard" },
-              ].map((option) => {
-                const selected = option.id === difficulty;
-                return (
-                  <Pressable
-                    key={option.id}
-                    onPress={() => setDifficulty(option.id)}
-                    style={({ pressed }) => [
-                      styles.pill,
-                      selected && styles.pillSelected,
-                      pressed && styles.pillPressed,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.pillText,
-                        selected && styles.pillTextSelected,
-                      ]}
-                    >
-                      {option.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
+          ) : (
+            <View style={styles.paneStack}>
+              {variantGrid}
+              {controls}
             </View>
-          </View>
+          )}
 
           <Pressable
             onPress={startGame}
@@ -154,7 +178,7 @@ export default function GoFishPickerScreen({ navigation }) {
             <Text style={styles.playButtonText}>Start Game</Text>
           </Pressable>
         </View>
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -165,16 +189,43 @@ const styles = StyleSheet.create({
     backgroundColor: "#0f1115",
   },
   content: {
-    padding: scale(18),
-    gap: scale(14),
+    flex: 1,
+    padding: scale(14),
+    gap: scale(10),
+    justifyContent: "center",
+  },
+  contentLandscape: {
+    padding: scale(10),
+    gap: scale(6),
+    justifyContent: "flex-start",
   },
   panel: {
+    flex: 1,
     borderRadius: scale(22),
     borderWidth: 1,
     borderColor: "#243042",
     backgroundColor: "#151a24",
-    padding: scale(16),
-    gap: scale(16),
+    padding: scale(14),
+    gap: scale(12),
+  },
+  panelLandscape: {
+    padding: scale(10),
+    gap: scale(8),
+  },
+  paneStack: {
+    flex: 1,
+    gap: scale(12),
+    justifyContent: "center",
+  },
+  paneRow: {
+    flex: 1,
+    flexDirection: "row",
+    gap: scale(12),
+  },
+  pane: {
+    flex: 1,
+    gap: scale(10),
+    justifyContent: "center",
   },
   sectionBlock: {
     gap: scale(8),

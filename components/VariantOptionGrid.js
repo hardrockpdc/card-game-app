@@ -23,10 +23,11 @@ export default function VariantOptionGrid({
   onChange,
   options = [],
   fill = false,
+  singleColumn = false,
 }) {
   const { width, height } = useWindowDimensions();
   const isLandscape = width > height;
-  const twoCol = isLandscape && options.length > 1;
+  const twoCol = !singleColumn && isLandscape && options.length > 1;
   const showDesc = !isLandscape && height >= 620;
 
   return (

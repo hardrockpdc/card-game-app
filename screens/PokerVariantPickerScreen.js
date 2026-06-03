@@ -1,5 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { useResumePrompt } from "../game/useResumePrompt";
@@ -103,6 +109,8 @@ function PokerVariantPickerScreen({ navigation, route }) {
     };
   }, []);
 
+  const { width: winW, height: winH } = useWindowDimensions();
+  const isLandscape = winW > winH;
   const modeCopy = useMemo(() => getModeCopy(mode), [mode]);
   const isLobby = mode === "lobby";
   const coinsLoaded = coins !== null;
@@ -154,136 +162,147 @@ function PokerVariantPickerScreen({ navigation, route }) {
     });
   };
 
+  const variantGrid = (
+    <VariantOptionGrid
+      value={selectedVariant}
+      onChange={setSelectedVariant}
+      options={POKER_VARIANT_OPTIONS}
+      singleColumn={isLandscape}
+    />
+  );
+
+  const controls = !isLobby ? (
+    <>
+      <View style={styles.sectionBlock}>
+        <Text style={styles.sectionLabel}>AI Opponents</Text>
+        <View style={styles.pillRow}>
+          {[1, 2, 3].map((count) => (
+            <Pressable
+              key={count}
+              onPress={() => setAiCount(count)}
+              style={({ pressed }) => [
+                styles.pill,
+                aiCount === count && styles.pillSelected,
+                pressed && styles.pillPressed,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.pillText,
+                  aiCount === count && styles.pillTextSelected,
+                ]}
+              >
+                {count}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
+      <View style={styles.sectionBlock}>
+        <Text style={styles.sectionLabel}>Difficulty</Text>
+        <View style={styles.pillRow}>
+          {[
+            { id: "easy", label: "Easy" },
+            { id: "medium", label: "Medium" },
+            { id: "hard", label: "Hard" },
+          ].map((option) => {
+            const selected = option.id === difficulty;
+
+            return (
+              <Pressable
+                key={option.id}
+                onPress={() => setDifficulty(option.id)}
+                style={({ pressed }) => [
+                  styles.pill,
+                  selected && styles.pillSelected,
+                  pressed && styles.pillPressed,
+                ]}
+              >
+                <Text
+                  style={[styles.pillText, selected && styles.pillTextSelected]}
+                >
+                  {option.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+
+      <View style={styles.sectionBlock}>
+        <View style={styles.buyInHeader}>
+          <Text style={styles.sectionLabel}>Buy-In</Text>
+          {coinsLoaded ? (
+            <Text style={styles.walletBalance}>
+              🪙 {coins.toLocaleString()}
+            </Text>
+          ) : null}
+        </View>
+        <View style={styles.pillRow}>
+          {[100, 250, 500, 1000].map((amount) => {
+            const isSelected = buyIn === amount;
+            const isAffordable = !coinsLoaded || coins >= amount;
+            return (
+              <Pressable
+                key={amount}
+                onPress={() => {
+                  if (isAffordable) setBuyIn(amount);
+                }}
+                disabled={!isAffordable}
+                style={({ pressed }) => [
+                  styles.pill,
+                  isSelected && styles.buyInPillSelected,
+                  !isAffordable && styles.pillDisabled,
+                  pressed && isAffordable && styles.pillPressed,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.pillText,
+                    styles.buyInChipText,
+                    isSelected && styles.buyInPillTextSelected,
+                    !isAffordable && styles.pillTextDisabled,
+                  ]}
+                >
+                  {amount}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+        {coinsLoaded && coins < 100 ? (
+          <Text style={styles.noCoinsWarning}>
+            You need at least 🪙 100 to play. Visit your Profile to reset your
+            coins.
+          </Text>
+        ) : null}
+      </View>
+    </>
+  ) : null;
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView
-        contentContainerStyle={styles.container}
-        showsVerticalScrollIndicator={false}
-      >
-        <Text style={styles.title}>{modeCopy.title}</Text>
-        {modeCopy.subtitle ? (
+      <View style={[styles.content, isLandscape && styles.contentLandscape]}>
+        <Text style={[styles.title, isLandscape && styles.titleLandscape]}>
+          {modeCopy.title}
+        </Text>
+        {modeCopy.subtitle && !isLandscape ? (
           <Text style={styles.subtitle}>{modeCopy.subtitle}</Text>
         ) : null}
 
-        <View style={styles.panel}>
-          <VariantOptionGrid
-            value={selectedVariant}
-            onChange={setSelectedVariant}
-            options={POKER_VARIANT_OPTIONS}
-          />
-
-          {!isLobby ? (
-            <>
-              <View style={styles.sectionBlock}>
-                <Text style={styles.sectionLabel}>AI Opponents</Text>
-                <View style={styles.pillRow}>
-                  {[1, 2, 3].map((count) => (
-                    <Pressable
-                      key={count}
-                      onPress={() => setAiCount(count)}
-                      style={({ pressed }) => [
-                        styles.pill,
-                        aiCount === count && styles.pillSelected,
-                        pressed && styles.pillPressed,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.pillText,
-                          aiCount === count && styles.pillTextSelected,
-                        ]}
-                      >
-                        {count}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
-
-              <View style={styles.sectionBlock}>
-                <Text style={styles.sectionLabel}>Difficulty</Text>
-                <View style={styles.pillRow}>
-                  {[
-                    { id: "easy", label: "Easy" },
-                    { id: "medium", label: "Medium" },
-                    { id: "hard", label: "Hard" },
-                  ].map((option) => {
-                    const selected = option.id === difficulty;
-
-                    return (
-                      <Pressable
-                        key={option.id}
-                        onPress={() => setDifficulty(option.id)}
-                        style={({ pressed }) => [
-                          styles.pill,
-                          selected && styles.pillSelected,
-                          pressed && styles.pillPressed,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.pillText,
-                            selected && styles.pillTextSelected,
-                          ]}
-                        >
-                          {option.label}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </View>
-
-              <View style={styles.sectionBlock}>
-                <View style={styles.buyInHeader}>
-                  <Text style={styles.sectionLabel}>Buy-In</Text>
-                  {coinsLoaded ? (
-                    <Text style={styles.walletBalance}>
-                      🪙 {coins.toLocaleString()}
-                    </Text>
-                  ) : null}
-                </View>
-                <View style={styles.pillRow}>
-                  {[100, 250, 500, 1000].map((amount) => {
-                    const isSelected = buyIn === amount;
-                    const isAffordable = !coinsLoaded || coins >= amount;
-                    return (
-                      <Pressable
-                        key={amount}
-                        onPress={() => {
-                          if (isAffordable) setBuyIn(amount);
-                        }}
-                        disabled={!isAffordable}
-                        style={({ pressed }) => [
-                          styles.pill,
-                          isSelected && styles.buyInPillSelected,
-                          !isAffordable && styles.pillDisabled,
-                          pressed && isAffordable && styles.pillPressed,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.pillText,
-                            styles.buyInChipText,
-                            isSelected && styles.buyInPillTextSelected,
-                            !isAffordable && styles.pillTextDisabled,
-                          ]}
-                        >
-                          {amount}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-                {coinsLoaded && coins < 100 ? (
-                  <Text style={styles.noCoinsWarning}>
-                    You need at least 🪙 100 to play. Visit your Profile to
-                    reset your coins.
-                  </Text>
-                ) : null}
-              </View>
-            </>
-          ) : null}
+        <View style={[styles.panel, isLandscape && styles.panelLandscape]}>
+          {isLandscape ? (
+            <View style={styles.paneRow}>
+              <View style={styles.pane}>{variantGrid}</View>
+              {controls ? <View style={styles.pane}>{controls}</View> : null}
+            </View>
+          ) : (
+            <View style={styles.paneStack}>
+              {variantGrid}
+              {controls}
+            </View>
+          )}
 
           <Pressable
             accessibilityRole="button"
@@ -299,7 +318,7 @@ function PokerVariantPickerScreen({ navigation, route }) {
             <Text style={styles.playButtonText}>{modeCopy.buttonLabel}</Text>
           </Pressable>
         </View>
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -309,15 +328,23 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#0f1115",
   },
-  container: {
-    padding: scale(18),
-    gap: scale(14),
+  content: {
+    flex: 1,
+    padding: scale(14),
+    gap: scale(10),
+  },
+  contentLandscape: {
+    padding: scale(10),
+    gap: scale(6),
   },
   title: {
     color: "#f5f7fb",
     fontSize: scaleFont(34),
     fontWeight: "900",
     textAlign: "center",
+  },
+  titleLandscape: {
+    fontSize: scaleFont(22),
   },
   subtitle: {
     color: "#a8b5c8",
@@ -326,12 +353,32 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   panel: {
+    flex: 1,
     borderRadius: scale(22),
     borderWidth: 1,
     borderColor: "#243042",
     backgroundColor: "#151a24",
-    padding: scale(16),
-    gap: scale(16),
+    padding: scale(14),
+    gap: scale(12),
+  },
+  panelLandscape: {
+    padding: scale(10),
+    gap: scale(8),
+  },
+  paneStack: {
+    flex: 1,
+    gap: scale(12),
+    justifyContent: "center",
+  },
+  paneRow: {
+    flex: 1,
+    flexDirection: "row",
+    gap: scale(12),
+  },
+  pane: {
+    flex: 1,
+    gap: scale(10),
+    justifyContent: "center",
   },
   sectionBlock: {
     gap: scale(8),
