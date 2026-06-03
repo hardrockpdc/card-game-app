@@ -184,6 +184,12 @@ export default function SolitaireGameScreen({ navigation, route }) {
   const isLandscape = width > height;
   const spiderBoardWidth = Math.max(width - 28, 500);
 
+  // Measured (not guessed) sizes for the landscape Klondike fit: the real height
+  // available for the tableau, and the real width the inline stats+menu take.
+  // onLayout fills these after first paint; we fall back to estimates until then.
+  const [tableauBoxH, setTableauBoxH] = useState(0);
+  const [headerRightW, setHeaderRightW] = useState(0);
+
   // ── Responsive Klondike sizing (Task 3 pilot) ───────────────────────────────
   // Card.js small-card width = 42 * clamp(width/390, 0.85, 1.5) * sizeScale, so
   // we derive the sizeScale needed to hit a target pixel width.
@@ -196,19 +202,22 @@ export default function SolitaireGameScreen({ navigation, route }) {
   let tableauAvailH = Infinity; // landscape: the height a column must fit within
 
   if (isLandscape) {
-    // Fill the 7 columns across the REAL available width. Purely proportional,
-    // so the board looks the same on any phone (no fixed-pixel reserves) and
-    // uses the whole width. Capped so tablets don't get giant cards.
+    // Fill the 7 columns across the REAL available width, but ALSO cap the card
+    // height to a fraction of the available tableau height (measured) so there's
+    // always room to overlap several cards down a column. Both are proportional
+    // to real measured space, so it looks consistent on any phone size.
     const contentW = width - 2 * 8 - 2 * 12; // content padding + boardCard padding
-    klondikeCardW = Math.max(
-      Math.min((contentW - (KLONDIKE_COLS - 1) * KGAP) / KLONDIKE_COLS, 120),
-      34,
-    );
+    const widthFillW = (contentW - (KLONDIKE_COLS - 1) * KGAP) / KLONDIKE_COLS;
+    const availForCards =
+      tableauBoxH > 0 ? tableauBoxH : Math.max(height - 180, 160);
+    const heightCapW = (availForCards * 0.62) / 1.43;
+    klondikeCardW = Math.max(Math.min(widthFillW, heightCapW, 120), 34);
     // Top slots: no bigger than tableau cards, and small enough that the 6 slots
-    // plus the inline stats/menu still fit the row.
-    const HEADER_RIGHT_RESERVE = 210;
+    // plus the inline stats/menu still fit the row. Reserve the MEASURED width of
+    // the stats+menu (fallback 210 until measured) so they never overlap F4.
+    const reserve = headerRightW > 0 ? headerRightW + 16 : 210;
     topSlotW = Math.max(
-      Math.min(klondikeCardW, (contentW - HEADER_RIGHT_RESERVE - 5 * 4) / 6),
+      Math.min(klondikeCardW, (contentW - reserve - 5 * 4) / 6),
       30,
     );
   } else {
@@ -232,17 +241,21 @@ export default function SolitaireGameScreen({ navigation, route }) {
   const faceDownPeek = Math.round(klondikeCardH * 0.05);
 
   if (isLandscape) {
-    // The height a column may occupy = screen minus the known chrome above and
-    // below the tableau (precise, not a guess — this is what makes it look the
-    // same across phone sizes). Columns taller than this compress to fit.
-    const chrome =
-      2 * 8 + // ScrollView content padding (top + bottom)
-      2 * 12 + // boardCard padding (top + bottom)
-      topSlotH + // top row (slots / stats / menu)
-      14 + // boardCard gap between top row and tableau
-      16 + // tableau top spacer
-      8; // small bottom safety
-    tableauAvailH = Math.max(height - chrome, klondikeCardH + 20);
+    // The height a column may occupy. Prefer the MEASURED tableau box height
+    // (minus the top spacer) so it fits the real screen exactly; until measured,
+    // fall back to an estimate from the known chrome.
+    if (tableauBoxH > 0) {
+      tableauAvailH = Math.max(tableauBoxH - 16 - 4, klondikeCardH + 20);
+    } else {
+      const chrome =
+        2 * 8 + // content padding (top + bottom)
+        2 * 12 + // boardCard padding (top + bottom)
+        topSlotH + // top row (slots / stats / menu)
+        14 + // boardCard gap between top row and tableau
+        16 + // tableau top spacer
+        8; // small bottom safety
+      tableauAvailH = Math.max(height - chrome, klondikeCardH + 20);
+    }
   }
 
   const [state, dispatch] = useReducer(solitaireReducerWithRestore, null, () =>
@@ -673,7 +686,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
       if (isLandscape && natural > tableauAvailH && natural > klondikeCardH) {
         factor = Math.max(
           (tableauAvailH - klondikeCardH) / (natural - klondikeCardH),
-          0.18,
+          0.1,
         );
       }
       return pile.map((card, i) =>
@@ -734,13 +747,18 @@ export default function SolitaireGameScreen({ navigation, route }) {
     );
 
     return (
-      <View style={styles.boardCard}>
+      <View style={[styles.boardCard, isLandscape && styles.boardCardFill]}>
         {/* Landscape: drop the header bar and put the stats + menu on the right
             end of the slot row, using the otherwise-empty horizontal space. */}
         {isLandscape ? (
           <View style={[styles.topRow, styles.klondikeTopRowLandscape]}>
             <View style={styles.klondikeSlotsGroup}>{topSlots}</View>
-            <View style={styles.landscapeHeaderRight}>
+            <View
+              style={styles.landscapeHeaderRight}
+              onLayout={(e) =>
+                setHeaderRightW(Math.round(e.nativeEvent.layout.width))
+              }
+            >
               <StatsStrip gameId="solitaire" items={statsItems} bare />
               <GameMenuButton menuItems={menuItems} />
             </View>
@@ -749,7 +767,14 @@ export default function SolitaireGameScreen({ navigation, route }) {
           <View style={[styles.topRow, styles.klondikeTopRow]}>{topSlots}</View>
         )}
 
-        <View style={styles.tableauRow}>
+        <View
+          style={[styles.tableauRow, isLandscape && styles.tableauRowFill]}
+          onLayout={
+            isLandscape
+              ? (e) => setTableauBoxH(Math.round(e.nativeEvent.layout.height))
+              : undefined
+          }
+        >
           {state.tableau.map((pile, pileIndex) => {
             const margins = klondikeColumnMargins(pile);
             return (
@@ -1255,11 +1280,33 @@ export default function SolitaireGameScreen({ navigation, route }) {
     );
   };
 
+  const klondikeLandscape = isLandscape && state.variantId === "klondike";
+
+  const endOfRoundModal = (
+    <EndOfRoundModal
+      visible={showRoundModal}
+      title="🏆 You Won!"
+      message={coinsEarned > 0 ? `+${coinsEarned} coins!` : ""}
+      showContinue
+      showLeave
+      isGameOver
+      onContinue={() => {
+        setShowRoundModal(false);
+        restart();
+      }}
+      onLeave={() => {
+        clearGame(solitaireSaveKey(state.variantId || routeVariantId));
+        navigation.navigate("Home");
+      }}
+      tableColor={BG}
+    />
+  );
+
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* Klondike landscape moves the stats + menu into the slot row, so the
           header bar is dropped there. Every other case keeps the header. */}
-      {!(isLandscape && state.variantId === "klondike") && (
+      {!klondikeLandscape && (
         <GameHeader
           gameId="solitaire"
           title={variant.label}
@@ -1267,35 +1314,29 @@ export default function SolitaireGameScreen({ navigation, route }) {
           menuItems={menuItems}
         />
       )}
-      <ScrollView
-        contentContainerStyle={[
-          styles.content,
-          isLandscape && styles.contentLandscape,
-        ]}
-      >
-        <EndOfRoundModal
-          visible={showRoundModal}
-          title="🏆 You Won!"
-          message={coinsEarned > 0 ? `+${coinsEarned} coins!` : ""}
-          showContinue
-          showLeave
-          isGameOver
-          onContinue={() => {
-            setShowRoundModal(false);
-            restart();
-          }}
-          onLeave={() => {
-            clearGame(solitaireSaveKey(state.variantId || routeVariantId));
-            navigation.navigate("Home");
-          }}
-          tableColor={BG}
-        />
-        {state.variantId === "klondike" ? renderKlondike() : null}
-        {state.variantId === "spider" ? renderSpider() : null}
-        {state.variantId === "freecell" ? renderFreeCell() : null}
-        {state.variantId === "pyramid" ? renderPyramid() : null}
-        {state.variantId === "tripeaks" ? renderTriPeaks() : null}
-      </ScrollView>
+
+      {klondikeLandscape ? (
+        // No ScrollView: a flex:1 container that fills the screen so the board
+        // physically can't scroll. The tableau measures itself and fits.
+        <View style={styles.fillContainer}>
+          {endOfRoundModal}
+          {renderKlondike()}
+        </View>
+      ) : (
+        <ScrollView
+          contentContainerStyle={[
+            styles.content,
+            isLandscape && styles.contentLandscape,
+          ]}
+        >
+          {endOfRoundModal}
+          {state.variantId === "klondike" ? renderKlondike() : null}
+          {state.variantId === "spider" ? renderSpider() : null}
+          {state.variantId === "freecell" ? renderFreeCell() : null}
+          {state.variantId === "pyramid" ? renderPyramid() : null}
+          {state.variantId === "tripeaks" ? renderTriPeaks() : null}
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
@@ -1312,6 +1353,17 @@ const styles = StyleSheet.create({
   contentLandscape: {
     padding: 8,
     gap: 8,
+  },
+  fillContainer: {
+    flex: 1,
+    padding: 8,
+  },
+  boardCardFill: {
+    flex: 1,
+  },
+  tableauRowFill: {
+    flex: 1,
+    overflow: "hidden",
   },
   statsBar: {
     flexDirection: "row",
