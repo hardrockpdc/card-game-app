@@ -197,7 +197,12 @@ export default function SolitaireGameScreen({ navigation, route }) {
   const klondikeCardW = Math.max(Math.min(widthFit, heightCap, 100), 34);
   const cardClamp = Math.min(Math.max(width / 390, 0.85), 1.5);
   const klondikeCardScale = klondikeCardW / (42 * cardClamp);
-  const klondikeOverlap = -Math.round(klondikeCardW * 1.43 * 0.62);
+  const klondikeCardH = klondikeCardW * 1.43;
+  // Tighter stacking keeps columns short (less scrolling): a face-down card
+  // shows only a thin sliver; a face-up card shows enough to read its corner
+  // index. The overlap for card N is driven by how much of card N-1 to reveal.
+  const faceUpPeek = Math.round(klondikeCardH * 0.3);
+  const faceDownPeek = Math.round(klondikeCardH * 0.16);
 
   // Top row (Klondike): 6 equal slots sharing the tableau card footprint.
   const topSlotW = Math.round(klondikeCardW);
@@ -722,7 +727,14 @@ export default function SolitaireGameScreen({ navigation, route }) {
                     disabled={!card.faceUp}
                     style={[
                       styles.stackCard,
-                      cardIndex > 0 && { marginTop: klondikeOverlap },
+                      cardIndex > 0 && {
+                        marginTop: -(
+                          klondikeCardH -
+                          (pile[cardIndex - 1].faceUp
+                            ? faceUpPeek
+                            : faceDownPeek)
+                        ),
+                      },
                     ]}
                   />
                 );
