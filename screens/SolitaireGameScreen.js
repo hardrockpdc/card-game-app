@@ -210,8 +210,11 @@ export default function SolitaireGameScreen({ navigation, route }) {
     const widthFillW = (availW - (KLONDIKE_COLS - 1) * KGAP) / KLONDIKE_COLS;
     const heightCapW = (availH * 0.62) / 1.43;
     klondikeCardW = Math.max(Math.min(widthFillW, heightCapW, 100), 34);
-    // Rail slots: a compact fixed size (4 fit across the rail under the stats).
-    slotW = Math.max(Math.min(Math.round(width * 0.055), 52), 34);
+    // Rail = stats row + 3 slot rows (Stock/Waste, then F1-F4 as a 2x2 grid).
+    // Size each slot from the available height so all 3 rows fit and the slots
+    // are as big as possible.
+    const slotBudgetH = (availH - 36 - 3 * 8) / 3;
+    slotW = Math.max(Math.min(Math.round(slotBudgetH / 1.43), 96), 40);
   } else {
     // Portrait: bound by width so 7 columns fit; height cap keeps cards sane.
     const widthFit =
@@ -827,7 +830,14 @@ export default function SolitaireGameScreen({ navigation, route }) {
               {stockSlot}
               {wasteSlot}
             </View>
-            <View style={styles.railSlotRow}>{foundationSlots}</View>
+            <View style={styles.railSlotRow}>
+              {foundationSlots[0]}
+              {foundationSlots[1]}
+            </View>
+            <View style={styles.railSlotRow}>
+              {foundationSlots[2]}
+              {foundationSlots[3]}
+            </View>
           </View>
         </View>
       );
@@ -1378,7 +1388,7 @@ const styles = StyleSheet.create({
   railSlotRow: {
     flexDirection: "row",
     gap: 6,
-    flexWrap: "wrap",
+    justifyContent: "space-between",
   },
   statsBar: {
     flexDirection: "row",
