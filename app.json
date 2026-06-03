@@ -53,7 +53,8 @@
     "owner": "hardrockpdc",
     "plugins": [
       "expo-audio",
-      "expo-image-picker"
+      "expo-image-picker",
+      "react-native-edge-to-edge"
     ],
     "runtimeVersion": {
       "policy": "appVersion"

@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { AppState, Platform, StatusBar } from "react-native";
+import { AppState } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -44,15 +44,7 @@ import {
   stopDiscovery,
   disconnectFromHost,
 } from "./game/GameNetwork";
-
-// expo-navigation-bar is a native module. On a dev build made BEFORE it was
-// added (i.e. before the next rebuild), requiring it throws "Cannot find
-// native module 'ExpoNavigationBar'". Load it defensively so the app degrades
-// to "no immersive nav bar" instead of crashing on startup.
-let NavigationBar = null;
-try {
-  NavigationBar = require("expo-navigation-bar");
-} catch {}
+import { SystemBars } from "react-native-edge-to-edge";
 
 const Stack = createNativeStackNavigator();
 
@@ -86,29 +78,13 @@ export default function App() {
     return () => sub.remove();
   }, []);
 
-  // Immersive mode (Android): hide BOTH the top status bar (time/signal/battery)
-  // and the bottom navigation bar. A swipe from an edge reveals them briefly,
-  // then they auto-hide (sticky). Re-apply on return to the foreground, since
-  // the bars can reappear after backgrounding.
-  useEffect(() => {
-    if (Platform.OS !== "android") return;
-    const applyImmersive = () => {
-      StatusBar.setHidden(true, "fade");
-      if (NavigationBar) {
-        NavigationBar.setVisibilityAsync("hidden");
-        NavigationBar.setBehaviorAsync("overlay-swipe");
-      }
-    };
-    applyImmersive();
-    const sub = AppState.addEventListener("change", (s) => {
-      if (s === "active") applyImmersive();
-    });
-    return () => sub.remove();
-  }, []);
-
   return (
     <ErrorBoundary>
       <SafeAreaProvider>
+        {/* Immersive: hide both system bars. SystemBars is the edge-to-edge-
+            correct approach for SDK 54 (expo-navigation-bar's hide is a no-op
+            under edge-to-edge). A swipe from an edge reveals them briefly. */}
+        <SystemBars hidden style="light" />
         <ThemeProvider>
           <NavigationContainer>
             <Stack.Navigator
