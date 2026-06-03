@@ -1,6 +1,5 @@
 import React, { useEffect } from "react";
 import { AppState, Platform, StatusBar } from "react-native";
-import * as NavigationBar from "expo-navigation-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -46,6 +45,15 @@ import {
   disconnectFromHost,
 } from "./game/GameNetwork";
 
+// expo-navigation-bar is a native module. On a dev build made BEFORE it was
+// added (i.e. before the next rebuild), requiring it throws "Cannot find
+// native module 'ExpoNavigationBar'". Load it defensively so the app degrades
+// to "no immersive nav bar" instead of crashing on startup.
+let NavigationBar = null;
+try {
+  NavigationBar = require("expo-navigation-bar");
+} catch {}
+
 const Stack = createNativeStackNavigator();
 
 export default function App() {
@@ -86,8 +94,10 @@ export default function App() {
     if (Platform.OS !== "android") return;
     const applyImmersive = () => {
       StatusBar.setHidden(true, "fade");
-      NavigationBar.setVisibilityAsync("hidden");
-      NavigationBar.setBehaviorAsync("overlay-swipe");
+      if (NavigationBar) {
+        NavigationBar.setVisibilityAsync("hidden");
+        NavigationBar.setBehaviorAsync("overlay-swipe");
+      }
     };
     applyImmersive();
     const sub = AppState.addEventListener("change", (s) => {
