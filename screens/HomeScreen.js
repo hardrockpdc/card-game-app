@@ -115,9 +115,11 @@ export default function HomeScreen({ navigation }) {
           style={styles.quitButton}
           onPress={handleQuit}
           accessibilityRole="button"
-          accessibilityLabel="Quit app"
+          accessibilityLabel="Quit Card Night"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Text style={styles.quitButtonText}>✕</Text>
+          <Text style={styles.quitButtonIcon}>✕</Text>
+          <Text style={styles.quitButtonText}>Quit Game</Text>
         </TouchableOpacity>
       )}
       <ScrollView
@@ -271,20 +273,26 @@ const styles = StyleSheet.create({
     top: 12,
     right: 14,
     zIndex: 10,
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.05)",
+    paddingVertical: 7,
+    paddingHorizontal: 13,
+    borderRadius: 999,
+    backgroundColor: "rgba(233,69,96,0.12)",
     borderWidth: 1,
-    borderColor: "#2a3650",
+    borderColor: "rgba(233,69,96,0.45)",
+  },
+  quitButtonIcon: {
+    color: "#ff6b81",
+    fontSize: 14,
+    fontWeight: "800",
+    marginRight: 6,
   },
   quitButtonText: {
-    color: "#e94560",
-    fontSize: 18,
-    fontWeight: "800",
-    lineHeight: 20,
+    color: "#ff6b81",
+    fontSize: 13,
+    fontWeight: "700",
+    letterSpacing: 0.3,
   },
   namePill: {
     backgroundColor: "#16213e",
