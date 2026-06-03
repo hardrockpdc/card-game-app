@@ -26,7 +26,8 @@ button, stats/header merge, etc.) is **pure JS and already live** via Metro.
    Lets the app rotate at all. Without this, nothing rotates on device.
 
 3. **Solitaire landscape lock** — `expo-screen-orientation` (`~9.0.9`).
-   Locks Klondike / FreeCell / Spider to landscape on focus, releases on leave.
+   Locks all five variants (Klondike / FreeCell / Spider / Pyramid / TriPeaks)
+   to landscape on focus, releases on leave.
    - Guarded require, so it's a no-op (no lock, no crash) until built.
 
 4. **(verify) Local-network permissions** — Android `NEARBY_WIFI_DEVICES`,
@@ -44,7 +45,8 @@ button, stats/header merge, etc.) is **pure JS and already live** via Metro.
   other variants + the rest of the app rotate freely.
 - (If #4 applied) multiplayer host/join still works.
 
-## Still TODO before it's worth batching the build (optional)
+## Status
 
-- Pyramid + TriPeaks landscape layouts (pure JS — can land before the build so
-  they're testable, but they're not blockers for the build itself).
+- All five Solitaire variants now have landscape layouts (pure JS, live on the
+  current binary — test by rotating). The landscape *lock* for them is item #3
+  above and needs the build.
