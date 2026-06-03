@@ -233,11 +233,11 @@ export default function SolitaireGameScreen({ navigation, route }) {
   const klondikeCardH = klondikeCardW * 1.43;
   const topSlotH = Math.round(topSlotW * 1.43);
   const topSlotScale = topSlotW / (42 * cardClamp);
-  // Desired overlap: a face-up card shows enough to read its corner index; a
-  // face-down card shows only a thin sliver. Long columns shrink these (per
+  // Overlap: face-up and face-down cards now use the same thin sliver, so the
+  // whole stack is tightly compressed. Long columns shrink this further (per
   // column) to fit — see klondikeColumnMargins in renderKlondike.
-  const faceUpPeek = Math.round(klondikeCardH * 0.3);
   const faceDownPeek = Math.round(klondikeCardH * 0.05);
+  const faceUpPeek = faceDownPeek;
 
   if (isLandscape) {
     // The height a column may occupy. Prefer the MEASURED tableau box height
