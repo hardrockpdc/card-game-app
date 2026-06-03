@@ -20,6 +20,7 @@
     "expo-image-manipulator": "~14.0.8",
     "expo-image-picker": "~17.0.11",
     "expo-network": "~8.0.8",
+    "expo-screen-orientation": "~9.0.9",
     "expo-status-bar": "~3.0.9",
     "expo-updates": "~29.0.18",
     "fbjs": "^3.0.5",

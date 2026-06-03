@@ -1,4 +1,11 @@
-import React, { useEffect, useMemo, useReducer, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import {
   Alert,
   Animated,
@@ -12,6 +19,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
 
 import Card from "../components/Card";
 import GameHeader from "../components/GameHeader";
@@ -33,6 +41,13 @@ import { recordWin } from "../game/profile";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import { getTableTheme } from "../game/tableThemes";
 import { scale } from "../game/responsive";
+
+// expo-screen-orientation is a native module; guard the require so a dev build
+// made before it was added doesn't crash — it simply won't lock until rebuilt.
+let ScreenOrientation = null;
+try {
+  ScreenOrientation = require("expo-screen-orientation");
+} catch {}
 
 const BG = getTableTheme("solitaire").table;
 
@@ -190,6 +205,23 @@ export default function SolitaireGameScreen({ navigation, route }) {
   // feedback (the vibration we hit before). Fallbacks apply until first measure.
   const [tableauBoxH, setTableauBoxH] = useState(0);
   const [tableauBoxW, setTableauBoxW] = useState(0);
+
+  // Klondike has a dedicated landscape layout, so lock the screen to landscape
+  // while it's focused and release it on leave. No-op without the native module
+  // (i.e. on a dev build made before it was added) so nothing crashes.
+  useFocusEffect(
+    useCallback(() => {
+      if (!ScreenOrientation || routeVariantId !== "klondike") {
+        return undefined;
+      }
+      ScreenOrientation.lockAsync(
+        ScreenOrientation.OrientationLock.LANDSCAPE,
+      ).catch(() => {});
+      return () => {
+        ScreenOrientation.unlockAsync().catch(() => {});
+      };
+    }, [routeVariantId]),
+  );
 
   // ── Responsive Klondike sizing (Task 3 pilot) ───────────────────────────────
   // Card.js small-card width = 42 * clamp(width/390, 0.85, 1.5) * sizeScale, so
