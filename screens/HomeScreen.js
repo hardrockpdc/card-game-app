@@ -7,6 +7,9 @@ import {
   TouchableOpacity,
   StyleSheet,
   useWindowDimensions,
+  Platform,
+  Alert,
+  BackHandler,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import {
@@ -92,8 +95,31 @@ export default function HomeScreen({ navigation }) {
     });
   }
 
+  // Android-only: an explicit way to close the app from the home screen.
+  // (iOS forbids apps from terminating themselves, so the button is hidden there.)
+  function handleQuit() {
+    Alert.alert("Quit Card Night?", "This will close the app.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Quit",
+        style: "destructive",
+        onPress: () => BackHandler.exitApp(),
+      },
+    ]);
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
+      {Platform.OS === "android" && (
+        <TouchableOpacity
+          style={styles.quitButton}
+          onPress={handleQuit}
+          accessibilityRole="button"
+          accessibilityLabel="Quit app"
+        >
+          <Text style={styles.quitButtonText}>✕</Text>
+        </TouchableOpacity>
+      )}
       <ScrollView
         contentContainerStyle={[
           styles.container,
@@ -134,7 +160,11 @@ export default function HomeScreen({ navigation }) {
             onPress={goToSinglePlayer}
             accessibilityRole="button"
             accessibilityLabel="Single Player"
-            accessibilityHint={!profileHasName ? "Set up your profile first to enable this button" : "Opens single-player game setup"}
+            accessibilityHint={
+              !profileHasName
+                ? "Set up your profile first to enable this button"
+                : "Opens single-player game setup"
+            }
             accessibilityState={{ disabled: !profileHasName }}
           >
             <Text
@@ -235,6 +265,26 @@ const styles = StyleSheet.create({
     color: "#c4c4d4",
     textAlign: "center",
     marginBottom: 20,
+  },
+  quitButton: {
+    position: "absolute",
+    top: 12,
+    right: 14,
+    zIndex: 10,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderWidth: 1,
+    borderColor: "#2a3650",
+  },
+  quitButtonText: {
+    color: "#e94560",
+    fontSize: 18,
+    fontWeight: "800",
+    lineHeight: 20,
   },
   namePill: {
     backgroundColor: "#16213e",
