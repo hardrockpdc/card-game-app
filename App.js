@@ -44,7 +44,15 @@ import {
   stopDiscovery,
   disconnectFromHost,
 } from "./game/GameNetwork";
-import { SystemBars } from "react-native-edge-to-edge";
+
+// SystemBars needs the react-native-edge-to-edge native module (RNEdgeToEdge),
+// which isn't present in a dev build made before it was added. Load it
+// defensively so the app still runs (without immersive) until the next native
+// build, instead of crashing with "RNEdgeToEdge could not be found".
+let SystemBars = null;
+try {
+  SystemBars = require("react-native-edge-to-edge").SystemBars;
+} catch {}
 
 const Stack = createNativeStackNavigator();
 
@@ -81,10 +89,9 @@ export default function App() {
   return (
     <ErrorBoundary>
       <SafeAreaProvider>
-        {/* Immersive: hide both system bars. SystemBars is the edge-to-edge-
-            correct approach for SDK 54 (expo-navigation-bar's hide is a no-op
-            under edge-to-edge). A swipe from an edge reveals them briefly. */}
-        <SystemBars hidden style="light" />
+        {/* Immersive: hide both system bars (edge-to-edge-correct for SDK 54).
+            Guarded so a dev build without the native module doesn't crash. */}
+        {SystemBars && <SystemBars hidden style="light" />}
         <ThemeProvider>
           <NavigationContainer>
             <Stack.Navigator
