@@ -1880,6 +1880,11 @@ const styles = StyleSheet.create({
   rightRail: {
     gap: 8,
     alignItems: "stretch",
+    backgroundColor: "#1b2433", // a touch lighter than the board (#141a24)
+    borderWidth: 1,
+    borderColor: "#2a3650",
+    borderRadius: 14,
+    padding: 8,
   },
   railSlotRow: {
     flexDirection: "row",
