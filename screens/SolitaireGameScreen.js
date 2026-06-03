@@ -209,7 +209,9 @@ export default function SolitaireGameScreen({ navigation, route }) {
     const availH = tableauBoxH > 0 ? tableauBoxH : Math.max(height - 30, 150);
     const widthFillW = (availW - (KLONDIKE_COLS - 1) * KGAP) / KLONDIKE_COLS;
     const heightCapW = (availH * 0.62) / 1.43;
-    klondikeCardW = Math.max(Math.min(widthFillW, heightCapW, 100), 34);
+    // 0.95 = a touch smaller than a full width-fill, leaving a little breathing
+    // room between columns.
+    klondikeCardW = Math.max(Math.min(widthFillW, heightCapW, 100) * 0.95, 34);
     // Rail = stats row + 3 slot rows (Stock/Waste, then F1-F4 as a 2x2 grid).
     // Size each slot from the available height so all 3 rows fit and the slots
     // are as big as possible.
