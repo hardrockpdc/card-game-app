@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { AppState, Platform } from "react-native";
+import { AppState, Platform, StatusBar } from "react-native";
 import * as NavigationBar from "expo-navigation-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { NavigationContainer } from "@react-navigation/native";
@@ -78,12 +78,14 @@ export default function App() {
     return () => sub.remove();
   }, []);
 
-  // Immersive mode (Android): hide the system navigation bar; a swipe from the
-  // edge reveals it briefly, then it auto-hides (sticky). Re-apply on return to
-  // the foreground, since the bar can reappear after backgrounding.
+  // Immersive mode (Android): hide BOTH the top status bar (time/signal/battery)
+  // and the bottom navigation bar. A swipe from an edge reveals them briefly,
+  // then they auto-hide (sticky). Re-apply on return to the foreground, since
+  // the bars can reappear after backgrounding.
   useEffect(() => {
     if (Platform.OS !== "android") return;
     const applyImmersive = () => {
+      StatusBar.setHidden(true, "fade");
       NavigationBar.setVisibilityAsync("hidden");
       NavigationBar.setBehaviorAsync("overlay-swipe");
     };
