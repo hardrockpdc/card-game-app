@@ -194,7 +194,10 @@ export default function SolitaireGameScreen({ navigation, route }) {
   const KLONDIKE_COLS = 7;
   const widthFit = (width - 28 - 24 - (KLONDIKE_COLS - 1) * 8) / KLONDIKE_COLS;
   const usableHeight = Math.max(height - 200, 240);
-  const heightCap = (usableHeight * 0.42) / 1.43;
+  // 0.34 caps each card's height at 34% of usable height. In landscape this is
+  // the binding factor, so lowering it shrinks the cards and leaves more room
+  // to add cards down a column before it scrolls. (Portrait is bound by width.)
+  const heightCap = (usableHeight * 0.34) / 1.43;
   const klondikeCardW = Math.max(Math.min(widthFit, heightCap, 100), 34);
   const cardClamp = Math.min(Math.max(width / 390, 0.85), 1.5);
   const klondikeCardScale = klondikeCardW / (42 * cardClamp);
