@@ -184,41 +184,34 @@ export default function SolitaireGameScreen({ navigation, route }) {
   const isLandscape = width > height;
   const spiderBoardWidth = Math.max(width - 28, 500);
 
-  // Measured (not guessed) sizes for the landscape Klondike fit: the real height
-  // available for the tableau, and the real width the inline stats+menu take.
-  // onLayout fills these after first paint; we fall back to estimates until then.
+  // Measured size of the LEFT tableau region in landscape. Because the slots now
+  // live in a side rail (not above the tableau), the tableau's own width/height
+  // no longer depend on card size — so measuring them can't cause sizing
+  // feedback (the vibration we hit before). Fallbacks apply until first measure.
   const [tableauBoxH, setTableauBoxH] = useState(0);
-  const [headerRightW, setHeaderRightW] = useState(0);
+  const [tableauBoxW, setTableauBoxW] = useState(0);
 
   // ── Responsive Klondike sizing (Task 3 pilot) ───────────────────────────────
   // Card.js small-card width = 42 * clamp(width/390, 0.85, 1.5) * sizeScale, so
   // we derive the sizeScale needed to hit a target pixel width.
   const KLONDIKE_COLS = 7;
-  const KGAP = 8; // gap between tableau columns
+  const KGAP = isLandscape ? 4 : 8; // tighter column spacing in landscape
   const cardClamp = Math.min(Math.max(width / 390, 0.85), 1.5);
 
   let klondikeCardW;
-  let topSlotW;
+  let slotW; // stock/waste/foundation slot size for the current orientation
   let tableauAvailH = Infinity; // landscape: the height a column must fit within
 
   if (isLandscape) {
-    // Card height is capped to a fraction of the tableau height derived from the
-    // WINDOW size (a STABLE input). It must NOT depend on the measured tableau
-    // box, or sizing would change the top-row height, which changes the measured
-    // box, which resizes the cards… = vibration. The measured box is used only
-    // for the overlap fit below, which can't feed back into layout.
-    const contentW = width - 2 * 8 - 2 * 12; // content padding + boardCard padding
-    const widthFillW = (contentW - (KLONDIKE_COLS - 1) * KGAP) / KLONDIKE_COLS;
-    const availEstimate = Math.max(height - 170, 150);
-    const heightCapW = (availEstimate * 0.5) / 1.43;
+    // Tableau fills the MEASURED left region: cards fill the 7 columns across its
+    // width, capped by its height so there's room to overlap. Stable to measure.
+    const availW = tableauBoxW > 0 ? tableauBoxW : width * 0.68;
+    const availH = tableauBoxH > 0 ? tableauBoxH : Math.max(height - 30, 150);
+    const widthFillW = (availW - (KLONDIKE_COLS - 1) * KGAP) / KLONDIKE_COLS;
+    const heightCapW = (availH * 0.62) / 1.43;
     klondikeCardW = Math.max(Math.min(widthFillW, heightCapW, 100), 34);
-    // Stock/Waste/F1-F4 a touch smaller than tableau cards, and small enough
-    // that they + the inline stats/menu (measured width) still fit the row.
-    const reserve = headerRightW > 0 ? headerRightW + 16 : 210;
-    topSlotW = Math.max(
-      Math.min(klondikeCardW * 0.9, (contentW - reserve - 5 * 4) / 6),
-      30,
-    );
+    // Rail slots: a compact fixed size (4 fit across the rail under the stats).
+    slotW = Math.max(Math.min(Math.round(width * 0.055), 52), 34);
   } else {
     // Portrait: bound by width so 7 columns fit; height cap keeps cards sane.
     const widthFit =
@@ -226,13 +219,13 @@ export default function SolitaireGameScreen({ navigation, route }) {
     const usableHeight = Math.max(height - 200, 240);
     const heightCap = (usableHeight * 0.34) / 1.43;
     klondikeCardW = Math.max(Math.min(widthFit, heightCap, 100), 34);
-    topSlotW = Math.round(klondikeCardW);
+    slotW = Math.round(klondikeCardW);
   }
 
   const klondikeCardScale = klondikeCardW / (42 * cardClamp);
   const klondikeCardH = klondikeCardW * 1.43;
-  const topSlotH = Math.round(topSlotW * 1.43);
-  const topSlotScale = topSlotW / (42 * cardClamp);
+  const slotH = Math.round(slotW * 1.43);
+  const slotScale = slotW / (42 * cardClamp);
   // Overlap: face-up cards reveal ~10% (enough to tell them apart), face-down
   // only a 2% sliver. Long columns shrink these further (per column) to fit —
   // see klondikeColumnMargins in renderKlondike.
@@ -240,21 +233,8 @@ export default function SolitaireGameScreen({ navigation, route }) {
   const faceDownPeek = Math.round(klondikeCardH * 0.02);
 
   if (isLandscape) {
-    // The height a column may occupy. Prefer the MEASURED tableau box height
-    // (minus the top spacer) so it fits the real screen exactly; until measured,
-    // fall back to an estimate from the known chrome.
-    if (tableauBoxH > 0) {
-      tableauAvailH = Math.max(tableauBoxH - 16 - 4, klondikeCardH + 20);
-    } else {
-      const chrome =
-        2 * 8 + // content padding (top + bottom)
-        2 * 12 + // boardCard padding (top + bottom)
-        topSlotH + // top row (slots / stats / menu)
-        14 + // boardCard gap between top row and tableau
-        16 + // tableau top spacer
-        8; // small bottom safety
-      tableauAvailH = Math.max(height - chrome, klondikeCardH + 20);
-    }
+    const availH = tableauBoxH > 0 ? tableauBoxH : Math.max(height - 30, 150);
+    tableauAvailH = Math.max(availH - 6, klondikeCardH + 20);
   }
 
   const [state, dispatch] = useReducer(solitaireReducerWithRestore, null, () =>
@@ -698,153 +678,170 @@ export default function SolitaireGameScreen({ navigation, route }) {
       );
     };
 
-    const topSlots = (
-      <>
-        <StockSlot
-          label={state.stock.length > 0 ? `Stock ${state.stock.length}` : "↻"}
-          onPress={() => dispatch(tapAction({ type: "stock" }))}
-          style={{ width: topSlotW, height: topSlotH }}
-        />
-
-        <CardSlot
-          card={wasteTop}
-          label="Waste"
-          sizeScale={topSlotScale}
-          onPress={() => dispatch(tapAction({ type: "waste" }))}
-          selected={sameTarget(state.selected, { type: "waste" })}
-          style={{
-            width: topSlotW,
-            height: topSlotH,
-            minWidth: topSlotW,
-            minHeight: topSlotH,
-          }}
-        />
-
-        {state.foundations.map((foundation, index) => {
-          const top = getTopCard(foundation);
-          const selected =
-            state.selected?.type === "foundation" &&
-            state.selected.index === index;
-          return (
-            <CardSlot
-              key={`foundation-${index}`}
-              card={top}
-              label={`F${index + 1}`}
-              sizeScale={topSlotScale}
-              onPress={() => dispatch(tapAction({ type: "foundation", index }))}
-              selected={selected}
-              style={{
-                width: topSlotW,
-                height: topSlotH,
-                minWidth: topSlotW,
-                minHeight: topSlotH,
-              }}
-            />
-          );
-        })}
-      </>
+    const stockSlot = (
+      <StockSlot
+        label={state.stock.length > 0 ? `Stock ${state.stock.length}` : "↻"}
+        onPress={() => dispatch(tapAction({ type: "stock" }))}
+        style={{ width: slotW, height: slotH }}
+      />
     );
 
-    return (
-      <View style={[styles.boardCard, isLandscape && styles.boardCardFill]}>
-        {/* Landscape: drop the header bar and put the stats + menu on the right
-            end of the slot row, using the otherwise-empty horizontal space. */}
-        {isLandscape ? (
-          <View style={[styles.topRow, styles.klondikeTopRowLandscape]}>
-            <View style={styles.klondikeSlotsGroup}>{topSlots}</View>
-            <View
-              style={styles.landscapeHeaderRight}
-              onLayout={(e) => {
-                const w = Math.round(e.nativeEvent.layout.width);
-                setHeaderRightW((prev) => (Math.abs(prev - w) > 1 ? w : prev));
-              }}
-            >
-              <StatsStrip gameId="solitaire" items={statsItems} bare />
-              <GameMenuButton menuItems={menuItems} />
-            </View>
-          </View>
-        ) : (
-          <View style={[styles.topRow, styles.klondikeTopRow]}>{topSlots}</View>
-        )}
+    const wasteSlot = (
+      <CardSlot
+        card={wasteTop}
+        label="Waste"
+        sizeScale={slotScale}
+        onPress={() => dispatch(tapAction({ type: "waste" }))}
+        selected={sameTarget(state.selected, { type: "waste" })}
+        style={{
+          width: slotW,
+          height: slotH,
+          minWidth: slotW,
+          minHeight: slotH,
+        }}
+      />
+    );
 
-        <View
-          style={[styles.tableauRow, isLandscape && styles.tableauRowFill]}
-          onLayout={
-            isLandscape
-              ? (e) => {
-                  const h = Math.round(e.nativeEvent.layout.height);
-                  setTableauBoxH((prev) => (Math.abs(prev - h) > 1 ? h : prev));
+    const foundationSlots = state.foundations.map((foundation, index) => {
+      const top = getTopCard(foundation);
+      const selected =
+        state.selected?.type === "foundation" && state.selected.index === index;
+      return (
+        <CardSlot
+          key={`foundation-${index}`}
+          card={top}
+          label={`F${index + 1}`}
+          sizeScale={slotScale}
+          onPress={() => dispatch(tapAction({ type: "foundation", index }))}
+          selected={selected}
+          style={{
+            width: slotW,
+            height: slotH,
+            minWidth: slotW,
+            minHeight: slotH,
+          }}
+        />
+      );
+    });
+
+    const columns = state.tableau.map((pile, pileIndex) => {
+      const margins = klondikeColumnMargins(pile);
+      return (
+        <View key={`klondike-${pileIndex}`} style={styles.tableauColumn}>
+          {pile.length === 0 ? (
+            <>
+              <View
+                style={[
+                  styles.tableauTopSpacer,
+                  isLandscape && styles.tableauTopSpacerLandscape,
+                ]}
+              />
+              <Pressable
+                onPress={() =>
+                  dispatch(tapAction({ type: "tableau", index: pileIndex }))
                 }
-              : undefined
-          }
-        >
-          {state.tableau.map((pile, pileIndex) => {
-            const margins = klondikeColumnMargins(pile);
+                style={({ pressed }) => [
+                  styles.emptyColumnSlot,
+                  pressed && styles.cardTouchPressed,
+                  {
+                    width: Math.round(klondikeCardW),
+                    height: Math.round(klondikeCardH),
+                    minWidth: Math.round(klondikeCardW),
+                    minHeight: Math.round(klondikeCardH),
+                  },
+                ]}
+              >
+                <Text style={styles.emptyColumnText}>Empty</Text>
+              </Pressable>
+            </>
+          ) : (
+            <View
+              style={[
+                styles.tableauTopSpacer,
+                isLandscape && styles.tableauTopSpacerLandscape,
+              ]}
+            />
+          )}
+
+          {pile.map((card, cardIndex) => {
+            const selected = isTableauSelection(
+              state.selected,
+              pileIndex,
+              cardIndex,
+            );
+
             return (
-              <View key={`klondike-${pileIndex}`} style={styles.tableauColumn}>
-                {pile.length === 0 ? (
-                  <>
-                    <View style={styles.tableauTopSpacer} />
-                    <Pressable
-                      onPress={() =>
-                        dispatch(
-                          tapAction({ type: "tableau", index: pileIndex }),
-                        )
-                      }
-                      style={({ pressed }) => [
-                        styles.emptyColumnSlot,
-                        pressed && styles.cardTouchPressed,
-                        {
-                          width: Math.round(klondikeCardW),
-                          height: Math.round(klondikeCardH),
-                          minWidth: Math.round(klondikeCardW),
-                          minHeight: Math.round(klondikeCardH),
-                        },
-                      ]}
-                    >
-                      <Text style={styles.emptyColumnText}>Empty</Text>
-                    </Pressable>
-                  </>
-                ) : (
-                  <View style={styles.tableauTopSpacer} />
-                )}
-
-                {pile.map((card, cardIndex) => {
-                  const selected = isTableauSelection(
-                    state.selected,
-                    pileIndex,
-                    cardIndex,
-                  );
-
-                  return (
-                    <CardSlot
-                      key={card.id}
-                      card={card}
-                      label=""
-                      animateReveal={true}
-                      sizeScale={klondikeCardScale}
-                      onPress={() =>
-                        dispatch(
-                          tapAction({
-                            type: "tableau",
-                            index: pileIndex,
-                            cardIndex,
-                          }),
-                        )
-                      }
-                      selected={selected}
-                      disabled={!card.faceUp}
-                      style={[
-                        styles.stackCard,
-                        cardIndex > 0 && { marginTop: margins[cardIndex] },
-                      ]}
-                    />
-                  );
-                })}
-              </View>
+              <CardSlot
+                key={card.id}
+                card={card}
+                label=""
+                animateReveal={true}
+                sizeScale={klondikeCardScale}
+                onPress={() =>
+                  dispatch(
+                    tapAction({
+                      type: "tableau",
+                      index: pileIndex,
+                      cardIndex,
+                    }),
+                  )
+                }
+                selected={selected}
+                disabled={!card.faceUp}
+                style={[
+                  styles.stackCard,
+                  cardIndex > 0 && { marginTop: margins[cardIndex] },
+                ]}
+              />
             );
           })}
         </View>
+      );
+    });
+
+    // Landscape: tableau fills the left at full height; Stock/Waste/F1-F4 live
+    // in a right rail beneath the stats + menu.
+    if (isLandscape) {
+      return (
+        <View
+          style={[styles.boardCard, styles.boardCardFill, styles.boardCardRow]}
+        >
+          <View
+            style={[styles.tableauRow, styles.tableauRowFill]}
+            onLayout={(e) => {
+              const w = Math.round(e.nativeEvent.layout.width);
+              const h = Math.round(e.nativeEvent.layout.height);
+              setTableauBoxW((prev) => (Math.abs(prev - w) > 1 ? w : prev));
+              setTableauBoxH((prev) => (Math.abs(prev - h) > 1 ? h : prev));
+            }}
+          >
+            {columns}
+          </View>
+
+          <View style={styles.rightRail}>
+            <View style={styles.landscapeHeaderRight}>
+              <StatsStrip gameId="solitaire" items={statsItems} bare />
+              <GameMenuButton menuItems={menuItems} />
+            </View>
+            <View style={styles.railSlotRow}>
+              {stockSlot}
+              {wasteSlot}
+            </View>
+            <View style={styles.railSlotRow}>{foundationSlots}</View>
+          </View>
+        </View>
+      );
+    }
+
+    // Portrait: slots in a top row above the tableau.
+    return (
+      <View style={styles.boardCard}>
+        <View style={[styles.topRow, styles.klondikeTopRow]}>
+          {stockSlot}
+          {wasteSlot}
+          {foundationSlots}
+        </View>
+        <View style={styles.tableauRow}>{columns}</View>
       </View>
     );
   };
@@ -1364,9 +1361,24 @@ const styles = StyleSheet.create({
   boardCardFill: {
     flex: 1,
   },
+  boardCardRow: {
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "stretch", // tableau + rail fill the full board height
+  },
   tableauRowFill: {
     flex: 1,
+    gap: 4, // condensed column spacing in landscape (matches KGAP)
     overflow: "hidden",
+  },
+  rightRail: {
+    gap: 8,
+    alignItems: "stretch",
+  },
+  railSlotRow: {
+    flexDirection: "row",
+    gap: 6,
+    flexWrap: "wrap",
   },
   statsBar: {
     flexDirection: "row",
@@ -1428,24 +1440,11 @@ const styles = StyleSheet.create({
     flexWrap: "nowrap",
     justifyContent: "space-between",
   },
-  klondikeTopRowLandscape: {
-    gap: scale(8),
-    flexWrap: "nowrap",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-  },
-  klondikeSlotsGroup: {
-    flexDirection: "row",
-    gap: 4,
-    alignItems: "flex-start",
-    flexShrink: 1,
-  },
   landscapeHeaderRight: {
     flexDirection: "row",
     alignItems: "center",
-    gap: scale(12),
-    alignSelf: "center",
-    flexShrink: 0,
+    gap: scale(10),
+    flexWrap: "wrap",
   },
   stockSlot: {
     width: 70,
@@ -1542,6 +1541,9 @@ const styles = StyleSheet.create({
   },
   tableauTopSpacer: {
     height: 16,
+  },
+  tableauTopSpacerLandscape: {
+    height: 2, // move the columns up toward the top in landscape
   },
   emptyColumnSlot: {
     width: 70,
