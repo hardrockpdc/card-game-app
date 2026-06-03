@@ -211,7 +211,10 @@ export default function SolitaireGameScreen({ navigation, route }) {
   // (i.e. on a dev build made before it was added) so nothing crashes.
   useFocusEffect(
     useCallback(() => {
-      if (!ScreenOrientation || routeVariantId !== "klondike") {
+      if (
+        !ScreenOrientation ||
+        !["klondike", "freecell"].includes(routeVariantId)
+      ) {
         return undefined;
       }
       ScreenOrientation.lockAsync(
@@ -223,56 +226,78 @@ export default function SolitaireGameScreen({ navigation, route }) {
     }, [routeVariantId]),
   );
 
-  // ── Responsive Klondike sizing (Task 3 pilot) ───────────────────────────────
-  // Card.js small-card width = 42 * clamp(width/390, 0.85, 1.5) * sizeScale, so
-  // we derive the sizeScale needed to hit a target pixel width.
-  const KLONDIKE_COLS = 7;
+  // ── Responsive tableau sizing (landscape rail layout) ───────────────────────
+  // Shared by the column-based variants (Klondike, FreeCell). Card.js small-card
+  // width = 42 * clamp(width/390, 0.85, 1.5) * sizeScale, so we derive sizeScale.
+  const TAB_COLS =
+    { klondike: 7, freecell: 8, spider: 10 }[routeVariantId] || 7;
   const KGAP = isLandscape ? 4 : 8; // tighter column spacing in landscape
   const cardClamp = Math.min(Math.max(width / 390, 0.85), 1.5);
 
-  let klondikeCardW;
-  let slotW; // stock/waste/foundation slot size for the current orientation
+  let tabCardW;
+  let slotW; // free cell / foundation / stock / waste slot size
   let tableauAvailH = Infinity; // landscape: the height a column must fit within
 
   if (isLandscape) {
-    // Tableau fills the MEASURED left region: cards fill the 7 columns across its
+    // Tableau fills the MEASURED left region: cards fill all columns across its
     // width, capped by its height so there's room to overlap. Stable to measure.
     const availW = tableauBoxW > 0 ? tableauBoxW : width * 0.68;
     const availH = tableauBoxH > 0 ? tableauBoxH : Math.max(height - 30, 150);
-    const widthFillW = (availW - (KLONDIKE_COLS - 1) * KGAP) / KLONDIKE_COLS;
+    const widthFillW = (availW - (TAB_COLS - 1) * KGAP) / TAB_COLS;
     const heightCapW = (availH * 0.62) / 1.43;
-    // 0.95 = a touch smaller than a full width-fill, leaving a little breathing
-    // room between columns.
-    klondikeCardW = Math.max(Math.min(widthFillW, heightCapW, 100) * 0.95, 34);
-    // Rail = stats row + 3 slot rows (Stock/Waste, then F1-F4 as a 2x2 grid).
-    // Size each slot from the available height so all 3 rows fit and the slots
-    // are as big as possible.
-    const slotBudgetH = (availH - 36 - 3 * 8) / 3;
+    // 0.95 = a touch smaller than a full width-fill, leaving breathing room.
+    tabCardW = Math.max(Math.min(widthFillW, heightCapW, 100) * 0.95, 34);
+    // Rail = stats row + slot rows; size each slot from the available height so
+    // all rows fit. FreeCell needs 4 rows (free cells 2x2 + foundations 2x2);
+    // Klondike needs 3 (Stock/Waste + foundations 2x2).
+    const railRows = routeVariantId === "freecell" ? 4 : 3;
+    const slotBudgetH = (availH - 36 - railRows * 8) / railRows;
     slotW = Math.max(Math.min(Math.round(slotBudgetH / 1.43), 96), 40);
   } else {
-    // Portrait: bound by width so 7 columns fit; height cap keeps cards sane.
-    const widthFit =
-      (width - 28 - 24 - (KLONDIKE_COLS - 1) * 8) / KLONDIKE_COLS;
+    // Portrait (Klondike): bound by width so 7 columns fit; height cap keeps sane.
+    const widthFit = (width - 28 - 24 - (7 - 1) * 8) / 7;
     const usableHeight = Math.max(height - 200, 240);
     const heightCap = (usableHeight * 0.34) / 1.43;
-    klondikeCardW = Math.max(Math.min(widthFit, heightCap, 100), 34);
-    slotW = Math.round(klondikeCardW);
+    tabCardW = Math.max(Math.min(widthFit, heightCap, 100), 34);
+    slotW = Math.round(tabCardW);
   }
 
-  const klondikeCardScale = klondikeCardW / (42 * cardClamp);
-  const klondikeCardH = klondikeCardW * 1.43;
+  const tabCardScale = tabCardW / (42 * cardClamp);
+  const tabCardH = tabCardW * 1.43;
   const slotH = Math.round(slotW * 1.43);
   const slotScale = slotW / (42 * cardClamp);
-  // Overlap: face-up cards reveal ~10% (enough to tell them apart), face-down
-  // only a 2% sliver. Long columns shrink these further (per column) to fit —
-  // see klondikeColumnMargins in renderKlondike.
-  const faceUpPeek = Math.round(klondikeCardH * 0.1);
-  const faceDownPeek = Math.round(klondikeCardH * 0.02);
+  // Overlap: face-up cards reveal ~10%, face-down only a 2% sliver. Long columns
+  // shrink these further (per column) to fit — see tableauColumnMargins.
+  const faceUpPeek = Math.round(tabCardH * 0.1);
+  const faceDownPeek = Math.round(tabCardH * 0.02);
 
   if (isLandscape) {
     const availH = tableauBoxH > 0 ? tableauBoxH : Math.max(height - 30, 150);
-    tableauAvailH = Math.max(availH - 6, klondikeCardH + 20);
+    tableauAvailH = Math.max(availH - 6, tabCardH + 20);
   }
+
+  // Per-column adaptive overlap, shared by the column variants. If a column's
+  // natural height would overflow the available height (landscape), its overlaps
+  // compress by one factor so it fits — short columns stay spread, long ones
+  // bunch, nothing scrolls. Returns a marginTop per card index (0 for the first).
+  const tableauColumnMargins = (pile) => {
+    let natural = tabCardH;
+    for (let i = 1; i < pile.length; i++) {
+      natural += pile[i - 1].faceUp ? faceUpPeek : faceDownPeek;
+    }
+    let factor = 1;
+    if (isLandscape && natural > tableauAvailH && natural > tabCardH) {
+      factor = Math.max((tableauAvailH - tabCardH) / (natural - tabCardH), 0.1);
+    }
+    return pile.map((card, i) =>
+      i === 0
+        ? 0
+        : -Math.round(
+            tabCardH -
+              (pile[i - 1].faceUp ? faceUpPeek : faceDownPeek) * factor,
+          ),
+    );
+  };
 
   const [state, dispatch] = useReducer(solitaireReducerWithRestore, null, () =>
     createSolitaireState(routeVariantId, { spiderMode: routeSpiderMode }),
@@ -689,32 +714,6 @@ export default function SolitaireGameScreen({ navigation, route }) {
   const renderKlondike = () => {
     const wasteTop = getTopCard(state.waste);
 
-    // Per-column overlap: each column reveals its face-up cards by ~30% and
-    // face-down by ~5%. If that natural height would overflow the available
-    // height (landscape), the whole column's overlaps compress by one factor so
-    // it exactly fits — short columns stay spread, long ones bunch, no scroll.
-    const klondikeColumnMargins = (pile) => {
-      let natural = klondikeCardH;
-      for (let i = 1; i < pile.length; i++) {
-        natural += pile[i - 1].faceUp ? faceUpPeek : faceDownPeek;
-      }
-      let factor = 1;
-      if (isLandscape && natural > tableauAvailH && natural > klondikeCardH) {
-        factor = Math.max(
-          (tableauAvailH - klondikeCardH) / (natural - klondikeCardH),
-          0.1,
-        );
-      }
-      return pile.map((card, i) =>
-        i === 0
-          ? 0
-          : -Math.round(
-              klondikeCardH -
-                (pile[i - 1].faceUp ? faceUpPeek : faceDownPeek) * factor,
-            ),
-      );
-    };
-
     const stockSlot = (
       <StockSlot
         label={state.stock.length > 0 ? `Stock ${state.stock.length}` : "↻"}
@@ -762,7 +761,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
     });
 
     const columns = state.tableau.map((pile, pileIndex) => {
-      const margins = klondikeColumnMargins(pile);
+      const margins = tableauColumnMargins(pile);
       return (
         <View key={`klondike-${pileIndex}`} style={styles.tableauColumn}>
           {pile.length === 0 ? (
@@ -781,10 +780,10 @@ export default function SolitaireGameScreen({ navigation, route }) {
                   styles.emptyColumnSlot,
                   pressed && styles.cardTouchPressed,
                   {
-                    width: Math.round(klondikeCardW * 0.8),
-                    height: Math.round(klondikeCardH * 0.8),
-                    minWidth: Math.round(klondikeCardW * 0.8),
-                    minHeight: Math.round(klondikeCardH * 0.8),
+                    width: Math.round(tabCardW * 0.8),
+                    height: Math.round(tabCardH * 0.8),
+                    minWidth: Math.round(tabCardW * 0.8),
+                    minHeight: Math.round(tabCardH * 0.8),
                   },
                 ]}
               >
@@ -813,7 +812,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                 card={card}
                 label=""
                 animateReveal={true}
-                sizeScale={klondikeCardScale}
+                sizeScale={tabCardScale}
                 onPress={() =>
                   dispatch(
                     tapAction({
@@ -1039,114 +1038,190 @@ export default function SolitaireGameScreen({ navigation, route }) {
     </View>
   );
 
-  const renderFreeCell = () => (
-    <View style={styles.boardCard}>
-      <View style={[styles.topRow, styles.freeCellTopRow]}>
-        <View style={[styles.freeCellGroup, styles.freeCellGroupSpaced]}>
-          {state.freecells.map((card, index) => {
-            const selected =
-              state.selected?.type === "freecell" &&
-              state.selected.index === index;
+  const renderFreeCell = () => {
+    const railSlotStyle = {
+      width: slotW,
+      height: slotH,
+      minWidth: slotW,
+      minHeight: slotH,
+    };
 
-            return (
-              <CardSlot
-                key={`freecell-${index}`}
-                card={card}
-                label={`Free ${index + 1}`}
-                onPress={() => dispatch(tapAction({ type: "freecell", index }))}
-                selected={selected}
-                style={styles.slotCard}
+    const freeCellSlots = state.freecells.map((card, index) => {
+      const selected =
+        state.selected?.type === "freecell" && state.selected.index === index;
+      return (
+        <CardSlot
+          key={`freecell-${index}`}
+          card={card}
+          label={`Free ${index + 1}`}
+          sizeScale={isLandscape ? slotScale : undefined}
+          onPress={() => dispatch(tapAction({ type: "freecell", index }))}
+          selected={selected}
+          style={isLandscape ? railSlotStyle : styles.slotCard}
+        />
+      );
+    });
+
+    const foundationSlots = state.foundations.map((foundation, index) => {
+      const top = getTopCard(foundation);
+      const selected =
+        state.selected?.type === "foundation" && state.selected.index === index;
+      return (
+        <CardSlot
+          key={`freecell-foundation-${index}`}
+          card={top}
+          label={`F${index + 1}`}
+          sizeScale={isLandscape ? slotScale : undefined}
+          onPress={() => dispatch(tapAction({ type: "foundation", index }))}
+          selected={selected}
+          style={isLandscape ? railSlotStyle : styles.slotCard}
+        />
+      );
+    });
+
+    const columns = state.tableau.map((pile, pileIndex) => {
+      const margins = isLandscape ? tableauColumnMargins(pile) : null;
+      return (
+        <View key={`freecell-${pileIndex}`} style={styles.tableauColumn}>
+          {pile.length === 0 ? (
+            <>
+              <View
+                style={[
+                  styles.tableauTopSpacer,
+                  isLandscape && styles.tableauTopSpacerLandscape,
+                ]}
               />
-            );
-          })}
-        </View>
+              <Pressable
+                onPress={() =>
+                  dispatch(tapAction({ type: "tableau", index: pileIndex }))
+                }
+                style={({ pressed }) => [
+                  styles.emptyColumnSlot,
+                  pressed && styles.cardTouchPressed,
+                  isLandscape && {
+                    width: Math.round(tabCardW * 0.8),
+                    height: Math.round(tabCardH * 0.8),
+                    minWidth: Math.round(tabCardW * 0.8),
+                    minHeight: Math.round(tabCardH * 0.8),
+                  },
+                ]}
+              >
+                <Text style={styles.emptyColumnText}>Empty</Text>
+              </Pressable>
+            </>
+          ) : (
+            <View
+              style={[
+                styles.tableauTopSpacer,
+                isLandscape && styles.tableauTopSpacerLandscape,
+              ]}
+            />
+          )}
 
-        <View style={styles.foundationRow}>
-          {state.foundations.map((foundation, index) => {
-            const top = getTopCard(foundation);
-            const selected =
-              state.selected?.type === "foundation" &&
-              state.selected.index === index;
+          {pile.map((card, cardIndex) => {
+            const selected = isTableauSelection(
+              state.selected,
+              pileIndex,
+              cardIndex,
+            );
 
             return (
               <CardSlot
-                key={`freecell-foundation-${index}`}
-                card={top}
-                label={`F${index + 1}`}
+                key={card.id}
+                card={card}
+                label=""
+                animateReveal={true}
+                sizeScale={isLandscape ? tabCardScale : undefined}
                 onPress={() =>
-                  dispatch(tapAction({ type: "foundation", index }))
+                  dispatch(
+                    tapAction({
+                      type: "tableau",
+                      index: pileIndex,
+                      cardIndex,
+                    }),
+                  )
                 }
                 selected={selected}
-                style={styles.slotCard}
+                style={[
+                  styles.stackCard,
+                  isLandscape
+                    ? cardIndex > 0 && { marginTop: margins[cardIndex] }
+                    : cardIndex > 0 && styles.stackCardOverlap,
+                ]}
               />
             );
           })}
         </View>
-      </View>
+      );
+    });
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.spiderScrollContent}
-      >
-        <View style={[styles.tableauRow, styles.freeCellTableauRow]}>
-          {state.tableau.map((pile, pileIndex) => (
-            <View key={`freecell-${pileIndex}`} style={styles.tableauColumn}>
-              {pile.length === 0 ? (
-                <>
-                  <View style={styles.tableauTopSpacer} />
-                  <Pressable
-                    onPress={() =>
-                      dispatch(tapAction({ type: "tableau", index: pileIndex }))
-                    }
-                    style={({ pressed }) => [
-                      styles.emptyColumnSlot,
-                      pressed && styles.cardTouchPressed,
-                    ]}
-                  >
-                    <Text style={styles.emptyColumnText}>Empty</Text>
-                  </Pressable>
-                </>
-              ) : (
-                <View style={styles.tableauTopSpacer} />
-              )}
+    // Landscape: tableau fills the left; free cells + foundations in a right rail
+    // (each as a 2x2 grid) beneath the stats + menu.
+    if (isLandscape) {
+      return (
+        <View
+          style={[styles.boardCard, styles.boardCardFill, styles.boardCardRow]}
+        >
+          <View
+            style={[styles.tableauRow, styles.tableauRowFill]}
+            onLayout={(e) => {
+              const w = Math.round(e.nativeEvent.layout.width);
+              const h = Math.round(e.nativeEvent.layout.height);
+              setTableauBoxW((prev) => (Math.abs(prev - w) > 1 ? w : prev));
+              setTableauBoxH((prev) => (Math.abs(prev - h) > 1 ? h : prev));
+            }}
+          >
+            {columns}
+          </View>
 
-              {pile.map((card, cardIndex) => {
-                const selected = isTableauSelection(
-                  state.selected,
-                  pileIndex,
-                  cardIndex,
-                );
-
-                return (
-                  <CardSlot
-                    key={card.id}
-                    card={card}
-                    label=""
-                    animateReveal={true}
-                    onPress={() =>
-                      dispatch(
-                        tapAction({
-                          type: "tableau",
-                          index: pileIndex,
-                          cardIndex,
-                        }),
-                      )
-                    }
-                    selected={selected}
-                    style={[
-                      styles.stackCard,
-                      cardIndex > 0 && styles.stackCardOverlap,
-                    ]}
-                  />
-                );
-              })}
+          <View style={styles.rightRail}>
+            <View style={styles.landscapeHeaderRight}>
+              <StatsStrip gameId="solitaire" items={statsItems} bare />
+              <GameMenuButton menuItems={menuItems} />
             </View>
-          ))}
+            <View style={styles.railSlotRow}>
+              {freeCellSlots[0]}
+              {freeCellSlots[1]}
+            </View>
+            <View style={styles.railSlotRow}>
+              {freeCellSlots[2]}
+              {freeCellSlots[3]}
+            </View>
+            <View style={[styles.railSlotRow, styles.railFoundationsTop]}>
+              {foundationSlots[0]}
+              {foundationSlots[1]}
+            </View>
+            <View style={styles.railSlotRow}>
+              {foundationSlots[2]}
+              {foundationSlots[3]}
+            </View>
+          </View>
         </View>
-      </ScrollView>
-    </View>
-  );
+      );
+    }
+
+    // Portrait: free cells + foundations row, then the horizontal-scroll tableau.
+    return (
+      <View style={styles.boardCard}>
+        <View style={[styles.topRow, styles.freeCellTopRow]}>
+          <View style={[styles.freeCellGroup, styles.freeCellGroupSpaced]}>
+            {freeCellSlots}
+          </View>
+          <View style={styles.foundationRow}>{foundationSlots}</View>
+        </View>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.spiderScrollContent}
+        >
+          <View style={[styles.tableauRow, styles.freeCellTableauRow]}>
+            {columns}
+          </View>
+        </ScrollView>
+      </View>
+    );
+  };
 
   const renderPyramid = () => {
     const wasteTop = getTopCard(state.waste);
@@ -1324,7 +1399,10 @@ export default function SolitaireGameScreen({ navigation, route }) {
     );
   };
 
-  const klondikeLandscape = isLandscape && state.variantId === "klondike";
+  // Column-based variants with a dedicated landscape rail layout.
+  const railLandscape =
+    isLandscape &&
+    (state.variantId === "klondike" || state.variantId === "freecell");
 
   const endOfRoundModal = (
     <EndOfRoundModal
@@ -1348,9 +1426,9 @@ export default function SolitaireGameScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Klondike landscape moves the stats + menu into the slot row, so the
+      {/* The landscape rail layout puts the stats + menu in the rail, so the
           header bar is dropped there. Every other case keeps the header. */}
-      {!klondikeLandscape && (
+      {!railLandscape && (
         <GameHeader
           gameId="solitaire"
           title={variant.label}
@@ -1359,12 +1437,13 @@ export default function SolitaireGameScreen({ navigation, route }) {
         />
       )}
 
-      {klondikeLandscape ? (
+      {railLandscape ? (
         // No ScrollView: a flex:1 container that fills the screen so the board
         // physically can't scroll. The tableau measures itself and fits.
         <View style={styles.fillContainer}>
           {endOfRoundModal}
-          {renderKlondike()}
+          {state.variantId === "klondike" ? renderKlondike() : null}
+          {state.variantId === "freecell" ? renderFreeCell() : null}
         </View>
       ) : (
         <ScrollView
