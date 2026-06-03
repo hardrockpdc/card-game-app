@@ -284,7 +284,10 @@ export default function SolitaireGameScreen({ navigation, route }) {
         : ["spider", "pyramid", "tripeaks"].includes(routeVariantId)
           ? 2
           : 3;
-    const slotBudgetH = (availH - 36 - railRows * 8) / railRows;
+    // availH minus the rail's own padding (16) + stats row (~36) + foundations
+    // gap (6) + inter-row gaps, split across the rows — so the slots stay inside
+    // the rail's border.
+    const slotBudgetH = (availH - 58 - railRows * 8) / railRows;
     slotW = Math.max(Math.min(Math.round(slotBudgetH / 1.43), 96), 40);
   } else {
     // Portrait (Klondike): bound by width so 7 columns fit; height cap keeps sane.
