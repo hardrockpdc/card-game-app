@@ -24,7 +24,6 @@ const THEME_FOLDERS = [
   "cards_cowboy",
   "card_images_girly",
   "card_images_hp",
-  "card_images_jewel",
   "card_images_classic",
   "card_images_gothic",
   "card_images_pirate",
