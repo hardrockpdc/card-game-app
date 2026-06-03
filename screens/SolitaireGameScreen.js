@@ -236,7 +236,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
   // Overlap: face-up and face-down cards now use the same thin sliver, so the
   // whole stack is tightly compressed. Long columns shrink this further (per
   // column) to fit — see klondikeColumnMargins in renderKlondike.
-  const faceDownPeek = Math.round(klondikeCardH * 0.05);
+  const faceDownPeek = Math.round(klondikeCardH * 0.07);
   const faceUpPeek = faceDownPeek;
 
   if (isLandscape) {
