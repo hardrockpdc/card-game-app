@@ -10,7 +10,6 @@ import {
   StyleSheet,
   Text,
   View,
-  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -18,6 +17,7 @@ import Card from "../components/Card";
 import GameHeader from "../components/GameHeader";
 import EndOfRoundModal from "../components/EndOfRoundModal";
 import StatsStrip from "../components/StatsStrip";
+import { useLayoutMode } from "../game/useLayoutMode";
 import {
   createSolitaireState,
   getTopCard,
@@ -172,12 +172,28 @@ export default function SolitaireGameScreen({ navigation, route }) {
   const routeVariantId = route?.params?.variantId || "klondike";
   const routeSpiderMode = route?.params?.spiderMode || 4;
 
-  const { width } = useWindowDimensions();
+  const { width, height } = useLayoutMode();
   const spiderBoardWidth = Math.max(width - 28, 500);
-  // Top row (Klondike): 6 equal slots across boardCard inner width
-  // outer padding 14*2=28, boardCard padding 12*2=24, 5 gaps of 4px = 20
-  const topSlotW = Math.max(Math.floor((width - 28 - 24 - 20) / 6), 38);
-  const topSlotH = Math.round(topSlotW * 1.4);
+
+  // ── Responsive Klondike sizing (Task 3 pilot) ───────────────────────────────
+  // Size cards so the 7 tableau columns fit the available width, then reuse that
+  // footprint for the 6-slot top row so they line up. Cap by height (so a short
+  // landscape screen doesn't overflow the board) and by a max (so tablets don't
+  // get giant cards). Card.js small-card width = 42 * clamp(width/390, 0.85,
+  // 1.5) * sizeScale, so we derive the sizeScale needed to hit the target width.
+  // NOTE: the 0.42 / 100 factors are starting values — tune on-device.
+  const KLONDIKE_COLS = 7;
+  const widthFit = (width - 28 - 24 - (KLONDIKE_COLS - 1) * 8) / KLONDIKE_COLS;
+  const usableHeight = Math.max(height - 200, 240);
+  const heightCap = (usableHeight * 0.42) / 1.43;
+  const klondikeCardW = Math.max(Math.min(widthFit, heightCap, 100), 34);
+  const cardClamp = Math.min(Math.max(width / 390, 0.85), 1.5);
+  const klondikeCardScale = klondikeCardW / (42 * cardClamp);
+  const klondikeOverlap = -Math.round(klondikeCardW * 1.43 * 0.62);
+
+  // Top row (Klondike): 6 equal slots sharing the tableau card footprint.
+  const topSlotW = Math.round(klondikeCardW);
+  const topSlotH = Math.round(topSlotW * 1.43);
 
   const [state, dispatch] = useReducer(solitaireReducerWithRestore, null, () =>
     createSolitaireState(routeVariantId, { spiderMode: routeSpiderMode }),
@@ -633,6 +649,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
           <CardSlot
             card={wasteTop}
             label="Waste"
+            sizeScale={klondikeCardScale}
             onPress={() => dispatch(tapAction({ type: "waste" }))}
             selected={sameTarget(state.selected, { type: "waste" })}
             style={{
@@ -653,6 +670,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                 key={`foundation-${index}`}
                 card={top}
                 label={`F${index + 1}`}
+                sizeScale={klondikeCardScale}
                 onPress={() =>
                   dispatch(tapAction({ type: "foundation", index }))
                 }
@@ -709,6 +727,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                     card={card}
                     label=""
                     animateReveal={true}
+                    sizeScale={klondikeCardScale}
                     onPress={() =>
                       dispatch(
                         tapAction({
@@ -722,7 +741,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                     disabled={!card.faceUp}
                     style={[
                       styles.stackCard,
-                      cardIndex > 0 && styles.stackCardOverlap,
+                      cardIndex > 0 && { marginTop: klondikeOverlap },
                     ]}
                   />
                 );
