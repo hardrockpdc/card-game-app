@@ -75,6 +75,9 @@ A cross-platform React Native mobile app for playing card games with friends and
 - **Navigation:** React Navigation (native-stack)
 - **Networking:** `react-native-tcp-socket` (port 7777) + `react-native-udp` (port 7778 discovery) + `expo-network`
 - **Build system:** EAS Build (Expo's cloud build service)
+  - ⚠️ **EAS is the ONLY working build path on Pedro's machine.** There is no local Android toolchain — `adb` is not on PATH and the Android SDK isn't set up, so `npx expo run:android` fails with "No Android connected device found" and can never install a native build. The dev client on the phone always comes from EAS.
+  - **Native-module changes** (anything in `app.json` plugins, or a dep with a native side like `react-native-edge-to-edge`, `react-native-tcp-socket`, async-storage, etc.) only take effect after a fresh EAS build is installed: `eas build --profile development --platform android`, then install the printed APK on the phone, then `npx expo start --dev-client`.
+  - **Pure-JS changes** hot-reload instantly over Metro — no build needed. Running `expo start --dev-client` against an old binary only updates JS; if the new JS imports a native module the old binary lacks, the app crashes (e.g. "RNEdgeToEdge could not be found"). So batch native changes and rebuild once.
 - **Source control:** Git + GitHub (https://github.com/hardrockpdc/card-game-app)
 - **Package ID:** `com.pedro.cardgameapp`
 - **App display name:** Card Night
