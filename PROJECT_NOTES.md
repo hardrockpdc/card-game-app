@@ -171,6 +171,7 @@ expo-clipboard: ~8.0.8                     (tap-to-copy IP — requires EAS buil
 expo-dev-client: ~6.0.20
 expo-image-manipulator: ~14.0.8            (photo crop to 1:1 — Expo-native, no extra native module)
 expo-image-picker: ~17.0.11               (camera roll + camera access — Expo-native)
+expo-navigation-bar: ~5.0.10                (Android immersive — hide system nav bar; requires EAS build)
 expo-network: ~8.0.8
 expo-status-bar: ~3.0.9
 expo-updates: ~29.0.17                     (OTA updates channel)
@@ -285,7 +286,8 @@ both explicitly for LAN-only play.
 - Make key screens responsive with `useWindowDimensions()`.
 - Prefer `ScrollView` for screens that may overflow on smaller phones.
 - Avoid absolute positioning for important buttons or navigation links unless there is a strong reason.
-- **Orientation — current state vs. plan:** `app.json` currently sets `"orientation": "portrait"` (locked, from Update Phase 6). The active plan in `RESPONSIVE_LAYOUT_PLAN.md` + `KICKOFF.md` Task 3 is to **unlock** this to `"orientation": "default"` and drive layout off aspect ratio (`useLayoutMode()`), so the app works on phones, foldables, and tablets. Until that task lands, portrait-locked is the real current behavior — this is a pending change, not a mistake.
+- **Orientation:** `app.json` is `"orientation": "default"` (unlocked, 2026-06-02) — the app rotates freely and layout is driven off aspect ratio via `game/useLayoutMode.js` (RESPONSIVE_LAYOUT_PLAN.md). Responsive layout is **piloted on Klondike Solitaire** so far; other variants/screens still need their responsive pass (they shouldn't *break* in landscape — they're ScrollViews — but aren't yet polished for it).
+- **Immersive mode (Android):** `App.js` hides both the status bar (`StatusBar.setHidden`) and the navigation bar (`expo-navigation-bar`, sticky `overlay-swipe`), re-applied on foreground. Fullscreen look; a swipe from an edge reveals the bars briefly.
 
 ## 📍 Where We Are Right Now
 
