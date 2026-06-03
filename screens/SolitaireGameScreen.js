@@ -240,8 +240,8 @@ export default function SolitaireGameScreen({ navigation, route }) {
   // Comfortable, CONSTANT overlap (the fraction of each stacked card left
   // visible). Cards are sized so a full column fits at this spacing rather than
   // the spacing being crushed to fit — easier to read and to drag-and-drop.
-  const FU_FRAC = 0.3; // face-up: how much of each card stays visible
-  const FD_FRAC = 0.16; // face-down: a smaller sliver
+  const FU_FRAC = 0.15; // face-up: how much of each card stays visible
+  const FD_FRAC = 0.05; // face-down: a smaller sliver
 
   let tabCardW;
   let slotW; // free cell / foundation / stock / waste slot size
