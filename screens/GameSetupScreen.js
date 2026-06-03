@@ -147,10 +147,7 @@ export default function GameSetupScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView
-        contentContainerStyle={styles.container}
-        showsVerticalScrollIndicator={false}
-      >
+      <View style={styles.container}>
         <View style={styles.playerPill}>
           <Text style={styles.playerPillText}>Playing as {playerName}</Text>
         </View>
@@ -274,7 +271,7 @@ export default function GameSetupScreen({ navigation, route }) {
             Play {gameName}
           </Text>
         </Pressable>
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -282,20 +279,20 @@ export default function GameSetupScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#1a1a2e",
+    backgroundColor: "#0f1115",
   },
   container: {
-    flexGrow: 1,
-    paddingHorizontal: scale(20),
-    paddingTop: scale(16),
-    paddingBottom: scale(24),
-    backgroundColor: "#1a1a2e",
+    flex: 1,
+    paddingHorizontal: scale(18),
+    paddingTop: scale(14),
+    paddingBottom: scale(18),
+    backgroundColor: "#0f1115",
   },
   loadingWrap: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#1a1a2e",
+    backgroundColor: "#0f1115",
   },
   loadingText: {
     color: "#c4c4d4",
@@ -318,27 +315,30 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   header: {
-    marginBottom: scale(20),
+    marginBottom: scale(14),
   },
   title: {
-    color: "#f4f7fb",
-    fontSize: scaleFont(30),
-    fontWeight: "800",
-    letterSpacing: 0.2,
+    color: "#f5f7fb",
+    fontSize: scaleFont(34),
+    fontWeight: "900",
+    textAlign: "center",
   },
   subtitle: {
     marginTop: scale(8),
-    color: "#A7B3C9",
+    color: "#a8b5c8",
     fontSize: scaleFont(15),
     lineHeight: scale(21),
+    textAlign: "center",
   },
   panel: {
+    flex: 1,
     borderRadius: scale(22),
     borderWidth: 1,
-    borderColor: "#24344D",
-    backgroundColor: "#0B1320",
+    borderColor: "#243042",
+    backgroundColor: "#151a24",
     padding: scale(16),
     gap: scale(16),
+    justifyContent: "center",
   },
   sectionLabel: {
     color: "#A7B3C9",
@@ -353,8 +353,8 @@ const styles = StyleSheet.create({
   },
   countButton: {
     flex: 1,
-    minHeight: scale(54),
-    borderRadius: scale(16),
+    minHeight: scale(52),
+    borderRadius: scale(999),
     borderWidth: 1.5,
     borderColor: "#2c3750",
     backgroundColor: "#182131",
@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
   difficultyButton: {
     flex: 1,
     minHeight: scale(50),
-    borderRadius: scale(14),
+    borderRadius: scale(999),
     borderWidth: 1.5,
     borderColor: "#2c3750",
     backgroundColor: "#182131",
@@ -432,25 +432,19 @@ const styles = StyleSheet.create({
     color: "#eef4ff",
   },
   playButton: {
-    marginTop: "auto",
-    minHeight: scale(54),
-    borderRadius: scale(18),
+    marginTop: scale(4),
+    minHeight: scale(52),
+    borderRadius: scale(16),
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#C1121F",
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+    backgroundColor: "#77aef7",
   },
   playButtonPressed: {
-    opacity: 0.88,
-    transform: [{ scale: 0.99 }],
+    opacity: 0.92,
   },
   playButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "800",
+    color: "#08111f",
+    fontWeight: "900",
     letterSpacing: 0.4,
   },
   buttonPressed: {
