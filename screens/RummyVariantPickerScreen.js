@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useResumePrompt } from "../game/useResumePrompt";
 
-import RummyVariantWheel from "../components/RummyVariantWheel";
+import VariantOptionGrid from "../components/VariantOptionGrid";
 import { RUMMY_VARIANT_OPTIONS } from "../game/rummy";
 import { scale, scaleFont } from "../game/responsive";
 
@@ -116,7 +116,7 @@ function RummyVariantPickerScreen({ navigation, route }) {
         ) : null}
 
         <View style={styles.panel}>
-          <RummyVariantWheel
+          <VariantOptionGrid
             value={selectedVariant}
             onChange={setSelectedVariant}
             options={pickerOptions}

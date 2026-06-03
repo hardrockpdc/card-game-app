@@ -11,6 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { SPIDER_MODE_OPTIONS, VARIANT_OPTIONS } from "../game/solitaire";
 import { useResumePrompt } from "../game/useResumePrompt";
 import { scale, scaleFont } from "../game/responsive";
+import VariantOptionGrid from "../components/VariantOptionGrid";
 
 const ACCENT = "#77AEF7";
 
@@ -67,46 +68,12 @@ export default function SolitaireVariantPickerScreen({ navigation, route }) {
         ) : null}
 
         <View style={[styles.panel, isLandscape && styles.panelLandscape]}>
-          <View style={[styles.list, isLandscape && styles.listLandscape]}>
-            {VARIANT_OPTIONS.map((option) => {
-              const selected = option.id === variantId;
-              return (
-                <Pressable
-                  key={option.id}
-                  onPress={() => setVariantId(option.id)}
-                  accessibilityRole="button"
-                  accessibilityLabel={option.label}
-                  style={({ pressed }) => [
-                    styles.option,
-                    isLandscape && styles.optionLandscape,
-                    selected && styles.optionSelected,
-                    pressed && styles.optionPressed,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.optionLabel,
-                      selected && styles.optionLabelSelected,
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {option.label}
-                  </Text>
-                  {showDesc && option.description ? (
-                    <Text
-                      style={[
-                        styles.optionDesc,
-                        selected && styles.optionDescSelected,
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {option.description}
-                    </Text>
-                  ) : null}
-                </Pressable>
-              );
-            })}
-          </View>
+          <VariantOptionGrid
+            value={variantId}
+            onChange={setVariantId}
+            options={VARIANT_OPTIONS}
+            fill
+          />
 
           {variantId === "spider" ? (
             <View style={styles.modeBlock}>
@@ -194,58 +161,6 @@ const styles = StyleSheet.create({
   panelLandscape: {
     padding: scale(10),
     gap: scale(8),
-  },
-  // Portrait: single column, options share the height. Landscape: 2-col grid.
-  list: {
-    flex: 1,
-    gap: scale(8),
-    justifyContent: "center",
-  },
-  listLandscape: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignContent: "center",
-  },
-  option: {
-    flex: 1,
-    minHeight: scale(48),
-    maxHeight: scale(96),
-    borderRadius: scale(16),
-    borderWidth: 1,
-    borderColor: "#24344D",
-    backgroundColor: "rgba(255,255,255,0.02)",
-    paddingHorizontal: scale(16),
-    justifyContent: "center",
-  },
-  optionLandscape: {
-    flex: 0,
-    width: "48%",
-    minHeight: scale(50),
-    maxHeight: scale(64),
-  },
-  optionSelected: {
-    borderColor: ACCENT,
-    backgroundColor: "rgba(119, 174, 247, 0.12)",
-  },
-  optionPressed: {
-    backgroundColor: "rgba(255,255,255,0.06)",
-  },
-  optionLabel: {
-    color: "#A7B3C9",
-    fontSize: scaleFont(17),
-    fontWeight: "700",
-    letterSpacing: 0.2,
-  },
-  optionLabelSelected: {
-    color: "#F4F7FB",
-  },
-  optionDesc: {
-    marginTop: scale(4),
-    color: "#8FA0BA",
-    fontSize: scaleFont(12),
-  },
-  optionDescSelected: {
-    color: "#DCE5F2",
   },
   modeBlock: {
     gap: scale(6),

@@ -8,7 +8,7 @@ import {
   subscribeProfile,
 } from "../game/profile";
 import { scale, scaleFont } from "../game/responsive";
-import VariantPicker from "../components/VariantPicker";
+import VariantOptionGrid from "../components/VariantOptionGrid";
 
 const GO_FISH_VARIANTS = [
   {
@@ -18,8 +18,6 @@ const GO_FISH_VARIANTS = [
       "Ask opponents for cards to collect matching pairs. Most books wins.",
   },
 ];
-
-const GO_FISH_ACCENT = "#7fb3ff";
 
 function buildPlayers(playerName, aiCount) {
   return [
@@ -81,11 +79,10 @@ export default function GoFishPickerScreen({ navigation }) {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.panel}>
-          <VariantPicker
+          <VariantOptionGrid
             value="gofish"
             onChange={() => {}}
             options={GO_FISH_VARIANTS}
-            accentColor={GO_FISH_ACCENT}
           />
 
           <View style={styles.sectionBlock}>

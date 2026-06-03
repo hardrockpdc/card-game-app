@@ -4,9 +4,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { useResumePrompt } from "../game/useResumePrompt";
 
-import PokerVariantWheel, {
-  POKER_VARIANT_OPTIONS,
-} from "../components/PokerVariantWheel";
+import { POKER_VARIANT_OPTIONS } from "../components/PokerVariantWheel";
+import VariantOptionGrid from "../components/VariantOptionGrid";
 import {
   getCachedProfile,
   getDisplayName,
@@ -167,9 +166,10 @@ function PokerVariantPickerScreen({ navigation, route }) {
         ) : null}
 
         <View style={styles.panel}>
-          <PokerVariantWheel
+          <VariantOptionGrid
             value={selectedVariant}
             onChange={setSelectedVariant}
+            options={POKER_VARIANT_OPTIONS}
           />
 
           {!isLobby ? (
