@@ -1,5 +1,11 @@
 import React, { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from "react-native";
 import { scale, scaleFont } from "../game/responsive";
 import { getTableTheme } from "../game/tableThemes";
 import GameMenuItems, { MenuDivider } from "./GameMenu";
@@ -26,9 +32,13 @@ export default function GameHeader({
   const theme = getTableTheme(gameId);
   const accent = theme.accent;
   const [open, setOpen] = useState(false);
+  // Landscape: shrink the header to reclaim scarce vertical space (portrait
+  // is unchanged). Affects every game's header consistently.
+  const { width, height } = useWindowDimensions();
+  const compact = width > height;
 
   return (
-    <View style={styles.headerOuter}>
+    <View style={[styles.headerOuter, compact && styles.headerOuterCompact]}>
       {open && (
         <Pressable
           style={styles.backdrop}
@@ -38,19 +48,33 @@ export default function GameHeader({
         />
       )}
 
-      <View style={[styles.headerCard, { zIndex: 2 }]}>
+      <View
+        style={[
+          styles.headerCard,
+          compact && styles.headerCardCompact,
+          { zIndex: 2 },
+        ]}
+      >
         {/* ── Top row: always visible ── */}
         <View style={styles.row}>
           <View style={styles.leftZone}>
-            <Text style={[styles.kicker, { color: accent }]} numberOfLines={1}>
-              {KICKER_LABELS[gameId] ?? gameId?.toUpperCase?.() ?? ""}
-            </Text>
+            {!compact && (
+              <Text
+                style={[styles.kicker, { color: accent }]}
+                numberOfLines={1}
+              >
+                {KICKER_LABELS[gameId] ?? gameId?.toUpperCase?.() ?? ""}
+              </Text>
+            )}
 
             {leftInfo ? (
               <View style={styles.leftInfoWrap}>{leftInfo}</View>
             ) : (
               <>
-                <Text style={styles.titleText} numberOfLines={1}>
+                <Text
+                  style={[styles.titleText, compact && styles.titleTextCompact]}
+                  numberOfLines={1}
+                >
                   {title}
                 </Text>
                 {subtitle ? (
@@ -70,6 +94,7 @@ export default function GameHeader({
             onPress={() => setOpen((v) => !v)}
             style={({ pressed }) => [
               styles.hamburgerBtn,
+              compact && styles.hamburgerBtnCompact,
               pressed && styles.hamburgerBtnPressed,
               open && styles.hamburgerBtnOpen,
             ]}
@@ -102,6 +127,9 @@ const styles = StyleSheet.create({
     paddingTop: scale(8),
     position: "relative",
   },
+  headerOuterCompact: {
+    paddingTop: scale(4),
+  },
   backdrop: {
     position: "absolute",
     top: 0,
@@ -118,6 +146,10 @@ const styles = StyleSheet.create({
     borderColor: "#243042",
     paddingHorizontal: scale(14),
     paddingVertical: scale(12),
+  },
+  headerCardCompact: {
+    paddingVertical: scale(6),
+    borderRadius: scale(12),
   },
   row: {
     flexDirection: "row",
@@ -143,6 +175,9 @@ const styles = StyleSheet.create({
     fontSize: scaleFont(22),
     fontWeight: "900",
   },
+  titleTextCompact: {
+    fontSize: scaleFont(16),
+  },
   subtitleText: {
     color: "#a4b1c4",
     fontSize: scaleFont(14),
@@ -165,6 +200,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
+  },
+  hamburgerBtnCompact: {
+    width: scale(38),
+    height: scale(38),
+    borderRadius: scale(12),
   },
   hamburgerBtnPressed: {
     opacity: 0.75,

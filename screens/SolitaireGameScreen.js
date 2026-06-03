@@ -180,6 +180,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
   const routeSpiderMode = route?.params?.spiderMode || 4;
 
   const { width, height } = useLayoutMode();
+  const isLandscape = width > height;
   const spiderBoardWidth = Math.max(width - 28, 500);
 
   // ── Responsive Klondike sizing (Task 3 pilot) ───────────────────────────────
@@ -1199,7 +1200,12 @@ export default function SolitaireGameScreen({ navigation, route }) {
         title={variant.label}
         menuItems={menuItems}
       />
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          isLandscape && styles.contentLandscape,
+        ]}
+      >
         {renderStatsBar()}
         <EndOfRoundModal
           visible={showRoundModal}
@@ -1236,6 +1242,10 @@ const styles = StyleSheet.create({
   content: {
     padding: 14,
     gap: 14,
+  },
+  contentLandscape: {
+    padding: 8,
+    gap: 8,
   },
   statsBar: {
     flexDirection: "row",

@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { scale, scaleFont } from "../game/responsive";
 import { getTableTheme } from "../game/tableThemes";
 
@@ -27,8 +27,18 @@ function toRgba(hex, alpha) {
 export default function StatsStrip({ gameId, items }) {
   const theme = getTableTheme(gameId);
   const accent = theme.accent;
+  // Landscape: lay each stat out as "LABEL value" on one line and trim the
+  // strip's padding, so it occupies a single short row instead of two.
+  const { width, height } = useWindowDimensions();
+  const dense = width > height;
   return (
-    <View style={[styles.strip, { borderColor: toRgba(theme.accent, 0.12) }]}>
+    <View
+      style={[
+        styles.strip,
+        dense && styles.stripDense,
+        { borderColor: toRgba(theme.accent, 0.12) },
+      ]}
+    >
       <View style={styles.row}>
         {items?.map((item, idx) => {
           const showDivider = idx !== 0;
@@ -38,9 +48,16 @@ export default function StatsStrip({ gameId, items }) {
           return (
             <View
               key={`${item?.label ?? "item"}-${idx}`}
-              style={[styles.item, showDivider ? styles.itemDivider : null]}
+              style={[
+                styles.item,
+                showDivider ? styles.itemDivider : null,
+                dense && styles.itemDense,
+              ]}
             >
-              <Text style={styles.label} numberOfLines={1}>
+              <Text
+                style={[styles.label, dense && styles.labelDense]}
+                numberOfLines={1}
+              >
                 {(item?.label ?? "").toUpperCase()}
               </Text>
               <Text
@@ -69,6 +86,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     backgroundColor: "rgba(15, 27, 45, 0.35)",
   },
+  stripDense: {
+    paddingVertical: scale(3),
+    marginTop: scale(4),
+  },
   row: {
     flexDirection: "row",
     flexWrap: "nowrap",
@@ -79,6 +100,15 @@ const styles = StyleSheet.create({
     minWidth: 0,
     paddingVertical: scale(2),
     paddingHorizontal: scale(6),
+  },
+  itemDense: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: scale(5),
+    paddingVertical: 0,
+  },
+  labelDense: {
+    marginBottom: 0,
   },
   itemDivider: {
     borderLeftWidth: 1,
