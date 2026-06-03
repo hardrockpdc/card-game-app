@@ -151,7 +151,14 @@ function StockSlot({ label, onPress, disabled = false, style }) {
       accessibilityLabel={label}
       accessibilityState={{ disabled }}
     >
-      <Text style={styles.stockLabel}>{label}</Text>
+      <Text
+        style={styles.stockLabel}
+        numberOfLines={2}
+        adjustsFontSizeToFit
+        minimumFontScale={0.6}
+      >
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -1312,7 +1319,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "800",
     textAlign: "center",
-    lineHeight: 16,
   },
   slotCard: {
     minWidth: 70,
