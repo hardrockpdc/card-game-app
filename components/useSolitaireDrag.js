@@ -265,9 +265,12 @@ export default function useSolitaireDrag(state, dispatch, sizing) {
       ref={(n) => {
         overlayNode.current = n;
       }}
+      // collapsable={false} stops Android from flattening this empty, untouchable
+      // layer away — without it measureInWindow returns (0,0) and the lifted card
+      // lands offset by the screen insets (jumps down/right). Pre-warm on layout
+      // so the first drag frame is already positioned (begin() re-measures too).
+      collapsable={false}
       onLayout={() => {
-        // Pre-warm the overlay layer's window origin so the first drag frame is
-        // positioned correctly (begin() re-measures too, for safety).
         overlayNode.current?.measureInWindow?.((x, y) => {
           rootRef.current = { x, y };
         });
