@@ -5,10 +5,10 @@ import { Gesture } from "react-native-gesture-handler";
 import Card from "./Card";
 import { getTopCard, getLegalTargets, moveAction } from "../game/solitaire";
 
-// Where on the picked-up card the finger "holds" it. Centered horizontally and
-// near the top so a multi-card run hangs below the finger naturally.
+// Where on the picked-up card the finger "holds" it: dead center of the grabbed
+// card on both axes, so the stylus/finger sits in the middle of the card.
 const GRAB_X = 0.5;
-const GRAB_Y = 0.3;
+const GRAB_Y = 0.5;
 const LIFT_SCALE = 1.08; // subtle enlarge so the run reads as "lifted"
 
 function targetsEqual(a, b) {
@@ -283,6 +283,7 @@ export default function useSolitaireDrag(state, dispatch, sizing) {
           style={[
             styles.overlay,
             {
+              width: cardW,
               transform: [
                 { translateX: pan.x },
                 { translateY: pan.y },
@@ -296,6 +297,10 @@ export default function useSolitaireDrag(state, dispatch, sizing) {
               key={card.id}
               style={[
                 styles.overlayCard,
+                // Pin each card to the exact tableau-card box so the grab offset
+                // (cardW/2, cardH/2) lands the finger on the card's true center,
+                // regardless of the Card's own internal margin.
+                { width: cardW, height: cardH },
                 i > 0 && { marginTop: faceUpPeek - cardH },
               ]}
             >
@@ -336,5 +341,6 @@ const styles = StyleSheet.create({
   },
   overlayCard: {
     alignItems: "center",
+    justifyContent: "center",
   },
 });
