@@ -9,7 +9,7 @@ import { getTopCard, getLegalTargets, moveAction } from "../game/solitaire";
 // card on both axes, so the stylus/finger sits in the middle of the card.
 const GRAB_X = 0.5;
 const GRAB_Y = 0.5;
-const LIFT_SCALE = 1.08; // subtle enlarge so the run reads as "lifted"
+const LIFT_SCALE = 1.18; // enlarge on pick-up so the run reads as "lifted"
 
 function targetsEqual(a, b) {
   return a && b && a.type === b.type && a.index === b.index;
