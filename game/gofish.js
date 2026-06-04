@@ -156,6 +156,10 @@ export function pickGoFishAIMove(state, aiPid, opponents, difficulty) {
   const hand = state.hands[aiPid] || [];
   const history = state.history || [];
 
+  // No move possible with no cards or no opponents — the screen already guards
+  // this, but return null defensively so the pure function can't crash.
+  if (hand.length === 0 || !opponents || opponents.length === 0) return null;
+
   if (difficulty === "easy") {
     const rank = hand[Math.floor(Math.random() * hand.length)].rank;
     const target = opponents[Math.floor(Math.random() * opponents.length)];

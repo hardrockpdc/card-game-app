@@ -114,20 +114,31 @@ export function stopServer() {
   serverListeners = {};
 }
 
+// Writing to a socket that is mid-close (e.g. a client that just disconnected)
+// can throw. Guard each write so one dead socket can't abort a broadcast to the
+// rest, or crash the host on a stray send.
+function safeWrite(socket, data) {
+  if (!socket) return;
+  try {
+    socket.write(data);
+  } catch (err) {
+    log("[GameNetwork] write failed:", err?.message);
+  }
+}
+
 export function broadcastToClients(message) {
   if (IS_WEB) return;
   const data =
     JSON.stringify({ ...message, protocolVersion: PROTOCOL_VERSION }) + "\n";
-  clients.forEach((socket) => socket.write(data));
+  clients.forEach((socket) => safeWrite(socket, data));
 }
 
 export function sendToClient(clientId, message) {
   if (IS_WEB) return;
-  const socket = clients.get(clientId);
-  if (socket)
-    socket.write(
-      JSON.stringify({ ...message, protocolVersion: PROTOCOL_VERSION }) + "\n",
-    );
+  safeWrite(
+    clients.get(clientId),
+    JSON.stringify({ ...message, protocolVersion: PROTOCOL_VERSION }) + "\n",
+  );
 }
 
 export function getClientCount() {
@@ -227,10 +238,10 @@ export function connectToHost(ip, callbacks) {
 
 export function sendToHost(message) {
   if (IS_WEB) return;
-  if (clientSocket)
-    clientSocket.write(
-      JSON.stringify({ ...message, protocolVersion: PROTOCOL_VERSION }) + "\n",
-    );
+  safeWrite(
+    clientSocket,
+    JSON.stringify({ ...message, protocolVersion: PROTOCOL_VERSION }) + "\n",
+  );
 }
 
 export function disconnectFromHost() {

@@ -83,6 +83,52 @@
 
 ---
 
+# 🔎 v4 Review pass (2026-06-04)
+
+Scope: focused static review of the highest-risk code — the network layer
+(`GameNetwork.js`) and the pure game-logic modules (`gofish`, `lastCard`,
+`conquian`, plus spot-checks of the others), leaning on this session's extensive
+reading of the screens. **Not** an exhaustive line-by-line of all ~28k lines —
+the large game-screen files (`RummyGameScreen`, `PokerGameScreen`,
+`ConquianGameScreen`, `WildRoundGameScreen`, `LastCardGameScreen`, ~7k lines)
+warrant a dedicated follow-up pass. The codebase is mature (v3-reviewed), so few
+new bugs surfaced. Findings grouped as requested:
+
+### Group 1 — fixable without approval (DONE this pass)
+
+- [x] **NB-1** — `GameNetwork` `broadcastToClients`/`sendToClient`/`sendToHost`
+  called `socket.write()` unguarded. A socket mid-close (a client that just
+  disconnected) can throw; in `broadcastToClients` the `forEach` would abort, so
+  the *remaining* clients silently miss that message → desync. Fixed with a
+  `safeWrite()` try/catch wrapper.
+- [x] **NB-2** — `pickGoFishAIMove` would throw on an empty hand
+  (`hand[…].rank` / `Object.entries(counts)[0][0]`). The screen already guards
+  `hand.length === 0`, so it's defensive only — added an early `return null`.
+
+### Group 2 — need your verification (ideally on device / two devices)
+
+- [ ] **CQ-8** (carry-forward) — numeric `clientId` (from `nextClientId++`) vs
+  string `player.id`. The pure logic wraps everything in `String(...)` so it's
+  mostly safe, but raw comparisons in the multiplayer screens should be audited;
+  verify turn-taking with mixed id types across two devices.
+- [ ] **PERF-3** (carry-forward) — multiplayer broadcasts the full state on every
+  action; verify responsiveness with two devices before optimizing.
+- [ ] **NB-3** — the server/client `data` handlers call `listeners.onMessage()`
+  *inside* the parse `try/catch`, so an exception thrown by a message handler is
+  silently swallowed (can hide real bugs). Low priority; verify no handler relies
+  on this, then consider moving the call outside the try.
+- [ ] **UX-4** (carry-forward) — optional brief "dealing…" state during the mount
+  delay. Confirm it's wanted.
+
+### Group 3 — need a new EAS build
+
+- [ ] Everything in `EAS_REBUILD_PENDING.md` (immersive bars, free rotation +
+  Solitaire landscape locks via `expo-screen-orientation`, network-permission
+  verify) and the **smaller APK** (the JEWEL/App-Icon asset deletions land on the
+  next build). Plus **LAUNCH-2** (production build).
+
+---
+
 # 🚨 LAUNCH-BLOCKING
 
 These two items are the only things between you and a working App Store / Google Play submission.
