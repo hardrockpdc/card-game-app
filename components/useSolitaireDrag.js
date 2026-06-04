@@ -34,6 +34,10 @@ function runFromSource(state, source) {
     const top = getTopCard(state.foundations?.[source.index]);
     return top ? [top] : [];
   }
+  if (source.type === "freecell") {
+    const card = state.freecells?.[source.index];
+    return card ? [card] : [];
+  }
   return [];
 }
 

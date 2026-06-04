@@ -107,6 +107,41 @@ describe("getLegalTargets (drag highlights)", () => {
     expect(getLegalTargets(null, { type: "waste" })).toEqual([]);
     expect(getLegalTargets(s, null)).toEqual([]);
   });
+
+  test("FreeCell: targets agree with moveAction, incl. free cells", () => {
+    const s = createSolitaireState("freecell");
+    const colIdx = s.tableau.findIndex((p) => p.length > 0);
+    const source = {
+      type: "tableau",
+      index: colIdx,
+      cardIndex: s.tableau[colIdx].length - 1,
+    };
+
+    const legal = getLegalTargets(s, source);
+    const inLegal = (t) =>
+      legal.some((l) => l.type === t.type && l.index === t.index);
+
+    const candidates = [];
+    for (let i = 0; i < s.foundations.length; i += 1) {
+      candidates.push({ type: "foundation", index: i });
+    }
+    for (let i = 0; i < s.freecells.length; i += 1) {
+      candidates.push({ type: "freecell", index: i });
+    }
+    for (let i = 0; i < s.tableau.length; i += 1) {
+      if (i === colIdx) continue;
+      candidates.push({ type: "tableau", index: i });
+    }
+
+    for (const target of candidates) {
+      const res = solitaireReducer(s, moveAction(source, target));
+      const moved = res.moves !== s.moves || res.pairs !== s.pairs;
+      expect(inLegal(target)).toBe(moved);
+    }
+
+    // A single movable card can always go to an empty free cell.
+    expect(inLegal({ type: "freecell", index: 0 })).toBe(true);
+  });
 });
 
 describe("solitaireReducer", () => {

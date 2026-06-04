@@ -1826,6 +1826,11 @@ export function getLegalTargets(state, source) {
   for (let i = 0; i < (state.foundations || []).length; i += 1) {
     candidates.push({ type: "foundation", index: i });
   }
+  // FreeCell free cells (absent on other variants) are also valid targets.
+  for (let i = 0; i < (state.freecells || []).length; i += 1) {
+    if (source.type === "freecell" && source.index === i) continue;
+    candidates.push({ type: "freecell", index: i });
+  }
   for (let i = 0; i < (state.tableau || []).length; i += 1) {
     // A column can't be a target for cards already in that same column.
     if (source.type === "tableau" && source.index === i) continue;

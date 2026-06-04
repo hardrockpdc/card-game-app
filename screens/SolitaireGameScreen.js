@@ -372,7 +372,11 @@ export default function SolitaireGameScreen({ navigation, route }) {
     cardScale: tabCardScale,
     faceUpPeek,
   });
-  const dragEnabled = isLandscape && state.variantId === "klondike";
+  // Drag-and-drop is wired for the "move cards between piles" variants. Pyramid
+  // and TriPeaks are match/collect games and stay tap-only.
+  const dragEnabled =
+    isLandscape &&
+    ["klondike", "freecell", "spider"].includes(state.variantId);
 
   const coinRewardedRef = useRef(false);
   const wonClearedRef = useRef(false);
@@ -1036,10 +1040,23 @@ export default function SolitaireGameScreen({ navigation, route }) {
 
     const columns = state.tableau.map((pile, pileIndex) => {
       const margins = isLandscape ? tableauColumnMargins(pile) : null;
+      const colHighlighted =
+        dragEnabled && isLegalTarget({ type: "tableau", index: pileIndex });
       return (
         <View
           key={`spider-${pileIndex}`}
-          style={styles.tableauColumn}
+          ref={
+            dragEnabled
+              ? registerZone(`t-${pileIndex}`, {
+                  type: "tableau",
+                  index: pileIndex,
+                })
+              : undefined
+          }
+          style={[
+            styles.tableauColumn,
+            colHighlighted && styles.tableauColumnHighlighted,
+          ]}
           onLayout={(e) => {
             const layout = e.nativeEvent.layout;
             spiderColumnLayoutsRef.current[pileIndex] = {
@@ -1089,6 +1106,12 @@ export default function SolitaireGameScreen({ navigation, route }) {
               pileIndex,
               cardIndex,
             );
+            const source = { type: "tableau", index: pileIndex, cardIndex };
+            const hidden =
+              dragEnabled &&
+              draggingSource?.type === "tableau" &&
+              draggingSource.index === pileIndex &&
+              cardIndex >= draggingSource.cardIndex;
 
             return (
               <CardSlot
@@ -1097,17 +1120,15 @@ export default function SolitaireGameScreen({ navigation, route }) {
                 label=""
                 animateReveal={true}
                 sizeScale={isLandscape ? tabCardScale : undefined}
-                onPress={() =>
-                  dispatch(
-                    tapAction({
-                      type: "tableau",
-                      index: pileIndex,
-                      cardIndex,
-                    }),
-                  )
-                }
+                onPress={() => dispatch(tapAction(source))}
                 selected={selected}
                 disabled={!card.faceUp}
+                dragGesture={
+                  dragEnabled && card.faceUp
+                    ? makeDragGesture(source)
+                    : undefined
+                }
+                hidden={hidden}
                 onCardLayout={(e) => {
                   const layout = e.nativeEvent.layout;
                   spiderCardLayoutsRef.current[card.id] = {
@@ -1231,17 +1252,40 @@ export default function SolitaireGameScreen({ navigation, route }) {
     const freeCellSlots = state.freecells.map((card, index) => {
       const selected =
         state.selected?.type === "freecell" && state.selected.index === index;
-      return (
+      const source = { type: "freecell", index };
+      const cardSlot = (
         <CardSlot
-          key={`freecell-${index}`}
           card={card}
           label={`Free ${index + 1}`}
           sizeScale={isLandscape ? slotScale : undefined}
           onPress={() => dispatch(tapAction({ type: "freecell", index }))}
           selected={selected}
+          dragGesture={
+            dragEnabled && card ? makeDragGesture(source) : undefined
+          }
+          highlighted={dragEnabled && isLegalTarget(source)}
+          hidden={
+            dragEnabled &&
+            draggingSource?.type === "freecell" &&
+            draggingSource.index === index
+          }
           style={isLandscape ? railSlotStyle : styles.slotCard}
         />
       );
+      // A free cell is both a drag source and a drop zone. Wrap it so the zone
+      // ref lives on a View (the gesture owns the CardSlot) — no ref conflict.
+      if (dragEnabled) {
+        return (
+          <View
+            key={`freecell-${index}`}
+            ref={registerZone(`fc-${index}`, source)}
+            collapsable={false}
+          >
+            {cardSlot}
+          </View>
+        );
+      }
+      return React.cloneElement(cardSlot, { key: `freecell-${index}` });
     });
 
     const foundationSlots = state.foundations.map((foundation, index) => {
@@ -1256,6 +1300,14 @@ export default function SolitaireGameScreen({ navigation, route }) {
           sizeScale={isLandscape ? slotScale : undefined}
           onPress={() => dispatch(tapAction({ type: "foundation", index }))}
           selected={selected}
+          containerRef={
+            dragEnabled
+              ? registerZone(`f-${index}`, { type: "foundation", index })
+              : undefined
+          }
+          highlighted={
+            dragEnabled && isLegalTarget({ type: "foundation", index })
+          }
           style={isLandscape ? railSlotStyle : styles.slotCard}
         />
       );
@@ -1263,8 +1315,24 @@ export default function SolitaireGameScreen({ navigation, route }) {
 
     const columns = state.tableau.map((pile, pileIndex) => {
       const margins = isLandscape ? tableauColumnMargins(pile) : null;
+      const colHighlighted =
+        dragEnabled && isLegalTarget({ type: "tableau", index: pileIndex });
       return (
-        <View key={`freecell-${pileIndex}`} style={styles.tableauColumn}>
+        <View
+          key={`freecell-${pileIndex}`}
+          ref={
+            dragEnabled
+              ? registerZone(`t-${pileIndex}`, {
+                  type: "tableau",
+                  index: pileIndex,
+                })
+              : undefined
+          }
+          style={[
+            styles.tableauColumn,
+            colHighlighted && styles.tableauColumnHighlighted,
+          ]}
+        >
           {pile.length === 0 ? (
             <>
               <View
@@ -1306,6 +1374,12 @@ export default function SolitaireGameScreen({ navigation, route }) {
               pileIndex,
               cardIndex,
             );
+            const source = { type: "tableau", index: pileIndex, cardIndex };
+            const hidden =
+              dragEnabled &&
+              draggingSource?.type === "tableau" &&
+              draggingSource.index === pileIndex &&
+              cardIndex >= draggingSource.cardIndex;
 
             return (
               <CardSlot
@@ -1314,16 +1388,14 @@ export default function SolitaireGameScreen({ navigation, route }) {
                 label=""
                 animateReveal={true}
                 sizeScale={isLandscape ? tabCardScale : undefined}
-                onPress={() =>
-                  dispatch(
-                    tapAction({
-                      type: "tableau",
-                      index: pileIndex,
-                      cardIndex,
-                    }),
-                  )
-                }
+                onPress={() => dispatch(tapAction(source))}
                 selected={selected}
+                dragGesture={
+                  dragEnabled && card.faceUp
+                    ? makeDragGesture(source)
+                    : undefined
+                }
+                hidden={hidden}
                 style={[
                   styles.stackCard,
                   isLandscape
