@@ -62,6 +62,7 @@ export const SPIDER_MODE_OPTIONS = [1, 2, 4].map((suitCount) => ({
 export const SOLITAIRE_ACTIONS = {
   NEW_GAME: "solitaire/newGame",
   TAP: "solitaire/tap",
+  MOVE: "solitaire/move",
   SET_SPIDER_MODE: "solitaire/setSpiderMode",
   UNDO: "solitaire/undo",
 };
@@ -77,6 +78,16 @@ export function newGameAction(variantId, options = {}) {
 export function tapAction(target) {
   return {
     type: SOLITAIRE_ACTIONS.TAP,
+    target,
+  };
+}
+
+// Atomic drag-and-drop move: select `source`, then place on `target`, reusing
+// the validated tap logic — no lingering selection state. Used by the drag UI.
+export function moveAction(source, target) {
+  return {
+    type: SOLITAIRE_ACTIONS.MOVE,
+    source,
     target,
   };
 }
@@ -1735,6 +1746,32 @@ export function solitaireReducer(state, action) {
         ...prevSnap,
         history: state.history.slice(0, -1),
       };
+    }
+
+    case SOLITAIRE_ACTIONS.MOVE: {
+      // Drag-and-drop: select the source then place on the target, reusing the
+      // validated tap logic. Start from a clean selection so a prior tap-select
+      // can't interfere.
+      const clean = { ...state, selected: null };
+      const afterSelect = solitaireReducer(clean, tapAction(action.source));
+      const afterPlace = solitaireReducer(
+        afterSelect,
+        tapAction(action.target),
+      );
+
+      const moved =
+        afterPlace.moves !== state.moves || afterPlace.pairs !== state.pairs;
+      if (!moved) {
+        // Invalid drop — leave the board untouched, just clear any selection.
+        return { ...state, selected: null };
+      }
+
+      // Record a single, correct undo entry: the pre-move board (the internal
+      // taps would otherwise leave a "source selected" snapshot).
+      const { history: _h, ...preMove } = clean;
+      const history =
+        afterPlace.status === "won" ? [] : [...(state.history || []), preMove];
+      return { ...afterPlace, selected: null, history };
     }
 
     case SOLITAIRE_ACTIONS.TAP: {
