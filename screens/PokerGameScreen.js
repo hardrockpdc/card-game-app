@@ -642,7 +642,12 @@ export default function PokerGameScreen({ navigation, route }) {
         if (saved?.fullState) {
           // Restore without subtracting buy-in (already paid in the original session).
           applyState(saved.fullState);
-          hasMountedRef.current = true;
+          // UX-3: enable the deal animation on the NEXT tick so the RESTORED
+          // hand appears instantly (no replayed deal); cards drawn later still
+          // animate normally.
+          setTimeout(() => {
+            hasMountedRef.current = true;
+          }, 0);
           return;
         }
       }

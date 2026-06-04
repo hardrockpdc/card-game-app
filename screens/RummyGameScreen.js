@@ -446,7 +446,12 @@ export default function RummyGameScreen({ navigation, route }) {
         const saved = await loadGame(rummySaveKey);
         if (saved?.fullState) {
           applyState(saved.fullState);
-          hasMountedRef.current = true;
+          // UX-3: enable the deal animation on the NEXT tick so the RESTORED
+          // hand appears instantly (no replayed deal); cards drawn later still
+          // animate normally.
+          setTimeout(() => {
+            hasMountedRef.current = true;
+          }, 0);
           return;
         }
       }
