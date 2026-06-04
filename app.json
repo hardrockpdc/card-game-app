@@ -54,7 +54,8 @@
     "plugins": [
       "expo-audio",
       "expo-image-picker",
-      "react-native-edge-to-edge"
+      "react-native-edge-to-edge",
+      "@sentry/react-native"
     ],
     "runtimeVersion": {
       "policy": "appVersion"
