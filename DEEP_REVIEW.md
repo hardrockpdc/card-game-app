@@ -111,6 +111,13 @@ new bugs surfaced. Findings grouped as requested:
   string `player.id`. The pure logic wraps everything in `String(...)` so it's
   mostly safe, but raw comparisons in the multiplayer screens should be audited;
   verify turn-taking with mixed id types across two devices.
+- [x] **NB-4** — Follow-up pass over the big game-screen files
+  (Rummy/Poker/Conquián/Wild Round/Last Card) **complete**: structurally sound —
+  hooks are all above the render guards (Wild Round even carries an enforcing
+  comment), every screen is null-safe on first render (explicit `if (!gameState)`
+  guards, or optional chaining in Last Card), and network listeners/effects have
+  cleanup. No new bugs found; the deeper risks remaining are the multiplayer
+  runtime behaviors (CQ-8 / PERF-3) that need two devices.
 - [ ] **PERF-3** (carry-forward) — multiplayer broadcasts the full state on every
   action; verify responsiveness with two devices before optimizing.
 - [ ] **NB-3** — the server/client `data` handlers call `listeners.onMessage()`
