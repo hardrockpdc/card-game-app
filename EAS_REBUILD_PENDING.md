@@ -1,5 +1,13 @@
 # Pending — needs an EAS dev build
 
+> ✅ **Built & verified 2026-06-04.** A development build was made and installed;
+> immersive bars, free rotation, the Solitaire landscape locks, and the smaller
+> APK are all live and confirmed working on device. The items below are now
+> **done** — this file is kept as a record and a template for the *next* time
+> native changes accumulate. (Dependency tree was also cleaned pre-build:
+> removed dead `react-native-draggable-flatlist`; pinned/deduped
+> `expo-asset`/`expo-constants` to SDK 54.)
+
 These changes are **native** (new modules or `app.json` manifest/config), so they
 are NOT live in the currently-installed dev client. They only take effect after:
 
