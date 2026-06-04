@@ -8,7 +8,26 @@ import { warn } from "./logger";
 // `__v` and are treated as version 1, so they keep working until the next bump.
 export const SAVE_VERSION = 1;
 
+// When the user quits / restarts / wins we clearGame(), but a throttled
+// auto-save effect can fire one more time during teardown (e.g. a per-second
+// timer tick) and re-write the save we just cleared — so going back offers a
+// dead "resume". To prevent that, ignore saves for a key for a short window
+// after it was cleared. The auto-save throttle (~3s) is longer than this guard,
+// so a freshly restarted game still saves normally afterward.
+const CLEAR_GUARD_MS = 2500;
+const _recentlyCleared = new Map(); // gameKey -> timestamp
+
+// Test-only: reset the in-memory clear guards between cases.
+export function __resetSaveGuards() {
+  _recentlyCleared.clear();
+}
+
 export async function saveGame(gameKey, state) {
+  const clearedAt = _recentlyCleared.get(gameKey);
+  if (clearedAt && Date.now() - clearedAt < CLEAR_GUARD_MS) {
+    // A clear just happened for this key — drop this stray save.
+    return;
+  }
   try {
     await AsyncStorage.setItem(
       gameKey,
@@ -59,6 +78,8 @@ export async function loadGame(gameKey) {
 }
 
 export async function clearGame(gameKey) {
+  // Block stray auto-saves that land just after this clear (see saveGame).
+  _recentlyCleared.set(gameKey, Date.now());
   try {
     await AsyncStorage.removeItem(gameKey);
   } catch (err) {

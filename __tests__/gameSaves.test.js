@@ -5,12 +5,14 @@ import {
   clearGame,
   hasSave,
   SAVE_VERSION,
+  __resetSaveGuards,
 } from "../game/gameSaves";
 
 const KEY = "@cardnight:save:test";
 
 beforeEach(async () => {
   await AsyncStorage.clear();
+  __resetSaveGuards();
 });
 
 describe("saveGame / loadGame", () => {
@@ -62,6 +64,26 @@ describe("clearGame", () => {
     await clearGame(KEY);
     expect(await hasSave(KEY)).toBe(false);
     expect(await loadGame(KEY)).toBeNull();
+  });
+});
+
+describe("clear guard (stray save after quit)", () => {
+  test("a save right after clearGame is ignored, then allowed later", async () => {
+    const nowSpy = jest.spyOn(Date, "now").mockReturnValue(10000);
+
+    await saveGame(KEY, { score: 1 });
+    expect(await hasSave(KEY)).toBe(true);
+
+    await clearGame(KEY); // guards the key at t=10000
+    await saveGame(KEY, { score: 2 }); // stray auto-save — dropped
+    expect(await hasSave(KEY)).toBe(false);
+
+    // past the guard window, saves work again
+    nowSpy.mockReturnValue(10000 + 3000);
+    await saveGame(KEY, { score: 3 });
+    expect(await loadGame(KEY)).toEqual({ score: 3 });
+
+    nowSpy.mockRestore();
   });
 });
 
