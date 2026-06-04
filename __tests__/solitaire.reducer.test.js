@@ -6,6 +6,7 @@ import {
   setSpiderModeAction,
   tapAction,
   moveAction,
+  getLegalTargets,
 } from "../game/solitaire";
 
 const VARIANTS = ["klondike", "spider", "freecell", "pyramid", "tripeaks"];
@@ -55,6 +56,56 @@ describe("moveAction (drag-and-drop)", () => {
     expect(res.selected).toBeNull();
     expect(res.tableau).toEqual(base.tableau);
     expect(res.moves).toBe(base.moves);
+  });
+});
+
+describe("getLegalTargets (drag highlights)", () => {
+  test("a target is highlighted iff moveAction actually moves the board", () => {
+    const s = createSolitaireState("klondike");
+    const colIdx = s.tableau.findIndex(
+      (p) => p.length && p[p.length - 1].faceUp,
+    );
+    const source = {
+      type: "tableau",
+      index: colIdx,
+      cardIndex: s.tableau[colIdx].length - 1,
+    };
+
+    const legal = getLegalTargets(s, source);
+
+    // Every candidate (all foundations + every other column) must agree with
+    // what an actual MOVE would do — no false highlights, no missed targets.
+    const inLegal = (t) =>
+      legal.some((l) => l.type === t.type && l.index === t.index);
+
+    const candidates = [];
+    for (let i = 0; i < s.foundations.length; i += 1) {
+      candidates.push({ type: "foundation", index: i });
+    }
+    for (let i = 0; i < s.tableau.length; i += 1) {
+      if (i === colIdx) continue;
+      candidates.push({ type: "tableau", index: i });
+    }
+
+    for (const target of candidates) {
+      const res = solitaireReducer(s, moveAction(source, target));
+      const moved = res.moves !== s.moves || res.pairs !== s.pairs;
+      expect(inLegal(target)).toBe(moved);
+    }
+  });
+
+  test("a face-down (buried) source yields no targets", () => {
+    const s = createSolitaireState("klondike");
+    // In a Klondike deal, the bottom card of columns 1..6 is face-down.
+    const source = { type: "tableau", index: 6, cardIndex: 0 };
+    expect(s.tableau[6][0].faceUp).toBe(false);
+    expect(getLegalTargets(s, source)).toEqual([]);
+  });
+
+  test("returns [] for missing state or source", () => {
+    const s = createSolitaireState("klondike");
+    expect(getLegalTargets(null, { type: "waste" })).toEqual([]);
+    expect(getLegalTargets(s, null)).toEqual([]);
   });
 });
 

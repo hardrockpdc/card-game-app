@@ -1813,6 +1813,31 @@ export function solitaireReducer(state, action) {
   }
 }
 
+// Drag-and-drop helper: the list of target descriptors `source` can legally
+// move to right now. It works by simulating `moveAction(source, candidate)` for
+// each pile and keeping the candidates that actually change the board. Because
+// it reuses the same validated move path a real drop uses, the targets we
+// highlight while dragging are guaranteed to match what a drop will accept —
+// there's no parallel rule-checking that could drift out of sync.
+export function getLegalTargets(state, source) {
+  if (!state || !source) return [];
+
+  const candidates = [];
+  for (let i = 0; i < (state.foundations || []).length; i += 1) {
+    candidates.push({ type: "foundation", index: i });
+  }
+  for (let i = 0; i < (state.tableau || []).length; i += 1) {
+    // A column can't be a target for cards already in that same column.
+    if (source.type === "tableau" && source.index === i) continue;
+    candidates.push({ type: "tableau", index: i });
+  }
+
+  return candidates.filter((target) => {
+    const result = solitaireReducer(state, moveAction(source, target));
+    return result.moves !== state.moves || result.pairs !== state.pairs;
+  });
+}
+
 export function isCardRed(card) {
   return isRed(card);
 }

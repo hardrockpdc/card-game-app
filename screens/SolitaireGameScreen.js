@@ -19,9 +19,11 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { GestureDetector } from "react-native-gesture-handler";
 import { useFocusEffect } from "@react-navigation/native";
 
 import Card from "../components/Card";
+import useSolitaireDrag from "../components/useSolitaireDrag";
 import GameHeader from "../components/GameHeader";
 import GameMenuButton from "../components/GameMenuButton";
 import EndOfRoundModal from "../components/EndOfRoundModal";
@@ -119,17 +121,24 @@ function CardSlot({
   animateReveal = false,
   style,
   onCardLayout,
+  containerRef,
+  dragGesture,
+  highlighted = false,
+  hidden = false,
 }) {
-  return (
+  const inner = (
     <Pressable
+      ref={containerRef}
       onPress={disabled ? undefined : onPress}
       onLayout={onCardLayout}
       style={({ pressed }) => [
         card ? styles.cardTouch : styles.emptyCard,
         style,
         selected && styles.cardTouchSelected,
+        highlighted && styles.cardTouchHighlighted,
         pressed && !disabled && styles.cardTouchPressed,
         disabled && styles.cardTouchDisabled,
+        hidden && styles.cardTouchHidden,
       ]}
     >
       {card ? (
@@ -152,6 +161,14 @@ function CardSlot({
       )}
     </Pressable>
   );
+
+  // When a drag gesture is supplied the card becomes draggable. GestureDetector
+  // attaches to the Pressable without adding a view, so the overlap layout is
+  // unchanged; the small activeOffset means a plain tap still fires onPress.
+  if (dragGesture) {
+    return <GestureDetector gesture={dragGesture}>{inner}</GestureDetector>;
+  }
+  return inner;
 }
 
 function StockSlot({ label, onPress, disabled = false, style }) {
@@ -339,6 +356,23 @@ export default function SolitaireGameScreen({ navigation, route }) {
           ),
     );
   };
+
+  // Drag-and-drop (Klondike landscape pilot). The hook is always called (hooks
+  // can't be conditional); its output is only wired into the Klondike landscape
+  // render below.
+  const {
+    makeDragGesture,
+    registerZone,
+    isLegalTarget,
+    draggingSource,
+    dragOverlay,
+  } = useSolitaireDrag(state, dispatch, {
+    cardW: tabCardW,
+    cardH: tabCardH,
+    cardScale: tabCardScale,
+    faceUpPeek,
+  });
+  const dragEnabled = isLandscape && state.variantId === "klondike";
 
   const coinRewardedRef = useRef(false);
   const wonClearedRef = useRef(false);
@@ -767,6 +801,12 @@ export default function SolitaireGameScreen({ navigation, route }) {
         sizeScale={slotScale}
         onPress={() => dispatch(tapAction({ type: "waste" }))}
         selected={sameTarget(state.selected, { type: "waste" })}
+        dragGesture={
+          dragEnabled && wasteTop
+            ? makeDragGesture({ type: "waste" })
+            : undefined
+        }
+        hidden={dragEnabled && draggingSource?.type === "waste"}
         style={{
           width: slotW,
           height: slotH,
@@ -788,6 +828,14 @@ export default function SolitaireGameScreen({ navigation, route }) {
           sizeScale={slotScale}
           onPress={() => dispatch(tapAction({ type: "foundation", index }))}
           selected={selected}
+          containerRef={
+            dragEnabled
+              ? registerZone(`f-${index}`, { type: "foundation", index })
+              : undefined
+          }
+          highlighted={
+            dragEnabled && isLegalTarget({ type: "foundation", index })
+          }
           style={{
             width: slotW,
             height: slotH,
@@ -800,8 +848,24 @@ export default function SolitaireGameScreen({ navigation, route }) {
 
     const columns = state.tableau.map((pile, pileIndex) => {
       const margins = tableauColumnMargins(pile);
+      const colHighlighted =
+        dragEnabled && isLegalTarget({ type: "tableau", index: pileIndex });
       return (
-        <View key={`klondike-${pileIndex}`} style={styles.tableauColumn}>
+        <View
+          key={`klondike-${pileIndex}`}
+          ref={
+            dragEnabled
+              ? registerZone(`t-${pileIndex}`, {
+                  type: "tableau",
+                  index: pileIndex,
+                })
+              : undefined
+          }
+          style={[
+            styles.tableauColumn,
+            colHighlighted && styles.tableauColumnHighlighted,
+          ]}
+        >
           {pile.length === 0 ? (
             <>
               <View
@@ -843,6 +907,17 @@ export default function SolitaireGameScreen({ navigation, route }) {
               pileIndex,
               cardIndex,
             );
+            const source = {
+              type: "tableau",
+              index: pileIndex,
+              cardIndex,
+            };
+            // Hide cards that are currently lifted in the drag overlay.
+            const hidden =
+              dragEnabled &&
+              draggingSource?.type === "tableau" &&
+              draggingSource.index === pileIndex &&
+              cardIndex >= draggingSource.cardIndex;
 
             return (
               <CardSlot
@@ -851,17 +926,15 @@ export default function SolitaireGameScreen({ navigation, route }) {
                 label=""
                 animateReveal={true}
                 sizeScale={tabCardScale}
-                onPress={() =>
-                  dispatch(
-                    tapAction({
-                      type: "tableau",
-                      index: pileIndex,
-                      cardIndex,
-                    }),
-                  )
-                }
+                onPress={() => dispatch(tapAction(source))}
                 selected={selected}
                 disabled={!card.faceUp}
+                dragGesture={
+                  dragEnabled && card.faceUp
+                    ? makeDragGesture(source)
+                    : undefined
+                }
+                hidden={hidden}
                 style={[
                   styles.stackCard,
                   cardIndex > 0 && { marginTop: margins[cardIndex] },
@@ -1821,6 +1894,9 @@ export default function SolitaireGameScreen({ navigation, route }) {
           {state.variantId === "spider" ? renderSpider() : null}
           {state.variantId === "pyramid" ? renderPyramid() : null}
           {state.variantId === "tripeaks" ? renderTriPeaks() : null}
+          {/* Floating drag layer — sits above the board, outside the tableau's
+              overflow:hidden so a lifted run is never clipped. */}
+          {dragEnabled ? dragOverlay : null}
         </View>
       ) : (
         <ScrollView
@@ -2008,6 +2084,16 @@ const styles = StyleSheet.create({
   cardTouchDisabled: {
     opacity: 0.96,
   },
+  // Drag-and-drop: a legal drop target (foundation slot) glows green. Keeps the
+  // base borderWidth (1) and only recolors, so highlighting can't shift layout.
+  cardTouchHighlighted: {
+    borderColor: "#7CFFB2",
+    backgroundColor: "rgba(124, 255, 178, 0.16)",
+  },
+  // A card that's currently lifted in the drag overlay is hidden in place.
+  cardTouchHidden: {
+    opacity: 0,
+  },
   emptyCard: {
     width: 70,
     height: 98,
@@ -2055,6 +2141,12 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 34,
     alignItems: "center",
+  },
+  // Drag-and-drop: a column that's a legal drop target glows green. Background
+  // tint only (no border) so it can't reflow the columns mid-drag.
+  tableauColumnHighlighted: {
+    borderRadius: 10,
+    backgroundColor: "rgba(124, 255, 178, 0.12)",
   },
   tableauTopSpacer: {
     height: 16,
