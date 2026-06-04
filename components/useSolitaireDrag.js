@@ -104,19 +104,24 @@ export default function useSolitaireDrag(state, dispatch, sizing) {
     return refCbs.current.get(key);
   }, []);
 
+  // NB: use measure() (pageX/pageY) rather than measureInWindow(). pageX/pageY
+  // are relative to the app root — the SAME coordinate space as gesture-handler's
+  // absoluteX/absoluteY. measureInWindow is window-space, which in landscape is
+  // offset from the gesture space by the cutout/nav inset, so the overlay landed
+  // sideways. Using the matching space makes the inset cancel out.
   const measureZones = useCallback(() => {
-    if (overlayNode.current?.measureInWindow) {
-      overlayNode.current.measureInWindow((x, y) => {
-        rootRef.current = { x, y };
+    if (overlayNode.current?.measure) {
+      overlayNode.current.measure((x, y, w, h, pageX, pageY) => {
+        rootRef.current = { x: pageX, y: pageY };
       });
     }
     rectsRef.current = new Map();
     zoneNodes.current.forEach((node, key) => {
-      if (!node?.measureInWindow) return;
-      node.measureInWindow((x, y, w, h) => {
+      if (!node?.measure) return;
+      node.measure((x, y, w, h, pageX, pageY) => {
         rectsRef.current.set(key, {
-          x,
-          y,
+          x: pageX,
+          y: pageY,
           w,
           h,
           target: zoneTargets.current.get(key),
@@ -266,13 +271,12 @@ export default function useSolitaireDrag(state, dispatch, sizing) {
         overlayNode.current = n;
       }}
       // collapsable={false} stops Android from flattening this empty, untouchable
-      // layer away — without it measureInWindow returns (0,0) and the lifted card
-      // lands offset by the screen insets (jumps down/right). Pre-warm on layout
-      // so the first drag frame is already positioned (begin() re-measures too).
+      // layer away — without it measure() can't resolve a native view. Pre-warm on
+      // layout so the first drag frame is already positioned (begin() re-measures).
       collapsable={false}
       onLayout={() => {
-        overlayNode.current?.measureInWindow?.((x, y) => {
-          rootRef.current = { x, y };
+        overlayNode.current?.measure?.((x, y, w, h, pageX, pageY) => {
+          rootRef.current = { x: pageX, y: pageY };
         });
       }}
       style={StyleSheet.absoluteFill}
