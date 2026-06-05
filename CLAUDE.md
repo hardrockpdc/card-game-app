@@ -95,7 +95,7 @@ This is a family-friendly card game. Keep all content, copy, and assets appropri
   - Auto-save effects throttled to one write / 3s via a `lastSaveRef`.
   - Accent color `#7fb3ff` blue (error text stays `#e94560` red).
   - Responsive sizing via `scale()` / `scaleFont()` from `game/responsive.js`.
-- **Reference docs in repo:** `DEEP_REVIEW.md` (open issues + tracker), `PROJECT_NOTES.md` (project state), `Animations.md` (animation spec), `RESPONSIVE_LAYOUT_PLAN.md` (responsive/orientation architecture), per-game specs (`CONQUIAN_SPEC.md`, etc.).
+- **Reference docs in repo:** `PROJECT_NOTES.md` is the canonical doc — as of 2026-06-04 it absorbed the open-issues/review tracker (was `DEEP_REVIEW.md`), the responsive-layout/orientation architecture (was `RESPONSIVE_LAYOUT_PLAN.md`), and build/release status (was `EAS_REBUILD_PENDING.md`); see its top index. Still separate: `Animations.md` (animation spec), per-game specs (`CONQUIAN_SPEC.md`, `LASTCARD_SPEC.md`, `WILDROUND_SPEC.md`), `APP_STORE_REVIEW_NOTES.md`, `README.md`.
 
 ---
 
@@ -103,4 +103,4 @@ This is a family-friendly card game. Keep all content, copy, and assets appropri
 
 - I considered switching to native Kotlin and considered a full rewrite. We concluded: **stay on React Native** — a card game is not performance-limited, and my main frustration (drag-and-drop) was caused by setup gaps (no `GestureHandlerRootView`, raw PanResponder instead of gesture-handler), not by RN being incapable. If I bring up rewriting again, make me justify it against this conclusion before helping.
 - Drag-and-drop is **DONE** (2026-06-04): `GestureHandlerRootView` at root + `react-native-gesture-handler`, with immediate touch-and-move activation (tap-to-move kept as a fallback). Shipped for **Solitaire Klondike / FreeCell / Spider in landscape** via the reusable `components/useSolitaireDrag.js` hook + `getLegalTargets` in `game/solitaire.js`. Pyramid/TriPeaks stay tap (match/collect games). Pure JS, no rebuild.
-- Layout direction: **orientation is LOCKED** (changed 2026-06-04). The app is **portrait-locked everywhere except Solitaire** (landscape-locked). This *reverses* the earlier "responsive to aspect ratio, NOT forced orientation / Fold-first" stance — we ship Android phone-first, so Fold/tablet free-rotation was deprioritized. Responsive *sizing* (`useLayoutMode()`) still applies *within* the locked orientation. See `RESPONSIVE_LAYOUT_PLAN.md` → Orientation policy.
+- Layout direction: **orientation is LOCKED** (changed 2026-06-04). The app is **portrait-locked everywhere except Solitaire** (landscape-locked). This *reverses* the earlier "responsive to aspect ratio, NOT forced orientation / Fold-first" stance — we ship Android phone-first, so Fold/tablet free-rotation was deprioritized. Responsive *sizing* (`useLayoutMode()`) still applies *within* the locked orientation. See `PROJECT_NOTES.md` → "Responsive Layout & Orientation Architecture" → Orientation policy.
