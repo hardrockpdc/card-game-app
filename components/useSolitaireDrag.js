@@ -153,8 +153,10 @@ export default function useSolitaireDrag(state, dispatch, sizing) {
       const cur = stateRef.current;
       const run = runFromSource(cur, source);
       if (run.length === 0) return;
+      // Any face-up card/stack can be picked up, even with no legal target — it
+      // just lifts and springs back on release. legalTargets (possibly empty)
+      // only drives the highlights + which drop actually connects.
       const legalTargets = getLegalTargets(cur, source);
-      if (legalTargets.length === 0) return; // nowhere to drop — stay a no-op
 
       measureZones();
       const p = overlayPos(absX, absY);
