@@ -2142,13 +2142,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "transparent",
   },
+  // Tap-to-select cue: enlarge the selected card/stack ~1.25x (matches the drag
+  // lift) instead of a colored highlight. zIndex/elevation lift it above its
+  // neighbours so the grown card isn't tucked under the next one.
   cardTouchSelected: {
-    shadowColor: "#7fb3ff",
-    shadowOpacity: 0.45,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 0 },
-    backgroundColor: "rgba(127, 179, 255, 0.12)",
-    borderColor: "#7fb3ff",
+    transform: [{ scale: 1.25 }],
+    zIndex: 10,
+    elevation: 6,
   },
   cardTouchPressed: {
     opacity: 0.92,
