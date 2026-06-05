@@ -240,7 +240,12 @@ export default function SolitaireGameScreen({ navigation, route }) {
         ScreenOrientation.OrientationLock.LANDSCAPE,
       ).catch(() => {});
       return () => {
-        ScreenOrientation.unlockAsync().catch(() => {});
+        // Restore the app-wide portrait default on the way out — don't just
+        // unlock, which would leave rotation free and let a portrait screen
+        // render sideways.
+        ScreenOrientation.lockAsync(
+          ScreenOrientation.OrientationLock.PORTRAIT_UP,
+        ).catch(() => {});
       };
     }, [routeVariantId]),
   );

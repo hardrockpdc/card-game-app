@@ -55,6 +55,13 @@ try {
   SystemBars = require("react-native-edge-to-edge").SystemBars;
 } catch {}
 
+// expo-screen-orientation is a native module; guard the require so a dev build
+// made before it was added doesn't crash (it just won't lock until rebuilt).
+let ScreenOrientation = null;
+try {
+  ScreenOrientation = require("expo-screen-orientation");
+} catch {}
+
 const Stack = createNativeStackNavigator();
 
 export default function App() {
@@ -69,6 +76,17 @@ export default function App() {
         warn("Failed to load profile theme:", err);
       });
     initSounds();
+  }, []);
+
+  // The app is portrait-first: every screen is designed for portrait except
+  // Solitaire, which locks landscape on focus and restores PORTRAIT_UP on exit.
+  // Locking here means a portrait screen can never end up sideways. Guarded so a
+  // build without the native module is simply a no-op.
+  useEffect(() => {
+    if (!ScreenOrientation) return;
+    ScreenOrientation.lockAsync(
+      ScreenOrientation.OrientationLock.PORTRAIT_UP,
+    ).catch(() => {});
   }, []);
 
   // Close TCP server and UDP sockets when the app moves to the background.
