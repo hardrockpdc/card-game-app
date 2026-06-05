@@ -302,7 +302,7 @@ both explicitly for LAN-only play.
 - Make key screens responsive with `useWindowDimensions()`.
 - Prefer `ScrollView` for screens that may overflow on smaller phones.
 - Avoid absolute positioning for important buttons or navigation links unless there is a strong reason.
-- **Orientation (UPDATED 2026-06-04 — now LOCKED):** the app is **portrait-locked app-wide, with Solitaire the sole landscape exception**. Locked at runtime via `expo-screen-orientation`: `App.js` locks `PORTRAIT_UP` on mount; `SolitaireGameScreen.js` locks `LANDSCAPE` on focus and restores `PORTRAIT_UP` on exit. `app.json` is still `"orientation": "default"`, but the runtime lock overrides it (pure JS, reversible, no rebuild). This reversed the earlier "rotate freely / aspect-ratio-responsive, no forced orientation" decision (Android phone-first launch; Fold/tablet free-rotation deprioritized). Responsive *sizing* (`game/useLayoutMode.js`) still drives scaling *within* the locked orientation. All five Solitaire variants have landscape layouts; drag-and-drop works in Klondike/FreeCell/Spider landscape.
+- **Orientation:** the app is **portrait-locked app-wide, with Solitaire the sole landscape exception** (runtime `expo-screen-orientation`, pure JS). Responsive *sizing* (`game/useLayoutMode.js`) still adapts within the locked orientation. Full rule + rationale: see the [Responsive Layout & Orientation Architecture](#-responsive-layout--orientation-architecture) section.
 - **Immersive mode:** `App.js` renders `<SystemBars hidden style="light" />` from **react-native-edge-to-edge** to hide both the status bar and the navigation bar. This is the edge-to-edge-correct approach for SDK 54 — `expo-navigation-bar`'s visibility API is a deprecated no-op under edge-to-edge (which is on by default), so it was removed. A swipe from an edge reveals the bars briefly.
 
 ## 📍 Where We Are Right Now
@@ -706,15 +706,9 @@ Only when adding a NEW native package. JS-only changes don't need a rebuild.
 > measured width/height) is still in force and still governs scaling within the
 > locked orientation — only the "free rotation / Fold-square" goal was dropped.
 
-> Goal: gameplay screens that look good on **any** screen shape — phone portrait, phone landscape, and foldables/tablets (e.g. Samsung Fold, which is nearly square unfolded) — **without forcing orientation**.
->
-> Core principle: **lay out based on the space you actually have, not a locked orientation.** A forced "landscape" lock breaks on a Fold and wastes space on tablets. Responding to the live width/height is robust everywhere.
+## Why not just force landscape? (historical rationale)
 
----
-
-## Why not just force landscape?
-
-Forcing landscape was considered and rejected:
+Forcing landscape was *originally* rejected — **this was reversed 2026-06-04** (see Orientation policy below). Kept here for the foldable/tablet rationale if that's ever revisited:
 
 - **Foldables break the assumption.** A Samsung Fold unfolded is roughly square (~1:1). "Landscape = wide" isn't true there. A forced-landscape lock can look broken or waste enormous space.
 - **Tablets** are often used in portrait and have plenty of room either way.
@@ -760,9 +754,6 @@ Drive layout off `mode` (and off raw `width`/`height` for sizing). Because it's 
 
 ## Orientation policy
 
-> ⚠️ **UPDATED 2026-06-04 — orientation IS now locked.** The "rotate freely"
-> stance below was reversed.
-
 **Current policy:**
 - The app is **portrait-locked app-wide**, with **Solitaire as the sole landscape
   exception**. Solitaire locks `LANDSCAPE` on focus and restores `PORTRAIT_UP` on
@@ -778,10 +769,7 @@ Drive layout off `mode` (and off raw `width`/`height` for sizing). Because it's 
   the locked orientation, so the app still adapts across phone sizes. We just no
   longer pursue arbitrary rotation or the square-ish Fold case.
 
-**Original (superseded) policy, kept for rationale:**
-- ~~**Do NOT lock orientation.** Let the OS rotate freely. The layout adapts via `useLayoutMode()`.~~
-- ~~`expo-screen-orientation` is not strictly required; the aspect-ratio approach is the primary mechanism.~~
-- ~~`app.json` should allow rotation (`"orientation": "default"`).~~ (`app.json` is *still* `"default"`; the lock is applied at runtime instead — reversible, no rebuild.)
+*(The original "never lock orientation" policy was reversed here; `app.json` stays `"default"` but the runtime lock decides.)*
 
 ---
 
@@ -802,23 +790,23 @@ The win condition for "did this work": **the hand fits without horizontal scroll
 Responsive layout and the drag-and-drop fix are complementary:
 
 - More available width → more cards fit on screen → **less horizontal scrolling needed** → fewer places where scroll-vs-drag conflict can occur.
-- Where scrolling IS still needed, the drag fix still applies: `GestureHandlerRootView` at root, long-press to activate drag, axis-aware arbitration (horizontal motion scrolls, vertical motion drags). See CLAUDE.md §6.
-- Don't rely on layout alone to dodge the gesture conflict — fix the gesture handling properly too.
+- Drag-and-drop is **done** for Solitaire Klondike/FreeCell/Spider (landscape) with immediate touch-and-move activation (not long-press), via `components/useSolitaireDrag.js`. See CLAUDE.md §6.
 
 ---
 
-## Rollout plan (pilot first)
+## Rollout (done — historical)
 
-1. **Pilot on Solitaire.** It's the most space-starved game (7–10 tableau columns), single-player, tap-based (no drag dependency). It benefits most from responsive layout and is the clearest signal of success. Make `SolitaireGameScreen` responsive via `useLayoutMode()` and responsive card sizing.
-2. **Evaluate on real devices:** phone portrait, phone landscape, and if possible a Fold/tablet or an emulator configured as one. Confirm no overflow, no wasted space, no broken layouts in the square-ish/balanced case.
-3. **If it feels good, extend** the same `useLayoutMode()` pattern to the other card-heavy games (Conquián, Rummy, Poker), one at a time, committing each separately.
-4. **Menus/setup screens** can stay simple (they're not space-starved), but they should still not *break* in any orientation — verify they're scrollable and don't overflow.
+Piloted on Solitaire, then extended: all five Solitaire variants now have
+landscape layouts, and drag-and-drop landed on Klondike/FreeCell/Spider. The
+other card-heavy games (Conquián, Rummy, Poker) remain candidates for a
+responsive/landscape pass *if* a specific game is judged to benefit — not done
+app-wide.
 
 ---
 
 ## Anti-goals (don't do these)
 
-- ❌ Don't force landscape globally.
+- ❌ Don't force a screen into landscape unless it genuinely needs it (only Solitaire does).
 - ❌ Don't build two totally separate component trees for portrait vs landscape if one responsive tree can adapt — that doubles maintenance.
 - ❌ Don't read dimensions once at module load; always use the live hook.
 - ❌ Don't hard-code pixel card sizes that assume a specific screen.
@@ -1774,69 +1762,39 @@ If you want a suggested path:
 *(Merged from EAS_REBUILD_PENDING.md on 2026-06-04 — that file is now deleted.)*
 
 
-> ✅ **Built & verified 2026-06-04.** A development build was made and installed;
-> immersive bars, free rotation, the Solitaire landscape locks, and the smaller
-> APK are all live and confirmed working on device. The items below are now
-> **done** — this file is kept as a record and a template for the *next* time
-> native changes accumulate. (Dependency tree was also cleaned pre-build:
-> removed dead `react-native-draggable-flatlist`; pinned/deduped
-> `expo-asset`/`expo-constants` to SDK 54.)
+> ✅ **Built & verified 2026-06-04.** A development build shipped immersive bars,
+> the `expo-screen-orientation` native module, `react-native-gesture-handler`
+> (drag-and-drop), and the smaller APK — all live and confirmed on device. The
+> orientation *policy* has since shifted (pure JS, no rebuild): portrait-locked
+> except Solitaire. Dep tree was cleaned pre-build (removed dead
+> `react-native-draggable-flatlist`; pinned/deduped `expo-asset`/`expo-constants`
+> to SDK 54).
 
-These changes are **native** (new modules or `app.json` manifest/config), so they
-are NOT live in the currently-installed dev client. They only take effect after:
+**Build workflow (for next time native deps/config change):**
 
 ```
 eas build --profile development --platform android
 ```
 
-…then install the new APK and `npx expo start --dev-client`.
-(Local `expo run:android` does not work on this machine — EAS is the only path.)
-
-Everything else done recently (Solitaire landscape layouts, card sizing, quit
-button, stats/header merge, etc.) is **pure JS and already live** via Metro.
-
----
-
-## What's waiting on the rebuild
-
-1. **Immersive bars** — `react-native-edge-to-edge` + `<SystemBars hidden>` in
-   `App.js`. Hides the top status bar (time/battery/signal) and bottom nav bar.
-   - dependency `react-native-edge-to-edge` + plugin in `app.json`.
-   - Currently guarded so the old binary doesn't crash; bars still show until built.
-
-2. **Free rotation** — `app.json` `"orientation": "default"` (was `portrait`).
-   Lets the app rotate at all. Without this, nothing rotates on device.
-   > ⚠️ **Superseded at runtime (2026-06-04):** `app.json` is still `"default"`,
-   > but the app now locks orientation at runtime via `expo-screen-orientation` —
-   > **portrait-locked app-wide, Solitaire landscape-locked**. So the app does
-   > NOT rotate freely anymore; "default" just lets the runtime lock decide.
-
-3. **Solitaire landscape lock** — `expo-screen-orientation` (`~9.0.9`).
-   Locks all five variants (Klondike / FreeCell / Spider / Pyramid / TriPeaks)
-   to landscape on focus, releases on leave.
-   - Guarded require, so it's a no-op (no lock, no crash) until built.
-
-4. **(verify) Local-network permissions** — Android `NEARBY_WIFI_DEVICES`,
-   `ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE`, `INTERNET` were added earlier for
-   multiplayer. Confirm the installed binary already has them; if not, this build
-   covers them too.
+…then install the new APK and `npx expo start --dev-client`. Native changes
+(new modules, `app.json` manifest/config) only take effect after a build —
+**EAS is the only path** (local `expo run:android` doesn't work on this machine).
+Pure-JS changes hot-reload over Metro with no rebuild.
 
 ---
 
-## Verify after the build
+## What shipped in the 2026-06-04 build (historical)
 
-- Both system bars hidden (top + bottom); swipe from an edge reveals briefly.
-- The app is **portrait-locked everywhere except Solitaire** (updated 2026-06-04;
-  was "rotates freely"). Menus/portrait screens stay portrait even if rotated.
-- **All five Solitaire variants force landscape**; leaving Solitaire restores
-  portrait (not free rotation). Drag-and-drop works in Klondike/FreeCell/Spider.
-- (If #4 applied) multiplayer host/join still works.
+All confirmed live on device:
+- **Immersive bars** — `react-native-edge-to-edge` + `<SystemBars hidden>` in `App.js` (top + bottom hidden; swipe from an edge reveals briefly).
+- **`expo-screen-orientation`** native module — now drives the runtime orientation lock (portrait-locked except Solitaire; see the Orientation policy section above).
+- **`react-native-gesture-handler`** — powers Solitaire drag-and-drop.
+- **Smaller APK** — dead JEWEL theme + unused source icon removed.
+- **Local-network permissions** (`NEARBY_WIFI_DEVICES`, `ACCESS_WIFI_STATE`, etc.) confirmed present for multiplayer.
 
-## Status
+`app.json` remains `"orientation": "default"`; the runtime lock decides.
 
-- All five Solitaire variants now have landscape layouts (pure JS, live on the
-  current binary — test by rotating). The landscape *lock* for them is item #3
-  above and needs the build.
+**Still pending:** LAUNCH-2 (production build) — see the Deep Review section.
 
 ---
 
@@ -1845,88 +1803,17 @@ button, stats/header merge, etc.) is **pure JS and already live** via Metro.
 *(Merged from KICKOFF.md on 2026-06-04 — completed task brief, kept for history.)*
 
 
-> Paste tasks from here one at a time into Claude Code. Do them **in order** — each builds on the last. Don't batch them; review each diff before accepting (Normal or Plan mode).
->
-> Claude Code: follow `CLAUDE.md` (challenge-first behavior + hard rules) and, for layout work, `RESPONSIVE_LAYOUT_PLAN.md`. Diagnostic-first on anything risky. Commit after each task with a clear message and tell me what to test.
+> **Archive.** This was the task-by-task brief that drove the gesture-stack
+> setup, the responsive-layout pilot, and drag-and-drop. **All tasks completed by
+> 2026-06-04.** Kept for history; its "standing reminders" are codified in
+> `CLAUDE.md`.
 
 ---
 
-## Task 0 — Orient yourself (read-only, no edits)
+What it covered (all done):
+- **Task 0 / 0.5** — read-only orientation + hooks-order diagnostics before touching screens.
+- **Task 1–2** — verified and wired the gesture/animation native stack (`GestureHandlerRootView` + `react-native-gesture-handler`).
+- **Task 3** — responsive Solitaire pilot (`useLayoutMode()`).
+- **Task 4** — drag-and-drop. (Shipped differently than first sketched: immediate touch-and-move activation, not long-press; `reanimated` turned out not to be needed — built-in `Animated` was enough.)
 
-Read `CLAUDE.md`, `RESPONSIVE_LAYOUT_PLAN.md`, `DEEP_REVIEW.md`, and `PROJECT_NOTES.md`. Then read `App.js`, `components/Card.js`, and `babel.config.js`. Give me a 5-bullet summary of the current state and flag anything that contradicts these docs. **Make no changes.**
-
-Goal: confirm you understand the project before touching it.
-
----
-
-## Task 0.5 — Hooks-order diagnostic (read-only)
-
-Scan every file in `screens/` for `useEffect`, `useState`, `useRef`, `useMemo`, and `useCallback` calls that appear **after** an early `return` statement. Report which files are affected and which hook calls are misplaced. Make no changes.
-
-This is the #1 recurring crash in this project (see CLAUDE.md §2.1 — hit Poker, Conquián twice, Rummy). Do this before touching any screen files in Tasks 3 or 4 so we know exactly what we're stepping into.
-
----
-
-## Task 1 — Verify the gesture/animation native stack (read-only diagnostic)
-
-Do NOT change anything yet. Report:
-
-1. Is `react-native-gesture-handler` installed, and is the app wrapped in `<GestureHandlerRootView style={{flex:1}}>` at the root of `App.js`? (I believe it is NOT wrapped — confirm.)
-2. Is `react-native-reanimated` installed, and does `babel.config.js` include `'react-native-reanimated/plugin'` as the LAST entry in the plugins array? (Reanimated breaks silently if the plugin is missing or not last.)
-3. Is `react-native-worklets` present? Reanimated 4.x requires it as a peer dependency (`0.8.x`). If it's missing or mismatched, that alone could explain animation/drag misbehavior.
-4. Is `expo-haptics` installed? (Probably not yet.)
-
-End with a clear yes/no on each and a recommendation for what Task 2 needs to fix.
-
----
-
-## Task 2 — Wire up the gesture/animation foundation
-
-Based on Task 1 findings, make ONLY the setup changes needed:
-
-- Add `<GestureHandlerRootView style={{ flex: 1 }}>` as the OUTERMOST wrapper in `App.js` (outside ErrorBoundary or just inside it — it must wrap everything that uses gestures). Import it from `react-native-gesture-handler`.
-- Create `babel.config.js` at the project root if it doesn't exist (this project currently has none). It must include `'react-native-reanimated/plugin'` as the LAST entry in the plugins array. A cache clear + rebuild is required after any babel change.
-- If `react-native-worklets` is missing/mismatched for reanimated 4.x, install the correct version.
-After: list every native change and tell me explicitly that I must **rebuild the dev client** (`npx expo run:android` or an EAS dev build) before any of this takes effect — Metro reload alone won't load new native modules. Commit.
-
-**Stop here and let me rebuild + confirm the app still launches before continuing.**
-
----
-
-## Task 3 — Responsive layout pilot: Solitaire
-
-> **This task is pure JavaScript** (`useWindowDimensions` is built into React Native). It does NOT depend on the native rebuild from Task 2 — you can start it as soon as Task 2's code changes are committed, without waiting for the build to complete. The rebuild only gates Task 4.
-
-Follow `RESPONSIVE_LAYOUT_PLAN.md`. Implement the `useLayoutMode()` hook (wide / tall / balanced via `useWindowDimensions`) and make `SolitaireGameScreen` responsive:
-
-- Cards and tableau columns size off available space, not fixed pixels.
-- Works in phone portrait, phone landscape, and square-ish (Fold) without overflow or wasted space.
-- ~~Do NOT lock orientation; let it rotate freely.~~ **SUPERSEDED 2026-06-04:** orientation is now locked — app portrait-locked, Solitaire landscape-locked (runtime `expo-screen-orientation`). Responsive *sizing* still applies within the locked orientation. See `RESPONSIVE_LAYOUT_PLAN.md` → Orientation policy.
-- Keep all hooks above all early returns. Keep reduced-motion handling and the Spider fly-away intact.
-
-Use Plan mode — show me the layout plan before writing. Commit when done. Tell me what to test in all three shapes.
-
----
-
-## Task 4 — Proper drag-and-drop (prove the feel)
-
-Only after Task 2 is rebuilt and working. Install `expo-haptics` here (this is where it's first actually used — defer it no earlier). Build a SMALL drag test first, not the whole Arrange screen:
-
-- A throwaway screen: a horizontally-scrolling row of cards + two drop zones.
-- **Long-press (~200ms) to pick up a card**, then drag it into a drop zone.
-- Use `react-native-gesture-handler` (`Gesture.Pan`, `Gesture.LongPress`) + `reanimated`, NOT raw PanResponder.
-- Axis-aware: horizontal swipe scrolls the row; long-press-then-drag lifts a card and locks scroll.
-- Add an `expo-haptics` tick on pickup and on drop.
-
-This reproduces my exact past failure (drag out of a scrolling row). I'll run it and judge the feel. If it's good, we rebuild the real Conquián Arrange screen on this foundation. If it's bad even done right, that's real evidence for reconsidering the stack.
-
----
-
-## Standing reminders for every task
-
-- Challenge me first if a task is flawed or premature (CLAUDE.md §1).
-- Diagnostic-first before risky multi-file changes (CLAUDE.md §3.1).
-- Don't run `tsc` — this is a JS project (CLAUDE.md §2.2).
-- Hooks before early returns, always (CLAUDE.md §2.1).
-- Commit per task; tell me what to test; remind me when a rebuild is needed.
-- Don't add libraries without a concrete near-term use (CLAUDE.md §2.6).
+The "standing reminders" it listed — challenge-first, diagnostic-first, no `tsc`, hooks before early returns, commit per unit, no speculative libraries — all live in `CLAUDE.md`.
