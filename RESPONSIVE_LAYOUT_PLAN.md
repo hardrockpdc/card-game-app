@@ -1,5 +1,13 @@
 # RESPONSIVE_LAYOUT_PLAN.md — Aspect-Ratio Responsive Layout Architecture
 
+> ⚠️ **Status (2026-06-04): orientation is now LOCKED.** This doc's original
+> premise was "never force orientation, adapt to aspect ratio." That premise was
+> reversed — the app is **portrait-locked everywhere except Solitaire** (which is
+> landscape-locked). See the **Orientation policy** section below for the current
+> rule and why. The **responsive *sizing*** guidance here (`useLayoutMode()`,
+> measured width/height) is still in force and still governs scaling within the
+> locked orientation — only the "free rotation / Fold-square" goal was dropped.
+
 > Goal: gameplay screens that look good on **any** screen shape — phone portrait, phone landscape, and foldables/tablets (e.g. Samsung Fold, which is nearly square unfolded) — **without forcing orientation**.
 >
 > Core principle: **lay out based on the space you actually have, not a locked orientation.** A forced "landscape" lock breaks on a Fold and wastes space on tablets. Responding to the live width/height is robust everywhere.
@@ -54,9 +62,28 @@ Drive layout off `mode` (and off raw `width`/`height` for sizing). Because it's 
 
 ## Orientation policy
 
-- **Do NOT lock orientation.** Let the OS rotate freely. The layout adapts via `useLayoutMode()`.
-- This means `expo-screen-orientation` is **not strictly required** for the responsive approach. Only add it if we later decide some specific screen genuinely must lock (and justify it per CLAUDE.md §2.6). The aspect-ratio approach is the primary mechanism; orientation locking is a fallback we're trying to avoid.
-- `app.json` should allow rotation (`"orientation": "default"`) rather than locking to portrait.
+> ⚠️ **UPDATED 2026-06-04 — orientation IS now locked.** The "rotate freely"
+> stance below was reversed.
+
+**Current policy:**
+- The app is **portrait-locked app-wide**, with **Solitaire as the sole landscape
+  exception**. Solitaire locks `LANDSCAPE` on focus and restores `PORTRAIT_UP` on
+  exit; the app-root lock lives in `App.js`, the override in
+  `SolitaireGameScreen.js`. Both use `expo-screen-orientation` — pure JS,
+  reversible, no rebuild.
+- **Why the reversal:** Solitaire genuinely needs the width (7–10 tableau columns
+  + long stacks); every other screen was designed portrait-first and looks worse
+  forced wide. We ship **Android phone-first** to Google Play, so reworking ~21
+  screens for Fold/tablet free-rotation wasn't worth it.
+- **What still holds:** responsive *sizing* (`useLayoutMode()` + measured
+  width/height) is unchanged and still governs how cards/columns scale *within*
+  the locked orientation, so the app still adapts across phone sizes. We just no
+  longer pursue arbitrary rotation or the square-ish Fold case.
+
+**Original (superseded) policy, kept for rationale:**
+- ~~**Do NOT lock orientation.** Let the OS rotate freely. The layout adapts via `useLayoutMode()`.~~
+- ~~`expo-screen-orientation` is not strictly required; the aspect-ratio approach is the primary mechanism.~~
+- ~~`app.json` should allow rotation (`"orientation": "default"`).~~ (`app.json` is *still* `"default"`; the lock is applied at runtime instead — reversible, no rebuild.)
 
 ---
 

@@ -32,6 +32,10 @@ button, stats/header merge, etc.) is **pure JS and already live** via Metro.
 
 2. **Free rotation** — `app.json` `"orientation": "default"` (was `portrait`).
    Lets the app rotate at all. Without this, nothing rotates on device.
+   > ⚠️ **Superseded at runtime (2026-06-04):** `app.json` is still `"default"`,
+   > but the app now locks orientation at runtime via `expo-screen-orientation` —
+   > **portrait-locked app-wide, Solitaire landscape-locked**. So the app does
+   > NOT rotate freely anymore; "default" just lets the runtime lock decide.
 
 3. **Solitaire landscape lock** — `expo-screen-orientation` (`~9.0.9`).
    Locks all five variants (Klondike / FreeCell / Spider / Pyramid / TriPeaks)
@@ -48,9 +52,10 @@ button, stats/header merge, etc.) is **pure JS and already live** via Metro.
 ## Verify after the build
 
 - Both system bars hidden (top + bottom); swipe from an edge reveals briefly.
-- App rotates; menus/portrait screens still look right.
-- Klondike / FreeCell / Spider **force landscape**; leaving releases the lock;
-  other variants + the rest of the app rotate freely.
+- The app is **portrait-locked everywhere except Solitaire** (updated 2026-06-04;
+  was "rotates freely"). Menus/portrait screens stay portrait even if rotated.
+- **All five Solitaire variants force landscape**; leaving Solitaire restores
+  portrait (not free rotation). Drag-and-drop works in Klondike/FreeCell/Spider.
 - (If #4 applied) multiplayer host/join still works.
 
 ## Status

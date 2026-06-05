@@ -129,10 +129,12 @@ new bugs surfaced. Findings grouped as requested:
 
 ### Group 3 — need a new EAS build
 
-- [ ] Everything in `EAS_REBUILD_PENDING.md` (immersive bars, free rotation +
-  Solitaire landscape locks via `expo-screen-orientation`, network-permission
-  verify) and the **smaller APK** (the JEWEL/App-Icon asset deletions land on the
-  next build). Plus **LAUNCH-2** (production build).
+- [x] **Dev build landed & verified 2026-06-04** — immersive bars, the
+  `expo-screen-orientation` native module, gesture-handler (drag-and-drop), and
+  the smaller APK are all live. Orientation policy has since shifted (pure-JS,
+  no rebuild): the app is now **portrait-locked except Solitaire** (landscape) —
+  see `EAS_REBUILD_PENDING.md` / `RESPONSIVE_LAYOUT_PLAN.md`.
+- [ ] **LAUNCH-2** (production build) — still pending; separate workflow.
 
 ---
 

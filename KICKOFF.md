@@ -56,7 +56,7 @@ Follow `RESPONSIVE_LAYOUT_PLAN.md`. Implement the `useLayoutMode()` hook (wide /
 
 - Cards and tableau columns size off available space, not fixed pixels.
 - Works in phone portrait, phone landscape, and square-ish (Fold) without overflow or wasted space.
-- Do NOT lock orientation; let it rotate freely (`app.json` orientation = default).
+- ~~Do NOT lock orientation; let it rotate freely.~~ **SUPERSEDED 2026-06-04:** orientation is now locked — app portrait-locked, Solitaire landscape-locked (runtime `expo-screen-orientation`). Responsive *sizing* still applies within the locked orientation. See `RESPONSIVE_LAYOUT_PLAN.md` → Orientation policy.
 - Keep all hooks above all early returns. Keep reduced-motion handling and the Spider fly-away intact.
 
 Use Plan mode — show me the layout plan before writing. Commit when done. Tell me what to test in all three shapes.
