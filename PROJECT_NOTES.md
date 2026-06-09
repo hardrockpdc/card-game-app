@@ -950,10 +950,12 @@ new bugs surfaced. Findings grouped as requested:
   runtime behaviors (CQ-8 / PERF-3) that need two devices.
 - [ ] **PERF-3** (carry-forward) — multiplayer broadcasts the full state on every
   action; verify responsiveness with two devices before optimizing.
-- [ ] **NB-3** — the server/client `data` handlers call `listeners.onMessage()`
-  *inside* the parse `try/catch`, so an exception thrown by a message handler is
-  silently swallowed (can hide real bugs). Low priority; verify no handler relies
-  on this, then consider moving the call outside the try.
+- [x] **NB-3** — ✅ FIXED. The server/client `data` handlers used to call
+  `listeners.onMessage()` *inside* the parse `try/catch`, silently swallowing
+  handler exceptions. Now only the `JSON.parse` is caught (a partial/garbage line
+  on the byte stream is skipped); the handler runs in its own guard that logs via
+  `warn()` instead of swallowing — real handler bugs surface in dev logs without
+  crashing the read loop. No handler relied on the swallow.
 - [ ] **UX-4** (carry-forward) — optional brief "dealing…" state during the mount
   delay. Confirm it's wanted.
 

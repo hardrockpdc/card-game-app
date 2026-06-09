@@ -1,7 +1,7 @@
 import { Alert, Platform } from "react-native";
 import TcpSocket from "react-native-tcp-socket";
 import UdpSocket from "react-native-udp";
-import { log } from "./logger";
+import { log, warn } from "./logger";
 
 export const PROTOCOL_VERSION = 1;
 
@@ -60,28 +60,40 @@ export function startServer() {
         const line = buffer.slice(0, idx);
         buffer = buffer.slice(idx + 1);
         if (!line.trim()) continue;
+
+        // Only the PARSE is swallowed (a partial/garbage line is expected on a
+        // byte stream — skip it and keep reading). The message handler runs
+        // outside this catch so a real bug in it surfaces in logs (NB-3) instead
+        // of being silently eaten, but still can't kill the read loop.
+        let msg;
         try {
-          const msg = JSON.parse(line);
+          msg = JSON.parse(line);
+        } catch (_) {
+          continue;
+        }
 
-          if (msg.protocolVersion !== PROTOCOL_VERSION) {
-            socket.write(
-              JSON.stringify({
-                type: "VERSION_MISMATCH",
-                serverVersion: PROTOCOL_VERSION,
-                protocolVersion: PROTOCOL_VERSION,
-              }) + "\n",
-            );
-            socket.destroy();
-            return;
-          }
+        if (msg.protocolVersion !== PROTOCOL_VERSION) {
+          socket.write(
+            JSON.stringify({
+              type: "VERSION_MISMATCH",
+              serverVersion: PROTOCOL_VERSION,
+              protocolVersion: PROTOCOL_VERSION,
+            }) + "\n",
+          );
+          socket.destroy();
+          return;
+        }
 
-          // Auto-store player name whenever a JOIN message arrives
-          if (msg.type === "JOIN" && msg.name) {
-            playerNames.set(id, msg.name);
-          }
+        // Auto-store player name whenever a JOIN message arrives
+        if (msg.type === "JOIN" && msg.name) {
+          playerNames.set(id, msg.name);
+        }
 
+        try {
           serverListeners.onMessage?.(msg, id);
-        } catch (_) {}
+        } catch (err) {
+          warn("[Server] onMessage handler threw:", err);
+        }
       }
     });
 
@@ -202,26 +214,35 @@ export function connectToHost(ip, callbacks) {
       const line = buffer.slice(0, idx);
       buffer = buffer.slice(idx + 1);
       if (!line.trim()) continue;
+
+      // As on the server (NB-3): swallow only the parse of a partial/garbage
+      // line; run the message handler outside the catch (with its own logged
+      // guard) so a real handler bug surfaces instead of being silently eaten.
+      let parsed;
       try {
-        const parsed = JSON.parse(line);
+        parsed = JSON.parse(line);
+      } catch (_) {
+        continue;
+      }
 
-        if (parsed.type === "ASSIGNED_ID") {
-          assignedClientId = parsed.clientId;
-          clientListeners.onMessage?.(parsed);
-          continue;
-        }
+      if (parsed.type === "VERSION_MISMATCH") {
+        Alert.alert(
+          "Update Required",
+          "The host is running a different version of Card Night. Please update your app to join this game.",
+          [{ text: "OK" }],
+        );
+        continue;
+      }
 
-        if (parsed.type === "VERSION_MISMATCH") {
-          Alert.alert(
-            "Update Required",
-            "The host is running a different version of Card Night. Please update your app to join this game.",
-            [{ text: "OK" }],
-          );
-          continue;
-        }
+      if (parsed.type === "ASSIGNED_ID") {
+        assignedClientId = parsed.clientId;
+      }
 
+      try {
         clientListeners.onMessage?.(parsed);
-      } catch (_) {}
+      } catch (err) {
+        warn("[Client] onMessage handler threw:", err);
+      }
     }
   });
 
