@@ -75,6 +75,7 @@ function toPublic(state) {
     dealerIndex: state.dealerIndex,
     activeCardSourcePid: state.activeCardSourcePid,
     chainPassedPids: state.chainPassedPids,
+    autoTook: state.autoTook ?? null,
   };
 }
 
@@ -207,6 +208,14 @@ export default function ConquianGameScreen({ navigation, route }) {
           }
           meldIds = aiBestHandMeld(s.hands[aiPid]);
         }
+      }
+
+      // A free meld just laid down may have triggered a forced auto-take (the
+      // reducer moves us to the discard phase). If so, don't also try to
+      // take/pass — let the next cycle handle the discard.
+      if (s.turnPhase !== "action") {
+        applyState(s);
+        return;
       }
 
       const passRate = PASS_RATES[difficulty] ?? 0.15;
@@ -1208,7 +1217,10 @@ export default function ConquianGameScreen({ navigation, route }) {
                 : phase === "playing" && isMyTurn && turnPhase === "action"
                   ? "▶ Your turn — Tap the active card to take, or Pass"
                   : phase === "playing" && isMyTurn && turnPhase === "discard"
-                    ? "▶ Your turn — Discard a card"
+                    ? gameState.autoTook &&
+                      String(gameState.autoTook.pid) === String(myPid)
+                      ? `Auto-added ${gameState.autoTook.rank} of ${gameState.autoTook.suit} to your meld — discard a card`
+                      : "▶ Your turn — Discard a card"
                     : phase === "playing"
                       ? `${currentPlayer?.name ?? "Opponent"}'s turn`
                       : phase === "results"

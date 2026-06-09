@@ -98,6 +98,21 @@ This happens at the start of **every** game in a session, not just the first one
 
 Taking the active card always means: **"I'm placing this card into a valid meld on the table right now."** It cannot just go to the player's hand.
 
+## Auto-Take (Forced Take) Rule
+
+> Whenever the active card **directly extends a meld the player already has on the table** (no borrowing needed), that player **cannot pass it** — it is automatically added to that meld and the player must immediately discard.
+
+- **Trigger — direct extension only.** Auto-take fires only when the active card slots onto an existing table meld *as-is* (a 4th suit onto a set, or either end of a run). Forming a brand-new meld from hand stays a normal **Take/Pass** choice, and a card that fits only *after* borrowing/rearranging also stays a manual choice.
+- **Applies to both** a card offered to you in the chain **and your own draw** from Stock. (On your own draw, the forced take fires immediately — you don't get your free-meld window that turn.)
+- **Clockwise order is unchanged.** The card is offered in the normal Priority-Chain order; auto-take only removes the *pass* option for whoever it reaches who can extend. It never lets a later player jump ahead of an earlier one. A player who can't add it at all passes automatically. Likewise, if a player lays down a free meld on their draw turn that the active card now extends, the forced take fires then.
+- **After the forced add**, the player still **chooses which card to discard**, and that discard **starts a new chain** as normal.
+- **Win:** if the forced add reaches the target (`hand size + 1`), the player **wins immediately — no discard**, chain stops.
+- **Last-card edge:** a forced take is *still forced* even if the discard empties your hand without winning. You end at 0 cards in hand and can still win later when a future card extends one of your melds (winning with no discard then).
+- **AI** obeys auto-take too (it gets no choice); the AI's pass-rate only applies to *manual* takes (new-meld-from-hand).
+- **Multiple matches:** if the active card could extend more than one of your melds, the engine adds it to one valid meld automatically — the melded count is +1 either way.
+
+**Implementation:** `forcedExtendIndex(state, pid)` + `applyAutoTake(state)` in `game/conquian.js`, applied at every point the active card lands on a player (draw, chain offer, discard) or the player's melds change while a card is active. The reducer resolves the forced take, so the UI never offers a "pass" for it; a transient `autoTook` flag surfaces a "card auto-added" message.
+
 ## Priority Chain — Detailed
 
 - Active card moves clockwise to the **next eligible player**

@@ -93,6 +93,50 @@ export function canExtendMeld(meld, card) {
   return false;
 }
 
+// ─── Auto-Take rule ───────────────────────────────────────────────────────────
+// Whenever the active card DIRECTLY extends a meld the offered player already has
+// on the table (no borrowing), they cannot pass it — it is auto-added and they
+// must immediately discard. Clockwise priority order is unchanged; this only
+// removes the *pass* option for whoever the card lands on. Applies to a card
+// offered in the chain AND to the player's own draw. See CONQUIAN_SPEC.md.
+
+// Index of the first own meld the active card directly extends, or -1.
+export function forcedExtendIndex(state, playerPid) {
+  if (!state || !state.activeCard) return -1;
+  const myMelds = state.melds[String(playerPid)] ?? [];
+  for (let i = 0; i < myMelds.length; i++) {
+    if (canExtendMeld(myMelds[i], state.activeCard)) return i;
+  }
+  return -1;
+}
+
+// If the player currently on the clock (turnPhase "action", a card in front of
+// them) can directly extend one of their melds, resolve the forced take and flag
+// it for the UI. No-op otherwise. Called at every point the active card lands on
+// a player or the player's table melds change while a card is active.
+function applyAutoTake(state) {
+  if (
+    !state ||
+    state.phase !== "playing" ||
+    state.turnPhase !== "action" ||
+    !state.activeCard
+  )
+    return state;
+  const curPid = pid(state.players[state.currentPlayerIndex]);
+  const idx = forcedExtendIndex(state, curPid);
+  if (idx === -1) return state;
+  const card = state.activeCard;
+  const taken = doTakeActiveCard(state, curPid, {
+    type: "extend",
+    meldIdx: idx,
+  });
+  if (taken === state) return state; // safety — the take should always succeed
+  return {
+    ...taken,
+    autoTook: { pid: curPid, rank: card.rank, suit: card.suit },
+  };
+}
+
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 export function getConfig(playerCount) {
@@ -168,6 +212,7 @@ export function deal(playerList, options = {}) {
     originalDrawerIndex: firstPlayerIndex,
     activeCardSourcePid: null,
     chainPassedPids: [],
+    autoTook: null,
   };
 }
 
@@ -224,7 +269,9 @@ export function doDrawFromStock(state) {
   }
   const drawerPid = pid(state.players[state.currentPlayerIndex]);
   const [activeCard, ...stock] = state.stock;
-  return {
+  // Auto-Take applies to your own draw too: if the drawn card extends one of your
+  // table melds it's force-taken immediately (you don't get to pass it).
+  return applyAutoTake({
     ...state,
     stock,
     activeCard,
@@ -232,7 +279,8 @@ export function doDrawFromStock(state) {
     originalDrawerIndex: state.currentPlayerIndex,
     activeCardSourcePid: drawerPid,
     chainPassedPids: [],
-  };
+    autoTook: null,
+  });
 }
 
 // ─── Free actions (only on your own draw turn) ────────────────────────────────
@@ -264,7 +312,9 @@ export function doLayDownMeld(state, playerPid, cardIds) {
       [pidStr]: [...(state.melds[pidStr] ?? []), sortMeldCards(cards)],
     },
   };
-  return winCheck(next, pidStr);
+  // A meld just laid down may now be directly extendable by the active card →
+  // that triggers a forced auto-take.
+  return applyAutoTake(winCheck(next, pidStr));
 }
 
 // Extend an existing own meld with hand cards only (no active card involved)
@@ -301,7 +351,8 @@ export function doExtendMeldFromHand(state, playerPid, meldIdx, cardIds) {
       ),
     },
   };
-  return winCheck(next, pidStr);
+  // The extended meld may now be directly extendable by the active card too.
+  return applyAutoTake(winCheck(next, pidStr));
 }
 
 // ─── Take active card ─────────────────────────────────────────────────────────
@@ -358,6 +409,10 @@ export function doPassActiveCard(state) {
   if (state.phase !== "playing" || state.turnPhase !== "action") return state;
 
   const currentPid = pid(state.players[state.currentPlayerIndex]);
+  // Auto-Take: you can't pass a card that directly extends one of your melds.
+  // (Normally the card auto-resolves before reaching here; this is the
+  // authoritative guard so an illegal pass can't slip through.)
+  if (forcedExtendIndex(state, currentPid) !== -1) return state;
   const newPassedPids = [...state.chainPassedPids, currentPid];
   const n = state.players.length;
 
@@ -377,12 +432,14 @@ export function doPassActiveCard(state) {
   }
 
   if (nextIdx !== -1) {
-    // Offer card to next eligible player
-    return {
+    // Offer card to next eligible player — who may be force-taken if it extends
+    // one of their melds.
+    return applyAutoTake({
       ...state,
       chainPassedPids: newPassedPids,
       currentPlayerIndex: nextIdx,
-    };
+      autoTook: null,
+    });
   }
 
   // Chain exhausted — card goes to dead pile
@@ -423,10 +480,12 @@ export function doDiscardCard(state, playerPid, cardId) {
   const card = hand.find((c) => c.id === cardId);
   if (!card) return state;
 
-  // Discarded card becomes the new active card, offered clockwise from the discarder
+  // Discarded card becomes the new active card, offered clockwise from the
+  // discarder — who may be force-taken if it extends one of their melds. Clearing
+  // autoTook here consumes the just-shown "auto-added" flag from this discarder.
   const n = state.players.length;
   const nextIdx = (state.currentPlayerIndex + 1) % n;
-  return {
+  return applyAutoTake({
     ...state,
     hands: { ...state.hands, [pidStr]: hand.filter((c) => c.id !== cardId) },
     activeCard: card,
@@ -434,7 +493,8 @@ export function doDiscardCard(state, playerPid, cardId) {
     chainPassedPids: [],
     currentPlayerIndex: nextIdx,
     turnPhase: "action",
-  };
+    autoTook: null,
+  });
 }
 
 // ─── Borrow Take ─────────────────────────────────────────────────────────────
@@ -477,7 +537,9 @@ export function doTakeWithBorrow(state, playerPid, finalMelds) {
     activeCard: activeUsed ? null : state.activeCard,
     turnPhase: activeUsed ? "discard" : "action",
   };
-  return winCheck(next, pidStr);
+  // If the borrow rearrangement left the active card unused but it now directly
+  // extends one of the rearranged melds, that's a forced auto-take.
+  return applyAutoTake(winCheck(next, pidStr));
 }
 
 // ─── AI helpers ───────────────────────────────────────────────────────────────
