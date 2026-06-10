@@ -101,18 +101,13 @@ export default function ConquianGameScreen({ navigation, route }) {
   const hasMountedRef = useRef(false);
   const lastSaveRef = useRef(0);
   const activeCardShakeRef = useRef(new Animated.Value(0)).current;
-  // Auto-Take feedback: a cosmetic card that lands in the Active slot then flies
-  // into your melds, so the instant draw→discard jump is readable.
-  const flyTrans = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
-  const flyScale = useRef(new Animated.Value(1)).current;
-  const flyOpacity = useRef(new Animated.Value(0)).current;
+  // Auto-Take feedback: glow + pulse the card right where it lands in your meld,
+  // so the instant draw→discard jump is readable (in-context, no flying overlay).
+  const autoGlowPulse = useRef(new Animated.Value(1)).current;
   const reduceMotionRef = useRef(false);
   const lastAutoTookSigRef = useRef(null);
-  const flyTimersRef = useRef([]);
-  const overlayLayerRef = useRef(null);
-  const activeSlotRef = useRef(null);
-  const meldSectionRef = useRef(null);
-  const [flyCard, setFlyCard] = useState(null); // { rank, suit, startX, startY }
+  const autoGlowTimerRef = useRef(null);
+  const [highlightCardId, setHighlightCardId] = useState(null);
   const [gameState, setGameState] = useState(null);
   const [myHand, setMyHand] = useState([]);
   const [selectedHandIds, setSelectedHandIds] = useState(new Set());
@@ -156,85 +151,48 @@ export default function ConquianGameScreen({ navigation, route }) {
     };
   }, []);
 
-  // When YOU get an auto-take, fly a cosmetic card from the Active slot into your
-  // melds so the instant draw→discard jump is readable. The reducer already put
-  // the real card in the meld; this overlay is purely visual. Fires once per take.
+  // When YOU get an auto-take, glow + pulse the card where it landed in your meld
+  // so the instant draw→discard jump is readable. The reducer already placed the
+  // real card; we just highlight it by id. Fires once per take.
   useEffect(() => {
     const at = gameState?.autoTook;
     const sig =
       at && String(at.pid) === String(myPid)
-        ? `${at.pid}:${at.rank}:${at.suit}`
+        ? `${at.pid}:${at.id}`
         : null;
     if (!sig || sig === lastAutoTookSigRef.current) return;
     lastAutoTookSigRef.current = sig;
 
-    const layer = overlayLayerRef.current;
-    const slot = activeSlotRef.current;
-    const section = meldSectionRef.current;
-    if (!layer?.measureInWindow || !slot?.measureInWindow) return;
+    setHighlightCardId(at.id);
+    if (autoGlowTimerRef.current) clearTimeout(autoGlowTimerRef.current);
 
-    const measure = (node) =>
-      new Promise((res) =>
-        node?.measureInWindow
-          ? node.measureInWindow((x, y, w, h) => res({ x, y, w, h }))
-          : res(null),
-      );
+    if (reduceMotionRef.current) {
+      autoGlowPulse.setValue(1);
+    } else {
+      autoGlowPulse.setValue(1);
+      Animated.sequence([
+        Animated.timing(autoGlowPulse, {
+          toValue: 1.28,
+          duration: 220,
+          useNativeDriver: true,
+        }),
+        Animated.spring(autoGlowPulse, {
+          toValue: 1,
+          friction: 5,
+          tension: 80,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
 
-    let cancelled = false;
-    Promise.all([measure(layer), measure(slot), measure(section)]).then(
-      ([L, S, M]) => {
-        if (cancelled || !L || !S) return;
-        const startX = S.x - L.x;
-        const startY = S.y - L.y;
-        // Fly toward the melds section; fall back to a downward drop if unmeasured.
-        const endX = M ? M.x - L.x + 8 : startX;
-        const endY = M ? M.y - L.y + 8 : startY + 140;
+    // Fade the highlight out after a beat.
+    autoGlowTimerRef.current = setTimeout(() => setHighlightCardId(null), 1400);
+  }, [gameState?.autoTook, myPid, autoGlowPulse]);
 
-        setFlyCard({ rank: at.rank, suit: at.suit, startX, startY });
-        flyTrans.setValue({ x: 0, y: 0 });
-        flyScale.setValue(1);
-        flyOpacity.setValue(1);
-
-        if (reduceMotionRef.current) {
-          const t = setTimeout(() => setFlyCard(null), 150);
-          flyTimersRef.current.push(t);
-          return;
-        }
-        // Hold in the slot, then fly down into the melds (shrinking to meld size).
-        const t = setTimeout(() => {
-          Animated.parallel([
-            Animated.timing(flyTrans, {
-              toValue: { x: endX - startX, y: endY - startY },
-              duration: 450,
-              useNativeDriver: true,
-            }),
-            Animated.timing(flyScale, {
-              toValue: 0.62,
-              duration: 450,
-              useNativeDriver: true,
-            }),
-            Animated.timing(flyOpacity, {
-              toValue: 0,
-              duration: 250,
-              delay: 250,
-              useNativeDriver: true,
-            }),
-          ]).start(() => setFlyCard(null));
-        }, 650);
-        flyTimersRef.current.push(t);
-      },
-    );
-
-    return () => {
-      cancelled = true;
-    };
-  }, [gameState?.autoTook, myPid, flyTrans, flyScale, flyOpacity]);
-
-  // Clear any pending fly timers on unmount.
+  // Clear the highlight timer on unmount.
   useEffect(() => {
     return () => {
-      flyTimersRef.current.forEach(clearTimeout);
-      flyTimersRef.current = [];
+      if (autoGlowTimerRef.current) clearTimeout(autoGlowTimerRef.current);
     };
   }, []);
 
@@ -1442,11 +1400,7 @@ export default function ConquianGameScreen({ navigation, route }) {
               <Text style={styles.pileCount}>{stockSize}</Text>
             </View>
 
-            <View
-              ref={activeSlotRef}
-              collapsable={false}
-              style={styles.activeSlotBox}
-            >
+            <View style={styles.activeSlotBox}>
               <Text style={styles.pileLabel}>Active</Text>
               {activeCard ? (
                 isMyTurn && turnPhase === "action" ? (
@@ -1550,11 +1504,7 @@ export default function ConquianGameScreen({ navigation, route }) {
 
         {/* My melds */}
         {myMelds.length > 0 && (
-          <View
-            ref={meldSectionRef}
-            collapsable={false}
-            style={styles.meldSection}
-          >
+          <View style={styles.meldSection}>
             <Text style={styles.sectionLabel}>Your Melds</Text>
             <View style={[styles.meldRow, styles.meldRowWrap]}>
               {myMelds.map((meld, idx) => (
@@ -1570,14 +1520,26 @@ export default function ConquianGameScreen({ navigation, route }) {
                     setStatusMsg("");
                   }}
                 >
-                  {meld.map((card) => (
-                    <Card
-                      key={card.id}
-                      rank={card.rank}
-                      suit={card.suit}
-                      small
-                    />
-                  ))}
+                  {meld.map((card) =>
+                    card.id === highlightCardId ? (
+                      <Animated.View
+                        key={card.id}
+                        style={[
+                          styles.autoGlow,
+                          { transform: [{ scale: autoGlowPulse }] },
+                        ]}
+                      >
+                        <Card rank={card.rank} suit={card.suit} small />
+                      </Animated.View>
+                    ) : (
+                      <Card
+                        key={card.id}
+                        rank={card.rank}
+                        suit={card.suit}
+                        small
+                      />
+                    ),
+                  )}
                 </TouchableOpacity>
               ))}
             </View>
@@ -1748,34 +1710,6 @@ export default function ConquianGameScreen({ navigation, route }) {
           )}
         </View>
       </ScrollView>
-
-      {/* Auto-Take fly overlay — a cosmetic card that lands in the Active slot
-          then flies into your melds. Sits above everything; doesn't block taps.
-          collapsable={false} keeps a measurable native view (Android). */}
-      <View
-        ref={overlayLayerRef}
-        collapsable={false}
-        pointerEvents="none"
-        style={StyleSheet.absoluteFill}
-      >
-        {flyCard && (
-          <Animated.View
-            style={{
-              position: "absolute",
-              left: flyCard.startX,
-              top: flyCard.startY,
-              opacity: flyOpacity,
-              transform: [
-                { translateX: flyTrans.x },
-                { translateY: flyTrans.y },
-                { scale: flyScale },
-              ],
-            }}
-          >
-            <Card rank={flyCard.rank} suit={flyCard.suit} />
-          </Animated.View>
-        )}
-      </View>
     </SafeAreaView>
   );
 }
@@ -1953,6 +1887,14 @@ const styles = StyleSheet.create({
   },
   pileCount: { color: "#fff", fontSize: scaleFont(24), fontWeight: "bold" },
   activeSlotBox: { alignItems: "center" },
+  autoGlow: {
+    borderRadius: scale(7),
+    shadowColor: "#7CFFB2",
+    shadowOpacity: 0.95,
+    shadowRadius: scale(8),
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 10,
+  },
   activeCardTappable: {
     alignItems: "center",
     padding: scale(4),

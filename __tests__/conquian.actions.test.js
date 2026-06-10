@@ -151,7 +151,12 @@ describe("Auto-Take rule", () => {
     expect(next.turnPhase).toBe("discard"); // forced take → must discard
     expect(next.activeCard).toBeNull();
     expect(next.melds.p1[0].map((x) => x.id)).toContain("4♠");
-    expect(next.autoTook).toEqual({ pid: "p1", rank: "4", suit: "♠" });
+    expect(next.autoTook).toEqual({
+      pid: "p1",
+      id: "4♠",
+      rank: "4",
+      suit: "♠",
+    });
   });
 
   test("a draw that extends nothing stays a normal action (no auto-take)", () => {
@@ -195,7 +200,12 @@ describe("Auto-Take rule", () => {
     expect(afterPass.currentPlayerIndex).toBe(2);
     expect(afterPass.turnPhase).toBe("discard");
     expect(afterPass.melds.p3[0].map((x) => x.id)).toContain("4♠");
-    expect(afterPass.autoTook).toEqual({ pid: "p3", rank: "4", suit: "♠" });
+    expect(afterPass.autoTook).toEqual({
+      pid: "p3",
+      id: "4♠",
+      rank: "4",
+      suit: "♠",
+    });
   });
 
   test("a forced take that hits the target wins immediately, no discard", () => {

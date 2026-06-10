@@ -133,7 +133,7 @@ function applyAutoTake(state) {
   if (taken === state) return state; // safety — the take should always succeed
   return {
     ...taken,
-    autoTook: { pid: curPid, rank: card.rank, suit: card.suit },
+    autoTook: { pid: curPid, id: card.id, rank: card.rank, suit: card.suit },
   };
 }
 
