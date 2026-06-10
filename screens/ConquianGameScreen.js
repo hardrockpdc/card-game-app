@@ -256,21 +256,20 @@ export default function ConquianGameScreen({ navigation, route }) {
     };
   }, []);
 
-  // Clear the staging area whenever it's no longer my draw-turn action window.
+  // Clear the staging area whenever it's no longer my action phase (draw turn or
+  // chain offer). Keeps staged cards across draw→action but drops them when the
+  // active card changes (a new offer) so stale cards don't carry over.
   useEffect(() => {
-    const mine =
+    const mineActing =
       gameState &&
       String(gameState.players?.[gameState.currentPlayerIndex]?.id) ===
         String(myPid) &&
-      gameState.turnPhase === "action" &&
-      gameState.currentPlayerIndex === gameState.originalDrawerIndex &&
-      (gameState.chainPassedPids?.length ?? 0) === 0;
-    if (!mine) setStagedCards([]);
+      gameState.turnPhase === "action";
+    if (!mineActing) setStagedCards([]);
   }, [
     gameState?.turnPhase,
     gameState?.currentPlayerIndex,
-    gameState?.originalDrawerIndex,
-    gameState?.chainPassedPids?.length,
+    gameState?.activeCard?.id,
     myPid,
   ]);
 
@@ -1386,6 +1385,13 @@ export default function ConquianGameScreen({ navigation, route }) {
     gameState.currentPlayerIndex === gameState.originalDrawerIndex &&
     (gameState.chainPassedPids?.length ?? 0) === 0;
 
+  // The New Meld box is live whenever it's your turn to act on the active card
+  // (your draw turn OR a chain offer). A hand-only meld still needs a draw turn;
+  // a chain offer's meld must include the active card.
+  const canStage = isMyTurn && turnPhase === "action";
+  const stagedCommittable =
+    isValidMeld(stagedCards) && (isDrawTurnFreeAction || activeStaged);
+
   const canLayMeld = isDrawTurnFreeAction && isValidMeld(selectedHandArr);
   const canAddToMeld =
     isDrawTurnFreeAction &&
@@ -1673,32 +1679,32 @@ export default function ConquianGameScreen({ navigation, route }) {
         )}
       </ScrollView>
 
-      {/* New Meld staging zone — always visible; greyed off your draw turn */}
+      {/* New Meld staging zone — always visible; greyed off your turn */}
       <View
         style={[
           styles.meldSection,
           styles.stagePinned,
-          !isDrawTurnFreeAction && styles.stageDisabled,
+          !canStage && styles.stageDisabled,
         ]}
-        pointerEvents={isDrawTurnFreeAction ? "auto" : "none"}
+        pointerEvents={canStage ? "auto" : "none"}
       >
             <View
               ref={
-                isDrawTurnFreeAction
+                canStage
                   ? meldDrag.registerZone("newMeld", { type: "newMeld" })
                   : undefined
               }
               collapsable={false}
               style={[
                 styles.stageZone,
-                isValidMeld(stagedCards) && styles.stageZoneValid,
+                stagedCommittable && styles.stageZoneValid,
               ]}
             >
               {stagedCards.length === 0 ? (
                 <Text style={styles.stageHint}>
-                  {isDrawTurnFreeAction
-                    ? "Drag 3+ cards here to build a set or run"
-                    : "Build a meld here on your draw turn"}
+                  {canStage
+                    ? "Drag cards here to build a meld"
+                    : "Build a meld on your turn"}
                 </Text>
               ) : (
                 stagedCards.map((card) => {
@@ -1732,7 +1738,7 @@ export default function ConquianGameScreen({ navigation, route }) {
             {/* Left: hand as two rows of up to 5; also the drop zone */}
             <View
               ref={
-                isDrawTurnFreeAction
+                canStage
                   ? meldDrag.registerZone("hand", { type: "hand" })
                   : undefined
               }
@@ -1789,8 +1795,9 @@ export default function ConquianGameScreen({ navigation, route }) {
                         </View>
                       </TouchableOpacity>
                     );
-                    // Draw-turn: draggable into the staging zone; tap fallback.
-                    if (isDrawTurnFreeAction) {
+                    // Your action phase: draggable into the staging zone; tap
+                    // stays as a fallback.
+                    if (canStage) {
                       return (
                         <GestureDetector
                           key={card.id}
@@ -1843,21 +1850,21 @@ export default function ConquianGameScreen({ navigation, route }) {
 
               {phase === "playing" && isMyTurn && turnPhase === "action" && (
                 <>
-                  {isDrawTurnFreeAction && stagedCards.length > 0 && (
+                  {canStage && stagedCards.length > 0 && (
                     <>
                       <TouchableOpacity
                         style={[
                           styles.actionBtn,
                           styles.layBtn,
-                          !isValidMeld(stagedCards) && styles.actionBtnDisabled,
+                          !stagedCommittable && styles.actionBtnDisabled,
                         ]}
                         onPress={confirmStagedMeld}
-                        disabled={!isValidMeld(stagedCards)}
+                        disabled={!stagedCommittable}
                         accessibilityRole="button"
                         accessibilityLabel="Confirm new meld"
                       >
                         <Text style={styles.actionBtnText}>
-                          {isValidMeld(stagedCards) ? "✓ Meld" : "Meld"}
+                          {stagedCommittable ? "✓ Meld" : "Meld"}
                         </Text>
                       </TouchableOpacity>
                       <TouchableOpacity
