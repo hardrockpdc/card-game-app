@@ -171,14 +171,21 @@ export default function ConquianGameScreen({ navigation, route }) {
     sizing: { cardW: smallCardW, cardH: smallCardH, cardScale: 1 },
     reduceMotionRef,
     moveCard: (source, target) => {
-      // Drag a hand card into the staging zone → stage it.
-      if (source.type === "hand" && target.type === "newMeld") {
+      // Drag a hand card OR the active card into the staging zone → stage it.
+      if (
+        (source.type === "hand" || source.type === "active") &&
+        target.type === "newMeld"
+      ) {
         setStagedCards((prev) =>
-          prev.some((c) => c.id === source.cardId) ? prev : [...prev, source.card],
+          prev.some((c) => c.id === source.cardId)
+            ? prev
+            : [...prev, source.card],
         );
         return true;
       }
-      // Drag a staged card back to the hand → unstage it.
+      // Drag a staged card back out → unstage it (a hand card returns to the
+      // hand; the active card returns to the Active slot since it's still the
+      // game's active card).
       if (source.type === "staged" && target.type === "hand") {
         setStagedCards((prev) => prev.filter((c) => c.id !== source.cardId));
         return true;
@@ -945,10 +952,39 @@ export default function ConquianGameScreen({ navigation, route }) {
     }
   }
 
-  // Stage 1: commit the staged cards as a NEW meld (reuses the layMeld path).
+  // Commit the staged cards as a meld. If the active card is part of it, that's
+  // a TAKE (active + hand cards → new meld → discard); otherwise it's a free
+  // lay-down from the hand.
   function confirmStagedMeld() {
+    if (stagedCards.length < 3) return;
+    const ac = gameState?.activeCard;
+    const usesActive = ac && stagedCards.some((c) => c.id === ac.id);
+
+    if (usesActive) {
+      const handCardIds = stagedCards
+        .filter((c) => c.id !== ac.id)
+        .map((c) => c.id);
+      if (isHost) {
+        const s = fullRef.current;
+        if (!s) return;
+        const next = doTakeActiveCard(s, myPid, {
+          type: "new",
+          handCardIds,
+        });
+        if (next !== s) {
+          setStagedCards([]);
+          applyState(next);
+        } else {
+          setStatusMsg("That's not a valid meld");
+        }
+      } else {
+        sendToHost({ type: "ACTION", action: "takeMeld", handCardIds });
+        setStagedCards([]);
+      }
+      return;
+    }
+
     const cardIds = stagedCards.map((c) => c.id);
-    if (cardIds.length < 3) return;
     if (isHost) {
       const s = fullRef.current;
       if (!s) return;
@@ -1338,6 +1374,12 @@ export default function ConquianGameScreen({ navigation, route }) {
   // Overlap melded cards so only ~1/4 of each shows (saves horizontal space).
   const meldOverlap = -Math.round(smallCardW * 0.74);
 
+  // Active card staged into the New Meld zone (so the slot shows it as placed).
+  const activeStaged =
+    !!activeCard && stagedCards.some((c) => c.id === activeCard.id);
+  const activeDragHidden =
+    !!activeCard && meldDrag.draggingSource?.cardId === activeCard.id;
+
   const isDrawTurnFreeAction =
     isMyTurn &&
     turnPhase === "action" &&
@@ -1531,31 +1573,43 @@ export default function ConquianGameScreen({ navigation, route }) {
 
             <View style={styles.activeSlotBox}>
               <Text style={styles.pileLabel}>Active</Text>
-              {activeCard ? (
+              {activeCard && !activeStaged ? (
                 isMyTurn && turnPhase === "action" ? (
-                  <TouchableOpacity
-                    onPress={handleTapActiveCard}
-                    activeOpacity={0.7}
-                    style={[
-                      styles.activeCardTappable,
-                      isActiveCardSelected && styles.activeCardSelected,
-                    ]}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Take ${activeCard.rank} of ${activeCard.suit}`}
-                    accessibilityHint="Place this card into a valid meld"
+                  <GestureDetector
+                    gesture={meldDrag.makeDragGesture({
+                      type: "active",
+                      cardId: activeCard.id,
+                      card: activeCard,
+                    })}
                   >
-                    <Card rank={activeCard.rank} suit={activeCard.suit} />
-                    <Text style={styles.activeTapHint}>
-                      {isActiveCardSelected
-                        ? "Pick cards to meld"
-                        : "Tap to take"}
-                    </Text>
-                  </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={handleTapActiveCard}
+                      activeOpacity={0.7}
+                      style={[
+                        styles.activeCardTappable,
+                        isActiveCardSelected && styles.activeCardSelected,
+                      ]}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Take ${activeCard.rank} of ${activeCard.suit}`}
+                      accessibilityHint="Drag into the New Meld zone, or tap to take"
+                    >
+                      <View style={activeDragHidden ? styles.cardHidden : null}>
+                        <Card rank={activeCard.rank} suit={activeCard.suit} />
+                      </View>
+                      <Text style={styles.activeTapHint}>
+                        {isActiveCardSelected ? "Pick cards to meld" : "Drag or tap"}
+                      </Text>
+                    </TouchableOpacity>
+                  </GestureDetector>
                 ) : (
                   <View>
                     <Card rank={activeCard.rank} suit={activeCard.suit} />
                   </View>
                 )
+              ) : activeStaged ? (
+                <View style={styles.emptySlot}>
+                  <Text style={styles.emptySlotText}>✓</Text>
+                </View>
               ) : (
                 <View style={styles.emptySlot}>
                   <Text style={styles.emptySlotText}>—</Text>
