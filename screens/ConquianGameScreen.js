@@ -8,6 +8,7 @@ import {
   Alert,
   BackHandler,
   Animated,
+  AccessibilityInfo,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Card from "../components/Card";
@@ -100,6 +101,10 @@ export default function ConquianGameScreen({ navigation, route }) {
   const hasMountedRef = useRef(false);
   const lastSaveRef = useRef(0);
   const activeCardShakeRef = useRef(new Animated.Value(0)).current;
+  // Auto-Take feedback: "pop" the auto-added card so the player sees what landed.
+  const autoTookAnim = useRef(new Animated.Value(1)).current;
+  const reduceMotionRef = useRef(false);
+  const lastAutoTookSigRef = useRef(null);
   const [gameState, setGameState] = useState(null);
   const [myHand, setMyHand] = useState([]);
   const [selectedHandIds, setSelectedHandIds] = useState(new Set());
@@ -127,6 +132,44 @@ export default function ConquianGameScreen({ navigation, route }) {
   useEffect(() => {
     if (gameState?.phase !== "initialPass") setPassCardId(null);
   }, [gameState?.phase]);
+
+  // Cache the reduced-motion preference (CLAUDE.md §2.4 — snap instead of animate).
+  useEffect(() => {
+    let mounted = true;
+    AccessibilityInfo.isReduceMotionEnabled().then((v) => {
+      if (mounted) reduceMotionRef.current = v;
+    });
+    const sub = AccessibilityInfo.addEventListener("reduceMotionChanged", (v) => {
+      reduceMotionRef.current = v;
+    });
+    return () => {
+      mounted = false;
+      sub?.remove?.();
+    };
+  }, []);
+
+  // When YOU get an auto-take, pop the added card into view so the instant
+  // draw→discard jump is readable. Keyed on a signature so it fires once per take.
+  useEffect(() => {
+    const at = gameState?.autoTook;
+    const sig =
+      at && String(at.pid) === String(myPid)
+        ? `${at.pid}:${at.rank}:${at.suit}`
+        : null;
+    if (!sig || sig === lastAutoTookSigRef.current) return;
+    lastAutoTookSigRef.current = sig;
+    if (reduceMotionRef.current) {
+      autoTookAnim.setValue(1);
+    } else {
+      autoTookAnim.setValue(0);
+      Animated.spring(autoTookAnim, {
+        toValue: 1,
+        friction: 5,
+        tension: 90,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [gameState?.autoTook, myPid, autoTookAnim]);
 
   // When the active card changes (new round / new offer), reset the "selected" state.
   useEffect(() => {
@@ -1277,6 +1320,24 @@ export default function ConquianGameScreen({ navigation, route }) {
                         ? "Game Over"
                         : ""}
           </Text>
+          {phase === "playing" &&
+            isMyTurn &&
+            turnPhase === "discard" &&
+            gameState.autoTook &&
+            String(gameState.autoTook.pid) === String(myPid) && (
+              <Animated.View
+                style={[
+                  styles.autoTookCardWrap,
+                  { opacity: autoTookAnim, transform: [{ scale: autoTookAnim }] },
+                ]}
+              >
+                <Card
+                  rank={gameState.autoTook.rank}
+                  suit={gameState.autoTook.suit}
+                  small
+                />
+              </Animated.View>
+            )}
         </View>
         {/* Opponents — single row across the top; cards wrap naturally */}
         <View style={styles.opponentsRow}>
@@ -1744,6 +1805,10 @@ const styles = StyleSheet.create({
     borderRadius: scale(10),
     borderLeftWidth: 3,
     borderLeftColor: "#7fb3ff",
+  },
+  autoTookCardWrap: {
+    marginTop: scale(8),
+    alignSelf: "center",
   },
   phaseBannerText: {
     color: "#ffffff",
