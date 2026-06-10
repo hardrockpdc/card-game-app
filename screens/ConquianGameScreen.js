@@ -478,6 +478,56 @@ export default function ConquianGameScreen({ navigation, route }) {
     return false;
   }
 
+  // Lay the selected hand cards down as a NEW meld (free action on your draw turn).
+  function handleLayMeld() {
+    const cardIds = [...selectedHandIds];
+    if (cardIds.length === 0) return;
+    if (isHost) {
+      const s = fullRef.current;
+      if (!s) return;
+      const next = doLayDownMeld(s, myPid, cardIds);
+      if (next !== s) {
+        applyState(next);
+        setSelectedHandIds(new Set());
+        setSelectedMeldIdx(null);
+      } else {
+        setStatusMsg("Invalid meld");
+      }
+    } else {
+      sendToHost({ type: "ACTION", action: "layMeld", cardIds });
+      setSelectedHandIds(new Set());
+      setSelectedMeldIdx(null);
+    }
+  }
+
+  // Extend your targeted existing meld with the selected hand cards (free action).
+  function handleAddToMeld() {
+    if (selectedMeldIdx === null) return;
+    const cardIds = [...selectedHandIds];
+    if (cardIds.length === 0) return;
+    if (isHost) {
+      const s = fullRef.current;
+      if (!s) return;
+      const next = doExtendMeldFromHand(s, myPid, selectedMeldIdx, cardIds);
+      if (next !== s) {
+        applyState(next);
+        setSelectedHandIds(new Set());
+        setSelectedMeldIdx(null);
+      } else {
+        setStatusMsg("Can't add those cards to that meld");
+      }
+    } else {
+      sendToHost({
+        type: "ACTION",
+        action: "extendMeld",
+        meldIdx: selectedMeldIdx,
+        cardIds,
+      });
+      setSelectedHandIds(new Set());
+      setSelectedMeldIdx(null);
+    }
+  }
+
   function shakeActiveCard() {
     activeCardShakeRef.setValue(0);
     Animated.sequence([
