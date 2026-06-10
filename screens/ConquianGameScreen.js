@@ -1335,6 +1335,9 @@ export default function ConquianGameScreen({ navigation, route }) {
   const stagedIds = new Set(stagedCards.map((c) => c.id));
   const availableHand = myHand.filter((c) => !stagedIds.has(c.id));
 
+  // Overlap melded cards so only ~1/4 of each shows (saves horizontal space).
+  const meldOverlap = -Math.round(smallCardW * 0.74);
+
   const isDrawTurnFreeAction =
     isMyTurn &&
     turnPhase === "action" &&
@@ -1502,13 +1505,13 @@ export default function ConquianGameScreen({ navigation, route }) {
                   <View style={[styles.meldRow, styles.meldRowWrap]}>
                     {opMelds.map((meld, idx) => (
                       <View key={idx} style={styles.meldGroup}>
-                        {meld.map((card) => (
-                          <Card
+                        {meld.map((card, ci) => (
+                          <View
                             key={card.id}
-                            rank={card.rank}
-                            suit={card.suit}
-                            small
-                          />
+                            style={ci > 0 ? { marginLeft: meldOverlap } : null}
+                          >
+                            <Card rank={card.rank} suit={card.suit} small />
+                          </View>
                         ))}
                       </View>
                     ))}
@@ -1588,26 +1591,28 @@ export default function ConquianGameScreen({ navigation, route }) {
                     setStatusMsg("");
                   }}
                 >
-                  {meld.map((card) =>
-                    card.id === highlightCardId ? (
-                      <Animated.View
-                        key={card.id}
-                        style={[
-                          styles.autoGlow,
-                          { transform: [{ scale: autoGlowPulse }] },
-                        ]}
-                      >
+                  {meld.map((card, ci) => (
+                    <View
+                      key={card.id}
+                      style={[
+                        ci > 0 && { marginLeft: meldOverlap },
+                        card.id === highlightCardId && { zIndex: 5 },
+                      ]}
+                    >
+                      {card.id === highlightCardId ? (
+                        <Animated.View
+                          style={[
+                            styles.autoGlow,
+                            { transform: [{ scale: autoGlowPulse }] },
+                          ]}
+                        >
+                          <Card rank={card.rank} suit={card.suit} small />
+                        </Animated.View>
+                      ) : (
                         <Card rank={card.rank} suit={card.suit} small />
-                      </Animated.View>
-                    ) : (
-                      <Card
-                        key={card.id}
-                        rank={card.rank}
-                        suit={card.suit}
-                        small
-                      />
-                    ),
-                  )}
+                      )}
+                    </View>
+                  ))}
                 </TouchableOpacity>
               ))}
             </View>
