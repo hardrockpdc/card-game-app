@@ -1619,11 +1619,21 @@ export default function ConquianGameScreen({ navigation, route }) {
         )}
       </ScrollView>
 
-      {/* New Meld staging zone — pinned just above the hand (draw-turn only) */}
-      {isDrawTurnFreeAction && (
-          <View style={[styles.meldSection, styles.stagePinned]}>
+      {/* New Meld staging zone — always visible; greyed off your draw turn */}
+      <View
+        style={[
+          styles.meldSection,
+          styles.stagePinned,
+          !isDrawTurnFreeAction && styles.stageDisabled,
+        ]}
+        pointerEvents={isDrawTurnFreeAction ? "auto" : "none"}
+      >
             <View
-              ref={meldDrag.registerZone("newMeld", { type: "newMeld" })}
+              ref={
+                isDrawTurnFreeAction
+                  ? meldDrag.registerZone("newMeld", { type: "newMeld" })
+                  : undefined
+              }
               collapsable={false}
               style={[
                 styles.stageZone,
@@ -1632,7 +1642,9 @@ export default function ConquianGameScreen({ navigation, route }) {
             >
               {stagedCards.length === 0 ? (
                 <Text style={styles.stageHint}>
-                  Drag 3+ cards here to build a set or run
+                  {isDrawTurnFreeAction
+                    ? "Drag 3+ cards here to build a set or run"
+                    : "Build a meld here on your draw turn"}
                 </Text>
               ) : (
                 stagedCards.map((card) => {
@@ -1683,7 +1695,6 @@ export default function ConquianGameScreen({ navigation, route }) {
               )}
             </View>
           </View>
-      )}
 
       {/* Hand + action buttons — pinned at the bottom of the screen */}
       <View style={[styles.handSection, styles.handPinned]}>
@@ -2151,6 +2162,8 @@ const styles = StyleSheet.create({
   cardHidden: { opacity: 0 },
 
   scrollArea: { flex: 1 },
+  // Greyed-out New Meld zone when it's not your draw turn.
+  stageDisabled: { opacity: 0.4 },
   // New Meld zone pinned just above the hand bar.
   stagePinned: {
     marginBottom: 0,
