@@ -17,7 +17,6 @@ import Card from "../components/Card";
 import useConquianMeldDrag from "../components/useConquianMeldDrag";
 import GameHeader from "../components/GameHeader";
 import EndOfRoundModal from "../components/EndOfRoundModal";
-import StatsStrip from "../components/StatsStrip";
 import {
   deal,
   doSelectPassCard,
@@ -131,6 +130,11 @@ export default function ConquianGameScreen({ navigation, route }) {
   // Stage 1 drag-to-meld: cards dragged into the "New Meld" staging zone.
   const [stagedCards, setStagedCards] = useState([]);
 
+  // Turn/phase announcement toast (replaces the persistent banner).
+  const [toast, setToast] = useState(null);
+  const toastAnim = useRef(new Animated.Value(0)).current;
+  const toastTimerRef = useRef(null);
+
   // Wipe any legacy Conquián save (old key "@cardnight:save:rummy:conquian")
   // to rule out a stale-schema crash. Runs once on mount.
   useEffect(() => {
@@ -182,6 +186,68 @@ export default function ConquianGameScreen({ navigation, route }) {
       return false;
     },
   });
+
+  // Turn/phase toast: fire a ~3s pop-up when the announcement changes, instead of
+  // a permanent banner taking up screen space.
+  useEffect(() => {
+    const gs = gameState;
+    if (!gs) return;
+    const mine =
+      String(gs.players?.[gs.currentPlayerIndex]?.id) === String(myPid);
+    let msg = null;
+    if (gs.phase === "initialPass") {
+      msg = "Initial Pass — pick a card to pass";
+    } else if (gs.phase === "playing" && mine) {
+      if (gs.turnPhase === "draw") msg = "Your turn — draw from stock";
+      else if (gs.turnPhase === "action") msg = "Your turn — take or pass";
+      else if (gs.turnPhase === "discard")
+        msg =
+          gs.autoTook && String(gs.autoTook.pid) === String(myPid)
+            ? `Auto-added ${gs.autoTook.rank} of ${gs.autoTook.suit} — discard a card`
+            : "Your turn — discard a card";
+    } else if (gs.phase === "playing") {
+      msg = `${gs.players?.[gs.currentPlayerIndex]?.name ?? "Opponent"}'s turn`;
+    }
+    if (!msg) return;
+
+    setToast(msg);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    if (reduceMotionRef.current) {
+      toastAnim.setValue(1);
+    } else {
+      toastAnim.setValue(0);
+      Animated.timing(toastAnim, {
+        toValue: 1,
+        duration: 180,
+        useNativeDriver: true,
+      }).start();
+    }
+    toastTimerRef.current = setTimeout(() => {
+      if (reduceMotionRef.current) {
+        setToast(null);
+      } else {
+        Animated.timing(toastAnim, {
+          toValue: 0,
+          duration: 280,
+          useNativeDriver: true,
+        }).start(({ finished }) => {
+          if (finished) setToast(null);
+        });
+      }
+    }, 3000);
+  }, [
+    gameState?.phase,
+    gameState?.turnPhase,
+    gameState?.currentPlayerIndex,
+    gameState?.autoTook?.id,
+    myPid,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
 
   // Clear the staging area whenever it's no longer my draw-turn action window.
   useEffect(() => {
@@ -1382,44 +1448,28 @@ export default function ConquianGameScreen({ navigation, route }) {
         subtitle={isSinglePlayer ? "Single Player" : "Multiplayer"}
         menuItems={menuItems}
       />
-      <StatsStrip
-        gameId="conquian"
-        items={[
-          {
-            label: "Hand",
-            value: myHand?.length ?? 0,
-          },
-          {
-            label: "Melded",
-            value: `${myMelded}/${winTarget}`,
-            accent: true,
-            // Highlight near-win: when 2 or fewer cards from victory, switch the value color
-            valueColor: myMelded >= winTarget - 2 ? "#7fb3ff" : undefined,
-          },
-          { label: "Stock", value: stockSize ?? 0 },
-        ]}
-      />
+      {toast && (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.toast,
+            {
+              opacity: toastAnim,
+              transform: [
+                {
+                  translateY: toastAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [-8, 0],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          <Text style={styles.toastText}>{toast}</Text>
+        </Animated.View>
+      )}
       <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.phaseBanner}>
-          <Text style={styles.phaseBannerText}>
-            {phase === "initialPass"
-              ? "Initial Pass — pick a card to pass"
-              : phase === "playing" && isMyTurn && turnPhase === "draw"
-                ? "▶ Your turn — Draw from Stock"
-                : phase === "playing" && isMyTurn && turnPhase === "action"
-                  ? "▶ Your turn — Tap the active card to take, or Pass"
-                  : phase === "playing" && isMyTurn && turnPhase === "discard"
-                    ? gameState.autoTook &&
-                      String(gameState.autoTook.pid) === String(myPid)
-                      ? `Auto-added ${gameState.autoTook.rank} of ${gameState.autoTook.suit} to your meld — discard a card`
-                      : "▶ Your turn — Discard a card"
-                    : phase === "playing"
-                      ? `${currentPlayer?.name ?? "Opponent"}'s turn`
-                      : phase === "results"
-                        ? "Game Over"
-                        : ""}
-          </Text>
-        </View>
         {/* Opponents — single row across the top; cards wrap naturally */}
         <View style={styles.opponentsRow}>
           {opponents.map((p) => {
@@ -1988,22 +2038,27 @@ const styles = StyleSheet.create({
     gap: scale(6),
     marginBottom: scale(6),
   },
-  phaseBanner: {
-    backgroundColor: "#16213e",
-    marginHorizontal: scale(12),
-    marginTop: scale(8),
-    marginBottom: scale(6),
-    paddingVertical: scale(10),
-    paddingHorizontal: scale(14),
-    borderRadius: scale(10),
-    borderLeftWidth: 3,
-    borderLeftColor: "#7fb3ff",
+  // Turn/phase toast — absolute pill near the top, auto-dismisses.
+  toast: {
+    position: "absolute",
+    top: scale(64),
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    zIndex: 50,
   },
-  phaseBannerText: {
+  toastText: {
+    backgroundColor: "rgba(22, 33, 62, 0.97)",
     color: "#ffffff",
-    fontSize: scaleFont(14),
+    fontSize: scaleFont(13),
     fontWeight: "600",
     textAlign: "center",
+    paddingVertical: scale(8),
+    paddingHorizontal: scale(18),
+    borderRadius: scale(20),
+    borderWidth: 1,
+    borderColor: "#2a3650",
+    overflow: "hidden",
   },
   opponentCard: {
     backgroundColor: "#16213e",
