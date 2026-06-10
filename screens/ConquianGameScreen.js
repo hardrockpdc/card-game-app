@@ -1498,8 +1498,7 @@ export default function ConquianGameScreen({ navigation, route }) {
                   {isCurrent && <Text style={styles.opponentTurnDot}>▶</Text>}
                 </View>
                 <Text style={styles.opponentStats}>
-                  {gameState.handSizes?.[opPid] ?? 0} cards ·{" "}
-                  {meldedCount(gameState, opPid)}/{winTarget}
+                  {meldedCount(gameState, opPid)}/{winTarget} melded
                 </Text>
                 {opMelds.length > 0 && (
                   <View style={[styles.meldRow, styles.meldRowWrap]}>
@@ -1618,10 +1617,11 @@ export default function ConquianGameScreen({ navigation, route }) {
             </View>
           </View>
         )}
+      </ScrollView>
 
-        {/* New-meld staging zone (Stage 1 drag-to-build) — draw-turn only */}
-        {isDrawTurnFreeAction && (
-          <View style={styles.meldSection}>
+      {/* New Meld staging zone — pinned just above the hand (draw-turn only) */}
+      {isDrawTurnFreeAction && (
+          <View style={[styles.meldSection, styles.stagePinned]}>
             <View
               ref={meldDrag.registerZone("newMeld", { type: "newMeld" })}
               collapsable={false}
@@ -1683,16 +1683,13 @@ export default function ConquianGameScreen({ navigation, route }) {
               )}
             </View>
           </View>
-        )}
-      </ScrollView>
+      )}
 
       {/* Hand + action buttons — pinned at the bottom of the screen */}
       <View style={[styles.handSection, styles.handPinned]}>
-          <Text style={styles.sectionLabel}>
-            {phase === "initialPass" && !myHasSubmittedPass
-              ? "Your Hand — tap to select 1 card to pass"
-              : `Your Hand (${availableHand.length})`}
-          </Text>
+          {phase === "initialPass" && !myHasSubmittedPass && (
+            <Text style={styles.sectionLabel}>Tap to select 1 card to pass</Text>
+          )}
           <View style={styles.handActionsRow}>
             {/* Left: hand as two rows of up to 5; also the drop zone */}
             <View
@@ -2154,6 +2151,14 @@ const styles = StyleSheet.create({
   cardHidden: { opacity: 0 },
 
   scrollArea: { flex: 1 },
+  // New Meld zone pinned just above the hand bar.
+  stagePinned: {
+    marginBottom: 0,
+    paddingTop: scale(6),
+    backgroundColor: "#0f1626",
+    borderTopWidth: 1,
+    borderTopColor: "#2a3650",
+  },
   handSection: {
     paddingHorizontal: scale(12),
     marginBottom: scale(6),
