@@ -9,9 +9,12 @@ import {
   BackHandler,
   Animated,
   AccessibilityInfo,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { GestureDetector } from "react-native-gesture-handler";
 import Card from "../components/Card";
+import useConquianMeldDrag from "../components/useConquianMeldDrag";
 import GameHeader from "../components/GameHeader";
 import EndOfRoundModal from "../components/EndOfRoundModal";
 import StatsStrip from "../components/StatsStrip";
@@ -125,6 +128,9 @@ export default function ConquianGameScreen({ navigation, route }) {
   const [borrowSelCardId, setBorrowSelCardId] = useState(null);
   const [borrowTargetedMeldIdx, setBorrowTargetedMeldIdx] = useState(null);
 
+  // Stage 1 drag-to-meld: cards dragged into the "New Meld" staging zone.
+  const [stagedCards, setStagedCards] = useState([]);
+
   // Wipe any legacy Conquián save (old key "@cardnight:save:rummy:conquian")
   // to rule out a stale-schema crash. Runs once on mount.
   useEffect(() => {
@@ -150,6 +156,50 @@ export default function ConquianGameScreen({ navigation, route }) {
       sub?.remove?.();
     };
   }, []);
+
+  // ── Stage 1: drag-to-build a new meld ──────────────────────────────────────
+  const { width: winWidth } = useWindowDimensions();
+  const smallClamp = Math.min(Math.max(winWidth / 390, 0.85), 1.5);
+  const smallCardW = Math.round(42 * smallClamp);
+  const smallCardH = Math.round(60 * smallClamp);
+
+  const meldDrag = useConquianMeldDrag({
+    sizing: { cardW: smallCardW, cardH: smallCardH, cardScale: 1 },
+    reduceMotionRef,
+    moveCard: (source, target) => {
+      // Drag a hand card into the staging zone → stage it.
+      if (source.type === "hand" && target.type === "newMeld") {
+        setStagedCards((prev) =>
+          prev.some((c) => c.id === source.cardId) ? prev : [...prev, source.card],
+        );
+        return true;
+      }
+      // Drag a staged card back to the hand → unstage it.
+      if (source.type === "staged" && target.type === "hand") {
+        setStagedCards((prev) => prev.filter((c) => c.id !== source.cardId));
+        return true;
+      }
+      return false;
+    },
+  });
+
+  // Clear the staging area whenever it's no longer my draw-turn action window.
+  useEffect(() => {
+    const mine =
+      gameState &&
+      String(gameState.players?.[gameState.currentPlayerIndex]?.id) ===
+        String(myPid) &&
+      gameState.turnPhase === "action" &&
+      gameState.currentPlayerIndex === gameState.originalDrawerIndex &&
+      (gameState.chainPassedPids?.length ?? 0) === 0;
+    if (!mine) setStagedCards([]);
+  }, [
+    gameState?.turnPhase,
+    gameState?.currentPlayerIndex,
+    gameState?.originalDrawerIndex,
+    gameState?.chainPassedPids?.length,
+    myPid,
+  ]);
 
   // When YOU get an auto-take, glow + pulse the card where it landed in your meld
   // so the instant draw→discard jump is readable. The reducer already placed the
@@ -829,6 +879,26 @@ export default function ConquianGameScreen({ navigation, route }) {
     }
   }
 
+  // Stage 1: commit the staged cards as a NEW meld (reuses the layMeld path).
+  function confirmStagedMeld() {
+    const cardIds = stagedCards.map((c) => c.id);
+    if (cardIds.length < 3) return;
+    if (isHost) {
+      const s = fullRef.current;
+      if (!s) return;
+      const next = doLayDownMeld(s, myPid, cardIds);
+      if (next !== s) {
+        setStagedCards([]);
+        applyState(next);
+      } else {
+        setStatusMsg("That's not a valid meld");
+      }
+    } else {
+      sendToHost({ type: "ACTION", action: "layMeld", cardIds });
+      setStagedCards([]);
+    }
+  }
+
   // When the active card is selected and the user changes their hand or meld
   // selection, try to commit again after state updates settle.
   useEffect(() => {
@@ -1195,6 +1265,10 @@ export default function ConquianGameScreen({ navigation, route }) {
   const selectedHandArr = myHand.filter((c) => selectedHandIds.has(c.id));
   const myHasSubmittedPass = gameState.passSelectionsStatus?.[myPid] === true;
 
+  // Hand minus the cards currently staged in the New Meld zone (Stage 1 drag).
+  const stagedIds = new Set(stagedCards.map((c) => c.id));
+  const availableHand = myHand.filter((c) => !stagedIds.has(c.id));
+
   const isDrawTurnFreeAction =
     isMyTurn &&
     turnPhase === "action" &&
@@ -1546,16 +1620,91 @@ export default function ConquianGameScreen({ navigation, route }) {
           </View>
         )}
 
+        {/* New-meld staging zone (Stage 1 drag-to-build) — draw-turn only */}
+        {isDrawTurnFreeAction && (
+          <View style={styles.meldSection}>
+            <Text style={styles.sectionLabel}>New Meld — drag cards here</Text>
+            <View
+              ref={meldDrag.registerZone("newMeld", { type: "newMeld" })}
+              collapsable={false}
+              style={[
+                styles.stageZone,
+                isValidMeld(stagedCards) && styles.stageZoneValid,
+              ]}
+            >
+              {stagedCards.length === 0 ? (
+                <Text style={styles.stageHint}>
+                  Drag 3+ cards here to build a set or run
+                </Text>
+              ) : (
+                stagedCards.map((card) => {
+                  const hidden =
+                    meldDrag.draggingSource?.cardId === card.id;
+                  return (
+                    <GestureDetector
+                      key={card.id}
+                      gesture={meldDrag.makeDragGesture({
+                        type: "staged",
+                        cardId: card.id,
+                        card,
+                      })}
+                    >
+                      <View style={hidden ? styles.cardHidden : null}>
+                        <Card rank={card.rank} suit={card.suit} small />
+                      </View>
+                    </GestureDetector>
+                  );
+                })
+              )}
+            </View>
+            <View style={styles.stageBtnRow}>
+              <TouchableOpacity
+                style={[
+                  styles.actionBtn,
+                  styles.layBtn,
+                  !isValidMeld(stagedCards) && styles.actionBtnDisabled,
+                ]}
+                onPress={confirmStagedMeld}
+                disabled={!isValidMeld(stagedCards)}
+                accessibilityRole="button"
+                accessibilityLabel="Confirm new meld"
+              >
+                <Text style={styles.actionBtnText}>
+                  {isValidMeld(stagedCards) ? "✓ Meld" : "Meld"}
+                </Text>
+              </TouchableOpacity>
+              {stagedCards.length > 0 && (
+                <TouchableOpacity
+                  style={[styles.actionBtn, styles.passBtn]}
+                  onPress={() => setStagedCards([])}
+                  accessibilityRole="button"
+                  accessibilityLabel="Clear staged meld"
+                >
+                  <Text style={styles.actionBtnText}>Clear</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        )}
+
         {/* My hand */}
         <View style={styles.handSection}>
           <Text style={styles.sectionLabel}>
             {phase === "initialPass" && !myHasSubmittedPass
               ? "Your Hand — tap to select 1 card to pass"
-              : `Your Hand (${myHand.length})`}
+              : `Your Hand (${availableHand.length})`}
           </Text>
           <View style={styles.handContainer}>
-            <View style={styles.handRow}>
-              {myHand.map((card, index) => {
+            <View
+              ref={
+                isDrawTurnFreeAction
+                  ? meldDrag.registerZone("hand", { type: "hand" })
+                  : undefined
+              }
+              collapsable={false}
+              style={styles.handRow}
+            >
+              {availableHand.map((card, index) => {
                 const isSelected =
                   phase === "initialPass"
                     ? passCardId === card.id
@@ -1564,9 +1713,10 @@ export default function ConquianGameScreen({ navigation, route }) {
                   (phase === "initialPass" && !myHasSubmittedPass) ||
                   (turnPhase === "action" && isMyTurn) ||
                   (turnPhase === "discard" && isMyTurn);
-                return (
+                const dragHidden =
+                  meldDrag.draggingSource?.cardId === card.id;
+                const cardEl = (
                   <TouchableOpacity
-                    key={card.id}
                     disabled={!tappable}
                     onPress={() => {
                       if (phase === "initialPass") {
@@ -1584,18 +1734,40 @@ export default function ConquianGameScreen({ navigation, route }) {
                     }}
                   >
                     <View
-                      style={isSelected ? styles.selectedWrapperSmall : null}
+                      style={[
+                        isSelected && styles.selectedWrapperSmall,
+                        dragHidden && styles.cardHidden,
+                      ]}
                     >
                       <Card
                         rank={card.rank}
                         suit={card.suit}
                         small
                         animateDeal={hasMountedRef.current}
-                        dealDelay={myHand.length <= 10 ? index * 100 : 0}
+                        dealDelay={
+                          availableHand.length <= 10 ? index * 100 : 0
+                        }
                       />
                     </View>
                   </TouchableOpacity>
                 );
+                // Draw-turn: cards are draggable into the staging zone; tap still
+                // works as a fallback. Other phases: plain tap only.
+                if (isDrawTurnFreeAction) {
+                  return (
+                    <GestureDetector
+                      key={card.id}
+                      gesture={meldDrag.makeDragGesture({
+                        type: "hand",
+                        cardId: card.id,
+                        card,
+                      })}
+                    >
+                      {cardEl}
+                    </GestureDetector>
+                  );
+                }
+                return React.cloneElement(cardEl, { key: card.id });
               })}
             </View>
           </View>
@@ -1710,6 +1882,8 @@ export default function ConquianGameScreen({ navigation, route }) {
           )}
         </View>
       </ScrollView>
+      {/* Floating drag layer for the meld workspace — above everything, no taps */}
+      {meldDrag.dragOverlay}
     </SafeAreaView>
   );
 }
@@ -1962,6 +2136,33 @@ const styles = StyleSheet.create({
     padding: scale(2),
   },
   meldGroupSelected: { borderColor: "#7fb3ff" },
+
+  // Stage 1 drag-to-meld staging zone
+  stageZone: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    minHeight: scale(72),
+    borderRadius: scale(12),
+    borderWidth: 2,
+    borderStyle: "dashed",
+    borderColor: "rgba(127, 179, 255, 0.4)",
+    backgroundColor: "rgba(127, 179, 255, 0.06)",
+    padding: scale(6),
+    marginTop: scale(4),
+  },
+  stageZoneValid: {
+    borderStyle: "solid",
+    borderColor: "#7CFFB2",
+    backgroundColor: "rgba(124, 255, 178, 0.12)",
+  },
+  stageHint: {
+    color: "#8aa0c6",
+    fontSize: scaleFont(12),
+    paddingHorizontal: scale(6),
+  },
+  stageBtnRow: { flexDirection: "row", gap: scale(8), marginTop: scale(6) },
+  cardHidden: { opacity: 0 },
 
   handSection: {
     paddingHorizontal: scale(12),
