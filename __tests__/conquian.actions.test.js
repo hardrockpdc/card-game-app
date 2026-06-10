@@ -7,6 +7,8 @@ import {
   doDrawFromStock,
   doPassActiveCard,
   doDiscardCard,
+  doExtendMeldFromHand,
+  doLayDownMeld,
 } from "../game/conquian";
 
 const c = (rank, suit) => ({ rank, suit, id: `${rank}${suit}` });
@@ -106,6 +108,52 @@ describe("aiCanTake", () => {
       melds: { p1: [] },
     };
     expect(aiCanTake(state, "p1")).toBeNull();
+  });
+});
+
+describe("doExtendMeldFromHand (free add-to-meld)", () => {
+  const drawTurn = (over) => ({
+    phase: "playing",
+    turnPhase: "action",
+    players: [{ id: "p1" }, { id: "p2" }],
+    currentPlayerIndex: 0,
+    originalDrawerIndex: 0, // p1's own draw turn
+    chainPassedPids: [],
+    activeCard: null,
+    hands: { p1: [], p2: [] },
+    melds: { p1: [], p2: [] },
+    winTarget: 11,
+    deadPile: [],
+    autoTook: null,
+    ...over,
+  });
+
+  test("adds 5♣ to a 2-3-4♣ run (the reported case)", () => {
+    const s = drawTurn({
+      melds: { p1: [[c("2", "♣"), c("3", "♣"), c("4", "♣")]], p2: [] },
+      hands: { p1: [c("5", "♣"), c("K", "♥")], p2: [] },
+    });
+    const next = doExtendMeldFromHand(s, "p1", 0, ["5♣"]);
+    expect(next).not.toBe(s);
+    expect(next.melds.p1[0].map((x) => x.id)).toEqual(["2♣", "3♣", "4♣", "5♣"]);
+    expect(next.hands.p1.map((x) => x.id)).toEqual(["K♥"]);
+  });
+
+  test("rejects a card that doesn't extend the run", () => {
+    const s = drawTurn({
+      melds: { p1: [[c("2", "♣"), c("3", "♣"), c("4", "♣")]], p2: [] },
+      hands: { p1: [c("Q", "♣")], p2: [] },
+    });
+    expect(doExtendMeldFromHand(s, "p1", 0, ["Q♣"])).toBe(s);
+  });
+
+  test("is blocked when it's not your draw-turn free window", () => {
+    const s = drawTurn({
+      originalDrawerIndex: 1, // p1 is NOT the drawer → no free melds
+      melds: { p1: [[c("2", "♣"), c("3", "♣"), c("4", "♣")]], p2: [] },
+      hands: { p1: [c("5", "♣")], p2: [] },
+    });
+    expect(doExtendMeldFromHand(s, "p1", 0, ["5♣"])).toBe(s);
   });
 });
 
