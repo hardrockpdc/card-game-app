@@ -1469,7 +1469,10 @@ export default function ConquianGameScreen({ navigation, route }) {
           <Text style={styles.toastText}>{toast}</Text>
         </Animated.View>
       )}
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView
+        style={styles.scrollArea}
+        contentContainerStyle={styles.container}
+      >
         {/* Opponents — single row across the top; cards wrap naturally */}
         <View style={styles.opponentsRow}>
           {opponents.map((p) => {
@@ -1676,9 +1679,10 @@ export default function ConquianGameScreen({ navigation, route }) {
             </View>
           </View>
         )}
+      </ScrollView>
 
-        {/* My hand (5×2 grid) + action buttons on the right */}
-        <View style={styles.handSection}>
+      {/* Hand + action buttons — pinned at the bottom of the screen */}
+      <View style={[styles.handSection, styles.handPinned]}>
           <Text style={styles.sectionLabel}>
             {phase === "initialPass" && !myHasSubmittedPass
               ? "Your Hand — tap to select 1 card to pass"
@@ -1857,7 +1861,6 @@ export default function ConquianGameScreen({ navigation, route }) {
             </View>
           </View>
         </View>
-      </ScrollView>
       {/* Floating drag layer for the meld workspace — above everything, no taps */}
       {meldDrag.dragOverlay}
     </SafeAreaView>
@@ -2145,9 +2148,19 @@ const styles = StyleSheet.create({
   stageBtnRow: { flexDirection: "row", gap: scale(8), marginTop: scale(6) },
   cardHidden: { opacity: 0 },
 
+  scrollArea: { flex: 1 },
   handSection: {
     paddingHorizontal: scale(12),
     marginBottom: scale(6),
+  },
+  // Pinned bottom bar (hand + action buttons).
+  handPinned: {
+    marginBottom: 0,
+    paddingTop: scale(6),
+    paddingBottom: scale(8),
+    backgroundColor: "#0f1626",
+    borderTopWidth: 1,
+    borderTopColor: "#2a3650",
   },
   handContainer: {
     backgroundColor: "rgba(127, 179, 255, 0.06)",
