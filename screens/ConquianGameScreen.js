@@ -1737,14 +1737,15 @@ export default function ConquianGameScreen({ navigation, route }) {
           </View>
         )}
 
-        {/* My hand */}
+        {/* My hand (5×2 grid) + action buttons on the right */}
         <View style={styles.handSection}>
           <Text style={styles.sectionLabel}>
             {phase === "initialPass" && !myHasSubmittedPass
               ? "Your Hand — tap to select 1 card to pass"
               : `Your Hand (${availableHand.length})`}
           </Text>
-          <View style={styles.handContainer}>
+          <View style={styles.handActionsRow}>
+            {/* Left: hand as two rows of up to 5; also the drop zone */}
             <View
               ref={
                 isDrawTurnFreeAction
@@ -1752,184 +1753,169 @@ export default function ConquianGameScreen({ navigation, route }) {
                   : undefined
               }
               collapsable={false}
-              style={styles.handRow}
+              style={styles.handGrid}
             >
-              {availableHand.map((card, index) => {
-                const isSelected =
-                  phase === "initialPass"
-                    ? passCardId === card.id
-                    : selectedHandIds.has(card.id);
-                const tappable =
-                  (phase === "initialPass" && !myHasSubmittedPass) ||
-                  (turnPhase === "action" && isMyTurn) ||
-                  (turnPhase === "discard" && isMyTurn);
-                const dragHidden =
-                  meldDrag.draggingSource?.cardId === card.id;
-                const cardEl = (
-                  <TouchableOpacity
-                    disabled={!tappable}
-                    onPress={() => {
-                      if (phase === "initialPass") {
-                        setPassCardId((prev) =>
-                          prev === card.id ? null : card.id,
-                        );
-                        return;
-                      }
-                      if (turnPhase === "discard" && isMyTurn) {
-                        handleDiscard(card.id);
-                        return;
-                      }
-                      if (turnPhase === "action" && isMyTurn)
-                        toggleHandCard(card.id);
-                    }}
-                  >
-                    <View
-                      style={[
-                        isSelected && styles.selectedWrapperSmall,
-                        dragHidden && styles.cardHidden,
-                      ]}
-                    >
-                      <Card
-                        rank={card.rank}
-                        suit={card.suit}
-                        small
-                        animateDeal={hasMountedRef.current}
-                        dealDelay={
-                          availableHand.length <= 10 ? index * 100 : 0
-                        }
-                      />
-                    </View>
-                  </TouchableOpacity>
-                );
-                // Draw-turn: cards are draggable into the staging zone; tap still
-                // works as a fallback. Other phases: plain tap only.
-                if (isDrawTurnFreeAction) {
-                  return (
-                    <GestureDetector
-                      key={card.id}
-                      gesture={meldDrag.makeDragGesture({
-                        type: "hand",
-                        cardId: card.id,
-                        card,
-                      })}
-                    >
-                      {cardEl}
-                    </GestureDetector>
-                  );
-                }
-                return React.cloneElement(cardEl, { key: card.id });
-              })}
+              {[0, 5].map((start) => (
+                <View key={start} style={styles.handGridRow}>
+                  {availableHand.slice(start, start + 5).map((card, localIdx) => {
+                    const index = start + localIdx;
+                    const isSelected =
+                      phase === "initialPass"
+                        ? passCardId === card.id
+                        : selectedHandIds.has(card.id);
+                    const tappable =
+                      (phase === "initialPass" && !myHasSubmittedPass) ||
+                      (turnPhase === "action" && isMyTurn) ||
+                      (turnPhase === "discard" && isMyTurn);
+                    const dragHidden =
+                      meldDrag.draggingSource?.cardId === card.id;
+                    const cardEl = (
+                      <TouchableOpacity
+                        disabled={!tappable}
+                        onPress={() => {
+                          if (phase === "initialPass") {
+                            setPassCardId((prev) =>
+                              prev === card.id ? null : card.id,
+                            );
+                            return;
+                          }
+                          if (turnPhase === "discard" && isMyTurn) {
+                            handleDiscard(card.id);
+                            return;
+                          }
+                          if (turnPhase === "action" && isMyTurn)
+                            toggleHandCard(card.id);
+                        }}
+                      >
+                        <View
+                          style={[
+                            isSelected && styles.selectedWrapperSmall,
+                            dragHidden && styles.cardHidden,
+                          ]}
+                        >
+                          <Card
+                            rank={card.rank}
+                            suit={card.suit}
+                            small
+                            animateDeal={hasMountedRef.current}
+                            dealDelay={
+                              availableHand.length <= 10 ? index * 100 : 0
+                            }
+                          />
+                        </View>
+                      </TouchableOpacity>
+                    );
+                    // Draw-turn: draggable into the staging zone; tap fallback.
+                    if (isDrawTurnFreeAction) {
+                      return (
+                        <GestureDetector
+                          key={card.id}
+                          gesture={meldDrag.makeDragGesture({
+                            type: "hand",
+                            cardId: card.id,
+                            card,
+                          })}
+                        >
+                          {cardEl}
+                        </GestureDetector>
+                      );
+                    }
+                    return React.cloneElement(cardEl, { key: card.id });
+                  })}
+                </View>
+              ))}
             </View>
-          </View>
-        </View>
 
-        {/* Action bar */}
-        <View style={styles.actionBar}>
-          {phase === "initialPass" && !myHasSubmittedPass && (
-            <TouchableOpacity
-              style={[
-                styles.actionBtn,
-                !passCardId && styles.actionBtnDisabled,
-              ]}
-              onPress={handleConfirmPass}
-              disabled={!passCardId}
-              accessibilityRole="button"
-              accessibilityLabel="Confirm Pass"
-              accessibilityHint="Submit your chosen card to pass"
-              accessibilityState={{ disabled: !passCardId }}
-            >
-              <Text style={styles.actionBtnText}>Confirm Pass</Text>
-            </TouchableOpacity>
-          )}
-
-          {phase === "initialPass" && myHasSubmittedPass && (
-            <Text style={styles.waitText}>Waiting for other players…</Text>
-          )}
-
-          {phase === "playing" && isMyTurn && turnPhase === "draw" && (
-            <TouchableOpacity
-              style={styles.actionBtn}
-              onPress={handleDraw}
-              accessibilityRole="button"
-              accessibilityLabel="Draw from Stock"
-              accessibilityHint="Take a card from the stock pile"
-            >
-              <Text style={styles.actionBtnText}>Draw from Stock</Text>
-            </TouchableOpacity>
-          )}
-
-          {phase === "playing" && isMyTurn && turnPhase === "action" && (
-            <>
-              <View style={styles.actionBtnRow}>
-                {isDrawTurnFreeAction && canLayMeld && (
-                  <TouchableOpacity
-                    style={[styles.actionBtn, styles.layBtn]}
-                    onPress={handleLayMeld}
-                    accessibilityRole="button"
-                    accessibilityLabel="Meld"
-                    accessibilityHint="Place selected cards as a meld"
-                  >
-                    <Text style={styles.actionBtnText}>Meld</Text>
-                  </TouchableOpacity>
-                )}
-                {canAddToMeld && (
-                  <TouchableOpacity
-                    style={[styles.actionBtn, styles.layBtn]}
-                    onPress={handleAddToMeld}
-                    accessibilityRole="button"
-                    accessibilityLabel="Add to Meld"
-                    accessibilityHint="Add the selected card to your targeted meld"
-                  >
-                    <Text style={styles.actionBtnText}>Add to Meld</Text>
-                  </TouchableOpacity>
-                )}
-
+            {/* Right: action buttons column */}
+            <View style={styles.actionColumn}>
+              {phase === "initialPass" && !myHasSubmittedPass && (
                 <TouchableOpacity
                   style={[
                     styles.actionBtn,
-                    styles.borrowBtn,
-                    !activeCard && styles.actionBtnDisabled,
+                    !passCardId && styles.actionBtnDisabled,
                   ]}
-                  onPress={enterBorrowMode}
-                  disabled={!activeCard}
+                  onPress={handleConfirmPass}
+                  disabled={!passCardId}
                   accessibilityRole="button"
-                  accessibilityLabel="Arrange"
-                  accessibilityHint="Open meld rearrange mode"
-                  accessibilityState={{ disabled: !activeCard }}
+                  accessibilityLabel="Confirm Pass"
                 >
-                  <Text style={styles.actionBtnText}>Arrange</Text>
+                  <Text style={styles.actionBtnText}>Confirm Pass</Text>
                 </TouchableOpacity>
+              )}
+              {phase === "initialPass" && myHasSubmittedPass && (
+                <Text style={styles.waitText}>Waiting…</Text>
+              )}
+
+              {phase === "playing" && isMyTurn && turnPhase === "draw" && (
                 <TouchableOpacity
-                  style={[styles.actionBtn, styles.passBtn]}
-                  onPress={handlePass}
+                  style={styles.actionBtn}
+                  onPress={handleDraw}
                   accessibilityRole="button"
-                  accessibilityLabel="Pass"
-                  accessibilityHint="Pass the active card to the next player"
+                  accessibilityLabel="Draw from Stock"
                 >
-                  <Text style={styles.actionBtnText}>Pass</Text>
+                  <Text style={styles.actionBtnText}>Draw</Text>
                 </TouchableOpacity>
-              </View>
+              )}
 
-              <Text style={styles.hintText}>
-                Tap the active card to take · select hand cards first to choose
-                how to meld
-              </Text>
-            </>
-          )}
+              {phase === "playing" && isMyTurn && turnPhase === "action" && (
+                <>
+                  {isDrawTurnFreeAction && canLayMeld && (
+                    <TouchableOpacity
+                      style={[styles.actionBtn, styles.layBtn]}
+                      onPress={handleLayMeld}
+                      accessibilityRole="button"
+                      accessibilityLabel="Meld"
+                    >
+                      <Text style={styles.actionBtnText}>Meld</Text>
+                    </TouchableOpacity>
+                  )}
+                  {canAddToMeld && (
+                    <TouchableOpacity
+                      style={[styles.actionBtn, styles.layBtn]}
+                      onPress={handleAddToMeld}
+                      accessibilityRole="button"
+                      accessibilityLabel="Add to Meld"
+                    >
+                      <Text style={styles.actionBtnText}>Add to Meld</Text>
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity
+                    style={[
+                      styles.actionBtn,
+                      styles.borrowBtn,
+                      !activeCard && styles.actionBtnDisabled,
+                    ]}
+                    onPress={enterBorrowMode}
+                    disabled={!activeCard}
+                    accessibilityRole="button"
+                    accessibilityLabel="Arrange"
+                  >
+                    <Text style={styles.actionBtnText}>Arrange</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.actionBtn, styles.passBtn]}
+                    onPress={handlePass}
+                    accessibilityRole="button"
+                    accessibilityLabel="Pass"
+                  >
+                    <Text style={styles.actionBtnText}>Pass</Text>
+                  </TouchableOpacity>
+                </>
+              )}
 
-          {phase === "playing" && isMyTurn && turnPhase === "discard" && (
-            <Text style={styles.discardHint}>
-              Tap a card in your hand to discard
-            </Text>
-          )}
+              {phase === "playing" && isMyTurn && turnPhase === "discard" && (
+                <Text style={styles.discardHint}>Tap a card to discard</Text>
+              )}
 
-          {phase === "playing" && !isMyTurn && (
-            <Text style={styles.waitText}>
-              {(gameState.chainPassedPids?.length ?? 0) > 0
-                ? `Chain → ${currentPlayer?.name} deciding…`
-                : `${currentPlayer?.name} is playing…`}
-            </Text>
-          )}
+              {phase === "playing" && !isMyTurn && (
+                <Text style={styles.waitText}>
+                  {(gameState.chainPassedPids?.length ?? 0) > 0
+                    ? `Chain → ${currentPlayer?.name}…`
+                    : `${currentPlayer?.name}…`}
+                </Text>
+              )}
+            </View>
+          </View>
         </View>
       </ScrollView>
       {/* Floating drag layer for the meld workspace — above everything, no taps */}
@@ -2233,6 +2219,28 @@ const styles = StyleSheet.create({
     marginTop: scale(4),
   },
   handRow: { flexDirection: "row", flexWrap: "wrap" },
+  // Hand (5×2 grid) + action buttons side by side.
+  handActionsRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: scale(8),
+    marginTop: scale(4),
+  },
+  handGrid: {
+    backgroundColor: "rgba(127, 179, 255, 0.06)",
+    borderWidth: 1,
+    borderColor: "rgba(127, 179, 255, 0.18)",
+    borderRadius: scale(12),
+    paddingVertical: scale(8),
+    paddingHorizontal: scale(6),
+    flexShrink: 0,
+  },
+  handGridRow: { flexDirection: "row", alignItems: "center" },
+  actionColumn: {
+    flex: 1,
+    gap: scale(6),
+    justifyContent: "flex-start",
+  },
   selectedWrapper: {
     borderRadius: scale(10),
     borderWidth: 3,
