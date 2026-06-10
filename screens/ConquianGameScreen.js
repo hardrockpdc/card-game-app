@@ -1564,65 +1564,6 @@ export default function ConquianGameScreen({ navigation, route }) {
             </View>
           </View>
 
-          <Text style={styles.myProgress}>
-            You: {myHand.length} in hand · {myMelded}/{winTarget} melded
-          </Text>
-
-          {phase === "initialPass" && !myHasSubmittedPass && (
-            <Text style={styles.phaseLabel}>Pick 1 card to pass clockwise</Text>
-          )}
-          {phase === "initialPass" && myHasSubmittedPass && (
-            <Text style={styles.phaseLabel}>Waiting for other players…</Text>
-          )}
-          {phase === "playing" && isMyTurn && turnPhase === "draw" && (
-            <Text style={styles.phaseLabel}>Your turn — draw from stock</Text>
-          )}
-          {phase === "playing" &&
-            isMyTurn &&
-            turnPhase === "action" &&
-            isDrawTurnFreeAction && (
-              <Text style={styles.phaseLabel}>
-                Your turn — take/pass the drawn card, or select hand cards to
-                meld
-                {selectedHandArr.length > 0
-                  ? ` · ${selectedHandArr.length} selected`
-                  : ""}
-                {selectedMeldIdx !== null
-                  ? ` · meld ${selectedMeldIdx + 1} targeted`
-                  : ""}
-              </Text>
-            )}
-          {phase === "playing" &&
-            isMyTurn &&
-            turnPhase === "action" &&
-            !isDrawTurnFreeAction && (
-              <Text style={styles.phaseLabel}>
-                Chain offer — Take or Pass
-                {selectedHandArr.length > 0
-                  ? ` · ${selectedHandArr.length} selected`
-                  : ""}
-                {selectedMeldIdx !== null
-                  ? ` · meld ${selectedMeldIdx + 1} targeted`
-                  : ""}
-              </Text>
-            )}
-          {phase === "playing" && isMyTurn && turnPhase === "discard" && (
-            <Text style={styles.phaseLabel}>
-              Tap a card in your hand to discard
-            </Text>
-          )}
-          {phase === "playing" && !isMyTurn && turnPhase !== "discard" && (
-            <Text style={styles.phaseLabel}>
-              {(gameState.chainPassedPids?.length ?? 0) > 0
-                ? `Chain: ${currentPlayer?.name} deciding…`
-                : `${currentPlayer?.name}'s turn…`}
-            </Text>
-          )}
-          {phase === "playing" && !isMyTurn && turnPhase === "discard" && (
-            <Text style={styles.phaseLabel}>
-              {currentPlayer?.name} is discarding…
-            </Text>
-          )}
           {statusMsg ? <Text style={styles.errorMsg}>{statusMsg}</Text> : null}
         </View>
 
@@ -1673,7 +1614,6 @@ export default function ConquianGameScreen({ navigation, route }) {
         {/* New-meld staging zone (Stage 1 drag-to-build) — draw-turn only */}
         {isDrawTurnFreeAction && (
           <View style={styles.meldSection}>
-            <Text style={styles.sectionLabel}>New Meld — drag cards here</Text>
             <View
               ref={meldDrag.registerZone("newMeld", { type: "newMeld" })}
               collapsable={false}
