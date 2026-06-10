@@ -1,8 +1,8 @@
 # 📋 Conquián — Complete Build Spec
 
-## ⚠️ Status: Rebuild
+## ✅ Status: Shipped
 
-A previous Conquián implementation exists in this project but had bugs and is being scrapped entirely. This spec describes the desired final behavior. All previous Conquián code should be removed before starting this rebuild.
+Conquián is built and live (`game/conquian.js` + `screens/ConquianGameScreen.js`), single-player and multiplayer, including the Initial Card Pass, Priority Chain, Borrowing, and the Auto-Take rule (added 2026-06-04). This doc is the canonical rules reference; the **Phased Build Plan** at the bottom is historical (all phases A–D complete; E is optional polish).
 
 ---
 
@@ -184,7 +184,7 @@ When holding only 1 card, you cannot form a brand-new 3-card meld (only 2 cards 
 ## UI Requirements
 
 - **Layout:** Stacked — other players' info at top, your hand at bottom, table center
-- **Hand sort:** Drag-and-drop manual reorder using `react-native-draggable-flatlist`
+- **Hand sort:** Hand is auto-sorted (by rank). *(The originally-planned drag-to-reorder via `react-native-draggable-flatlist` was dropped — that dependency was removed from the project on 2026-06-04.)*
 - **Meld interaction:** Multi-select cards in hand → tap "Meld" button → system validates and places
 - **Active Slot:** Central UI area showing the current chain card
 - **Meld Counter:** Show "7/9" style indicator next to each player's avatar (cards melded / target)
@@ -197,9 +197,9 @@ When holding only 1 card, you cannot form a brand-new 3-card meld (only 2 cards 
 
 ## Dependencies
 
-`react-native-draggable-flatlist` — already installed.
+None beyond the app's existing stack. *(An earlier draft assumed `react-native-draggable-flatlist` for hand reordering; that feature was dropped and the dependency removed on 2026-06-04.)*
 
-## Phased Build Plan
+## Phased Build Plan (historical — all complete)
 
 ### Phase A: Single-player vs simple AI (no Priority Chain, no borrowing)
 
