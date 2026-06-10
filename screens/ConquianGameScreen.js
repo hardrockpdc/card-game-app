@@ -1667,33 +1667,6 @@ export default function ConquianGameScreen({ navigation, route }) {
                 })
               )}
             </View>
-            <View style={styles.stageBtnRow}>
-              <TouchableOpacity
-                style={[
-                  styles.actionBtn,
-                  styles.layBtn,
-                  !isValidMeld(stagedCards) && styles.actionBtnDisabled,
-                ]}
-                onPress={confirmStagedMeld}
-                disabled={!isValidMeld(stagedCards)}
-                accessibilityRole="button"
-                accessibilityLabel="Confirm new meld"
-              >
-                <Text style={styles.actionBtnText}>
-                  {isValidMeld(stagedCards) ? "✓ Meld" : "Meld"}
-                </Text>
-              </TouchableOpacity>
-              {stagedCards.length > 0 && (
-                <TouchableOpacity
-                  style={[styles.actionBtn, styles.passBtn]}
-                  onPress={() => setStagedCards([])}
-                  accessibilityRole="button"
-                  accessibilityLabel="Clear staged meld"
-                >
-                  <Text style={styles.actionBtnText}>Clear</Text>
-                </TouchableOpacity>
-              )}
-            </View>
           </View>
 
       {/* Hand + action buttons — pinned at the bottom of the screen */}
@@ -1816,15 +1789,32 @@ export default function ConquianGameScreen({ navigation, route }) {
 
               {phase === "playing" && isMyTurn && turnPhase === "action" && (
                 <>
-                  {isDrawTurnFreeAction && canLayMeld && (
-                    <TouchableOpacity
-                      style={[styles.actionBtn, styles.layBtn]}
-                      onPress={handleLayMeld}
-                      accessibilityRole="button"
-                      accessibilityLabel="Meld"
-                    >
-                      <Text style={styles.actionBtnText}>Meld</Text>
-                    </TouchableOpacity>
+                  {isDrawTurnFreeAction && stagedCards.length > 0 && (
+                    <>
+                      <TouchableOpacity
+                        style={[
+                          styles.actionBtn,
+                          styles.layBtn,
+                          !isValidMeld(stagedCards) && styles.actionBtnDisabled,
+                        ]}
+                        onPress={confirmStagedMeld}
+                        disabled={!isValidMeld(stagedCards)}
+                        accessibilityRole="button"
+                        accessibilityLabel="Confirm new meld"
+                      >
+                        <Text style={styles.actionBtnText}>
+                          {isValidMeld(stagedCards) ? "✓ Meld" : "Meld"}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.actionBtn, styles.passBtn]}
+                        onPress={() => setStagedCards([])}
+                        accessibilityRole="button"
+                        accessibilityLabel="Clear staged meld"
+                      >
+                        <Text style={styles.actionBtnText}>Clear</Text>
+                      </TouchableOpacity>
+                    </>
                   )}
                   {canAddToMeld && (
                     <TouchableOpacity
