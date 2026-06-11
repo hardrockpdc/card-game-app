@@ -2050,7 +2050,8 @@ const styles = StyleSheet.create({
   opponentCard: {
     backgroundColor: "#16213e",
     borderRadius: scale(10),
-    padding: scale(10),
+    paddingHorizontal: scale(6),
+    paddingVertical: scale(4),
     borderWidth: 1.5,
     borderColor: "#334",
   },
