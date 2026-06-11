@@ -2134,12 +2134,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(5),
     paddingVertical: scale(4),
   },
-  // All 4 seats share ONE footprint (232×116). Top/bottom lie flat; the sides
+  // All 4 seats share ONE footprint (232×105). Top/bottom lie flat; the sides
   // stand the same box on end (rotated 90°) → identical dimensions all around.
-  // Short side is 116 so a meld row (small card + header) isn't clipped.
   seatBoxHoriz: {
     width: scale(232),
-    height: scale(116),
+    height: scale(105),
     overflow: "hidden",
     justifyContent: "flex-start",
   },
@@ -2147,12 +2146,12 @@ const styles = StyleSheet.create({
   // Clip + top-anchored content → open space inside, melds can't spill.
   seatBoxRotated: {
     width: scale(232),
-    height: scale(116),
+    height: scale(105),
     overflow: "hidden",
     justifyContent: "flex-start",
   },
   sideSeatWrap: {
-    width: scale(116),
+    width: scale(105),
     height: scale(232),
     alignItems: "center",
     justifyContent: "center",
