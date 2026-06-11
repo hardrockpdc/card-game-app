@@ -1489,42 +1489,63 @@ export default function ConquianGameScreen({ navigation, route }) {
     );
   }
 
-  // A player "seat" around the table (top / left / right opponents). Empty slots
-  // render as a dashed placeholder so the cross layout stays stable.
-  const renderSeat = (opp) => {
-    if (!opp) return <View style={[styles.seatBox, styles.seatEmpty]} />;
-    const opPid = String(opp.id);
-    const isCurrent = String(currentPlayer?.id) === opPid;
-    const opMelds = gameState.melds?.[opPid] ?? [];
-    return (
-      <View style={[styles.seatBox, isCurrent && styles.opponentCardActive]}>
-        <View style={styles.opponentHeader}>
-          <Text style={styles.opponentName} numberOfLines={1}>
-            {opp.name}
-          </Text>
-          <Text style={styles.opponentStats}>
-            {meldedCount(gameState, opPid)}/{winTarget}
-          </Text>
-          {isCurrent && <Text style={styles.opponentTurnDot}>▶</Text>}
-        </View>
-        {opMelds.length > 0 && (
-          <View style={[styles.meldRow, styles.meldRowWrap]}>
-            {opMelds.map((meld, idx) => (
-              <View key={idx} style={styles.meldGroup}>
-                {meld.map((card, ci) => (
-                  <View
-                    key={card.id}
-                    style={ci > 0 ? { marginLeft: meldOverlap } : null}
-                  >
-                    <Card rank={card.rank} suit={card.suit} small />
+  // A player "seat" around the table. side = "top" | "left" | "right". The side
+  // seats are rotated 90° (sideways, like players seated on each side); the
+  // dimension-swap wrapper reserves a narrow tall column so layout stays correct.
+  // Empty seats still render a (dashed) box so the cross never collapses.
+  const renderSeat = (opp, side) => {
+    const rotated = side === "left" || side === "right";
+    const opPid = opp ? String(opp.id) : null;
+    const isCurrent =
+      opp && String(currentPlayer?.id) === opPid;
+    const opMelds = opp ? gameState.melds?.[opPid] ?? [] : [];
+
+    const box = (
+      <View
+        style={[
+          styles.seatBox,
+          rotated ? styles.seatBoxRotated : styles.seatBoxTop,
+          !opp && styles.seatEmpty,
+          isCurrent && styles.opponentCardActive,
+          rotated && {
+            transform: [{ rotate: side === "left" ? "-90deg" : "90deg" }],
+          },
+        ]}
+      >
+        {opp && (
+          <>
+            <View style={styles.opponentHeader}>
+              <Text style={styles.opponentName} numberOfLines={1}>
+                {opp.name}
+              </Text>
+              <Text style={styles.opponentStats}>
+                {meldedCount(gameState, opPid)}/{winTarget}
+              </Text>
+              {isCurrent && <Text style={styles.opponentTurnDot}>▶</Text>}
+            </View>
+            {opMelds.length > 0 && (
+              <View style={[styles.meldRow, styles.meldRowWrap]}>
+                {opMelds.map((meld, idx) => (
+                  <View key={idx} style={styles.meldGroup}>
+                    {meld.map((card, ci) => (
+                      <View
+                        key={card.id}
+                        style={ci > 0 ? { marginLeft: meldOverlap } : null}
+                      >
+                        <Card rank={card.rank} suit={card.suit} small />
+                      </View>
+                    ))}
                   </View>
                 ))}
               </View>
-            ))}
-          </View>
+            )}
+          </>
         )}
       </View>
     );
+
+    if (rotated) return <View style={styles.sideSeatWrap}>{box}</View>;
+    return box;
   };
 
   // ─── Main game screen ─────────────────────────────────────────────────────────
@@ -1566,9 +1587,11 @@ export default function ConquianGameScreen({ navigation, route }) {
       >
         {/* Card table: opponents on each side of the Active card */}
         <View style={styles.centerSection}>
-          <View style={styles.tableTopRow}>{renderSeat(opponents[0])}</View>
+          <View style={styles.tableTopRow}>
+            {renderSeat(opponents[0], "top")}
+          </View>
           <View style={styles.pileRow}>
-            {renderSeat(opponents[1])}
+            {renderSeat(opponents[1], "left")}
             <View style={styles.activeSlotBox}>
               <Text style={styles.pileLabel}>Active</Text>
               {activeCard && !activeStaged ? (
@@ -1614,7 +1637,7 @@ export default function ConquianGameScreen({ navigation, route }) {
                 </View>
               )}
             </View>
-            {renderSeat(opponents[2])}
+            {renderSeat(opponents[2], "right")}
           </View>
 
           {statusMsg ? <Text style={styles.errorMsg}>{statusMsg}</Text> : null}
@@ -2085,14 +2108,21 @@ const styles = StyleSheet.create({
     marginBottom: scale(6),
   },
   seatBox: {
-    flex: 1,
     backgroundColor: "#16213e",
     borderRadius: scale(8),
     borderWidth: 1.5,
     borderColor: "#334",
     paddingHorizontal: scale(5),
     paddingVertical: scale(4),
-    minHeight: scale(48),
+  },
+  seatBoxTop: { flex: 1, minHeight: scale(48) },
+  // Pre-rotation footprint (wide-short); rotates 90° to a narrow-tall side seat.
+  seatBoxRotated: { width: scale(140), height: scale(78) },
+  sideSeatWrap: {
+    width: scale(78),
+    height: scale(140),
+    alignItems: "center",
+    justifyContent: "center",
   },
   seatEmpty: {
     backgroundColor: "transparent",
