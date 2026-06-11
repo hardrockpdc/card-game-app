@@ -1547,7 +1547,17 @@ export default function ConquianGameScreen({ navigation, route }) {
       </View>
     );
 
-    if (rotated) return <View style={styles.sideSeatWrap}>{box}</View>;
+    if (rotated)
+      return (
+        <View
+          style={[
+            styles.sideSeatWrap,
+            side === "left" && styles.sideSeatWrapUp,
+          ]}
+        >
+          {box}
+        </View>
+      );
     return box;
   };
 
@@ -2156,6 +2166,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  // Nudge the left side seat up (the band is as tall as the wrap, so a negative
+  // top margin pulls it toward the top seat).
+  sideSeatWrapUp: { alignSelf: "flex-start", marginTop: -scale(28) },
   seatEmpty: {
     backgroundColor: "transparent",
     borderColor: "#2a3650",
