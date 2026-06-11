@@ -1508,7 +1508,6 @@ export default function ConquianGameScreen({ navigation, route }) {
         style={[
           styles.seatBox,
           rotated ? styles.seatBoxRotated : styles.seatBoxHoriz,
-          side === "top" && styles.seatBoxTopWide,
           !opp && styles.seatEmpty,
           isCurrent && styles.opponentCardActive,
           rotated && {
@@ -2123,7 +2122,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    minHeight: scale(232),
+    minHeight: scale(258),
     marginBottom: scale(6),
   },
   tableTopRow: {
@@ -2145,28 +2144,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(5),
     paddingVertical: scale(4),
   },
-  // All 4 seats share ONE footprint (232×100). Top/bottom lie flat; the sides
+  // All 4 seats share ONE footprint (258×100). Top/bottom lie flat; the sides
   // stand the same box on end (rotated 90°) → identical dimensions all around.
   seatBoxHoriz: {
-    width: scale(232),
+    width: scale(258),
     height: scale(100),
     overflow: "hidden",
     justifyContent: "flex-start",
   },
-  // Top seat stretches right to fill the row, stopping short of the right side
-  // seat (100 wide + a small gap).
-  seatBoxTopWide: { width: "auto", flexGrow: 1, marginRight: scale(108) },
   // Same footprint as seatBoxHoriz; the rotation makes it tall-and-narrow.
   // Clip + top-anchored content → open space inside, melds can't spill.
   seatBoxRotated: {
-    width: scale(232),
+    width: scale(258),
     height: scale(100),
     overflow: "hidden",
     justifyContent: "flex-start",
   },
   sideSeatWrap: {
     width: scale(100),
-    height: scale(232),
+    height: scale(258),
     alignItems: "center",
     justifyContent: "center",
   },
