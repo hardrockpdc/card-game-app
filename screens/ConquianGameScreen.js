@@ -2133,7 +2133,9 @@ const styles = StyleSheet.create({
   tableBottomRow: {
     flexDirection: "row",
     justifyContent: "flex-end",
-    marginTop: scale(6),
+    // Pull the You seat up so its top meets the bottom of the (raised) right
+    // seat, closing the right side of the frame.
+    marginTop: -scale(106),
     marginBottom: scale(2),
   },
   seatBox: {
