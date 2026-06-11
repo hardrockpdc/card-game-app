@@ -2117,10 +2117,15 @@ const styles = StyleSheet.create({
   },
   seatBoxTop: { flex: 1, minHeight: scale(48) },
   // Pre-rotation footprint (wide-short); rotates 90° to a narrow-tall side seat.
-  seatBoxRotated: { width: scale(140), height: scale(78) },
+  // Fixed size + clip so both side seats are identical and melds can't spill.
+  seatBoxRotated: {
+    width: scale(190),
+    height: scale(88),
+    overflow: "hidden",
+  },
   sideSeatWrap: {
-    width: scale(78),
-    height: scale(140),
+    width: scale(88),
+    height: scale(190),
     alignItems: "center",
     justifyContent: "center",
   },
