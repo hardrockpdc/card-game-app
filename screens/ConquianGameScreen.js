@@ -2168,7 +2168,7 @@ const styles = StyleSheet.create({
   },
   // Nudge the right side seat up (the band is as tall as the wrap, so a negative
   // top margin pulls it toward the top seat).
-  sideSeatWrapUp: { alignSelf: "flex-start", marginTop: -scale(28) },
+  sideSeatWrapUp: { alignSelf: "flex-start", marginTop: -scale(100) },
   seatEmpty: {
     backgroundColor: "transparent",
     borderColor: "#2a3650",
