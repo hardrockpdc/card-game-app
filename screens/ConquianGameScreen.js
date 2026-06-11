@@ -1508,6 +1508,7 @@ export default function ConquianGameScreen({ navigation, route }) {
         style={[
           styles.seatBox,
           rotated ? styles.seatBoxRotated : styles.seatBoxHoriz,
+          side === "top" && styles.seatBoxTopWide,
           !opp && styles.seatEmpty,
           isCurrent && styles.opponentCardActive,
           rotated && {
@@ -2152,6 +2153,9 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     justifyContent: "flex-start",
   },
+  // Top seat stretches right to fill the row, stopping short of the right side
+  // seat (100 wide + a small gap).
+  seatBoxTopWide: { width: "auto", flexGrow: 1, marginRight: scale(108) },
   // Same footprint as seatBoxHoriz; the rotation makes it tall-and-narrow.
   // Clip + top-anchored content → open space inside, melds can't spill.
   seatBoxRotated: {
