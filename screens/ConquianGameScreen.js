@@ -129,6 +129,8 @@ export default function ConquianGameScreen({ navigation, route }) {
 
   // Stage 1 drag-to-meld: cards dragged into the "New Meld" staging zone.
   const [stagedCards, setStagedCards] = useState([]);
+  // Collapse the New Meld zone to reclaim space; a wide chevron re-opens it.
+  const [meldZoneOpen, setMeldZoneOpen] = useState(false);
 
   // Turn/phase announcement toast (replaces the persistent banner).
   const [toast, setToast] = useState(null);
@@ -1406,6 +1408,9 @@ export default function ConquianGameScreen({ navigation, route }) {
   const canStage = isMyTurn && turnPhase === "action";
   const stagedCommittable =
     isValidMeld(stagedCards) && (isDrawTurnFreeAction || activeStaged);
+  // Show the New Meld zone when opened, or whenever cards are already staged
+  // (so an in-progress meld is never hidden behind the collapsed handle).
+  const meldZoneExpanded = meldZoneOpen || stagedCards.length > 0;
 
   const canLayMeld = isDrawTurnFreeAction && isValidMeld(selectedHandArr);
   const canAddToMeld =
@@ -1732,16 +1737,29 @@ export default function ConquianGameScreen({ navigation, route }) {
         )}
       </ScrollView>
 
-      {/* New Meld staging zone — always visible; greyed off your turn */}
-      <View
-        style={[
-          styles.meldSection,
-          styles.stagePinned,
-          !canStage && styles.stageDisabled,
-        ]}
-        pointerEvents={canStage ? "auto" : "none"}
-      >
-        <View style={styles.stageRow}>
+      {/* New Meld staging zone — collapsible via the wide chevron handle */}
+      <View style={styles.stagePinned}>
+        <TouchableOpacity
+          style={styles.meldZoneHandle}
+          onPress={() => setMeldZoneOpen((v) => !v)}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={
+            meldZoneExpanded ? "Hide the meld zone" : "Show the meld zone"
+          }
+        >
+          <Text style={styles.meldZoneHandleChevron}>
+            {meldZoneExpanded ? "⌄" : "⌃"}
+          </Text>
+          <Text style={styles.meldZoneHandleText}>Meld zone</Text>
+        </TouchableOpacity>
+
+        {meldZoneExpanded && (
+          <View
+            style={[styles.meldSection, !canStage && styles.stageDisabled]}
+            pointerEvents={canStage ? "auto" : "none"}
+          >
+            <View style={styles.stageRow}>
           {/* Left: Meld + Clear, always visible, greyed when unusable */}
           <View style={styles.stageBtnCol}>
             <TouchableOpacity
@@ -1813,7 +1831,9 @@ export default function ConquianGameScreen({ navigation, route }) {
               })
             )}
           </View>
-        </View>
+            </View>
+          </View>
+        )}
       </View>
 
       {/* Hand + action buttons — pinned at the bottom of the screen */}
@@ -2309,6 +2329,33 @@ const styles = StyleSheet.create({
     backgroundColor: "#0f1626",
     borderTopWidth: 1,
     borderTopColor: "#2a3650",
+  },
+  // Wide chevron handle that collapses / expands the New Meld zone.
+  meldZoneHandle: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: scale(8),
+    paddingVertical: scale(4),
+    marginHorizontal: scale(12),
+    marginBottom: scale(4),
+    borderRadius: scale(8),
+    backgroundColor: "#16213e",
+    borderWidth: 1,
+    borderColor: "#2a3650",
+  },
+  meldZoneHandleChevron: {
+    color: "#7fb3ff",
+    fontSize: scaleFont(16),
+    fontWeight: "900",
+    lineHeight: scaleFont(16),
+  },
+  meldZoneHandleText: {
+    color: "#a4b1c4",
+    fontSize: scaleFont(12),
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: scale(1),
   },
   handSection: {
     paddingHorizontal: scale(12),
