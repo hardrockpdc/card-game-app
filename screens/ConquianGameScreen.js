@@ -2134,11 +2134,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(5),
     paddingVertical: scale(4),
   },
-  // Top / bottom: full-width horizontal bars.
-  seatBoxHoriz: { flex: 1, minHeight: scale(46) },
-  // Pre-rotation footprint (wide-short); rotates 90° to a sideways side seat.
-  // Fixed tall size + clip + top-anchored content → identical framed boxes with
-  // open space inside, melds can't spill.
+  // All 4 seats share ONE footprint (232×92). Top/bottom lie flat; the sides
+  // stand the same box on end (rotated 90°) → identical dimensions all around.
+  seatBoxHoriz: {
+    width: scale(232),
+    height: scale(92),
+    overflow: "hidden",
+    justifyContent: "flex-start",
+  },
+  // Same footprint as seatBoxHoriz; the rotation makes it tall-and-narrow.
+  // Clip + top-anchored content → open space inside, melds can't spill.
   seatBoxRotated: {
     width: scale(232),
     height: scale(92),
