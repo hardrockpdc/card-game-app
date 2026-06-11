@@ -131,10 +131,9 @@ export default function ConquianGameScreen({ navigation, route }) {
 
   // Stage 1 drag-to-meld: cards dragged into the "New Meld" staging zone.
   const [stagedCards, setStagedCards] = useState([]);
-  // Collapse the New Meld zone to reclaim space; a wide chevron re-opens it.
-  const [meldZoneOpen, setMeldZoneOpen] = useState(false);
-  // Measured height of the table region, so the pinwheel fills the screen.
-  const [tableAreaH, setTableAreaH] = useState(0);
+  // The merged "Your melds & new meld" panel; a wide chevron collapses it to
+  // reclaim space. Starts open since it now holds your melds.
+  const [meldZoneOpen, setMeldZoneOpen] = useState(true);
 
   // "Your Turn!" banner — flash when the turn flips to me (replaces the toast).
   const showTurnBanner = useYourTurnBanner(
@@ -1351,24 +1350,6 @@ export default function ConquianGameScreen({ navigation, route }) {
   // Overlap melded cards so only ~1/4 of each shows (saves horizontal space).
   const meldOverlap = -Math.round(smallCardW * 0.74);
 
-  // ── Pinwheel "table" sizing (fills the screen, responsive) ────────────────
-  // The 4 seats hug the corners and rotate around the Active card:
-  //   top→top-left, right→top-right, bottom(You)→bottom-right, left→bottom-left.
-  // Each seat is `seatShort` thick. Top/bottom span the table WIDTH, left/right
-  // span its HEIGHT (measured), so on a portrait screen the side boxes are
-  // simply longer than the top/bottom ones — the frame fills the whole area.
-  const tableGap = scale(10);
-  const tablePad = scale(12); // matches centerSection's horizontal padding
-  const seatShort = smallCardH + scale(40); // box thickness: header + meld row
-  const tableWidth = Math.round(winWidth - tablePad * 2);
-  const minTableH = seatShort * 2 + tableGap * 2 + scale(120);
-  // Fill the measured vertical space; fall back to a square before first layout.
-  const tableHeight = Math.max(
-    tableAreaH ? Math.round(tableAreaH) - scale(8) : tableWidth,
-    minTableH,
-  );
-  const seatLongH = tableWidth - seatShort - tableGap; // top/bottom box length
-  const seatLongV = tableHeight - seatShort - tableGap; // left/right box length
 
   // Hand cards fill the full row width now that the buttons moved out: size them
   // so 5 fit across. Each small Card's real footprint is its width + its 2px*
@@ -1499,56 +1480,44 @@ export default function ConquianGameScreen({ navigation, route }) {
     );
   }
 
-  // A player "seat" on the pinwheel table. side = "top"|"left"|"right"|"bottom".
-  // Each seat is `seatShort` thick. top/bottom span the table WIDTH (seatLongH);
-  // left/right span its HEIGHT (seatLongV) and are rotated 90° (sideways) with a
-  // dimension-swap wrapper. Content is top-anchored and clipped so it never
-  // spills. Empty seats still render a (dashed) box so the frame never collapses.
-  // `isSelf` (the bottom "You" seat) shows YOUR melds and makes each meld group
-  // tappable for the "Add to Meld" flow.
-  const renderSeat = (opp, side, { isSelf = false } = {}) => {
-    const rotated = side === "left" || side === "right";
-    const opPid = opp ? String(opp.id) : null;
-    const isCurrent =
-      opp && String(currentPlayer?.id) === opPid;
-    const opMelds = opp ? gameState.melds?.[opPid] ?? [] : [];
-    const boxW = rotated ? seatLongV : seatLongH;
-
-    const renderMeldCard = (card, ci) => (
-      <View
-        key={card.id}
-        style={[
-          ci > 0 && { marginLeft: meldOverlap },
-          card.id === highlightCardId && { zIndex: 5 },
-        ]}
-      >
-        {card.id === highlightCardId ? (
-          <Animated.View
-            style={[styles.autoGlow, { transform: [{ scale: autoGlowPulse }] }]}
-          >
-            <Card rank={card.rank} suit={card.suit} small />
-          </Animated.View>
-        ) : (
+  // Render a single meld's cards (with the auto-take glow on the highlighted one).
+  const renderMeldCard = (card, ci) => (
+    <View
+      key={card.id}
+      style={[
+        ci > 0 && { marginLeft: meldOverlap },
+        card.id === highlightCardId && { zIndex: 5 },
+      ]}
+    >
+      {card.id === highlightCardId ? (
+        <Animated.View
+          style={[styles.autoGlow, { transform: [{ scale: autoGlowPulse }] }]}
+        >
           <Card rank={card.rank} suit={card.suit} small />
-        )}
-      </View>
-    );
+        </Animated.View>
+      ) : (
+        <Card rank={card.rank} suit={card.suit} small />
+      )}
+    </View>
+  );
 
-    const box = (
+  // One opponent as a full-width horizontal bar (name + count + melds fanned).
+  // Empty slots still render a dashed bar so the 3 stacked rows stay put.
+  const renderOppBar = (opp) => {
+    const opPid = opp ? String(opp.id) : null;
+    const isCurrent = opp && String(currentPlayer?.id) === opPid;
+    const opMelds = opp ? gameState.melds?.[opPid] ?? [] : [];
+    return (
       <View
         style={[
-          styles.seatBox,
-          { width: boxW, height: seatShort },
+          styles.oppBar,
           !opp && styles.seatEmpty,
           isCurrent && styles.opponentCardActive,
-          rotated && {
-            transform: [{ rotate: side === "left" ? "-90deg" : "90deg" }],
-          },
         ]}
       >
-        {opp && (
+        {opp ? (
           <>
-            <View style={styles.opponentHeader}>
+            <View style={styles.oppBarHeader}>
               <Text style={styles.opponentName} numberOfLines={1}>
                 {opp.name}
               </Text>
@@ -1558,60 +1527,51 @@ export default function ConquianGameScreen({ navigation, route }) {
               {isCurrent && <Text style={styles.opponentTurnDot}>▶</Text>}
             </View>
             {opMelds.length > 0 && (
-              <View style={[styles.meldRow, styles.meldRowWrap]}>
-                {opMelds.map((meld, idx) =>
-                  isSelf ? (
-                    // Drop zone: drag a hand card here to extend this meld.
-                    <View
-                      key={idx}
-                      ref={meldDrag.registerZone(`myMeld${idx}`, {
-                        type: "group",
-                        groupIdx: idx,
-                      })}
-                      collapsable={false}
-                    >
-                      <TouchableOpacity
-                        style={[
-                          styles.meldGroup,
-                          selectedMeldIdx === idx && styles.meldGroupSelected,
-                        ]}
-                        onPress={() => {
-                          if (turnPhase !== "action" || !isMyTurn) return;
-                          setSelectedMeldIdx((prev) =>
-                            prev === idx ? null : idx,
-                          );
-                          setStatusMsg("");
-                        }}
-                      >
-                        {meld.map(renderMeldCard)}
-                      </TouchableOpacity>
-                    </View>
-                  ) : (
-                    <View key={idx} style={styles.meldGroup}>
-                      {meld.map(renderMeldCard)}
-                    </View>
-                  ),
-                )}
+              <View style={[styles.meldRow, styles.meldRowWrap, styles.oppBarMelds]}>
+                {opMelds.map((meld, idx) => (
+                  <View key={idx} style={styles.meldGroup}>
+                    {meld.map(renderMeldCard)}
+                  </View>
+                ))}
               </View>
             )}
           </>
-        )}
+        ) : null}
       </View>
     );
-
-    if (rotated)
-      return (
-        <View
-          style={[
-            styles.sideSeatWrap,
-            { width: seatShort, height: seatLongV },
-          ]}
-        >
-          {box}
-        </View>
-      );
-    return box;
   };
+
+  // My own melds (tappable for Add-to-Meld + drop zones for drag-to-extend),
+  // shown at the top of the merged "Your melds & new meld" panel.
+  const renderMyMelds = () => (
+    <View style={[styles.meldRow, styles.meldRowWrap]}>
+      {myMelds.map((meld, idx) => (
+        // Drop zone: drag a hand card here to extend this meld.
+        <View
+          key={idx}
+          ref={meldDrag.registerZone(`myMeld${idx}`, {
+            type: "group",
+            groupIdx: idx,
+          })}
+          collapsable={false}
+        >
+          <TouchableOpacity
+            style={[
+              styles.meldGroup,
+              selectedMeldIdx === idx && styles.meldGroupSelected,
+            ]}
+            onPress={() => {
+              if (turnPhase !== "action" || !isMyTurn) return;
+              setSelectedMeldIdx((prev) => (prev === idx ? null : idx));
+              setStatusMsg("");
+            }}
+          >
+            {meld.map(renderMeldCard)}
+          </TouchableOpacity>
+        </View>
+      ))}
+    </View>
+  );
 
   // ─── Main game screen ─────────────────────────────────────────────────────────
 
@@ -1626,81 +1586,63 @@ export default function ConquianGameScreen({ navigation, route }) {
         menuItems={menuItems}
       />
       <YourTurnBanner visible={showTurnBanner} />
-      {/* Pinwheel table — fills the space between header and the meld zone.
-          top→top-left, right→top-right, You→bottom-right, left→bottom-left. */}
-      <View
-        style={styles.centerSection}
-        onLayout={(e) => setTableAreaH(e.nativeEvent.layout.height)}
-      >
-        <View style={[styles.tableWrap, { width: tableWidth, height: tableHeight }]}>
-            <View style={[styles.seatAbs, { top: 0, left: 0 }]}>
-              {renderSeat(opponents[0], "top")}
-            </View>
-            <View style={[styles.seatAbs, { top: 0, right: 0 }]}>
-              {renderSeat(opponents[2], "right")}
-            </View>
-            <View style={[styles.seatAbs, { bottom: 0, right: 0 }]}>
-              {renderSeat(
-                gameState.players.find((p) => String(p.id) === String(myPid)),
-                "bottom",
-                { isSelf: true },
-              )}
-            </View>
-            <View style={[styles.seatAbs, { bottom: 0, left: 0 }]}>
-              {renderSeat(opponents[1], "left")}
-            </View>
+      {/* Up to 3 opponents as full-width stacked bars, then the Active card. */}
+      <View style={styles.centerSection}>
+        <View style={styles.oppStack}>
+          {[0, 1, 2].map((i) => (
+            <View key={i}>{renderOppBar(opponents[i])}</View>
+          ))}
+        </View>
 
-            {/* Active card, centered in the middle of the pinwheel */}
-            <View style={styles.tableCenter} pointerEvents="box-none">
-              <Text style={styles.pileLabel}>Active</Text>
-              {activeCard && !activeStaged ? (
-                isMyTurn && turnPhase === "action" ? (
-                  <GestureDetector
-                    gesture={meldDrag.makeDragGesture({
-                      type: "active",
-                      cardId: activeCard.id,
-                      card: activeCard,
-                    })}
-                  >
-                    <TouchableOpacity
-                      onPress={handleTapActiveCard}
-                      activeOpacity={0.7}
-                      style={[
-                        styles.activeCardTappable,
-                        isActiveCardSelected && styles.activeCardSelected,
-                      ]}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Take ${activeCard.rank} of ${activeCard.suit}`}
-                      accessibilityHint="Drag into the New Meld zone, or tap to take"
-                    >
-                      <View style={activeDragHidden ? styles.cardHidden : null}>
-                        <Card rank={activeCard.rank} suit={activeCard.suit} />
-                      </View>
-                      <Text style={styles.activeTapHint}>
-                        {isActiveCardSelected ? "Pick cards to meld" : "Drag or tap"}
-                      </Text>
-                    </TouchableOpacity>
-                  </GestureDetector>
-                ) : (
-                  <View>
+        <View style={styles.activeArea}>
+          <Text style={styles.pileLabel}>Active</Text>
+          {activeCard && !activeStaged ? (
+            isMyTurn && turnPhase === "action" ? (
+              <GestureDetector
+                gesture={meldDrag.makeDragGesture({
+                  type: "active",
+                  cardId: activeCard.id,
+                  card: activeCard,
+                })}
+              >
+                <TouchableOpacity
+                  onPress={handleTapActiveCard}
+                  activeOpacity={0.7}
+                  style={[
+                    styles.activeCardTappable,
+                    isActiveCardSelected && styles.activeCardSelected,
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Take ${activeCard.rank} of ${activeCard.suit}`}
+                  accessibilityHint="Drag into the New Meld zone, or tap to take"
+                >
+                  <View style={activeDragHidden ? styles.cardHidden : null}>
                     <Card rank={activeCard.rank} suit={activeCard.suit} />
                   </View>
-                )
-              ) : activeStaged ? (
-                <View style={styles.emptySlot}>
-                  <Text style={styles.emptySlotText}>✓</Text>
-                </View>
-              ) : (
-                <View style={styles.emptySlot}>
-                  <Text style={styles.emptySlotText}>—</Text>
-                </View>
-              )}
-              {statusMsg ? (
-                <Text style={styles.errorMsg}>{statusMsg}</Text>
-              ) : null}
+                  <Text style={styles.activeTapHint}>
+                    {isActiveCardSelected ? "Pick cards to meld" : "Drag or tap"}
+                  </Text>
+                </TouchableOpacity>
+              </GestureDetector>
+            ) : (
+              <View>
+                <Card rank={activeCard.rank} suit={activeCard.suit} />
+              </View>
+            )
+          ) : activeStaged ? (
+            <View style={styles.emptySlot}>
+              <Text style={styles.emptySlotText}>✓</Text>
             </View>
-          </View>
+          ) : (
+            <View style={styles.emptySlot}>
+              <Text style={styles.emptySlotText}>—</Text>
+            </View>
+          )}
+          {statusMsg ? (
+            <Text style={styles.errorMsg}>{statusMsg}</Text>
+          ) : null}
         </View>
+      </View>
 
       {/* New Meld staging zone — collapsible via the wide chevron handle */}
       <View style={styles.stagePinned}>
@@ -1716,15 +1658,18 @@ export default function ConquianGameScreen({ navigation, route }) {
           <Text style={styles.meldZoneHandleChevron}>
             {meldZoneExpanded ? "⌄" : "⌃"}
           </Text>
-          <Text style={styles.meldZoneHandleText}>New meld zone</Text>
+          <Text style={styles.meldZoneHandleText}>Your melds</Text>
         </TouchableOpacity>
 
         {meldZoneExpanded && (
-          <View
-            style={[styles.meldSection, !canStage && styles.stageDisabled]}
-            pointerEvents={canStage ? "auto" : "none"}
-          >
-            <View style={styles.stageRow}>
+          <View style={styles.meldSection}>
+            {myMelds.length > 0 && (
+              <View style={styles.myMeldsBlock}>{renderMyMelds()}</View>
+            )}
+            <View
+              style={[styles.stageRow, !canStage && styles.stageDisabled]}
+              pointerEvents={canStage ? "auto" : "none"}
+            >
           {/* Left: Meld + Clear, always visible, greyed when unusable */}
           <View style={styles.stageBtnCol}>
             <TouchableOpacity
@@ -2108,32 +2053,27 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: scale(12),
     paddingVertical: scale(4),
-    alignItems: "center",
-    justifyContent: "center",
   },
-  // The pinwheel table; the 4 seats are absolutely placed in its corners and the
-  // Active card sits in the middle. Width/height are set inline (height measured)
-  // so the whole frame fills the screen and scales responsively.
-  tableWrap: { position: "relative", alignSelf: "center" },
-  seatAbs: { position: "absolute" },
-  // Active card layer, centered over the table.
-  tableCenter: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  seatBox: {
+  // The 3 stacked opponent bars at the top.
+  oppStack: { gap: scale(6) },
+  oppBar: {
     backgroundColor: "#16213e",
     borderRadius: scale(8),
     borderWidth: 1.5,
     borderColor: "#334",
-    paddingHorizontal: scale(5),
-    paddingVertical: scale(4),
-    overflow: "hidden",
-    justifyContent: "flex-start",
+    paddingHorizontal: scale(8),
+    paddingVertical: scale(6),
+    minHeight: scale(40),
   },
-  // Dimension-swap wrapper for the rotated side seats (size set inline).
-  sideSeatWrap: {
+  oppBarHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: scale(6),
+  },
+  oppBarMelds: { marginTop: scale(4) },
+  // The Active card centered in the space below the opponents.
+  activeArea: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -2220,6 +2160,8 @@ const styles = StyleSheet.create({
   },
 
   meldSection: { paddingHorizontal: scale(12), marginBottom: scale(6) },
+  // Your committed melds, shown at the top of the merged panel.
+  myMeldsBlock: { marginBottom: scale(6) },
   sectionLabel: {
     color: "#c4c4d4",
     fontSize: scaleFont(11),
