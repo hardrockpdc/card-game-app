@@ -131,6 +131,8 @@ export default function ConquianGameScreen({ navigation, route }) {
   const [stagedCards, setStagedCards] = useState([]);
   // Collapse the New Meld zone to reclaim space; a wide chevron re-opens it.
   const [meldZoneOpen, setMeldZoneOpen] = useState(false);
+  // Measured height of the table region, so the pinwheel fills the screen.
+  const [tableAreaH, setTableAreaH] = useState(0);
 
   // Turn/phase announcement toast (replaces the persistent banner).
   const [toast, setToast] = useState(null);
@@ -1375,20 +1377,24 @@ export default function ConquianGameScreen({ navigation, route }) {
   // Overlap melded cards so only ~1/4 of each shows (saves horizontal space).
   const meldOverlap = -Math.round(smallCardW * 0.74);
 
-  // ── Pinwheel "table" sizing (responsive to the screen width) ──────────────
-  // The 4 seats are one shared box (long × short). They tile a SQUARE table,
-  // each hugging a corner and rotating around the Active card in the middle:
+  // ── Pinwheel "table" sizing (fills the screen, responsive) ────────────────
+  // The 4 seats hug the corners and rotate around the Active card:
   //   top→top-left, right→top-right, bottom(You)→bottom-right, left→bottom-left.
-  // A square of side L + S + gap makes the arms interlock with an even gap, so
-  // it stays a clean frame at any width (no magic margins).
+  // Each seat is `seatShort` thick. Top/bottom span the table WIDTH, left/right
+  // span its HEIGHT (measured), so on a portrait screen the side boxes are
+  // simply longer than the top/bottom ones — the frame fills the whole area.
   const tableGap = scale(10);
   const tablePad = scale(12); // matches centerSection's horizontal padding
-  const seatShort = smallCardH + scale(40); // fits header + one meld-card row
-  const tableSize = Math.max(
-    Math.round(winWidth - tablePad * 2),
-    seatShort * 2 + tableGap * 2 + scale(80), // floor so the center never collapses
+  const seatShort = smallCardH + scale(40); // box thickness: header + meld row
+  const tableWidth = Math.round(winWidth - tablePad * 2);
+  const minTableH = seatShort * 2 + tableGap * 2 + scale(120);
+  // Fill the measured vertical space; fall back to a square before first layout.
+  const tableHeight = Math.max(
+    tableAreaH ? Math.round(tableAreaH) - scale(8) : tableWidth,
+    minTableH,
   );
-  const seatLong = tableSize - seatShort - tableGap;
+  const seatLongH = tableWidth - seatShort - tableGap; // top/bottom box length
+  const seatLongV = tableHeight - seatShort - tableGap; // left/right box length
 
   // Hand cards fill the full row width now that the buttons moved out: size them
   // so 5 fit across. Each small Card's real footprint is its width + its 2px*
@@ -1520,24 +1526,45 @@ export default function ConquianGameScreen({ navigation, route }) {
   }
 
   // A player "seat" on the pinwheel table. side = "top"|"left"|"right"|"bottom".
-  // Every seat is the SAME box (seatLong × seatShort). top/bottom sit flat;
-  // left/right are the same box rotated 90° (sideways), with a dimension-swap
-  // wrapper reserving the narrow-tall footprint. Content is top-anchored and
-  // clipped so it never spills. Empty seats still render a (dashed) box so the
-  // frame never collapses. `compactSeat` (the bottom "You" seat) shows just the
-  // name + count, since the full melds live in the "Your Melds" area below.
-  const renderSeat = (opp, side, compactSeat = false) => {
+  // Each seat is `seatShort` thick. top/bottom span the table WIDTH (seatLongH);
+  // left/right span its HEIGHT (seatLongV) and are rotated 90° (sideways) with a
+  // dimension-swap wrapper. Content is top-anchored and clipped so it never
+  // spills. Empty seats still render a (dashed) box so the frame never collapses.
+  // `isSelf` (the bottom "You" seat) shows YOUR melds and makes each meld group
+  // tappable for the "Add to Meld" flow.
+  const renderSeat = (opp, side, { isSelf = false } = {}) => {
     const rotated = side === "left" || side === "right";
     const opPid = opp ? String(opp.id) : null;
     const isCurrent =
       opp && String(currentPlayer?.id) === opPid;
     const opMelds = opp ? gameState.melds?.[opPid] ?? [] : [];
+    const boxW = rotated ? seatLongV : seatLongH;
+
+    const renderMeldCard = (card, ci) => (
+      <View
+        key={card.id}
+        style={[
+          ci > 0 && { marginLeft: meldOverlap },
+          card.id === highlightCardId && { zIndex: 5 },
+        ]}
+      >
+        {card.id === highlightCardId ? (
+          <Animated.View
+            style={[styles.autoGlow, { transform: [{ scale: autoGlowPulse }] }]}
+          >
+            <Card rank={card.rank} suit={card.suit} small />
+          </Animated.View>
+        ) : (
+          <Card rank={card.rank} suit={card.suit} small />
+        )}
+      </View>
+    );
 
     const box = (
       <View
         style={[
           styles.seatBox,
-          { width: seatLong, height: seatShort },
+          { width: boxW, height: seatShort },
           !opp && styles.seatEmpty,
           isCurrent && styles.opponentCardActive,
           rotated && {
@@ -1556,20 +1583,30 @@ export default function ConquianGameScreen({ navigation, route }) {
               </Text>
               {isCurrent && <Text style={styles.opponentTurnDot}>▶</Text>}
             </View>
-            {!compactSeat && opMelds.length > 0 && (
+            {opMelds.length > 0 && (
               <View style={[styles.meldRow, styles.meldRowWrap]}>
-                {opMelds.map((meld, idx) => (
-                  <View key={idx} style={styles.meldGroup}>
-                    {meld.map((card, ci) => (
-                      <View
-                        key={card.id}
-                        style={ci > 0 ? { marginLeft: meldOverlap } : null}
-                      >
-                        <Card rank={card.rank} suit={card.suit} small />
-                      </View>
-                    ))}
-                  </View>
-                ))}
+                {opMelds.map((meld, idx) =>
+                  isSelf ? (
+                    <TouchableOpacity
+                      key={idx}
+                      style={[
+                        styles.meldGroup,
+                        selectedMeldIdx === idx && styles.meldGroupSelected,
+                      ]}
+                      onPress={() => {
+                        if (turnPhase !== "action" || !isMyTurn) return;
+                        setSelectedMeldIdx((prev) => (prev === idx ? null : idx));
+                        setStatusMsg("");
+                      }}
+                    >
+                      {meld.map(renderMeldCard)}
+                    </TouchableOpacity>
+                  ) : (
+                    <View key={idx} style={styles.meldGroup}>
+                      {meld.map(renderMeldCard)}
+                    </View>
+                  ),
+                )}
               </View>
             )}
           </>
@@ -1582,7 +1619,7 @@ export default function ConquianGameScreen({ navigation, route }) {
         <View
           style={[
             styles.sideSeatWrap,
-            { width: seatShort, height: seatLong },
+            { width: seatShort, height: seatLongV },
           ]}
         >
           {box}
@@ -1624,14 +1661,13 @@ export default function ConquianGameScreen({ navigation, route }) {
           <Text style={styles.toastText}>{toast}</Text>
         </Animated.View>
       )}
-      <ScrollView
-        style={styles.scrollArea}
-        contentContainerStyle={styles.container}
+      {/* Pinwheel table — fills the space between header and the meld zone.
+          top→top-left, right→top-right, You→bottom-right, left→bottom-left. */}
+      <View
+        style={styles.centerSection}
+        onLayout={(e) => setTableAreaH(e.nativeEvent.layout.height)}
       >
-        {/* Pinwheel table: the 4 seats hug the corners around the Active card.
-            top→top-left, right→top-right, You→bottom-right, left→bottom-left. */}
-        <View style={styles.centerSection}>
-          <View style={[styles.tableWrap, { width: tableSize, height: tableSize }]}>
+        <View style={[styles.tableWrap, { width: tableWidth, height: tableHeight }]}>
             <View style={[styles.seatAbs, { top: 0, left: 0 }]}>
               {renderSeat(opponents[0], "top")}
             </View>
@@ -1642,7 +1678,7 @@ export default function ConquianGameScreen({ navigation, route }) {
               {renderSeat(
                 gameState.players.find((p) => String(p.id) === String(myPid)),
                 "bottom",
-                true,
+                { isSelf: true },
               )}
             </View>
             <View style={[styles.seatAbs, { bottom: 0, left: 0 }]}>
@@ -1694,58 +1730,12 @@ export default function ConquianGameScreen({ navigation, route }) {
                   <Text style={styles.emptySlotText}>—</Text>
                 </View>
               )}
+              {statusMsg ? (
+                <Text style={styles.errorMsg}>{statusMsg}</Text>
+              ) : null}
             </View>
           </View>
-
-          {statusMsg ? <Text style={styles.errorMsg}>{statusMsg}</Text> : null}
         </View>
-
-        {/* My melds */}
-        {myMelds.length > 0 && (
-          <View style={styles.meldSection}>
-            <Text style={styles.sectionLabel}>Your Melds</Text>
-            <View style={[styles.meldRow, styles.meldRowWrap]}>
-              {myMelds.map((meld, idx) => (
-                <TouchableOpacity
-                  key={idx}
-                  style={[
-                    styles.meldGroup,
-                    selectedMeldIdx === idx && styles.meldGroupSelected,
-                  ]}
-                  onPress={() => {
-                    if (turnPhase !== "action" || !isMyTurn) return;
-                    setSelectedMeldIdx((prev) => (prev === idx ? null : idx));
-                    setStatusMsg("");
-                  }}
-                >
-                  {meld.map((card, ci) => (
-                    <View
-                      key={card.id}
-                      style={[
-                        ci > 0 && { marginLeft: meldOverlap },
-                        card.id === highlightCardId && { zIndex: 5 },
-                      ]}
-                    >
-                      {card.id === highlightCardId ? (
-                        <Animated.View
-                          style={[
-                            styles.autoGlow,
-                            { transform: [{ scale: autoGlowPulse }] },
-                          ]}
-                        >
-                          <Card rank={card.rank} suit={card.suit} small />
-                        </Animated.View>
-                      ) : (
-                        <Card rank={card.rank} suit={card.suit} small />
-                      )}
-                    </View>
-                  ))}
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        )}
-      </ScrollView>
 
       {/* New Meld staging zone — collapsible via the wide chevron handle */}
       <View style={styles.stagePinned}>
@@ -1761,7 +1751,7 @@ export default function ConquianGameScreen({ navigation, route }) {
           <Text style={styles.meldZoneHandleChevron}>
             {meldZoneExpanded ? "⌄" : "⌃"}
           </Text>
-          <Text style={styles.meldZoneHandleText}>Meld zone</Text>
+          <Text style={styles.meldZoneHandleText}>New meld zone</Text>
         </TouchableOpacity>
 
         {meldZoneExpanded && (
@@ -2172,13 +2162,15 @@ const styles = StyleSheet.create({
   opponentMeldScroll: { marginTop: scale(2) },
 
   centerSection: {
+    flex: 1,
     paddingHorizontal: scale(12),
-    marginBottom: scale(6),
+    paddingVertical: scale(4),
     alignItems: "center",
+    justifyContent: "center",
   },
-  // The square pinwheel table; the 4 seats are absolutely placed in its corners
-  // and the Active card sits in the middle. Size is set inline from the screen
-  // width so the whole frame scales responsively.
+  // The pinwheel table; the 4 seats are absolutely placed in its corners and the
+  // Active card sits in the middle. Width/height are set inline (height measured)
+  // so the whole frame fills the screen and scales responsively.
   tableWrap: { position: "relative", alignSelf: "center" },
   seatAbs: { position: "absolute" },
   // Active card layer, centered over the table.
