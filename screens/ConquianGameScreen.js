@@ -2194,7 +2194,9 @@ const styles = StyleSheet.create({
     marginBottom: scale(2),
   },
   pileCount: { color: "#fff", fontSize: scaleFont(24), fontWeight: "bold" },
-  activeSlotBox: { alignItems: "center" },
+  // Pin the Active slot near the top of the band: ~20px below the top seat
+  // (tableTopRow already adds 6px below itself, so 14 here ≈ 20 total).
+  activeSlotBox: { alignItems: "center", alignSelf: "flex-start", marginTop: scale(14) },
   autoGlow: {
     borderRadius: scale(7),
     shadowColor: "#7CFFB2",
