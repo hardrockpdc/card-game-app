@@ -1373,6 +1373,21 @@ export default function ConquianGameScreen({ navigation, route }) {
   // Overlap melded cards so only ~1/4 of each shows (saves horizontal space).
   const meldOverlap = -Math.round(smallCardW * 0.74);
 
+  // ── Pinwheel "table" sizing (responsive to the screen width) ──────────────
+  // The 4 seats are one shared box (long × short). They tile a SQUARE table,
+  // each hugging a corner and rotating around the Active card in the middle:
+  //   top→top-left, right→top-right, bottom(You)→bottom-right, left→bottom-left.
+  // A square of side L + S + gap makes the arms interlock with an even gap, so
+  // it stays a clean frame at any width (no magic margins).
+  const tableGap = scale(10);
+  const tablePad = scale(12); // matches centerSection's horizontal padding
+  const seatShort = smallCardH + scale(40); // fits header + one meld-card row
+  const tableSize = Math.max(
+    Math.round(winWidth - tablePad * 2),
+    seatShort * 2 + tableGap * 2 + scale(80), // floor so the center never collapses
+  );
+  const seatLong = tableSize - seatShort - tableGap;
+
   // Active card staged into the New Meld zone (so the slot shows it as placed).
   const activeStaged =
     !!activeCard && stagedCards.some((c) => c.id === activeCard.id);
@@ -1489,13 +1504,13 @@ export default function ConquianGameScreen({ navigation, route }) {
     );
   }
 
-  // A player "seat" around the table. side = "top" | "left" | "right" | "bottom".
-  // top/bottom are full-width horizontal bars; left/right are SIDEWAYS (rotated
-  // 90°) boxes — fixed tall size so they frame the Active card with open space
-  // inside, content anchored to the top. The dimension-swap wrapper reserves the
-  // narrow-tall footprint. Empty seats still render a (dashed) box so the frame
-  // never collapses. `compactSeat` (the bottom "You" seat) shows just the name +
-  // count, since the full melds already live in the "Your Melds" area below.
+  // A player "seat" on the pinwheel table. side = "top"|"left"|"right"|"bottom".
+  // Every seat is the SAME box (seatLong × seatShort). top/bottom sit flat;
+  // left/right are the same box rotated 90° (sideways), with a dimension-swap
+  // wrapper reserving the narrow-tall footprint. Content is top-anchored and
+  // clipped so it never spills. Empty seats still render a (dashed) box so the
+  // frame never collapses. `compactSeat` (the bottom "You" seat) shows just the
+  // name + count, since the full melds live in the "Your Melds" area below.
   const renderSeat = (opp, side, compactSeat = false) => {
     const rotated = side === "left" || side === "right";
     const opPid = opp ? String(opp.id) : null;
@@ -1507,7 +1522,7 @@ export default function ConquianGameScreen({ navigation, route }) {
       <View
         style={[
           styles.seatBox,
-          rotated ? styles.seatBoxRotated : styles.seatBoxHoriz,
+          { width: seatLong, height: seatShort },
           !opp && styles.seatEmpty,
           isCurrent && styles.opponentCardActive,
           rotated && {
@@ -1552,7 +1567,7 @@ export default function ConquianGameScreen({ navigation, route }) {
         <View
           style={[
             styles.sideSeatWrap,
-            side === "right" && styles.sideSeatWrapUp,
+            { width: seatShort, height: seatLong },
           ]}
         >
           {box}
@@ -1598,14 +1613,29 @@ export default function ConquianGameScreen({ navigation, route }) {
         style={styles.scrollArea}
         contentContainerStyle={styles.container}
       >
-        {/* Card table: the 4 seats frame the Active card (you at the bottom) */}
+        {/* Pinwheel table: the 4 seats hug the corners around the Active card.
+            top→top-left, right→top-right, You→bottom-right, left→bottom-left. */}
         <View style={styles.centerSection}>
-          <View style={styles.tableTopRow}>
-            {renderSeat(opponents[0], "top")}
-          </View>
-          <View style={styles.pileRow}>
-            {renderSeat(opponents[1], "left")}
-            <View style={styles.activeSlotBox}>
+          <View style={[styles.tableWrap, { width: tableSize, height: tableSize }]}>
+            <View style={[styles.seatAbs, { top: 0, left: 0 }]}>
+              {renderSeat(opponents[0], "top")}
+            </View>
+            <View style={[styles.seatAbs, { top: 0, right: 0 }]}>
+              {renderSeat(opponents[2], "right")}
+            </View>
+            <View style={[styles.seatAbs, { bottom: 0, right: 0 }]}>
+              {renderSeat(
+                gameState.players.find((p) => String(p.id) === String(myPid)),
+                "bottom",
+                true,
+              )}
+            </View>
+            <View style={[styles.seatAbs, { bottom: 0, left: 0 }]}>
+              {renderSeat(opponents[1], "left")}
+            </View>
+
+            {/* Active card, centered in the middle of the pinwheel */}
+            <View style={styles.tableCenter} pointerEvents="box-none">
               <Text style={styles.pileLabel}>Active</Text>
               {activeCard && !activeStaged ? (
                 isMyTurn && turnPhase === "action" ? (
@@ -1650,14 +1680,6 @@ export default function ConquianGameScreen({ navigation, route }) {
                 </View>
               )}
             </View>
-            {renderSeat(opponents[2], "right")}
-          </View>
-          <View style={styles.tableBottomRow}>
-            {renderSeat(
-              gameState.players.find((p) => String(p.id) === String(myPid)),
-              "bottom",
-              true,
-            )}
           </View>
 
           {statusMsg ? <Text style={styles.errorMsg}>{statusMsg}</Text> : null}
@@ -2115,28 +2137,21 @@ const styles = StyleSheet.create({
   },
   opponentMeldScroll: { marginTop: scale(2) },
 
-  centerSection: { paddingHorizontal: scale(12), marginBottom: scale(6) },
-  // Middle band: tall enough that the fixed-size sideways side seats frame the
-  // Active card and use the otherwise-empty vertical space.
-  pileRow: {
-    flexDirection: "row",
+  centerSection: {
+    paddingHorizontal: scale(12),
+    marginBottom: scale(6),
     alignItems: "center",
-    justifyContent: "space-between",
-    minHeight: scale(258),
-    marginBottom: scale(6),
   },
-  tableTopRow: {
-    flexDirection: "row",
-    justifyContent: "flex-start",
-    marginBottom: scale(6),
-  },
-  tableBottomRow: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    // Pull the You seat up so its top meets the bottom of the (raised) right
-    // seat, closing the right side of the frame.
-    marginTop: -scale(106),
-    marginBottom: scale(2),
+  // The square pinwheel table; the 4 seats are absolutely placed in its corners
+  // and the Active card sits in the middle. Size is set inline from the screen
+  // width so the whole frame scales responsively.
+  tableWrap: { position: "relative", alignSelf: "center" },
+  seatAbs: { position: "absolute" },
+  // Active card layer, centered over the table.
+  tableCenter: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
   },
   seatBox: {
     backgroundColor: "#16213e",
@@ -2145,32 +2160,14 @@ const styles = StyleSheet.create({
     borderColor: "#334",
     paddingHorizontal: scale(5),
     paddingVertical: scale(4),
-  },
-  // All 4 seats share ONE footprint (258×100). Top/bottom lie flat; the sides
-  // stand the same box on end (rotated 90°) → identical dimensions all around.
-  seatBoxHoriz: {
-    width: scale(258),
-    height: scale(100),
     overflow: "hidden",
     justifyContent: "flex-start",
   },
-  // Same footprint as seatBoxHoriz; the rotation makes it tall-and-narrow.
-  // Clip + top-anchored content → open space inside, melds can't spill.
-  seatBoxRotated: {
-    width: scale(258),
-    height: scale(100),
-    overflow: "hidden",
-    justifyContent: "flex-start",
-  },
+  // Dimension-swap wrapper for the rotated side seats (size set inline).
   sideSeatWrap: {
-    width: scale(100),
-    height: scale(258),
     alignItems: "center",
     justifyContent: "center",
   },
-  // Nudge the right side seat up (the band is as tall as the wrap, so a negative
-  // top margin pulls it toward the top seat).
-  sideSeatWrapUp: { alignSelf: "flex-start", marginTop: -scale(100) },
   seatEmpty: {
     backgroundColor: "transparent",
     borderColor: "#2a3650",
@@ -2196,9 +2193,6 @@ const styles = StyleSheet.create({
     marginBottom: scale(2),
   },
   pileCount: { color: "#fff", fontSize: scaleFont(24), fontWeight: "bold" },
-  // Pin the Active slot near the top of the band: ~10px below the top seat
-  // (tableTopRow already adds 6px below itself, so 4 here ≈ 10 total).
-  activeSlotBox: { alignItems: "center", alignSelf: "flex-start", marginTop: scale(4) },
   autoGlow: {
     borderRadius: scale(7),
     shadowColor: "#7CFFB2",
