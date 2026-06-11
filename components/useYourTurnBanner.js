@@ -15,12 +15,21 @@ export default function useYourTurnBanner(isMyTurn, active = true) {
 
   useEffect(() => {
     if (active && isMyTurn && !prevRef.current) {
+      // Turn just became mine → flash the banner for ~1.5s.
       setVisible(true);
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {
         timerRef.current = null;
         setVisible(false);
       }, 1500);
+    } else if (!isMyTurn || !active) {
+      // No longer my turn → hide immediately so it never lingers into an
+      // opponent's turn (don't wait out the timer).
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      setVisible(false);
     }
     prevRef.current = isMyTurn;
   }, [isMyTurn, active]);
