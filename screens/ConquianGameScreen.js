@@ -2208,7 +2208,7 @@ const styles = StyleSheet.create({
     fontSize: scaleFont(12),
     paddingHorizontal: scale(6),
   },
-  stageRow: { flexDirection: "row", alignItems: "stretch", gap: scale(8) },
+  stageRow: { flexDirection: "row-reverse", alignItems: "stretch", gap: scale(8) },
   stageBtnCol: { width: scale(86), gap: scale(6), justifyContent: "center" },
   stageZoneFlex: { flex: 1 },
   stageBtnRow: { flexDirection: "row", gap: scale(8), marginTop: scale(6) },
