@@ -1688,46 +1688,80 @@ export default function ConquianGameScreen({ navigation, route }) {
         ]}
         pointerEvents={canStage ? "auto" : "none"}
       >
-            <View
-              ref={
-                canStage
-                  ? meldDrag.registerZone("newMeld", { type: "newMeld" })
-                  : undefined
-              }
-              collapsable={false}
+        <View style={styles.stageRow}>
+          {/* Left: Meld + Clear, always visible, greyed when unusable */}
+          <View style={styles.stageBtnCol}>
+            <TouchableOpacity
               style={[
-                styles.stageZone,
-                stagedCommittable && styles.stageZoneValid,
+                styles.actionBtn,
+                styles.layBtn,
+                !stagedCommittable && styles.actionBtnDisabled,
               ]}
+              onPress={confirmStagedMeld}
+              disabled={!stagedCommittable}
+              accessibilityRole="button"
+              accessibilityLabel="Confirm new meld"
             >
-              {stagedCards.length === 0 ? (
-                <Text style={styles.stageHint}>
-                  {canStage
-                    ? "Drag cards here to build a meld"
-                    : "Build a meld on your turn"}
-                </Text>
-              ) : (
-                stagedCards.map((card) => {
-                  const hidden =
-                    meldDrag.draggingSource?.cardId === card.id;
-                  return (
-                    <GestureDetector
-                      key={card.id}
-                      gesture={meldDrag.makeDragGesture({
-                        type: "staged",
-                        cardId: card.id,
-                        card,
-                      })}
-                    >
-                      <View style={hidden ? styles.cardHidden : null}>
-                        <Card rank={card.rank} suit={card.suit} small />
-                      </View>
-                    </GestureDetector>
-                  );
-                })
-              )}
-            </View>
+              <Text style={styles.actionBtnText}>
+                {stagedCommittable ? "✓ Meld" : "Meld"}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.actionBtn,
+                styles.passBtn,
+                stagedCards.length === 0 && styles.actionBtnDisabled,
+              ]}
+              onPress={() => setStagedCards([])}
+              disabled={stagedCards.length === 0}
+              accessibilityRole="button"
+              accessibilityLabel="Clear staged meld"
+            >
+              <Text style={styles.actionBtnText}>Clear</Text>
+            </TouchableOpacity>
           </View>
+          {/* Right: the drag-to-build box */}
+          <View
+            ref={
+              canStage
+                ? meldDrag.registerZone("newMeld", { type: "newMeld" })
+                : undefined
+            }
+            collapsable={false}
+            style={[
+              styles.stageZone,
+              styles.stageZoneFlex,
+              stagedCommittable && styles.stageZoneValid,
+            ]}
+          >
+            {stagedCards.length === 0 ? (
+              <Text style={styles.stageHint}>
+                {canStage
+                  ? "Drag cards here to build a meld"
+                  : "Build a meld on your turn"}
+              </Text>
+            ) : (
+              stagedCards.map((card) => {
+                const hidden = meldDrag.draggingSource?.cardId === card.id;
+                return (
+                  <GestureDetector
+                    key={card.id}
+                    gesture={meldDrag.makeDragGesture({
+                      type: "staged",
+                      cardId: card.id,
+                      card,
+                    })}
+                  >
+                    <View style={hidden ? styles.cardHidden : null}>
+                      <Card rank={card.rank} suit={card.suit} small />
+                    </View>
+                  </GestureDetector>
+                );
+              })
+            )}
+          </View>
+        </View>
+      </View>
 
       {/* Hand + action buttons — pinned at the bottom of the screen */}
       <View style={[styles.handSection, styles.handPinned]}>
@@ -1783,15 +1817,7 @@ export default function ConquianGameScreen({ navigation, route }) {
                             dragHidden && styles.cardHidden,
                           ]}
                         >
-                          <Card
-                            rank={card.rank}
-                            suit={card.suit}
-                            small
-                            animateDeal={hasMountedRef.current}
-                            dealDelay={
-                              availableHand.length <= 10 ? index * 100 : 0
-                            }
-                          />
+                          <Card rank={card.rank} suit={card.suit} small />
                         </View>
                       </TouchableOpacity>
                     );
@@ -1850,33 +1876,6 @@ export default function ConquianGameScreen({ navigation, route }) {
 
               {phase === "playing" && isMyTurn && turnPhase === "action" && (
                 <>
-                  {canStage && stagedCards.length > 0 && (
-                    <>
-                      <TouchableOpacity
-                        style={[
-                          styles.actionBtn,
-                          styles.layBtn,
-                          !stagedCommittable && styles.actionBtnDisabled,
-                        ]}
-                        onPress={confirmStagedMeld}
-                        disabled={!stagedCommittable}
-                        accessibilityRole="button"
-                        accessibilityLabel="Confirm new meld"
-                      >
-                        <Text style={styles.actionBtnText}>
-                          {stagedCommittable ? "✓ Meld" : "Meld"}
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[styles.actionBtn, styles.passBtn]}
-                        onPress={() => setStagedCards([])}
-                        accessibilityRole="button"
-                        accessibilityLabel="Clear staged meld"
-                      >
-                        <Text style={styles.actionBtnText}>Clear</Text>
-                      </TouchableOpacity>
-                    </>
-                  )}
                   {canAddToMeld && (
                     <TouchableOpacity
                       style={[styles.actionBtn, styles.layBtn]}
@@ -2209,6 +2208,9 @@ const styles = StyleSheet.create({
     fontSize: scaleFont(12),
     paddingHorizontal: scale(6),
   },
+  stageRow: { flexDirection: "row", alignItems: "stretch", gap: scale(8) },
+  stageBtnCol: { width: scale(86), gap: scale(6), justifyContent: "center" },
+  stageZoneFlex: { flex: 1 },
   stageBtnRow: { flexDirection: "row", gap: scale(8), marginTop: scale(6) },
   cardHidden: { opacity: 0 },
 
