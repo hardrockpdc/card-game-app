@@ -194,6 +194,10 @@ export default function ConquianGameScreen({ navigation, route }) {
         setStagedCards((prev) => prev.filter((c) => c.id !== source.cardId));
         return true;
       }
+      // Drag a hand card onto one of your melds → extend that meld in place.
+      if (source.type === "hand" && target.type === "group") {
+        return extendMeldByDrag(target.groupIdx, source.card);
+      }
       return false;
     },
   });
@@ -695,6 +699,32 @@ export default function ConquianGameScreen({ navigation, route }) {
   }
 
   // Extend your targeted existing meld with the selected hand cards (free action).
+  // Drag a single hand card onto one of your melds to extend it. Same commit
+  // path as the tap-based handleAddToMeld; returns true if it was applied/sent
+  // (so the drag clears) or false to snap the card back.
+  function extendMeldByDrag(meldIdx, card) {
+    if (!isDrawTurnFreeAction) return false;
+    const meld = myMelds[meldIdx];
+    if (!meld || !isValidMeld([...meld, card])) return false;
+    if (isHost) {
+      const s = fullRef.current;
+      if (!s) return false;
+      const next = doExtendMeldFromHand(s, myPid, meldIdx, [card.id]);
+      if (next === s) return false;
+      applyState(next);
+      setSelectedHandIds(new Set());
+      setSelectedMeldIdx(null);
+      return true;
+    }
+    sendToHost({
+      type: "ACTION",
+      action: "extendMeld",
+      meldIdx,
+      cardIds: [card.id],
+    });
+    return true;
+  }
+
   function handleAddToMeld() {
     if (selectedMeldIdx === null) return;
     const cardIds = [...selectedHandIds];
@@ -1587,20 +1617,31 @@ export default function ConquianGameScreen({ navigation, route }) {
               <View style={[styles.meldRow, styles.meldRowWrap]}>
                 {opMelds.map((meld, idx) =>
                   isSelf ? (
-                    <TouchableOpacity
+                    // Drop zone: drag a hand card here to extend this meld.
+                    <View
                       key={idx}
-                      style={[
-                        styles.meldGroup,
-                        selectedMeldIdx === idx && styles.meldGroupSelected,
-                      ]}
-                      onPress={() => {
-                        if (turnPhase !== "action" || !isMyTurn) return;
-                        setSelectedMeldIdx((prev) => (prev === idx ? null : idx));
-                        setStatusMsg("");
-                      }}
+                      ref={meldDrag.registerZone(`myMeld${idx}`, {
+                        type: "group",
+                        groupIdx: idx,
+                      })}
+                      collapsable={false}
                     >
-                      {meld.map(renderMeldCard)}
-                    </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.meldGroup,
+                          selectedMeldIdx === idx && styles.meldGroupSelected,
+                        ]}
+                        onPress={() => {
+                          if (turnPhase !== "action" || !isMyTurn) return;
+                          setSelectedMeldIdx((prev) =>
+                            prev === idx ? null : idx,
+                          );
+                          setStatusMsg("");
+                        }}
+                      >
+                        {meld.map(renderMeldCard)}
+                      </TouchableOpacity>
+                    </View>
                   ) : (
                     <View key={idx} style={styles.meldGroup}>
                       {meld.map(renderMeldCard)}
