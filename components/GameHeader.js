@@ -28,6 +28,7 @@ export default function GameHeader({
   leftInfo,
   extraButton,
   menuItems,
+  minimal, // skinny header: hide the kicker/title/subtitle, just the menu button
 }) {
   const theme = getTableTheme(gameId);
   const accent = theme.accent;
@@ -52,13 +53,14 @@ export default function GameHeader({
         style={[
           styles.headerCard,
           compact && styles.headerCardCompact,
+          minimal && styles.headerCardMinimal,
           { zIndex: 2 },
         ]}
       >
         {/* ── Top row: always visible ── */}
         <View style={styles.row}>
           <View style={styles.leftZone}>
-            {!compact && (
+            {!minimal && !compact && (
               <Text
                 style={[styles.kicker, { color: accent }]}
                 numberOfLines={1}
@@ -67,23 +69,27 @@ export default function GameHeader({
               </Text>
             )}
 
-            {leftInfo ? (
-              <View style={styles.leftInfoWrap}>{leftInfo}</View>
-            ) : (
-              <>
-                <Text
-                  style={[styles.titleText, compact && styles.titleTextCompact]}
-                  numberOfLines={1}
-                >
-                  {title}
-                </Text>
-                {subtitle ? (
-                  <Text style={styles.subtitleText} numberOfLines={1}>
-                    {subtitle}
+            {!minimal &&
+              (leftInfo ? (
+                <View style={styles.leftInfoWrap}>{leftInfo}</View>
+              ) : (
+                <>
+                  <Text
+                    style={[
+                      styles.titleText,
+                      compact && styles.titleTextCompact,
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {title}
                   </Text>
-                ) : null}
-              </>
-            )}
+                  {subtitle ? (
+                    <Text style={styles.subtitleText} numberOfLines={1}>
+                      {subtitle}
+                    </Text>
+                  ) : null}
+                </>
+              ))}
           </View>
 
           {extraButton ? (
@@ -149,6 +155,10 @@ const styles = StyleSheet.create({
   },
   headerCardCompact: {
     paddingVertical: scale(6),
+    borderRadius: scale(12),
+  },
+  headerCardMinimal: {
+    paddingVertical: scale(5),
     borderRadius: scale(12),
   },
   row: {

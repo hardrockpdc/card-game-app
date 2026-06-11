@@ -1493,12 +1493,7 @@ export default function ConquianGameScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <GameHeader
-        gameId="conquian"
-        title="Conquian"
-        subtitle={isSinglePlayer ? "Single Player" : "Multiplayer"}
-        menuItems={menuItems}
-      />
+      <GameHeader gameId="conquian" minimal menuItems={menuItems} />
       {toast && (
         <Animated.View
           pointerEvents="none"
@@ -1543,11 +1538,11 @@ export default function ConquianGameScreen({ navigation, route }) {
                   <Text style={styles.opponentName} numberOfLines={1}>
                     {p.name}
                   </Text>
+                  <Text style={styles.opponentStats}>
+                    {meldedCount(gameState, opPid)}/{winTarget}
+                  </Text>
                   {isCurrent && <Text style={styles.opponentTurnDot}>▶</Text>}
                 </View>
-                <Text style={styles.opponentStats}>
-                  {meldedCount(gameState, opPid)}/{winTarget} melded
-                </Text>
                 {opMelds.length > 0 && (
                   <View style={[styles.meldRow, styles.meldRowWrap]}>
                     {opMelds.map((meld, idx) => (
@@ -2063,25 +2058,23 @@ const styles = StyleSheet.create({
   opponentCardMulti: {},
   opponentHeader: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    gap: scale(6),
     marginBottom: scale(2),
   },
   opponentName: {
     color: "#fff",
     fontSize: scaleFont(13),
     fontWeight: "bold",
-    flex: 1,
+    flexShrink: 1,
   },
   opponentTurnDot: {
     color: "#7fb3ff",
     fontSize: scaleFont(11),
-    marginLeft: scale(4),
   },
   opponentStats: {
     color: "#c4c4d4",
     fontSize: scaleFont(11),
-    marginBottom: scale(2),
   },
   opponentMeldScroll: { marginTop: scale(2) },
 
