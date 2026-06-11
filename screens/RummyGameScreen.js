@@ -13,6 +13,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Card from "../components/Card";
 import Toast, { useToast } from "../components/Toast";
 import GameHeader from "../components/GameHeader";
+import YourTurnBanner from "../components/YourTurnBanner";
+import useYourTurnBanner from "../components/useYourTurnBanner";
 import EndOfRoundModal from "../components/EndOfRoundModal";
 import StatsStrip from "../components/StatsStrip";
 import TutorialOverlay, { hasSeen } from "../components/TutorialOverlay";
@@ -235,6 +237,11 @@ export default function RummyGameScreen({ navigation, route }) {
   const isMyTurn = currentPlayerIndex === localPlayerIndex;
   const currentPhase = gameState?.phase || "draw";
   const statusMessage = gameState?.statusMessage || "Loading…";
+  // "Your Turn!" banner — flash when the turn flips to me.
+  const showTurnBanner = useYourTurnBanner(
+    !!gameState && isMyTurn,
+    !!gameState && gameState.winner == null,
+  );
   const myMelds = useMemo(() => {
     return (gameState?.melds || []).filter(
       (meld) =>
@@ -1165,6 +1172,8 @@ export default function RummyGameScreen({ navigation, route }) {
         gameId="ginRummy"
         onDone={() => setShowTutorial(false)}
       />
+
+      <YourTurnBanner visible={showTurnBanner} />
     </SafeAreaView>
   );
 }

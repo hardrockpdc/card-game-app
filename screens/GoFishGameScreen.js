@@ -28,6 +28,8 @@ import { scale, scaleFont } from "../game/responsive";
 import GameHeader from "../components/GameHeader";
 import EndOfRoundModal from "../components/EndOfRoundModal";
 import StatsStrip from "../components/StatsStrip";
+import YourTurnBanner from "../components/YourTurnBanner";
+import useYourTurnBanner from "../components/useYourTurnBanner";
 import {
   setServerListeners,
   broadcastToClients,
@@ -288,6 +290,17 @@ export default function GoFishGameScreen({ navigation, route }) {
     { type: "quit", onQuit: handleQuit },
   ];
 
+  // "Your Turn!" banner — flash when the turn flips to me. Computed above the
+  // early return so the hook runs every render (hooks-order rule).
+  const _players = gameState?.players ?? [];
+  const _myIndex = _players.findIndex((p) =>
+    isHost ? p.id === "host" : p.name === myName,
+  );
+  const showTurnBanner = useYourTurnBanner(
+    !!gameState && _myIndex !== -1 && gameState.currentPlayerIndex === _myIndex,
+    gameState?.phase === "playing",
+  );
+
   if (!gameState) {
     return (
       <View style={styles.loading}>
@@ -517,6 +530,8 @@ export default function GoFishGameScreen({ navigation, route }) {
         onLeave={handleQuit}
         tableColor={BG}
       />
+
+      <YourTurnBanner visible={showTurnBanner} />
     </SafeAreaView>
   );
 }

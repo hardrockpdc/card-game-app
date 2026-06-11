@@ -17,6 +17,8 @@ import Card from "../components/Card";
 import useConquianMeldDrag from "../components/useConquianMeldDrag";
 import GameHeader from "../components/GameHeader";
 import EndOfRoundModal from "../components/EndOfRoundModal";
+import YourTurnBanner from "../components/YourTurnBanner";
+import useYourTurnBanner from "../components/useYourTurnBanner";
 import {
   deal,
   doSelectPassCard,
@@ -134,10 +136,14 @@ export default function ConquianGameScreen({ navigation, route }) {
   // Measured height of the table region, so the pinwheel fills the screen.
   const [tableAreaH, setTableAreaH] = useState(0);
 
-  // Turn/phase announcement toast (replaces the persistent banner).
-  const [toast, setToast] = useState(null);
-  const toastAnim = useRef(new Animated.Value(0)).current;
-  const toastTimerRef = useRef(null);
+  // "Your Turn!" banner — flash when the turn flips to me (replaces the toast).
+  const showTurnBanner = useYourTurnBanner(
+    !!gameState &&
+      gameState.phase === "playing" &&
+      String(gameState.players?.[gameState.currentPlayerIndex]?.id) ===
+        String(myPid),
+    true,
+  );
 
   // Wipe any legacy Conquián save (old key "@cardnight:save:rummy:conquian")
   // to rule out a stale-schema crash. Runs once on mount.
@@ -201,68 +207,6 @@ export default function ConquianGameScreen({ navigation, route }) {
       return false;
     },
   });
-
-  // Turn/phase toast: fire a ~3s pop-up when the announcement changes, instead of
-  // a permanent banner taking up screen space.
-  useEffect(() => {
-    const gs = gameState;
-    if (!gs) return;
-    const mine =
-      String(gs.players?.[gs.currentPlayerIndex]?.id) === String(myPid);
-    let msg = null;
-    if (gs.phase === "initialPass") {
-      msg = "Initial Pass — pick a card to pass";
-    } else if (gs.phase === "playing" && mine) {
-      if (gs.turnPhase === "draw") msg = "Your turn — draw from stock";
-      else if (gs.turnPhase === "action") msg = "Your turn — take or pass";
-      else if (gs.turnPhase === "discard")
-        msg =
-          gs.autoTook && String(gs.autoTook.pid) === String(myPid)
-            ? `Auto-added ${gs.autoTook.rank} of ${gs.autoTook.suit} — discard a card`
-            : "Your turn — discard a card";
-    } else if (gs.phase === "playing") {
-      msg = `${gs.players?.[gs.currentPlayerIndex]?.name ?? "Opponent"}'s turn`;
-    }
-    if (!msg) return;
-
-    setToast(msg);
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    if (reduceMotionRef.current) {
-      toastAnim.setValue(1);
-    } else {
-      toastAnim.setValue(0);
-      Animated.timing(toastAnim, {
-        toValue: 1,
-        duration: 180,
-        useNativeDriver: true,
-      }).start();
-    }
-    toastTimerRef.current = setTimeout(() => {
-      if (reduceMotionRef.current) {
-        setToast(null);
-      } else {
-        Animated.timing(toastAnim, {
-          toValue: 0,
-          duration: 280,
-          useNativeDriver: true,
-        }).start(({ finished }) => {
-          if (finished) setToast(null);
-        });
-      }
-    }, 3000);
-  }, [
-    gameState?.phase,
-    gameState?.turnPhase,
-    gameState?.currentPlayerIndex,
-    gameState?.autoTook?.id,
-    myPid,
-  ]);
-
-  useEffect(() => {
-    return () => {
-      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    };
-  }, []);
 
   // Clear the staging area whenever it's no longer my action phase (draw turn or
   // chain offer). Keeps staged cards across draw→action but drops them when the
@@ -1681,27 +1625,7 @@ export default function ConquianGameScreen({ navigation, route }) {
         }
         menuItems={menuItems}
       />
-      {toast && (
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            styles.toast,
-            {
-              opacity: toastAnim,
-              transform: [
-                {
-                  translateY: toastAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [-8, 0],
-                  }),
-                },
-              ],
-            },
-          ]}
-        >
-          <Text style={styles.toastText}>{toast}</Text>
-        </Animated.View>
-      )}
+      <YourTurnBanner visible={showTurnBanner} />
       {/* Pinwheel table — fills the space between header and the meld zone.
           top→top-left, right→top-right, You→bottom-right, left→bottom-left. */}
       <View
@@ -2147,28 +2071,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(12),
     gap: scale(6),
     marginBottom: scale(6),
-  },
-  // Turn/phase toast — absolute pill near the top, auto-dismisses.
-  toast: {
-    position: "absolute",
-    top: scale(64),
-    left: 0,
-    right: 0,
-    alignItems: "center",
-    zIndex: 50,
-  },
-  toastText: {
-    backgroundColor: "rgba(22, 33, 62, 0.97)",
-    color: "#ffffff",
-    fontSize: scaleFont(13),
-    fontWeight: "600",
-    textAlign: "center",
-    paddingVertical: scale(8),
-    paddingHorizontal: scale(18),
-    borderRadius: scale(20),
-    borderWidth: 1,
-    borderColor: "#2a3650",
-    overflow: "hidden",
   },
   opponentCard: {
     backgroundColor: "#16213e",

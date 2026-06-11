@@ -1,11 +1,40 @@
 import React, { useEffect, useRef } from "react";
-import { View, Text, StyleSheet, Animated } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Animated,
+  AccessibilityInfo,
+} from "react-native";
 import { scale, scaleFont } from "../game/responsive";
 
 export default function YourTurnBanner({ visible }) {
   const opacity = useRef(new Animated.Value(0)).current;
+  const reduceMotionRef = useRef(false);
 
   useEffect(() => {
+    let mounted = true;
+    AccessibilityInfo.isReduceMotionEnabled().then((v) => {
+      if (mounted) reduceMotionRef.current = v;
+    });
+    const sub = AccessibilityInfo.addEventListener(
+      "reduceMotionChanged",
+      (v) => {
+        reduceMotionRef.current = v;
+      },
+    );
+    return () => {
+      mounted = false;
+      sub?.remove?.();
+    };
+  }, []);
+
+  useEffect(() => {
+    // Reduced motion: snap to the final opacity instead of fading.
+    if (reduceMotionRef.current) {
+      opacity.setValue(visible ? 1 : 0);
+      return;
+    }
     Animated.timing(opacity, {
       toValue: visible ? 1 : 0,
       duration: visible ? 180 : 280,

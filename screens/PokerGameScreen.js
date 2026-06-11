@@ -17,6 +17,8 @@ import Card from "../components/Card";
 import { scale, scaleFont } from "../game/responsive";
 import GameHeader from "../components/GameHeader";
 import EndOfRoundModal from "../components/EndOfRoundModal";
+import YourTurnBanner from "../components/YourTurnBanner";
+import useYourTurnBanner from "../components/useYourTurnBanner";
 import StatsStrip from "../components/StatsStrip";
 import {
   setServerListeners,
@@ -796,6 +798,20 @@ export default function PokerGameScreen({ navigation, route }) {
     }
   }
 
+  // "Your Turn!" banner — flash when betting action reaches me. Computed above
+  // the early returns so the hook runs every render (hooks-order rule).
+  const _players = gameState?.players ?? [];
+  const _myIndex = _players.findIndex((p) =>
+    isHost ? p.id === "host" : p.name === myName,
+  );
+  const showTurnBanner = useYourTurnBanner(
+    !!gameState &&
+      _myIndex !== -1 &&
+      gameState.currentPlayerIndex === _myIndex &&
+      gameState.phase !== "showdown",
+    !!gameState,
+  );
+
   if (!gameState) {
     return (
       <View style={styles.loading}>
@@ -1110,6 +1126,8 @@ export default function PokerGameScreen({ navigation, route }) {
         onLeave={handleQuit}
         tableColor={BG}
       />
+
+      <YourTurnBanner visible={showTurnBanner} />
     </SafeAreaView>
   );
 }
