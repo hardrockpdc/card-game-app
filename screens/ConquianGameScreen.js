@@ -1493,7 +1493,14 @@ export default function ConquianGameScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <GameHeader gameId="conquian" minimal menuItems={menuItems} />
+      <GameHeader
+        gameId="conquian"
+        minimal
+        leftInfo={
+          <Text style={styles.headerStock}>Stock {stockSize}</Text>
+        }
+        menuItems={menuItems}
+      />
       {toast && (
         <Animated.View
           pointerEvents="none"
@@ -1567,11 +1574,6 @@ export default function ConquianGameScreen({ navigation, route }) {
         {/* Center — stock / active slot / dead pile + status */}
         <View style={styles.centerSection}>
           <View style={styles.pileRow}>
-            <View style={styles.pileBox}>
-              <Text style={styles.pileLabel}>Stock</Text>
-              <Text style={styles.pileCount}>{stockSize}</Text>
-            </View>
-
             <View style={styles.activeSlotBox}>
               <Text style={styles.pileLabel}>Active</Text>
               {activeCard && !activeStaged ? (
@@ -1616,11 +1618,6 @@ export default function ConquianGameScreen({ navigation, route }) {
                   <Text style={styles.emptySlotText}>—</Text>
                 </View>
               )}
-            </View>
-
-            <View style={styles.pileBox}>
-              <Text style={styles.pileLabel}>Dead</Text>
-              <Text style={styles.pileCount}>{deadPileSize}</Text>
             </View>
           </View>
 
@@ -2083,8 +2080,13 @@ const styles = StyleSheet.create({
   pileRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "center",
     marginBottom: scale(6),
+  },
+  headerStock: {
+    color: "#a4b1c4",
+    fontSize: scaleFont(14),
+    fontWeight: "700",
   },
   pileBox: {
     alignItems: "center",

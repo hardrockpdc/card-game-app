@@ -69,10 +69,10 @@ export default function GameHeader({
               </Text>
             )}
 
-            {!minimal &&
-              (leftInfo ? (
-                <View style={styles.leftInfoWrap}>{leftInfo}</View>
-              ) : (
+            {leftInfo ? (
+              <View style={styles.leftInfoWrap}>{leftInfo}</View>
+            ) : (
+              !minimal && (
                 <>
                   <Text
                     style={[
@@ -89,7 +89,8 @@ export default function GameHeader({
                     </Text>
                   ) : null}
                 </>
-              ))}
+              )
+            )}
           </View>
 
           {extraButton ? (
