@@ -1489,32 +1489,33 @@ export default function ConquianGameScreen({ navigation, route }) {
     );
   }
 
-  // A player "seat" around the table. side = "top" | "left" | "right". The side
-  // seats are rotated 90° (sideways, like players seated on each side); the
-  // dimension-swap wrapper reserves a narrow tall column so layout stays correct.
-  // Empty seats still render a (dashed) box so the cross never collapses.
-  const renderSeat = (opp, side) => {
-    const rotated = side === "left" || side === "right";
+  // A player "seat" around the table. side = "top" | "left" | "right" | "bottom".
+  // top/bottom are full-width horizontal bars; left/right are narrow vertical
+  // columns that fill the height between them (melds stack down the column).
+  // Empty seats still render a (dashed) box so the frame never collapses.
+  // `compactSeat` (the bottom "You" seat) shows just the name + count, since the
+  // full melds already live in the "Your Melds" / staging area below.
+  const renderSeat = (opp, side, compactSeat = false) => {
+    const vertical = side === "left" || side === "right";
     const opPid = opp ? String(opp.id) : null;
     const isCurrent =
       opp && String(currentPlayer?.id) === opPid;
     const opMelds = opp ? gameState.melds?.[opPid] ?? [] : [];
 
-    const box = (
+    return (
       <View
         style={[
           styles.seatBox,
-          rotated ? styles.seatBoxRotated : styles.seatBoxTop,
+          vertical ? styles.seatBoxSide : styles.seatBoxHoriz,
           !opp && styles.seatEmpty,
           isCurrent && styles.opponentCardActive,
-          rotated && {
-            transform: [{ rotate: side === "left" ? "-90deg" : "90deg" }],
-          },
         ]}
       >
         {opp && (
           <>
-            <View style={styles.opponentHeader}>
+            <View
+              style={[styles.opponentHeader, vertical && styles.opponentHeaderCol]}
+            >
               <Text style={styles.opponentName} numberOfLines={1}>
                 {opp.name}
               </Text>
@@ -1523,8 +1524,8 @@ export default function ConquianGameScreen({ navigation, route }) {
               </Text>
               {isCurrent && <Text style={styles.opponentTurnDot}>▶</Text>}
             </View>
-            {opMelds.length > 0 && (
-              <View style={[styles.meldRow, styles.meldRowWrap]}>
+            {!compactSeat && opMelds.length > 0 && (
+              <View style={vertical ? styles.meldColumn : [styles.meldRow, styles.meldRowWrap]}>
                 {opMelds.map((meld, idx) => (
                   <View key={idx} style={styles.meldGroup}>
                     {meld.map((card, ci) => (
@@ -1543,9 +1544,6 @@ export default function ConquianGameScreen({ navigation, route }) {
         )}
       </View>
     );
-
-    if (rotated) return <View style={styles.sideSeatWrap}>{box}</View>;
-    return box;
   };
 
   // ─── Main game screen ─────────────────────────────────────────────────────────
@@ -1585,7 +1583,7 @@ export default function ConquianGameScreen({ navigation, route }) {
         style={styles.scrollArea}
         contentContainerStyle={styles.container}
       >
-        {/* Card table: opponents on each side of the Active card */}
+        {/* Card table: the 4 seats frame the Active card (you at the bottom) */}
         <View style={styles.centerSection}>
           <View style={styles.tableTopRow}>
             {renderSeat(opponents[0], "top")}
@@ -1638,6 +1636,13 @@ export default function ConquianGameScreen({ navigation, route }) {
               )}
             </View>
             {renderSeat(opponents[2], "right")}
+          </View>
+          <View style={styles.tableBottomRow}>
+            {renderSeat(
+              gameState.players.find((p) => String(p.id) === String(myPid)),
+              "bottom",
+              true,
+            )}
           </View>
 
           {statusMsg ? <Text style={styles.errorMsg}>{statusMsg}</Text> : null}
@@ -2079,6 +2084,18 @@ const styles = StyleSheet.create({
     gap: scale(6),
     marginBottom: scale(2),
   },
+  // Side columns: stack name over count so the narrow header doesn't clip.
+  opponentHeaderCol: {
+    flexDirection: "column",
+    alignItems: "center",
+    gap: scale(1),
+  },
+  // Side columns: melds stack vertically down the column.
+  meldColumn: {
+    alignItems: "center",
+    gap: scale(4),
+    marginTop: scale(2),
+  },
   opponentName: {
     color: "#fff",
     fontSize: scaleFont(13),
@@ -2096,16 +2113,25 @@ const styles = StyleSheet.create({
   opponentMeldScroll: { marginTop: scale(2) },
 
   centerSection: { paddingHorizontal: scale(12), marginBottom: scale(6) },
+  // Middle band: the side columns stretch to fill this height around the Active
+  // card, so the frame uses the otherwise-empty vertical space.
   pileRow: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "stretch",
     justifyContent: "space-between",
+    minHeight: scale(176),
     marginBottom: scale(6),
   },
   tableTopRow: {
     flexDirection: "row",
     justifyContent: "center",
     marginBottom: scale(6),
+  },
+  tableBottomRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: scale(6),
+    marginBottom: scale(2),
   },
   seatBox: {
     backgroundColor: "#16213e",
@@ -2115,20 +2141,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(5),
     paddingVertical: scale(4),
   },
-  seatBoxTop: { flex: 1, minHeight: scale(48) },
-  // Pre-rotation footprint (wide-short); rotates 90° to a narrow-tall side seat.
-  // Fixed size + clip so both side seats are identical and melds can't spill.
-  seatBoxRotated: {
-    width: scale(190),
-    height: scale(88),
-    overflow: "hidden",
-  },
-  sideSeatWrap: {
-    width: scale(88),
-    height: scale(190),
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  // Top / bottom: full-width horizontal bars.
+  seatBoxHoriz: { flex: 1, minHeight: scale(46) },
+  // Left / right: narrow vertical columns; alignItems:stretch on pileRow makes
+  // them fill the band height. Width fits a 3-card overlapped meld fan.
+  seatBoxSide: { width: scale(78) },
   seatEmpty: {
     backgroundColor: "transparent",
     borderColor: "#2a3650",
