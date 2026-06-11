@@ -2117,12 +2117,12 @@ const styles = StyleSheet.create({
   },
   tableTopRow: {
     flexDirection: "row",
-    justifyContent: "center",
+    justifyContent: "flex-start",
     marginBottom: scale(6),
   },
   tableBottomRow: {
     flexDirection: "row",
-    justifyContent: "center",
+    justifyContent: "flex-end",
     marginTop: scale(6),
     marginBottom: scale(2),
   },
