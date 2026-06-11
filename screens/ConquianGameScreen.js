@@ -2099,7 +2099,7 @@ const styles = StyleSheet.create({
   pileRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: scale(6),
+    justifyContent: "space-between",
     marginBottom: scale(6),
   },
   tableTopRow: {
