@@ -31,15 +31,6 @@ import { POKER_VARIANT_OPTIONS } from "../components/PokerVariantWheel";
 
 const GAMES = [
   {
-    id: "blackjack",
-    label: "Blackjack",
-    screen: "MultiplayerGame",
-    available: true,
-    hasAI: false,
-    minPlayers: 2,
-    maxPlayers: 4,
-  },
-  {
     id: "goFish",
     label: "Go Fish",
     screen: "GoFishGame",
@@ -100,7 +91,6 @@ const DEFAULT_POKER_VARIANT = "texasHoldem";
 const DEFAULT_RUMMY_VARIANT = "ginRummy";
 
 const WHEEL_OPTIONS = [
-  { value: "blackjack", title: "Blackjack" },
   { value: "goFish", title: "Go Fish" },
   { value: "conquian", title: "Conquián" },
 
