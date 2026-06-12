@@ -1,13 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions,
-} from "react-native";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useResumePrompt } from "../game/useResumePrompt";
 
@@ -17,12 +9,10 @@ import {
   subscribeProfile,
 } from "../game/profile";
 import { scale, scaleFont } from "../game/responsive";
-
-const DIFFICULTIES = [
-  { id: "easy", label: "Easy" },
-  { id: "medium", label: "Medium" },
-  { id: "hard", label: "Hard" },
-];
+import GameSetupLayout, {
+  OpponentStepper,
+  DifficultyPills,
+} from "../components/GameSetupLayout";
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
@@ -49,9 +39,6 @@ export default function GameSetupScreen({ navigation, route }) {
     hasDifficulty = true,
   } = params;
 
-  const { width } = useWindowDimensions();
-  const isSmallScreen = width < 380;
-
   const [playerName, setPlayerName] = useState("Player");
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [aiCount, setAiCount] = useState(() => aiRange[0] ?? 1);
@@ -62,11 +49,7 @@ export default function GameSetupScreen({ navigation, route }) {
 
     function bootstrapProfile() {
       const profile = getCachedProfile();
-
-      if (!isMounted) {
-        return;
-      }
-
+      if (!isMounted) return;
       setPlayerName(getDisplayName(profile));
       setIsLoadingProfile(false);
     }
@@ -83,20 +66,18 @@ export default function GameSetupScreen({ navigation, route }) {
     };
   }, []);
 
+  const [minAI, maxAI] = aiRange;
+
   useEffect(() => {
-    const [minAI = 1, maxAI = 3] = aiRange;
-    setAiCount((current) => clamp(current, minAI, maxAI));
-  }, [aiRange]);
+    setAiCount((current) => clamp(current, minAI ?? 1, maxAI ?? 3));
+  }, [minAI, maxAI]);
 
   const promptIfSaved = useResumePrompt();
 
-  const [minAI, maxAI] = aiRange;
   const clampedAI = useMemo(
     () => clamp(aiCount, minAI, maxAI),
     [aiCount, minAI, maxAI],
   );
-  const useStepper = maxAI > 3;
-  const playTextSize = isSmallScreen ? 16 : 17;
 
   async function handlePlay() {
     const players = buildPlayers(playerName, clampedAI);
@@ -146,146 +127,31 @@ export default function GameSetupScreen({ navigation, route }) {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <View style={styles.playerPill}>
-          <Text style={styles.playerPillText}>Playing as {playerName}</Text>
-        </View>
-
-        <View style={styles.header}>
-          <Text style={styles.title}>{gameName}</Text>
-          <Text style={styles.subtitle}>
-            Choose your computer opponents and difficulty before starting.
-          </Text>
-        </View>
-
-        <View style={styles.panel}>
-          <Text style={styles.sectionLabel}>
-            {useStepper ? "Computer Opponents" : "Opponent Count"}
-          </Text>
-
-          {useStepper ? (
-            <View style={styles.stepperRow}>
-              <Pressable
-                onPress={() =>
-                  setAiCount((current) => clamp(current - 1, minAI, maxAI))
-                }
-                disabled={clampedAI <= minAI}
-                style={({ pressed }) => [
-                  styles.stepperButton,
-                  clampedAI <= minAI && styles.disabledButton,
-                  pressed && clampedAI > minAI && styles.buttonPressed,
-                ]}
-              >
-                <Text style={styles.stepperButtonText}>−</Text>
-              </Pressable>
-
-              <View style={styles.stepperValueWrap}>
-                <Text style={styles.stepperValue}>{clampedAI}</Text>
-              </View>
-
-              <Pressable
-                onPress={() =>
-                  setAiCount((current) => clamp(current + 1, minAI, maxAI))
-                }
-                disabled={clampedAI >= maxAI}
-                style={({ pressed }) => [
-                  styles.stepperButton,
-                  clampedAI >= maxAI && styles.disabledButton,
-                  pressed && clampedAI < maxAI && styles.buttonPressed,
-                ]}
-              >
-                <Text style={styles.stepperButtonText}>+</Text>
-              </Pressable>
-            </View>
-          ) : (
-            <View style={styles.countRow}>
-              {[1, 2, 3]
-                .filter((value) => value >= minAI && value <= maxAI)
-                .map((value) => (
-                  <Pressable
-                    key={value}
-                    onPress={() => setAiCount(value)}
-                    style={({ pressed }) => [
-                      styles.countButton,
-                      clampedAI === value && styles.countButtonSelected,
-                      pressed && styles.buttonPressed,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.countButtonText,
-                        clampedAI === value && styles.countButtonTextSelected,
-                      ]}
-                    >
-                      {value}
-                    </Text>
-                  </Pressable>
-                ))}
-            </View>
-          )}
-
+    <GameSetupLayout
+      title={gameName}
+      subtitle="Choose your computer opponents and difficulty before starting."
+      controls={
+        <>
+          <OpponentStepper
+            value={clampedAI}
+            min={minAI}
+            max={maxAI}
+            onChange={setAiCount}
+          />
           {hasDifficulty ? (
-            <>
-              <Text style={styles.sectionLabel}>Difficulty</Text>
-              <View style={styles.difficultyRow}>
-                {DIFFICULTIES.map((option) => {
-                  const selected = option.id === difficulty;
-
-                  return (
-                    <Pressable
-                      key={option.id}
-                      onPress={() => setDifficulty(option.id)}
-                      style={({ pressed }) => [
-                        styles.difficultyButton,
-                        selected && styles.difficultyButtonSelected,
-                        pressed && styles.buttonPressed,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.difficultyButtonText,
-                          selected && styles.difficultyButtonTextSelected,
-                        ]}
-                      >
-                        {option.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </>
+            <DifficultyPills value={difficulty} onChange={setDifficulty} />
           ) : null}
-        </View>
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Play ${gameName}`}
-          onPress={handlePlay}
-          style={({ pressed }) => [
-            styles.playButton,
-            pressed && styles.playButtonPressed,
-          ]}
-        >
-          <Text style={[styles.playButtonText, { fontSize: playTextSize }]}>
-            Play {gameName}
-          </Text>
-        </Pressable>
-      </View>
-    </SafeAreaView>
+        </>
+      }
+      onStart={handlePlay}
+      startLabel="Start Game"
+    />
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#0f1115",
-  },
-  container: {
-    flex: 1,
-    paddingHorizontal: scale(18),
-    paddingTop: scale(14),
-    paddingBottom: scale(18),
     backgroundColor: "#0f1115",
   },
   loadingWrap: {
@@ -298,160 +164,5 @@ const styles = StyleSheet.create({
     color: "#c4c4d4",
     fontSize: scaleFont(15),
     marginTop: scale(12),
-  },
-  playerPill: {
-    backgroundColor: "#16213e",
-    borderRadius: scale(999),
-    borderWidth: 1.5,
-    borderColor: "#334",
-    alignSelf: "center",
-    paddingHorizontal: scale(16),
-    paddingVertical: scale(8),
-    marginBottom: scale(18),
-  },
-  playerPillText: {
-    color: "#ffffff",
-    fontSize: scaleFont(13),
-    fontWeight: "bold",
-  },
-  header: {
-    marginBottom: scale(14),
-  },
-  title: {
-    color: "#f5f7fb",
-    fontSize: scaleFont(34),
-    fontWeight: "900",
-    textAlign: "center",
-  },
-  subtitle: {
-    marginTop: scale(8),
-    color: "#a8b5c8",
-    fontSize: scaleFont(15),
-    lineHeight: scale(21),
-    textAlign: "center",
-  },
-  panel: {
-    flex: 1,
-    borderRadius: scale(22),
-    borderWidth: 1,
-    borderColor: "#243042",
-    backgroundColor: "#151a24",
-    padding: scale(16),
-    gap: scale(16),
-    justifyContent: "center",
-  },
-  sectionLabel: {
-    color: "#A7B3C9",
-    fontSize: scaleFont(12),
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-  },
-  countRow: {
-    flexDirection: "row",
-    gap: scale(10),
-  },
-  countButton: {
-    flex: 1,
-    minHeight: scale(52),
-    borderRadius: scale(999),
-    borderWidth: 1.5,
-    borderColor: "#2c3750",
-    backgroundColor: "#182131",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  countButtonSelected: {
-    borderColor: "#77aef7",
-    backgroundColor: "#21314a",
-  },
-  countButtonText: {
-    color: "#d3dcec",
-    fontSize: scaleFont(18),
-    fontWeight: "800",
-  },
-  countButtonTextSelected: {
-    color: "#eef4ff",
-  },
-  stepperRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: scale(16),
-  },
-  stepperButton: {
-    width: scale(52),
-    height: scale(52),
-    borderRadius: scale(26),
-    borderWidth: 1.5,
-    borderColor: "#2c3750",
-    backgroundColor: "#182131",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  stepperButtonText: {
-    color: "#eef4ff",
-    fontSize: scaleFont(28),
-    fontWeight: "900",
-    marginTop: scale(-2),
-  },
-  stepperValueWrap: {
-    minWidth: scale(52),
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  stepperValue: {
-    color: "#f4f7fb",
-    fontSize: scaleFont(30),
-    fontWeight: "900",
-  },
-  difficultyRow: {
-    flexDirection: "row",
-    gap: scale(8),
-  },
-  difficultyButton: {
-    flex: 1,
-    minHeight: scale(50),
-    borderRadius: scale(999),
-    borderWidth: 1.5,
-    borderColor: "#2c3750",
-    backgroundColor: "#182131",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  difficultyButtonSelected: {
-    borderColor: "#77aef7",
-    backgroundColor: "#21314a",
-  },
-  difficultyButtonText: {
-    color: "#d3dcec",
-    fontSize: scaleFont(12),
-    fontWeight: "800",
-  },
-  difficultyButtonTextSelected: {
-    color: "#eef4ff",
-  },
-  playButton: {
-    marginTop: scale(4),
-    minHeight: scale(52),
-    borderRadius: scale(16),
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#77aef7",
-  },
-  playButtonPressed: {
-    opacity: 0.92,
-  },
-  playButtonText: {
-    color: "#08111f",
-    fontWeight: "900",
-    letterSpacing: 0.4,
-  },
-  buttonPressed: {
-    opacity: 0.92,
-    transform: [{ scale: 0.99 }],
-  },
-  disabledButton: {
-    opacity: 0.45,
   },
 });
