@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
   paneStack: {
     flex: 1,
     gap: scale(16),
-    justifyContent: "center",
+    justifyContent: "flex-start",
   },
   paneRow: {
     flex: 1,
