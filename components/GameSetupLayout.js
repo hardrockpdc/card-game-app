@@ -132,6 +132,48 @@ export function OpponentStepper({
   );
 }
 
+// A row of equal-width selectable pills. `options`: [{ value|id, label, disabled }].
+export function PillRow({ value, onChange, options }) {
+  return (
+    <View style={styles.pillRow}>
+      {options.map((option) => {
+        const v = option.value ?? option.id;
+        const label = option.label ?? String(v);
+        const selected = v === value;
+        const disabled = !!option.disabled;
+        return (
+          <Pressable
+            key={String(v)}
+            onPress={() => {
+              if (!disabled) onChange(v);
+            }}
+            disabled={disabled}
+            style={({ pressed }) => [
+              styles.pill,
+              selected && styles.pillSelected,
+              disabled && styles.pillDisabled,
+              pressed && !disabled && styles.pillPressed,
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel={label}
+            accessibilityState={{ selected, disabled }}
+          >
+            <Text
+              style={[
+                styles.pillText,
+                selected && styles.pillTextSelected,
+                disabled && styles.pillTextDisabled,
+              ]}
+            >
+              {label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 const DIFFICULTIES = [
   { id: "easy", label: "Easy" },
   { id: "medium", label: "Medium" },
@@ -142,31 +184,7 @@ const DIFFICULTIES = [
 export function DifficultyPills({ value, onChange, label = "Difficulty" }) {
   return (
     <SetupSection label={label}>
-      <View style={styles.pillRow}>
-        {DIFFICULTIES.map((option) => {
-          const selected = option.id === value;
-          return (
-            <Pressable
-              key={option.id}
-              onPress={() => onChange(option.id)}
-              style={({ pressed }) => [
-                styles.pill,
-                selected && styles.pillSelected,
-                pressed && styles.pillPressed,
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel={option.label}
-              accessibilityState={{ selected }}
-            >
-              <Text
-                style={[styles.pillText, selected && styles.pillTextSelected]}
-              >
-                {option.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <PillRow value={value} onChange={onChange} options={DIFFICULTIES} />
     </SetupSection>
   );
 }
@@ -264,6 +282,9 @@ const styles = StyleSheet.create({
   pillPressed: {
     opacity: 0.88,
   },
+  pillDisabled: {
+    opacity: 0.4,
+  },
   pillText: {
     color: "#d3dcec",
     fontSize: scaleFont(14),
@@ -271,6 +292,9 @@ const styles = StyleSheet.create({
   },
   pillTextSelected: {
     color: "#eef4ff",
+  },
+  pillTextDisabled: {
+    color: "#6a7d96",
   },
   stepperRow: {
     flexDirection: "row",

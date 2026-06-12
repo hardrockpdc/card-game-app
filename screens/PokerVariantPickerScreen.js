@@ -1,42 +1,41 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useWindowDimensions } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useResumePrompt } from "../game/useResumePrompt";
 
 import { POKER_VARIANT_OPTIONS } from "../components/PokerVariantWheel";
 import VariantOptionGrid from "../components/VariantOptionGrid";
+import GameSetupLayout, {
+  OpponentStepper,
+  DifficultyPills,
+  SetupSection,
+  PillRow,
+  SetupNote,
+} from "../components/GameSetupLayout";
 import {
   getCachedProfile,
   getDisplayName,
   subscribeProfile,
 } from "../game/profile";
 import { getCoins } from "../game/wallet";
-import { scale, scaleFont } from "../game/responsive";
+
+const BUY_INS = [100, 250, 500, 1000];
 
 function getInitialVariant(currentVariant) {
   const found = POKER_VARIANT_OPTIONS.find(
     (option) => option.value === currentVariant,
   );
-
   return found ? found.value : POKER_VARIANT_OPTIONS[0].value;
 }
 
 function getModeCopy(mode) {
   if (mode === "lobby") {
     return {
-      title: "Pick the Lobby Poker Variant",
+      title: "Lobby Poker Variant",
       subtitle: "Choose the poker variant you want to send back to the lobby.",
       buttonLabel: "Save Variant",
     };
   }
-
   return {
     title: "Poker",
     subtitle: "Pick a variant, then start a new game.",
@@ -58,6 +57,7 @@ function buildPlayers(playerName, aiCount) {
 function PokerVariantPickerScreen({ navigation, route }) {
   const params = route?.params ?? {};
   const { mode = "singleplayer", currentVariant, launchParams } = params;
+  const isLobby = mode === "lobby";
 
   const [playerName, setPlayerName] = useState("Player");
   const [selectedVariant, setSelectedVariant] = useState(() =>
@@ -74,7 +74,6 @@ function PokerVariantPickerScreen({ navigation, route }) {
     useCallback(() => {
       getCoins().then((c) => {
         setCoins(c);
-        // If the previously selected buy-in is now unaffordable, reset to 100.
         setBuyIn((prev) => (c >= prev ? prev : 100));
       });
     }, []),
@@ -86,33 +85,20 @@ function PokerVariantPickerScreen({ navigation, route }) {
 
   useEffect(() => {
     let isMounted = true;
-
-    function bootstrapProfile() {
-      const profile = getCachedProfile();
-
-      if (!isMounted) {
-        return;
-      }
-
-      setPlayerName(getDisplayName(profile));
-    }
-
-    bootstrapProfile();
-
-    const unsubscribe = subscribeProfile((profile) => {
-      setPlayerName(getDisplayName(profile));
+    const profile = getCachedProfile();
+    if (isMounted) setPlayerName(getDisplayName(profile));
+    const unsubscribe = subscribeProfile((p) => {
+      if (isMounted) setPlayerName(getDisplayName(p));
     });
-
     return () => {
       isMounted = false;
       unsubscribe();
     };
   }, []);
 
-  const { width: winW, height: winH } = useWindowDimensions();
-  const isLandscape = winW > winH;
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
   const modeCopy = useMemo(() => getModeCopy(mode), [mode]);
-  const isLobby = mode === "lobby";
   const coinsLoaded = coins !== null;
   const canAffordMin = !coinsLoaded || coins >= 100;
   const canPlay = isLobby || canAffordMin;
@@ -121,9 +107,7 @@ function PokerVariantPickerScreen({ navigation, route }) {
     if (isLobby) {
       navigation.navigate({
         name: "Lobby",
-        params: {
-          selectedPokerVariant: selectedVariant,
-        },
+        params: { selectedPokerVariant: selectedVariant },
         merge: true,
       });
       return;
@@ -132,7 +116,6 @@ function PokerVariantPickerScreen({ navigation, route }) {
     const launchPayload =
       launchParams && typeof launchParams === "object" ? launchParams : {};
     const players = buildPlayers(launchPayload.myName ?? playerName, aiCount);
-    const saveKey = `@cardnight:save:poker:${selectedVariant}`;
     const variantLabel =
       POKER_VARIANT_OPTIONS.find((o) => o.value === selectedVariant)?.label ??
       "Poker";
@@ -146,364 +129,64 @@ function PokerVariantPickerScreen({ navigation, route }) {
       buyIn,
     };
     await promptIfSaved({
-      saveKey,
+      saveKey: `@cardnight:save:poker:${selectedVariant}`,
       gameName: variantLabel,
       onFresh: () =>
-        navigation.navigate("PokerGame", {
-          ...navParams,
-          resumeFromSave: false,
-        }),
+        navigation.navigate("PokerGame", { ...navParams, resumeFromSave: false }),
       onResume: () =>
-        navigation.navigate("PokerGame", {
-          ...navParams,
-          resumeFromSave: true,
-        }),
+        navigation.navigate("PokerGame", { ...navParams, resumeFromSave: true }),
       extraMessage: "Note: starting fresh will use a new buy-in.",
     });
   };
 
-  const variantGrid = (
-    <VariantOptionGrid
-      value={selectedVariant}
-      onChange={setSelectedVariant}
-      options={POKER_VARIANT_OPTIONS}
-      singleColumn={isLandscape}
+  return (
+    <GameSetupLayout
+      title={modeCopy.title}
+      subtitle={modeCopy.subtitle}
+      variantSlot={
+        <VariantOptionGrid
+          value={selectedVariant}
+          onChange={setSelectedVariant}
+          options={POKER_VARIANT_OPTIONS}
+          singleColumn={isLandscape}
+        />
+      }
+      controls={
+        isLobby ? null : (
+          <>
+            <OpponentStepper
+              value={aiCount}
+              min={1}
+              max={3}
+              onChange={setAiCount}
+            />
+            <DifficultyPills value={difficulty} onChange={setDifficulty} />
+            <SetupSection label="Buy-In">
+              <PillRow
+                value={buyIn}
+                onChange={setBuyIn}
+                options={BUY_INS.map((amount) => ({
+                  value: amount,
+                  label: String(amount),
+                  disabled: coinsLoaded && coins < amount,
+                }))}
+              />
+              {coinsLoaded ? (
+                <SetupNote>
+                  {coins < 100
+                    ? "You need at least 🪙 100 to play. Visit your Profile to reset coins."
+                    : `Balance: 🪙 ${coins.toLocaleString()}`}
+                </SetupNote>
+              ) : null}
+            </SetupSection>
+          </>
+        )
+      }
+      onStart={handleContinue}
+      startLabel={modeCopy.buttonLabel}
+      startDisabled={!canPlay}
     />
   );
-
-  const controls = !isLobby ? (
-    <>
-      <View style={styles.sectionBlock}>
-        <Text style={styles.sectionLabel}>AI Opponents</Text>
-        <View style={styles.pillRow}>
-          {[1, 2, 3].map((count) => (
-            <Pressable
-              key={count}
-              onPress={() => setAiCount(count)}
-              style={({ pressed }) => [
-                styles.pill,
-                aiCount === count && styles.pillSelected,
-                pressed && styles.pillPressed,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.pillText,
-                  aiCount === count && styles.pillTextSelected,
-                ]}
-              >
-                {count}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      </View>
-
-      <View style={styles.sectionBlock}>
-        <Text style={styles.sectionLabel}>Difficulty</Text>
-        <View style={styles.pillRow}>
-          {[
-            { id: "easy", label: "Easy" },
-            { id: "medium", label: "Medium" },
-            { id: "hard", label: "Hard" },
-          ].map((option) => {
-            const selected = option.id === difficulty;
-
-            return (
-              <Pressable
-                key={option.id}
-                onPress={() => setDifficulty(option.id)}
-                style={({ pressed }) => [
-                  styles.pill,
-                  selected && styles.pillSelected,
-                  pressed && styles.pillPressed,
-                ]}
-              >
-                <Text
-                  style={[styles.pillText, selected && styles.pillTextSelected]}
-                >
-                  {option.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      </View>
-
-      <View style={styles.sectionBlock}>
-        <View style={styles.buyInHeader}>
-          <Text style={styles.sectionLabel}>Buy-In</Text>
-          {coinsLoaded ? (
-            <Text style={styles.walletBalance}>
-              🪙 {coins.toLocaleString()}
-            </Text>
-          ) : null}
-        </View>
-        <View style={styles.pillRow}>
-          {[100, 250, 500, 1000].map((amount) => {
-            const isSelected = buyIn === amount;
-            const isAffordable = !coinsLoaded || coins >= amount;
-            return (
-              <Pressable
-                key={amount}
-                onPress={() => {
-                  if (isAffordable) setBuyIn(amount);
-                }}
-                disabled={!isAffordable}
-                style={({ pressed }) => [
-                  styles.pill,
-                  isSelected && styles.buyInPillSelected,
-                  !isAffordable && styles.pillDisabled,
-                  pressed && isAffordable && styles.pillPressed,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.pillText,
-                    styles.buyInChipText,
-                    isSelected && styles.buyInPillTextSelected,
-                    !isAffordable && styles.pillTextDisabled,
-                  ]}
-                >
-                  {amount}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-        {coinsLoaded && coins < 100 ? (
-          <Text style={styles.noCoinsWarning}>
-            You need at least 🪙 100 to play. Visit your Profile to reset your
-            coins.
-          </Text>
-        ) : null}
-      </View>
-    </>
-  ) : null;
-
-  return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={[styles.content, isLandscape && styles.contentLandscape]}>
-        <Text style={[styles.title, isLandscape && styles.titleLandscape]}>
-          {modeCopy.title}
-        </Text>
-        {modeCopy.subtitle && !isLandscape ? (
-          <Text style={styles.subtitle}>{modeCopy.subtitle}</Text>
-        ) : null}
-
-        <View style={[styles.panel, isLandscape && styles.panelLandscape]}>
-          {isLandscape ? (
-            <View style={styles.paneRow}>
-              <View style={styles.pane}>{variantGrid}</View>
-              {controls ? <View style={styles.pane}>{controls}</View> : null}
-            </View>
-          ) : (
-            <View style={styles.paneStack}>
-              {variantGrid}
-              {controls}
-            </View>
-          )}
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={modeCopy.buttonLabel}
-            onPress={canPlay ? handleContinue : undefined}
-            disabled={!canPlay}
-            style={({ pressed }) => [
-              styles.playButton,
-              !canPlay && styles.playButtonDisabled,
-              canPlay && pressed && styles.playButtonPressed,
-            ]}
-          >
-            <Text style={styles.playButtonText}>{modeCopy.buttonLabel}</Text>
-          </Pressable>
-        </View>
-      </View>
-    </SafeAreaView>
-  );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#0f1115",
-  },
-  content: {
-    flex: 1,
-    padding: scale(14),
-    gap: scale(10),
-  },
-  contentLandscape: {
-    padding: scale(10),
-    gap: scale(6),
-  },
-  title: {
-    color: "#f5f7fb",
-    fontSize: scaleFont(34),
-    fontWeight: "900",
-    textAlign: "center",
-  },
-  titleLandscape: {
-    fontSize: scaleFont(22),
-  },
-  subtitle: {
-    color: "#a8b5c8",
-    fontSize: scaleFont(15),
-    lineHeight: scale(21),
-    textAlign: "center",
-  },
-  panel: {
-    flex: 1,
-    borderRadius: scale(22),
-    borderWidth: 1,
-    borderColor: "#243042",
-    backgroundColor: "#151a24",
-    padding: scale(14),
-    gap: scale(12),
-  },
-  panelLandscape: {
-    padding: scale(10),
-    gap: scale(8),
-  },
-  paneStack: {
-    flex: 1,
-    gap: scale(12),
-    justifyContent: "center",
-  },
-  paneRow: {
-    flex: 1,
-    flexDirection: "row",
-    gap: scale(12),
-  },
-  pane: {
-    flex: 1,
-    gap: scale(10),
-    justifyContent: "center",
-  },
-  sectionBlock: {
-    gap: scale(8),
-  },
-  sectionLabel: {
-    color: "#a8b5c8",
-    fontSize: scaleFont(11),
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 1.2,
-  },
-  pillRow: {
-    flexDirection: "row",
-    gap: scale(8),
-  },
-  pill: {
-    flex: 1,
-    minHeight: scale(48),
-    borderRadius: scale(999),
-    borderWidth: 1.5,
-    borderColor: "#2c3750",
-    backgroundColor: "#182131",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: scale(4),
-  },
-  pillSelected: {
-    borderColor: "#77aef7",
-    backgroundColor: "#21314a",
-  },
-  pillPressed: {
-    opacity: 0.88,
-  },
-  pillDisabled: {
-    opacity: 0.35,
-  },
-  pillText: {
-    color: "#d3dcec",
-    fontSize: scaleFont(13),
-    fontWeight: "800",
-  },
-  pillTextSelected: {
-    color: "#eef4ff",
-  },
-  pillTextDisabled: {
-    color: "#555",
-  },
-  buyInHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  walletBalance: {
-    color: "#ffd700",
-    fontSize: scaleFont(14),
-    fontWeight: "800",
-  },
-  buyInPillSelected: {
-    borderColor: "#ffd700",
-    backgroundColor: "#2a2a10",
-  },
-  buyInPillTextSelected: {
-    color: "#ffd700",
-  },
-  noCoinsWarning: {
-    color: "#e94560",
-    fontSize: scaleFont(13),
-    lineHeight: scale(18),
-    textAlign: "center",
-  },
-  buyInChipText: {
-    fontSize: scaleFont(11),
-  },
-  sectionDisabled: {
-    opacity: 0.35,
-  },
-  modeCard: {
-    borderRadius: scale(16),
-    borderWidth: 1.5,
-    borderColor: "#2c3750",
-    backgroundColor: "rgba(255,255,255,0.02)",
-    paddingHorizontal: scale(16),
-    paddingVertical: scale(14),
-    gap: scale(4),
-  },
-  modeCardSelected: {
-    borderColor: "#77aef7",
-    backgroundColor: "rgba(119, 174, 247, 0.12)",
-  },
-  modeCardPressed: {
-    opacity: 0.85,
-  },
-  modeLabel: {
-    color: "#a7b3c9",
-    fontSize: scaleFont(17),
-    fontWeight: "700",
-    letterSpacing: 0.2,
-  },
-  modeLabelSelected: {
-    color: "#f4f7fb",
-  },
-  modeDescription: {
-    color: "#6a7d96",
-    fontSize: scaleFont(13),
-    lineHeight: scale(18),
-  },
-  playButton: {
-    borderRadius: scale(16),
-    backgroundColor: "#77aef7",
-    alignItems: "center",
-    paddingVertical: scale(14),
-    marginTop: scale(4),
-  },
-  playButtonDisabled: {
-    backgroundColor: "#444",
-    opacity: 0.7,
-  },
-  playButtonPressed: {
-    opacity: 0.92,
-  },
-  playButtonText: {
-    color: "#08111f",
-    fontSize: scaleFont(16),
-    fontWeight: "900",
-  },
-});
 
 export default PokerVariantPickerScreen;
