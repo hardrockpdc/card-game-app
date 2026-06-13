@@ -472,6 +472,14 @@ export default function LobbyScreen({ navigation, route }) {
 
   return (
     <View style={styles.container}>
+      <Text style={styles.title}>Lobby</Text>
+      <View style={styles.suitRow}>
+        <Text style={[styles.suit, styles.suitRed]}>♥</Text>
+        <Text style={styles.suit}>♠</Text>
+        <Text style={[styles.suit, styles.suitRed]}>♦</Text>
+        <Text style={styles.suit}>♣</Text>
+      </View>
+
       {isHost && (
         <View style={styles.gameSelectorSection}>
           <Text style={styles.sectionLabel}>Game</Text>
@@ -584,10 +592,22 @@ const styles = StyleSheet.create({
   title: {
     fontSize: scaleFont(28),
     color: "#ffffff",
-    fontWeight: "bold",
+    fontWeight: "900",
     textAlign: "center",
-    marginBottom: scale(24),
+    letterSpacing: 0.5,
+    textShadowColor: "rgba(233,69,96,0.35)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 14,
+    marginBottom: scale(8),
   },
+  suitRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: scale(16),
+    marginBottom: scale(16),
+  },
+  suit: { color: "#5b5b75", fontSize: scaleFont(16) },
+  suitRed: { color: "#e94560" },
   sectionLabel: {
     color: "#c4c4d4",
     fontSize: scaleFont(13),
@@ -620,13 +640,14 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     color: "#ffffff",
-    fontSize: scaleFont(10),
+    fontSize: scaleFont(18),
     fontWeight: "bold",
   },
   playerName: {
     flex: 1,
     color: "#ffffff",
-    fontSize: scaleFont(10),
+    fontSize: scaleFont(16),
+    fontWeight: "600",
   },
   badges: {
     flexDirection: "row",
@@ -635,12 +656,13 @@ const styles = StyleSheet.create({
   badge: {
     backgroundColor: "#2a2a4a",
     color: "#c4c4d4",
-    fontSize: scaleFont(5),
+    fontSize: scaleFont(10),
     fontWeight: "bold",
     paddingHorizontal: scale(8),
     paddingVertical: scale(3),
     borderRadius: scale(6),
     letterSpacing: scale(0.5),
+    overflow: "hidden",
   },
   badgeMe: {
     backgroundColor: "#1a3a1a",
@@ -680,7 +702,7 @@ const styles = StyleSheet.create({
     borderColor: "#6a1b9a",
     paddingHorizontal: scale(32),
     paddingVertical: scale(12),
-    borderRadius: scale(10),
+    borderRadius: scale(14),
   },
   addAIBtnText: {
     color: "#ce93d8",
@@ -694,9 +716,16 @@ const styles = StyleSheet.create({
   },
   startButton: {
     backgroundColor: "#e94560",
+    borderWidth: 1,
+    borderColor: "#ff6b81",
     paddingHorizontal: scale(56),
     paddingVertical: scale(16),
-    borderRadius: scale(10),
+    borderRadius: scale(16),
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
   },
   startButtonDimmed: {
     opacity: 0.4,
