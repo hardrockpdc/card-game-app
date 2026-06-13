@@ -56,7 +56,7 @@ const CAROUSEL_GAMES = [
     tag: "Mexican rummy",
     color: "#14131f",
     accent: "#c4923f",
-    image: require("../assets/images/thumb_rummy.png"),
+    image: require("../assets/images/thumb_conquian.png"),
   },
   {
     id: "goFish",
@@ -395,7 +395,7 @@ export default function SinglePlayerSetupScreen({ navigation }) {
                   >
                     <ImageBackground
                       source={item.image}
-                      resizeMode="contain"
+                      resizeMode="cover"
                       style={styles.cardVisualImage}
                     />
                   </View>
