@@ -224,14 +224,12 @@ export default function HomeScreen({ navigation }) {
             </TouchableOpacity>
             {Platform.OS === "android" && (
               <TouchableOpacity
-                style={styles.bottomLink}
+                style={styles.quitPill}
                 onPress={handleQuit}
                 accessibilityRole="button"
                 accessibilityLabel="Quit Card Night"
               >
-                <Text style={[styles.linkText, styles.quitLinkText]}>
-                  ✕ Quit
-                </Text>
+                <Text style={styles.quitPillText}>✕ Quit</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -268,8 +266,21 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 20,
   },
-  quitLinkText: {
+  quitPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 999,
+    backgroundColor: "rgba(233,69,96,0.14)",
+    borderWidth: 1,
+    borderColor: "rgba(233,69,96,0.55)",
+  },
+  quitPillText: {
     color: "#ff6b81",
+    fontSize: 15,
+    fontWeight: "700",
+    letterSpacing: 0.3,
   },
   namePill: {
     backgroundColor: "#16213e",
@@ -354,6 +365,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
     marginTop: 32,
   },
   bottomLink: {
