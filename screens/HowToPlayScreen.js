@@ -133,6 +133,10 @@ const CONQUIAN = {
       text: "On your turn: TAKE (meld it right away) or PASS.",
     },
     {
+      title: "Forced take",
+      text: "If the Active card directly extends one of your table melds, you must take it — you can’t pass.",
+    },
+    {
       title: "If you Take",
       text: "You MUST meld using a SET (3–4 same rank) or a RUN (3+ same-suit consecutive).",
     },
@@ -253,7 +257,7 @@ const LASTCARD = {
   steps: [
     {
       title: "How you play",
-      text: "On your turn, play a card that matches the top discard by COLOR or NUMBER.",
+      text: "On your turn, swipe a card up (or tap it) to play a card that matches the top discard by COLOR or NUMBER.",
     },
     {
       title: "Action cards change turns",
@@ -412,9 +416,9 @@ function GameIllustration({
           <View style={styles.illuCol}>
             <Text style={styles.illuSubLabel}>Set (same rank)</Text>
             <View style={styles.illuCardRow}>
-              <Card rank="9" suit="♠" small sizeScale={0.95} />
-              <Card rank="9" suit="♥" small sizeScale={0.95} />
-              <Card rank="9" suit="♦" small sizeScale={0.95} />
+              <Card rank="6" suit="♠" small sizeScale={0.95} />
+              <Card rank="6" suit="♥" small sizeScale={0.95} />
+              <Card rank="6" suit="♦" small sizeScale={0.95} />
             </View>
           </View>
           <View style={styles.illuCol}>
