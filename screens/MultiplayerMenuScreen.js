@@ -33,6 +33,13 @@ export default function MultiplayerMenuScreen({ navigation }) {
             Local play is ready — online mode coming in a future update
           </Text>
 
+          <View style={styles.suitRow}>
+            <Text style={[styles.suit, styles.suitRed]}>♥</Text>
+            <Text style={styles.suit}>♠</Text>
+            <Text style={[styles.suit, styles.suitRed]}>♦</Text>
+            <Text style={styles.suit}>♣</Text>
+          </View>
+
           <TouchableOpacity
             style={[
               styles.disabledButton,
@@ -53,7 +60,7 @@ export default function MultiplayerMenuScreen({ navigation }) {
                   { fontSize: buttonTextSize },
                 ]}
               >
-                Host Online
+                🔒  Host Online
               </Text>
               <Text style={styles.comingSoon}>Not available yet</Text>
             </View>
@@ -79,7 +86,7 @@ export default function MultiplayerMenuScreen({ navigation }) {
                   { fontSize: buttonTextSize },
                 ]}
               >
-                Join Online
+                🔒  Join Online
               </Text>
               <Text style={styles.comingSoon}>Not available yet</Text>
             </View>
@@ -101,7 +108,7 @@ export default function MultiplayerMenuScreen({ navigation }) {
             <Text
               style={[styles.primaryButtonText, { fontSize: buttonTextSize }]}
             >
-              Host Local
+              📡  Host Local
             </Text>
           </TouchableOpacity>
 
@@ -121,7 +128,7 @@ export default function MultiplayerMenuScreen({ navigation }) {
             <Text
               style={[styles.secondaryButtonText, { fontSize: buttonTextSize }]}
             >
-              Join Local
+              🔍  Join Local
             </Text>
           </TouchableOpacity>
 
@@ -131,7 +138,7 @@ export default function MultiplayerMenuScreen({ navigation }) {
             accessibilityRole="button"
             accessibilityLabel="Back"
           >
-            <Text style={styles.backButtonText}>Back</Text>
+            <Text style={styles.backButtonText}>← Back</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -157,19 +164,36 @@ const styles = StyleSheet.create({
   },
   title: {
     color: "#ffffff",
-    fontWeight: "bold",
+    fontWeight: "900",
     textAlign: "center",
     marginBottom: scale(8),
+    letterSpacing: 0.5,
+    textShadowColor: "rgba(233,69,96,0.35)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 14,
   },
   subtitle: {
     color: "#c4c4d4",
     textAlign: "center",
-    marginBottom: scale(28),
+    marginBottom: scale(16),
+  },
+  suitRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: scale(16),
+    marginBottom: scale(26),
+  },
+  suit: {
+    color: "#5b5b75",
+    fontSize: scaleFont(18),
+  },
+  suitRed: {
+    color: "#e94560",
   },
   disabledButton: {
     width: "100%",
     maxWidth: 420,
-    borderRadius: scale(12),
+    borderRadius: scale(16),
     borderWidth: 2,
     borderColor: "#4a4a5f",
     backgroundColor: "#2a2a3d",
@@ -191,11 +215,18 @@ const styles = StyleSheet.create({
   primaryButton: {
     width: "100%",
     maxWidth: 420,
-    borderRadius: scale(12),
+    borderRadius: scale(16),
+    borderWidth: 1,
+    borderColor: "#ff6b81",
     backgroundColor: "#e94560",
     marginTop: scale(8),
     marginBottom: scale(14),
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
   },
   primaryButtonText: {
     color: "#ffffff",
@@ -204,10 +235,10 @@ const styles = StyleSheet.create({
   secondaryButton: {
     width: "100%",
     maxWidth: 420,
-    borderRadius: scale(12),
+    borderRadius: scale(16),
     borderWidth: 2,
     borderColor: "#e94560",
-    backgroundColor: "transparent",
+    backgroundColor: "rgba(233,69,96,0.12)",
     alignItems: "center",
     marginBottom: scale(18),
   },
