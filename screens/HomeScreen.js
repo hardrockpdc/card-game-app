@@ -110,18 +110,6 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {Platform.OS === "android" && (
-        <TouchableOpacity
-          style={styles.quitButton}
-          onPress={handleQuit}
-          accessibilityRole="button"
-          accessibilityLabel="Quit Card Night"
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Text style={styles.quitButtonIcon}>✕</Text>
-          <Text style={styles.quitButtonText}>Quit Game</Text>
-        </TouchableOpacity>
-      )}
       <ScrollView
         contentContainerStyle={[
           styles.container,
@@ -234,6 +222,18 @@ export default function HomeScreen({ navigation }) {
             >
               <Text style={styles.linkText}>📖 How to Play</Text>
             </TouchableOpacity>
+            {Platform.OS === "android" && (
+              <TouchableOpacity
+                style={styles.bottomLink}
+                onPress={handleQuit}
+                accessibilityRole="button"
+                accessibilityLabel="Quit Card Night"
+              >
+                <Text style={[styles.linkText, styles.quitLinkText]}>
+                  ✕ Quit
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </ScrollView>
@@ -268,31 +268,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 20,
   },
-  quitButton: {
-    position: "absolute",
-    top: 12,
-    right: 14,
-    zIndex: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 7,
-    paddingHorizontal: 13,
-    borderRadius: 999,
-    backgroundColor: "rgba(233,69,96,0.12)",
-    borderWidth: 1,
-    borderColor: "rgba(233,69,96,0.45)",
-  },
-  quitButtonIcon: {
+  quitLinkText: {
     color: "#ff6b81",
-    fontSize: 14,
-    fontWeight: "800",
-    marginRight: 6,
-  },
-  quitButtonText: {
-    color: "#ff6b81",
-    fontSize: 13,
-    fontWeight: "700",
-    letterSpacing: 0.3,
   },
   namePill: {
     backgroundColor: "#16213e",
