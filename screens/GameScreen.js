@@ -45,6 +45,15 @@ const BLACKJACK_SLIDES = [
 
 const BET_OPTIONS = [10, 25, 50, 100, 250];
 const MIN_BET = 10;
+
+// Casino-chip palette per denomination: { bg, edge (dashed ring), ring (inner) }.
+const CHIP_COLORS = {
+  10: { bg: "#b3242b", edge: "#e35a61", ring: "#f2c9cb" },
+  25: { bg: "#1c7a43", edge: "#46c47e", ring: "#c9efd8" },
+  50: { bg: "#1f5fa8", edge: "#5b9bdc", ring: "#cfe2f7" },
+  100: { bg: "#2b3340", edge: "#616b7a", ring: "#c7cdd6" },
+  250: { bg: "#6e2da6", edge: "#a866dc", ring: "#e2ccf6" },
+};
 const SAVE_KEY = "@cardnight:save:blackjack";
 
 export default function GameScreen({ navigation, route }) {
@@ -598,18 +607,21 @@ export default function GameScreen({ navigation, route }) {
           contentContainerStyle={styles.bettingContainer}
           showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.betLabel}>Select Your Bet</Text>
+          <Text style={styles.betLabel}>Select Your Chip</Text>
           <View style={styles.betRow}>
             {BET_OPTIONS.map((amount) => {
               const isSelected = selectedBet === amount;
               const canAfford = coins !== null && coins >= amount;
+              const c = CHIP_COLORS[amount] ?? CHIP_COLORS[10];
               return (
                 <TouchableOpacity
                   key={amount}
+                  activeOpacity={0.85}
                   style={[
-                    styles.betButton,
-                    isSelected && styles.betButtonSelected,
-                    !canAfford && styles.betButtonDisabled,
+                    styles.chip,
+                    { backgroundColor: c.bg, borderColor: c.edge },
+                    isSelected && styles.chipSelected,
+                    !canAfford && styles.chipDisabled,
                   ]}
                   onPress={() => {
                     if (canAfford) setSelectedBet(amount);
@@ -617,16 +629,11 @@ export default function GameScreen({ navigation, route }) {
                   disabled={!canAfford}
                   accessibilityRole="button"
                   accessibilityLabel={`Bet ${amount}`}
-                  accessibilityState={{ disabled: !canAfford }}
+                  accessibilityState={{ disabled: !canAfford, selected: isSelected }}
                 >
-                  <Text
-                    style={[
-                      styles.betButtonText,
-                      isSelected && styles.betButtonTextSelected,
-                    ]}
-                  >
-                    {amount}
-                  </Text>
+                  <View style={[styles.chipRing, { borderColor: c.ring }]}>
+                    <Text style={styles.chipAmount}>{amount}</Text>
+                  </View>
                 </TouchableOpacity>
               );
             })}
@@ -915,37 +922,53 @@ const styles = StyleSheet.create({
     fontSize: scaleFont(14),
     textTransform: "uppercase",
     letterSpacing: 1,
-    alignSelf: "flex-start",
+    textAlign: "center",
   },
   betRow: {
     flexDirection: "row",
-    gap: scale(8),
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: scale(12),
     width: "100%",
   },
-  betButton: {
-    flex: 1,
-    minHeight: scale(68),
-    borderRadius: scale(12),
-    borderWidth: 1.5,
-    borderColor: "#1a7a44",
-    backgroundColor: "#0a4a24",
+  chip: {
+    width: scale(66),
+    height: scale(66),
+    borderRadius: scale(33),
+    borderWidth: 3,
+    borderStyle: "dashed",
     alignItems: "center",
     justifyContent: "center",
   },
-  betButtonSelected: {
+  chipRing: {
+    width: scale(48),
+    height: scale(48),
+    borderRadius: scale(24),
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(0,0,0,0.12)",
+  },
+  chipAmount: {
+    color: "#ffffff",
+    fontSize: scaleFont(15),
+    fontWeight: "900",
+    textShadowColor: "rgba(0,0,0,0.45)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  chipSelected: {
     borderColor: "#ffd700",
-    backgroundColor: "#1a4a10",
+    borderStyle: "solid",
+    transform: [{ translateY: -scale(6) }, { scale: 1.06 }],
+    shadowColor: "#ffd700",
+    shadowOpacity: 0.7,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 10,
   },
-  betButtonDisabled: {
+  chipDisabled: {
     opacity: 0.3,
-  },
-  betButtonText: {
-    color: "#e0e0e0",
-    fontSize: scaleFont(11),
-    fontWeight: "bold",
-  },
-  betButtonTextSelected: {
-    color: "#ffd700",
   },
   dealButton: {
     alignSelf: "stretch",
