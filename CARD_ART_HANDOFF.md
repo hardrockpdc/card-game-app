@@ -27,12 +27,18 @@ Theme folders live in `assets/`:
 > I'm giving you a zip of a themed deck of playing-card images. Regenerate the
 > whole deck in the **same art style and color palette**, but:
 >
-> 1. **Sharper / cleaner** than the originals.
-> 2. Add a **corner index**: the rank in the top-left corner,
->    with a **medium suit symbol directly underneath the rank**, in addition to the usual large center suit/figure.
+> 1. **Sharper / cleaner** than the originals — same art, just crisper.
+> 2. **Make the rank, suit symbols, and any text EXTRA LARGE.** Keep the
+>    artwork, style, colors, and composition **exactly the same** — do NOT
+>    redraw or restyle the art. The ONLY change is to enlarge the lettering:
+>    - the **corner index** (rank in the top-left corner with a suit symbol
+>      directly underneath it) should be **big and bold** — roughly double its
+>      current size — so it's clearly readable when the card is shown small;
+>    - the **center suit symbol / figure** should also be noticeably larger.
 > 3. Create a **joker** card in the same style and frame, with:
 >    - the word **JOKER spelled vertically** (one letter stacked per line) in the
->      **top-left corner**, instead of a rank + suit;
+>      **top-left corner**, **large and bold** like the other ranks, instead of a
+>      rank + suit;
 >    - a **themed character face in the center** that fits this deck's style
 >      (e.g. Gothic → a skull in a red/black jester hat; Pirate → a pirate
 >      jester; Wizards → a wizard jester; etc.) — **not** the card's background
