@@ -29,7 +29,7 @@ Theme folders live in `assets/`:
 >
 > 1. **Sharper / cleaner** than the originals.
 > 2. Add a **corner index**: the rank in the top-left corner,
->    with a **small suit symbol directly underneath the rank**, in addition to the usual large center suit/figure.
+>    with a **medium suit symbol directly underneath the rank**, in addition to the usual large center suit/figure.
 > 3. Create a **joker** card in the same style and frame, with:
 >    - the word **JOKER spelled vertically** (one letter stacked per line) in the
 >      **top-left corner**, instead of a rank + suit;
