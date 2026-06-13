@@ -84,7 +84,6 @@ const NEON = {
   k_diamonds: require("../assets/cards/k_diamonds.png"),
   k_clubs: require("../assets/cards/k_clubs.png"),
   card_back: require("../assets/cards/card_back.png"),
-  joker: require("../assets/cards/joker.png"),
 };
 
 const COWBOY = {
@@ -141,7 +140,6 @@ const COWBOY = {
   k_diamonds: require("../assets/cards_cowboy/k_diamonds.png"),
   k_clubs: require("../assets/cards_cowboy/k_clubs.png"),
   card_back: require("../assets/cards_cowboy/card_back.png"),
-  joker: require("../assets/cards_cowboy/joker.png"),
 };
 
 const CLASSIC = {
@@ -198,7 +196,6 @@ const CLASSIC = {
   k_diamonds: require("../assets/card_images_classic/k_diamonds.png"),
   k_clubs: require("../assets/card_images_classic/k_clubs.png"),
   card_back: require("../assets/card_images_classic/card_back.png"),
-  joker: require("../assets/card_images_classic/joker.png"),
 };
 
 const GOTHIC = {
@@ -255,7 +252,6 @@ const GOTHIC = {
   k_diamonds: require("../assets/card_images_gothic/k_diamonds.png"),
   k_clubs: require("../assets/card_images_gothic/k_clubs.png"),
   card_back: require("../assets/card_images_gothic/card_back.png"),
-  joker: require("../assets/card_images_gothic/joker.png"),
 };
 
 const PIRATE = {
@@ -312,7 +308,6 @@ const PIRATE = {
   k_diamonds: require("../assets/card_images_pirate/k_diamonds.png"),
   k_clubs: require("../assets/card_images_pirate/k_clubs.png"),
   card_back: require("../assets/card_images_pirate/card_back.png"),
-  joker: require("../assets/card_images_pirate/joker.png"),
 };
 
 const GIRLY = {
@@ -369,7 +364,6 @@ const GIRLY = {
   k_diamonds: require("../assets/card_images_girly/k_diamonds.png"),
   k_clubs: require("../assets/card_images_girly/k_clubs.png"),
   card_back: require("../assets/card_images_girly/card_back.png"),
-  joker: require("../assets/card_images_girly/joker.png"),
 };
 
 const HP = {
@@ -426,7 +420,6 @@ const HP = {
   k_diamonds: require("../assets/card_images_hp/k_diamonds.png"),
   k_clubs: require("../assets/card_images_hp/k_clubs.png"),
   card_back: require("../assets/card_images_hp/card_back.png"),
-  joker: require("../assets/card_images_hp/joker.png"),
 };
 
 // Preview images: Ace of Spades for each theme (used by CardThemeScreen)
@@ -476,10 +469,6 @@ export function subscribe(fn) {
 // ─── Image getters ────────────────────────────────────────────────────────────
 
 export function getCardImage(rank, suit) {
-  // Jokers (e.g. Rummy Canasta) have rank "JOKER" and no normal suit.
-  if (rank === "JOKER") {
-    return ALL_IMAGES[_active]?.joker ?? ALL_IMAGES[_active]?.card_back;
-  }
   const rankKey = RANK_KEY[rank] ?? String(rank).toLowerCase();
   const suitKey = SUIT_KEY[suit] ?? suit;
   return ALL_IMAGES[_active]?.[`${rankKey}_${suitKey}`];
