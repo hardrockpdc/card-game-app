@@ -124,17 +124,29 @@ export default function HomeScreen({ navigation }) {
             Play with friends, anywhere
           </Text>
 
-          {!isLoadingProfile && profileHasName && (
-            <View style={styles.namePill}>
-              <Text style={styles.namePillText}>Playing as {profileName}</Text>
-            </View>
-          )}
+          <View style={styles.suitRow}>
+            <Text style={[styles.suit, styles.suitRed]}>♥</Text>
+            <Text style={styles.suit}>♠</Text>
+            <Text style={[styles.suit, styles.suitRed]}>♦</Text>
+            <Text style={styles.suit}>♣</Text>
+          </View>
 
-          {coins !== null && (
-            <View style={styles.coinPill}>
-              <Text style={styles.coinPillText}>
-                🪙 {coins.toLocaleString()}
-              </Text>
+          {((!isLoadingProfile && profileHasName) || coins !== null) && (
+            <View style={styles.headerRow}>
+              {!isLoadingProfile && profileHasName && (
+                <View style={styles.namePill}>
+                  <Text style={styles.namePillText}>
+                    Playing as {profileName}
+                  </Text>
+                </View>
+              )}
+              {coins !== null && (
+                <View style={styles.coinPill}>
+                  <Text style={styles.coinPillText}>
+                    🪙 {coins.toLocaleString()}
+                  </Text>
+                </View>
+              )}
             </View>
           )}
 
@@ -164,7 +176,7 @@ export default function HomeScreen({ navigation }) {
                 { fontSize: buttonTextSize },
               ]}
             >
-              Single Player
+              🎮  Single Player
             </Text>
             {!profileHasName && (
               <Text style={styles.singlePlayerButtonHint}>
@@ -189,7 +201,7 @@ export default function HomeScreen({ navigation }) {
             <Text
               style={[styles.primaryButtonText, { fontSize: buttonTextSize }]}
             >
-              Multiplayer
+              🌐  Multiplayer
             </Text>
           </TouchableOpacity>
 
@@ -209,7 +221,7 @@ export default function HomeScreen({ navigation }) {
             <Text
               style={[styles.profileButtonText, { fontSize: buttonTextSize }]}
             >
-              Profile
+              👤  Profile
             </Text>
           </TouchableOpacity>
 
@@ -256,15 +268,40 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   title: {
-    fontWeight: "bold",
+    fontWeight: "900",
     color: "#ffffff",
     textAlign: "center",
-    marginBottom: 10,
+    marginBottom: 8,
+    letterSpacing: 0.5,
+    textShadowColor: "rgba(233,69,96,0.35)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 14,
   },
   subtitle: {
     color: "#c4c4d4",
     textAlign: "center",
-    marginBottom: 20,
+    marginBottom: 14,
+  },
+  suitRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 16,
+    marginBottom: 22,
+  },
+  suit: {
+    color: "#5b5b75",
+    fontSize: 18,
+  },
+  suitRed: {
+    color: "#e94560",
+  },
+  headerRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 26,
   },
   quitPill: {
     flexDirection: "row",
@@ -289,7 +326,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    marginBottom: 18,
   },
   namePillText: {
     color: "#ffffff",
@@ -302,8 +338,7 @@ const styles = StyleSheet.create({
     borderColor: "#b8860b",
     borderRadius: 999,
     paddingHorizontal: 14,
-    paddingVertical: 6,
-    marginBottom: 20,
+    paddingVertical: 8,
   },
   coinPillText: {
     color: "#ffd700",
@@ -311,21 +346,29 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   singlePlayerButton: {
-    backgroundColor: "transparent",
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: "#4caf50",
-    marginBottom: 16,
+    backgroundColor: "#2e9e54",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#3fbf6d",
+    marginBottom: 14,
     width: "100%",
     alignItems: "center",
     maxWidth: 420,
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
   },
   singlePlayerButtonDisabled: {
-    borderColor: "#555",
-    opacity: 0.55,
+    backgroundColor: "#2a3340",
+    borderColor: "#3a4456",
+    opacity: 0.85,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   singlePlayerButtonText: {
-    color: "#4caf50",
+    color: "#ffffff",
     fontWeight: "bold",
   },
   singlePlayerButtonTextDisabled: {
@@ -338,19 +381,26 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     backgroundColor: "#e94560",
-    borderRadius: 12,
-    marginBottom: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#ff6b81",
+    marginBottom: 14,
     width: "100%",
     alignItems: "center",
     maxWidth: 420,
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
   },
   primaryButtonText: {
     color: "#ffffff",
     fontWeight: "bold",
   },
   profileButton: {
-    backgroundColor: "transparent",
-    borderRadius: 12,
+    backgroundColor: "rgba(106,90,205,0.12)",
+    borderRadius: 16,
     borderWidth: 2,
     borderColor: "#6a5acd",
     width: "100%",
