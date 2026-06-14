@@ -28,6 +28,8 @@ import {
 } from "../game/rummy";
 import ScrollWheelPicker from "../components/ScrollWheelPicker";
 import { POKER_VARIANT_OPTIONS } from "../components/PokerVariantWheel";
+import ProfileAvatar from "../components/ProfileAvatar";
+import { loadProfile, subscribeProfile } from "../game/profile";
 
 const GAMES = [
   {
@@ -157,6 +159,20 @@ export default function LobbyScreen({ navigation, route }) {
 
   const [selectedWheelValue, setSelectedWheelValue] =
     useState(initialWheelValue);
+
+  // Local player's profile, so their own row shows their picture.
+  const [myProfile, setMyProfile] = useState(null);
+  useEffect(() => {
+    let mounted = true;
+    loadProfile().then((p) => {
+      if (mounted) setMyProfile(p);
+    });
+    const unsub = subscribeProfile((p) => setMyProfile(p));
+    return () => {
+      mounted = false;
+      unsub();
+    };
+  }, []);
 
   const parsedSelection = useMemo(
     () => parseLobbySelection(selectedWheelValue),
@@ -508,11 +524,20 @@ export default function LobbyScreen({ navigation, route }) {
         style={styles.list}
         renderItem={({ item }) => (
           <View style={styles.playerRow}>
-            <View style={[styles.avatar, item.isAI && styles.avatarAI]}>
-              <Text style={styles.avatarText}>
-                {item.isAI ? "🤖" : item.name.charAt(0).toUpperCase()}
-              </Text>
-            </View>
+            {item.isMe ? (
+              <ProfileAvatar
+                profile={myProfile}
+                name={item.name}
+                size={scale(40)}
+                style={styles.avatarSpacing}
+              />
+            ) : (
+              <View style={[styles.avatar, item.isAI && styles.avatarAI]}>
+                <Text style={styles.avatarText}>
+                  {item.isAI ? "🤖" : item.name.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+            )}
             <Text style={styles.playerName}>{item.name}</Text>
             <View style={styles.badges}>
               {item.isHost && <Text style={styles.badge}>HOST</Text>}
@@ -637,6 +662,9 @@ const styles = StyleSheet.create({
   },
   avatarAI: {
     backgroundColor: "#6a1b9a",
+  },
+  avatarSpacing: {
+    marginRight: scale(14),
   },
   avatarText: {
     color: "#ffffff",

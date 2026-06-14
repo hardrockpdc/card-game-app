@@ -19,6 +19,7 @@ import {
   subscribeProfile,
 } from "../game/profile";
 import { getCoins } from "../game/wallet";
+import ProfileAvatar from "../components/ProfileAvatar";
 
 const PROFILE_WELCOME_MESSAGE =
   "Welcome! Set up your profile (you can change anything later)";
@@ -40,6 +41,7 @@ export default function HomeScreen({ navigation }) {
   const [profileHasName, setProfileHasName] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [coins, setCoins] = useState(null);
+  const [profile, setProfile] = useState(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -59,6 +61,7 @@ export default function HomeScreen({ navigation }) {
 
       setProfileName(getDisplayName(profile));
       setProfileHasName(hasProfileName(profile));
+      setProfile(profile);
       setIsLoadingProfile(false);
     }
 
@@ -67,6 +70,7 @@ export default function HomeScreen({ navigation }) {
     const unsubscribeProfile = subscribeProfile((profile) => {
       setProfileName(getDisplayName(profile));
       setProfileHasName(hasProfileName(profile));
+      setProfile(profile);
     });
     return () => {
       isMounted = false;
@@ -118,7 +122,7 @@ export default function HomeScreen({ navigation }) {
       >
         <View style={[styles.content, { maxWidth: contentMaxWidth }]}>
           <Text style={[styles.title, { fontSize: titleSize }]}>
-            🎴 Card Night
+            Card Night
           </Text>
           <Text style={[styles.subtitle, { fontSize: subtitleSize }]}>
             Play with friends, anywhere
@@ -130,6 +134,22 @@ export default function HomeScreen({ navigation }) {
             <Text style={[styles.suit, styles.suitRed]}>♦</Text>
             <Text style={styles.suit}>♣</Text>
           </View>
+
+          {!isLoadingProfile && profileHasName && (
+            <TouchableOpacity
+              style={styles.avatarWrap}
+              onPress={goToProfile}
+              accessibilityRole="button"
+              accessibilityLabel="Edit profile"
+            >
+              <ProfileAvatar
+                profile={profile}
+                name={profileName}
+                size={84}
+                style={styles.avatarRing}
+              />
+            </TouchableOpacity>
+          )}
 
           {((!isLoadingProfile && profileHasName) || coins !== null) && (
             <View style={styles.headerRow}>
@@ -176,7 +196,7 @@ export default function HomeScreen({ navigation }) {
                 { fontSize: buttonTextSize },
               ]}
             >
-              🎮  Single Player
+              Single Player
             </Text>
             {!profileHasName && (
               <Text style={styles.singlePlayerButtonHint}>
@@ -201,7 +221,7 @@ export default function HomeScreen({ navigation }) {
             <Text
               style={[styles.primaryButtonText, { fontSize: buttonTextSize }]}
             >
-              🌐  Multiplayer
+              🌐 Multiplayer
             </Text>
           </TouchableOpacity>
 
@@ -221,7 +241,7 @@ export default function HomeScreen({ navigation }) {
             <Text
               style={[styles.profileButtonText, { fontSize: buttonTextSize }]}
             >
-              👤  Profile
+              👤 Profile
             </Text>
           </TouchableOpacity>
 
@@ -302,6 +322,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
     marginBottom: 26,
+  },
+  avatarWrap: {
+    alignItems: "center",
+    marginBottom: 14,
+  },
+  avatarRing: {
+    borderWidth: 3,
+    borderColor: "#7c6cff",
+    shadowColor: "#000",
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
   },
   quitPill: {
     flexDirection: "row",
