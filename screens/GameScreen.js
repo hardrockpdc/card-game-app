@@ -21,6 +21,7 @@ import { recordWin } from "../game/profile";
 import TutorialOverlay, { hasSeen } from "../components/TutorialOverlay";
 import EndOfRoundModal from "../components/EndOfRoundModal";
 import StatsStrip from "../components/StatsStrip";
+import Confetti from "../components/Confetti";
 import { getTableTheme } from "../game/tableThemes";
 const BG = getTableTheme("blackjack").table;
 const ACCENT = getTableTheme("blackjack").accent;
@@ -526,6 +527,14 @@ export default function GameScreen({ navigation, route }) {
   const canPlay = gameStatus === "playing";
   const gameOver = gameStatus === "bust" || gameStatus === "finished";
 
+  // Celebrate when the player wins a hand (not on bust/lose/push).
+  const playerWon =
+    gameStatus === "finished" &&
+    (result === "win" ||
+      result === "blackjack" ||
+      splitResult === "win" ||
+      splitResult === "blackjack");
+
   const canSplit =
     canPlay &&
     activeHand === 0 &&
@@ -874,6 +883,9 @@ export default function GameScreen({ navigation, route }) {
         }}
         tableColor={BG}
       />
+
+      {/* Win celebration — rains over the table + result modal. */}
+      <Confetti active={playerWon} />
     </SafeAreaView>
   );
 }
