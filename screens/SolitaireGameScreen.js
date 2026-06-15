@@ -27,6 +27,7 @@ import useSolitaireDrag from "../components/useSolitaireDrag";
 import GameHeader from "../components/GameHeader";
 import GameMenuButton from "../components/GameMenuButton";
 import EndOfRoundModal from "../components/EndOfRoundModal";
+import Confetti from "../components/Confetti";
 import StatsStrip from "../components/StatsStrip";
 import { useLayoutMode } from "../game/useLayoutMode";
 import {
@@ -1990,6 +1991,9 @@ export default function SolitaireGameScreen({ navigation, route }) {
           {state.variantId === "tripeaks" ? renderTriPeaks() : null}
         </ScrollView>
       )}
+
+      {/* Win celebration — rains over the board + win modal, once per win. */}
+      <Confetti active={state.status === "won"} />
     </SafeAreaView>
   );
 }
