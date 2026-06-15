@@ -160,8 +160,6 @@ function RummyCard({
   animateDeal = false,
   dealDelay = 0,
 }) {
-  const isJoker = card?.rank === "JOKER";
-
   return (
     <Pressable
       onPress={disabled ? undefined : onPress}
@@ -173,20 +171,14 @@ function RummyCard({
         disabled && styles.cardWrapDisabled,
       ]}
     >
-      {isJoker ? (
-        <View style={[styles.jokerCard, small && styles.jokerCardSmall]}>
-          <Text style={styles.jokerEmoji}>🃏</Text>
-          <Text style={styles.jokerText}>Joker</Text>
-        </View>
-      ) : (
-        <Card
-          rank={card.rank}
-          suit={card.suit}
-          small={small}
-          animateDeal={animateDeal}
-          dealDelay={dealDelay}
-        />
-      )}
+      {/* Jokers render through Card too, so they use the themed joker image. */}
+      <Card
+        rank={card.rank}
+        suit={card.suit}
+        small={small}
+        animateDeal={animateDeal}
+        dealDelay={dealDelay}
+      />
     </Pressable>
   );
 }
@@ -1461,33 +1453,6 @@ const styles = StyleSheet.create({
   },
   cardWrapDisabled: {
     opacity: 1,
-  },
-  jokerCard: {
-    width: 70,
-    height: 100,
-    borderRadius: 10,
-    backgroundColor: "#202940",
-    borderWidth: 1,
-    borderColor: "#5c6f8a",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 8,
-  },
-  jokerCardSmall: {
-    width: 42,
-    height: 60,
-    borderRadius: 8,
-    padding: 4,
-  },
-  jokerEmoji: {
-    fontSize: 24,
-    marginBottom: 4,
-  },
-  jokerText: {
-    color: "#F4F7FB",
-    fontSize: 11,
-    fontWeight: "800",
-    textAlign: "center",
   },
   actionRow: {
     flexDirection: "row",
