@@ -23,7 +23,7 @@ import { scale, scaleFont } from "../game/responsive";
 import { addCoins } from "../game/wallet";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import { recordWin } from "../game/profile";
-import { hapticNotify, HapticType } from "../game/haptics";
+import { hapticWin, hapticLose } from "../game/haptics";
 import {
   broadcastToClients,
   sendToClient,
@@ -211,6 +211,7 @@ export default function RummyGameScreen({ navigation, route }) {
   const fullRef = useRef(null);
   const aiTimerRef = useRef(null);
   const coinRewardedRef = useRef(false);
+  const outcomeBuzzedRef = useRef(false); // fire win/lose haptic once per game
   const hasMountedRef = useRef(false);
   const lastSaveRef = useRef(0); // BUG-4: auto-save throttle (once / 3s)
   const {
@@ -780,10 +781,20 @@ export default function RummyGameScreen({ navigation, route }) {
       coinRewardedRef.current = true;
       addCoins(500).then(() => setCoinsEarned(500));
       recordWin("rummy");
-      hapticNotify(HapticType.Success); // celebratory buzz on a win
+    }
+    // Win/lose buzz, once per finished game (a tie stays silent).
+    if (
+      gameState?.winner != null &&
+      !gameState?.tie &&
+      !outcomeBuzzedRef.current
+    ) {
+      outcomeBuzzedRef.current = true;
+      if (isWon) hapticWin();
+      else hapticLose();
     }
     if (gameState?.winner == null && !gameState?.tie) {
       coinRewardedRef.current = false;
+      outcomeBuzzedRef.current = false;
       setCoinsEarned(0);
     }
   }, [gameState?.winner, gameState?.tie]);

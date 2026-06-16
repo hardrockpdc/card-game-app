@@ -48,9 +48,10 @@ import { recordWin } from "../game/profile";
 import { getTableTheme } from "../game/tableThemes";
 import {
   hapticImpact,
-  hapticNotify,
+  hapticWin,
+  hapticLose,
+  hapticError,
   HapticStyle,
-  HapticType,
 } from "../game/haptics";
 
 const SAVE_KEY_LASTCARD = "@cardnight:save:lastcard";
@@ -401,6 +402,7 @@ export default function LastCardGameScreen({ navigation, route }) {
   const [showRoundModal, setShowRoundModal] = useState(false);
   const shakeAnim = useRef(new Animated.Value(0)).current;
   const coinRewardedRef = useRef(false);
+  const outcomeBuzzedRef = useRef(false); // fire win/lose haptic once per game
   const lastSaveRef = useRef(0); // BUG-4: auto-save throttle (once / 3s)
 
   // Reduced-motion: swipe-to-play snaps instead of animating when enabled.
@@ -441,10 +443,16 @@ export default function LastCardGameScreen({ navigation, route }) {
       clearGame(SAVE_KEY_LASTCARD);
       addCoins(500).then(() => setCoinsEarned(500));
       recordWin("lastcard");
-      hapticNotify(HapticType.Success); // celebratory buzz on a win
+    }
+    // Win/lose buzz, once per finished game.
+    if (phase === "gameOver" && !outcomeBuzzedRef.current) {
+      outcomeBuzzedRef.current = true;
+      if (isWon) hapticWin();
+      else hapticLose();
     }
     if (phase !== "gameOver") {
       coinRewardedRef.current = false;
+      outcomeBuzzedRef.current = false;
       setCoinsEarned(0);
     }
   }, [phase, winner]);
@@ -972,7 +980,7 @@ export default function LastCardGameScreen({ navigation, route }) {
     const hasColorMatch = hand.some((c) => c.color === s.activeColor);
     if (!isPlayable(card, topCard, s.activeColor, hasColorMatch)) {
       triggerShake(card.id);
-      hapticNotify(HapticType.Warning); // gentle "nope" on an illegal card
+      hapticError(); // sharp "nope" on an illegal card
       return;
     }
 

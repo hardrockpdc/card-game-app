@@ -56,6 +56,54 @@ export function hapticSelection() {
   Haptics.selectionAsync().catch(() => {});
 }
 
+// ── Semantic patterns ───────────────────────────────────────────────────────
+// expo-haptics only exposes a few primitives, so we *compose* them into named
+// patterns that map to game EVENTS. The goal is that each event feels distinct
+// enough to recognise without looking:
+//   • button → a tiny tick
+//   • win    → three taps that RISE  (light → medium → heavy)
+//   • lose   → a heavy thud that settles (heavy → soft echo)
+//   • error  → the OS's sharp "rejection" buzz
+// Prefer these in game code over the raw helpers above.
+
+const Style = Haptics.ImpactFeedbackStyle;
+
+// Fire an impact later, re-checking the enabled flag in case it was turned off
+// mid-pattern.
+function impactLater(style, ms) {
+  setTimeout(() => {
+    if (_enabled) Haptics.impactAsync(style).catch(() => {});
+  }, ms);
+}
+
+// Light tick — button/menu presses, card pick-up, selections.
+export function hapticButton() {
+  if (!_enabled) return;
+  Haptics.selectionAsync().catch(() => {});
+}
+
+// Rising three-tap flourish — a win / round won. Reads as celebratory.
+export function hapticWin() {
+  if (!_enabled) return;
+  Haptics.impactAsync(Style.Light).catch(() => {});
+  impactLater(Style.Medium, 90);
+  impactLater(Style.Heavy, 190);
+}
+
+// Heavy thud + soft echo — a loss / bust. Reads as "down".
+export function hapticLose() {
+  if (!_enabled) return;
+  Haptics.impactAsync(Style.Heavy).catch(() => {});
+  impactLater(Style.Light, 150);
+}
+
+// Sharp rejection buzz — an illegal move / error (e.g. an illegal Solitaire
+// drop or an unplayable Last Card card).
+export function hapticError() {
+  if (!_enabled) return;
+  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
+}
+
 // Re-export the enums so callers don't need to import expo-haptics directly.
 export const HapticStyle = Haptics.ImpactFeedbackStyle;
 export const HapticType = Haptics.NotificationFeedbackType;

@@ -24,10 +24,10 @@ import StatsStrip from "../components/StatsStrip";
 import Confetti from "../components/Confetti";
 import {
   hapticImpact,
-  hapticNotify,
-  hapticSelection,
+  hapticButton,
+  hapticWin,
+  hapticLose,
   HapticStyle,
-  HapticType,
 } from "../game/haptics";
 import { getTableTheme } from "../game/tableThemes";
 const BG = getTableTheme("blackjack").table;
@@ -237,9 +237,9 @@ export default function GameScreen({ navigation, route }) {
     const coinsDeltaNet = payout - totalBet;
     setCoinsDelta(coinsDeltaNet);
 
-    // Outcome haptic: win = success buzz, loss/bust = error, push = nothing.
-    if (coinsDeltaNet > 0) hapticNotify(HapticType.Success);
-    else if (coinsDeltaNet < 0) hapticNotify(HapticType.Error);
+    // Outcome haptic: win = rising flourish, loss/bust = thud, push = nothing.
+    if (coinsDeltaNet > 0) hapticWin();
+    else if (coinsDeltaNet < 0) hapticLose();
 
     // Streak rules:
     // - coinsDeltaNet === 0 (push / bet returned) breaks the streak → "—"
@@ -654,7 +654,7 @@ export default function GameScreen({ navigation, route }) {
                   onPress={() => {
                     if (canAfford) {
                       setSelectedBet(amount);
-                      hapticSelection();
+                      hapticButton();
                     }
                   }}
                   disabled={!canAfford}

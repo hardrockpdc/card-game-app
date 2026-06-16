@@ -49,7 +49,7 @@ import { scale, scaleFont } from "../game/responsive";
 import { addCoins } from "../game/wallet";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import { recordWin } from "../game/profile";
-import { hapticNotify, HapticType } from "../game/haptics";
+import { hapticWin, hapticLose } from "../game/haptics";
 import { getTableTheme } from "../game/tableThemes";
 
 const AI_MOVE_DELAY_MS = 700; // delay between AI opponent moves (ms)
@@ -102,6 +102,7 @@ export default function ConquianGameScreen({ navigation, route }) {
 
   const fullRef = useRef(null);
   const coinRewardedRef = useRef(false);
+  const outcomeBuzzedRef = useRef(false); // fire win/lose haptic once per game
   const aiTimerRef = useRef(null);
   const hasMountedRef = useRef(false);
   const lastSaveRef = useRef(0);
@@ -1007,10 +1008,20 @@ export default function ConquianGameScreen({ navigation, route }) {
       coinRewardedRef.current = true;
       addCoins(500).then(() => setCoinsEarned(500));
       recordWin("conquian");
-      hapticNotify(HapticType.Success); // celebratory buzz on a win
+    }
+    // Win/lose buzz, once per finished game (a tie stays silent).
+    if (
+      gameState?.phase === "results" &&
+      !gameState?.tie &&
+      !outcomeBuzzedRef.current
+    ) {
+      outcomeBuzzedRef.current = true;
+      if (isWon) hapticWin();
+      else hapticLose();
     }
     if (gameState?.phase !== "results") {
       coinRewardedRef.current = false;
+      outcomeBuzzedRef.current = false;
       setCoinsEarned(0);
     }
   }, [gameState?.phase, gameState?.winner, gameState?.tie]);

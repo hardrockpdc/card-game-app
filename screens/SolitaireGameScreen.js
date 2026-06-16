@@ -28,7 +28,7 @@ import GameHeader from "../components/GameHeader";
 import GameMenuButton from "../components/GameMenuButton";
 import EndOfRoundModal from "../components/EndOfRoundModal";
 import Confetti from "../components/Confetti";
-import { hapticNotify, HapticType } from "../game/haptics";
+import { hapticWin } from "../game/haptics";
 import StatsStrip from "../components/StatsStrip";
 import { useLayoutMode } from "../game/useLayoutMode";
 import {
@@ -507,7 +507,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
       coinRewardedRef.current = true;
       addCoins(250).then(() => setCoinsEarned(250));
       recordWin("solitaire");
-      hapticNotify(HapticType.Success);
+      hapticWin();
     }
     if (state.status !== "won") {
       coinRewardedRef.current = false;

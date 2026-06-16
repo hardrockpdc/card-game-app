@@ -4,7 +4,12 @@ import { Gesture } from "react-native-gesture-handler";
 
 import Card from "./Card";
 import { getTopCard, getLegalTargets, moveAction } from "../game/solitaire";
-import { hapticImpact, hapticSelection, HapticStyle } from "../game/haptics";
+import {
+  hapticImpact,
+  hapticButton,
+  hapticError,
+  HapticStyle,
+} from "../game/haptics";
 
 // Where on the picked-up card the finger "holds" it: dead center of the grabbed
 // card on both axes, so the stylus/finger sits in the middle of the card.
@@ -175,7 +180,7 @@ export default function useSolitaireDrag(state, dispatch, sizing) {
       }
       draggingRef.current = true;
       setDrag({ source, run, legalTargets });
-      hapticSelection(); // soft tick when a card lifts
+      hapticButton(); // soft tick when a card lifts
     },
     [lift, measureZones, overlayPos, pan],
   );
@@ -192,14 +197,16 @@ export default function useSolitaireDrag(state, dispatch, sizing) {
       // Find a legal zone under the release point.
       const legal = getLegalTargets(stateRef.current, source);
       let hit = null;
+      let overZone = false; // released over SOME zone, legal or not
       rectsRef.current.forEach((r) => {
-        if (
+        const inside =
           absX >= r.x &&
           absX <= r.x + r.w &&
           absY >= r.y &&
-          absY <= r.y + r.h &&
-          legal.some((t) => targetsEqual(t, r.target))
-        ) {
+          absY <= r.y + r.h;
+        if (!inside) return;
+        overZone = true;
+        if (legal.some((t) => targetsEqual(t, r.target))) {
           hit = r.target;
         }
       });
@@ -210,6 +217,11 @@ export default function useSolitaireDrag(state, dispatch, sizing) {
         clearDrag();
         return;
       }
+
+      // Dropped ONTO a column/foundation that won't accept it → a wrong move.
+      // Buzz an error. (A release into empty space stays silent — that's just
+      // putting the card back, not a mistake.)
+      if (overZone) hapticError();
 
       // Invalid drop — spring the run back to where it was grabbed, then clear.
       if (reduceMotionRef.current) {

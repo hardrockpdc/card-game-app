@@ -3,7 +3,12 @@ import { AccessibilityInfo, Animated, StyleSheet, View } from "react-native";
 import { Gesture } from "react-native-gesture-handler";
 
 import Card from "./Card";
-import { hapticImpact, hapticSelection, HapticStyle } from "../game/haptics";
+import {
+  hapticImpact,
+  hapticButton,
+  hapticError,
+  HapticStyle,
+} from "../game/haptics";
 
 // Finger holds the card at its center on both axes.
 const GRAB_X = 0.5;
@@ -144,7 +149,7 @@ export default function useConquianMeldDrag({
       }
       draggingRef.current = true;
       setDrag({ source });
-      hapticSelection(); // soft tick when a card lifts
+      hapticButton(); // soft tick when a card lifts
     },
     [lift, measureZones, overlayPos, pan, rmRef],
   );
@@ -196,6 +201,9 @@ export default function useConquianMeldDrag({
         clearDrag();
         return;
       }
+      // Dropped onto a zone that rejected the card → a wrong move. (Released in
+      // empty space stays silent — that's just putting it back.)
+      if (hit) hapticError();
       snapBack();
     },
     [clearDrag, snapBack],
