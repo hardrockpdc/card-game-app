@@ -29,6 +29,45 @@ export default function GameMenuItems({ menuItems, onClose }) {
 
   return (
     <View>
+      {/* Sound + Haptics always render at the top so every game has them,
+          regardless of which items a screen passes. (A legacy `type: "sound"`
+          item, if any screen still sends one, is ignored below.) */}
+      <Pressable
+        onPress={() => {
+          const next = !muted;
+          setMutedState(next);
+          setMuted(next);
+          if (isFunction(onClose)) onClose();
+        }}
+        style={({ pressed }) => [
+          styles.menuRow,
+          pressed && styles.menuRowPressed,
+        ]}
+        accessibilityRole="button"
+        accessibilityLabel={muted ? "Turn sound on" : "Turn sound off"}
+      >
+        <Text style={styles.menuIcon}>{muted ? "🔇" : "🔊"}</Text>
+        <Text style={styles.menuLabel}>Sound: {muted ? "Off" : "On"}</Text>
+      </Pressable>
+
+      <Pressable
+        onPress={() => {
+          const next = !hapticsOn;
+          setHapticsOnState(next);
+          setHapticsEnabled(next);
+          if (next) hapticSelection(); // confirm with a tick when enabling
+          if (isFunction(onClose)) onClose();
+        }}
+        style={({ pressed }) => [styles.menuRow, pressed && styles.menuRowPressed]}
+        accessibilityRole="button"
+        accessibilityLabel={hapticsOn ? "Turn haptics off" : "Turn haptics on"}
+      >
+        <Text style={styles.menuIcon}>📳</Text>
+        <Text style={styles.menuLabel}>Haptics: {hapticsOn ? "On" : "Off"}</Text>
+      </Pressable>
+
+      <MenuDivider />
+
       {items.map((item, idx) => {
         const key = item?.key ?? `${item?.type ?? "item"}-${idx}`;
 
@@ -36,56 +75,10 @@ export default function GameMenuItems({ menuItems, onClose }) {
           return <MenuDivider key={key} />;
         }
 
+        // Legacy: a screen passing an explicit sound item is now a no-op,
+        // since Sound + Haptics already render above.
         if (item?.type === "sound") {
-          // Render Sound + Haptics together so every game gets both toggles.
-          return (
-            <React.Fragment key={key}>
-              <Pressable
-                onPress={() => {
-                  const next = !muted;
-                  setMutedState(next);
-                  setMuted(next);
-                  if (isFunction(onClose)) onClose();
-                }}
-                style={({ pressed }) => [
-                  styles.menuRow,
-                  pressed && styles.menuRowPressed,
-                  item?.disabled && styles.menuRowDisabled,
-                ]}
-                disabled={item?.disabled}
-                accessibilityRole="button"
-                accessibilityLabel={muted ? "Turn sound on" : "Turn sound off"}
-              >
-                <Text style={styles.menuIcon}>{muted ? "🔇" : "🔊"}</Text>
-                <Text style={styles.menuLabel}>
-                  Sound: {muted ? "Off" : "On"}
-                </Text>
-              </Pressable>
-
-              <Pressable
-                onPress={() => {
-                  const next = !hapticsOn;
-                  setHapticsOnState(next);
-                  setHapticsEnabled(next);
-                  if (next) hapticSelection(); // confirm with a tick when enabling
-                  if (isFunction(onClose)) onClose();
-                }}
-                style={({ pressed }) => [
-                  styles.menuRow,
-                  pressed && styles.menuRowPressed,
-                ]}
-                accessibilityRole="button"
-                accessibilityLabel={
-                  hapticsOn ? "Turn haptics off" : "Turn haptics on"
-                }
-              >
-                <Text style={styles.menuIcon}>📳</Text>
-                <Text style={styles.menuLabel}>
-                  Haptics: {hapticsOn ? "On" : "Off"}
-                </Text>
-              </Pressable>
-            </React.Fragment>
-          );
+          return null;
         }
 
         if (item?.type === "undo") {
