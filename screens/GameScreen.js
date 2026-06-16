@@ -251,7 +251,7 @@ export default function GameScreen({ navigation, route }) {
     // deal, so `freshDeal` holds the modal long enough to watch the cards land + the
     // hole-card flip + read "Blackjack!". A mid-hand bust uses the short delay since
     // the player already saw their cards.
-    const delayMs = dealerPlayed ? 2000 : freshDeal ? 1700 : 600;
+    const delayMs = dealerPlayed ? 2000 : freshDeal ? 2600 : 600;
     if (modalDelayTimerRef.current) clearTimeout(modalDelayTimerRef.current);
     modalDelayTimerRef.current = setTimeout(() => {
       setScreenPhase("result");
