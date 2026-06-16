@@ -37,6 +37,7 @@ import { loadProfile } from "./game/profile";
 import { setTheme } from "./game/cardTheme";
 import { warn } from "./game/logger";
 import { initSounds } from "./game/sounds";
+import { initHaptics } from "./game/haptics";
 import { ThemeProvider } from "./game/ThemeContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import {
@@ -76,6 +77,7 @@ export default function App() {
         warn("Failed to load profile theme:", err);
       });
     initSounds();
+    initHaptics();
   }, []);
 
   // The app is portrait-first: every screen is designed for portrait except

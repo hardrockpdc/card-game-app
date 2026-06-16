@@ -22,6 +22,13 @@ import TutorialOverlay, { hasSeen } from "../components/TutorialOverlay";
 import EndOfRoundModal from "../components/EndOfRoundModal";
 import StatsStrip from "../components/StatsStrip";
 import Confetti from "../components/Confetti";
+import {
+  hapticImpact,
+  hapticNotify,
+  hapticSelection,
+  HapticStyle,
+  HapticType,
+} from "../game/haptics";
 import { getTableTheme } from "../game/tableThemes";
 const BG = getTableTheme("blackjack").table;
 const ACCENT = getTableTheme("blackjack").accent;
@@ -230,6 +237,10 @@ export default function GameScreen({ navigation, route }) {
     const coinsDeltaNet = payout - totalBet;
     setCoinsDelta(coinsDeltaNet);
 
+    // Outcome haptic: win = success buzz, loss/bust = error, push = nothing.
+    if (coinsDeltaNet > 0) hapticNotify(HapticType.Success);
+    else if (coinsDeltaNet < 0) hapticNotify(HapticType.Error);
+
     // Streak rules:
     // - coinsDeltaNet === 0 (push / bet returned) breaks the streak → "—"
     // - coinsDeltaNet > 0 => win streak ("W")
@@ -294,6 +305,7 @@ export default function GameScreen({ navigation, route }) {
     setGameStatus("playing");
     setScreenPhase("playing");
     playSound("card_deal");
+    hapticImpact(HapticStyle.Light);
 
     const newCoins = await subtractCoins(bet);
     setCoins(newCoins);
@@ -444,6 +456,7 @@ export default function GameScreen({ navigation, route }) {
     setGameStatus("playing");
     setScreenPhase("playing");
     playSound("card_deal");
+    hapticImpact(HapticStyle.Light);
 
     const newCoins = await subtractCoins(bet);
     setCoins(newCoins);
@@ -639,7 +652,10 @@ export default function GameScreen({ navigation, route }) {
                     !canAfford && styles.chipDisabled,
                   ]}
                   onPress={() => {
-                    if (canAfford) setSelectedBet(amount);
+                    if (canAfford) {
+                      setSelectedBet(amount);
+                      hapticSelection();
+                    }
                   }}
                   disabled={!canAfford}
                   accessibilityRole="button"

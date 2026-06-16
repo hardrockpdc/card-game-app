@@ -3,6 +3,11 @@ import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { scale, scaleFont } from "../game/responsive";
 import { getMuted, setMuted } from "../game/sounds";
+import {
+  getHapticsEnabled,
+  setHapticsEnabled,
+  hapticSelection,
+} from "../game/haptics";
 
 function isFunction(x) {
   return typeof x === "function";
@@ -18,6 +23,7 @@ export function MenuDivider() {
 export default function GameMenuItems({ menuItems, onClose }) {
   const navigation = useNavigation();
   const [muted, setMutedState] = useState(getMuted());
+  const [hapticsOn, setHapticsOnState] = useState(getHapticsEnabled());
 
   const items = Array.isArray(menuItems) ? menuItems : [];
 
@@ -31,29 +37,54 @@ export default function GameMenuItems({ menuItems, onClose }) {
         }
 
         if (item?.type === "sound") {
+          // Render Sound + Haptics together so every game gets both toggles.
           return (
-            <Pressable
-              key={key}
-              onPress={() => {
-                const next = !muted;
-                setMutedState(next);
-                setMuted(next);
-                if (isFunction(onClose)) onClose();
-              }}
-              style={({ pressed }) => [
-                styles.menuRow,
-                pressed && styles.menuRowPressed,
-                item?.disabled && styles.menuRowDisabled,
-              ]}
-              disabled={item?.disabled}
-              accessibilityRole="button"
-              accessibilityLabel={muted ? "Turn sound on" : "Turn sound off"}
-            >
-              <Text style={styles.menuIcon}>{muted ? "🔇" : "🔊"}</Text>
-              <Text style={styles.menuLabel}>
-                Sound: {muted ? "Off" : "On"}
-              </Text>
-            </Pressable>
+            <React.Fragment key={key}>
+              <Pressable
+                onPress={() => {
+                  const next = !muted;
+                  setMutedState(next);
+                  setMuted(next);
+                  if (isFunction(onClose)) onClose();
+                }}
+                style={({ pressed }) => [
+                  styles.menuRow,
+                  pressed && styles.menuRowPressed,
+                  item?.disabled && styles.menuRowDisabled,
+                ]}
+                disabled={item?.disabled}
+                accessibilityRole="button"
+                accessibilityLabel={muted ? "Turn sound on" : "Turn sound off"}
+              >
+                <Text style={styles.menuIcon}>{muted ? "🔇" : "🔊"}</Text>
+                <Text style={styles.menuLabel}>
+                  Sound: {muted ? "Off" : "On"}
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => {
+                  const next = !hapticsOn;
+                  setHapticsOnState(next);
+                  setHapticsEnabled(next);
+                  if (next) hapticSelection(); // confirm with a tick when enabling
+                  if (isFunction(onClose)) onClose();
+                }}
+                style={({ pressed }) => [
+                  styles.menuRow,
+                  pressed && styles.menuRowPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  hapticsOn ? "Turn haptics off" : "Turn haptics on"
+                }
+              >
+                <Text style={styles.menuIcon}>📳</Text>
+                <Text style={styles.menuLabel}>
+                  Haptics: {hapticsOn ? "On" : "Off"}
+                </Text>
+              </Pressable>
+            </React.Fragment>
           );
         }
 
