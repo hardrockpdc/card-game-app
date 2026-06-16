@@ -197,6 +197,7 @@ export default function GameScreen({ navigation, route }) {
     sResult,
     hadSplit,
     dealerPlayed = false,
+    freshDeal = false,
   ) {
     if (payoutDoneRef.current) return;
     payoutDoneRef.current = true;
@@ -244,12 +245,13 @@ export default function GameScreen({ navigation, route }) {
       recordWin("blackjack");
     }
 
-    // UX-2: Delay the result modal so the dealer reveal can finish before it's
+    // UX-2: Delay the result modal so the player can see what happened before it's
     // covered. The full 2s is only needed when the dealer actually plays out a hand
-    // (extra cards may animate in). On an instant bust or a natural blackjack only
-    // the single hole-card flip (~260ms) plays, so use a short delay — the longer
-    // one just felt laggy on those paths.
-    const delayMs = dealerPlayed ? 2000 : 600;
+    // (extra cards may animate in). A natural blackjack resolves instantly off the
+    // deal, so `freshDeal` holds the modal long enough to watch the cards land + the
+    // hole-card flip + read "Blackjack!". A mid-hand bust uses the short delay since
+    // the player already saw their cards.
+    const delayMs = dealerPlayed ? 2000 : freshDeal ? 1700 : 600;
     if (modalDelayTimerRef.current) clearTimeout(modalDelayTimerRef.current);
     modalDelayTimerRef.current = setTimeout(() => {
       setScreenPhase("result");
@@ -299,7 +301,7 @@ export default function GameScreen({ navigation, route }) {
       const bjResult = dealerVal === 21 ? "push" : "blackjack";
       setResult(bjResult);
       setGameStatus("finished");
-      resolveHandPayout(bjResult, "", false);
+      resolveHandPayout(bjResult, "", false, false, true);
     }
   }
 
@@ -448,7 +450,7 @@ export default function GameScreen({ navigation, route }) {
       const bjResult = dealerVal === 21 ? "push" : "blackjack";
       setResult(bjResult);
       setGameStatus("finished");
-      resolveHandPayout(bjResult, "", false);
+      resolveHandPayout(bjResult, "", false, false, true);
     }
   }
 
