@@ -70,7 +70,9 @@ export default function EndOfRoundModal({
                 ]}
                 onPress={onLeave}
               >
-                <Text style={styles.leaveBtnText}>{leaveLabel ?? "Leave"}</Text>
+                <Text style={styles.leaveBtnText}>
+                  {leaveLabel ?? "Main Menu"}
+                </Text>
               </Pressable>
             )}
           </View>
