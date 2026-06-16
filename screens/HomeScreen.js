@@ -218,11 +218,18 @@ export default function HomeScreen({ navigation }) {
             accessibilityLabel="Multiplayer"
             accessibilityHint="Opens the multiplayer menu"
           >
-            <Text
-              style={[styles.primaryButtonText, { fontSize: buttonTextSize }]}
-            >
-              🌐 Multiplayer
-            </Text>
+            <View style={styles.btnLabel}>
+              <Text
+                style={[styles.primaryButtonText, { fontSize: buttonTextSize }]}
+              >
+                🌐
+              </Text>
+              <Text
+                style={[styles.primaryButtonText, { fontSize: buttonTextSize }]}
+              >
+                Multiplayer
+              </Text>
+            </View>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -238,11 +245,18 @@ export default function HomeScreen({ navigation }) {
             accessibilityLabel="Profile"
             accessibilityHint="Open your profile to edit your name, photo, and card theme"
           >
-            <Text
-              style={[styles.profileButtonText, { fontSize: buttonTextSize }]}
-            >
-              👤 Profile
-            </Text>
+            <View style={styles.btnLabel}>
+              <Text
+                style={[styles.profileButtonText, { fontSize: buttonTextSize }]}
+              >
+                👤
+              </Text>
+              <Text
+                style={[styles.profileButtonText, { fontSize: buttonTextSize }]}
+              >
+                Profile
+              </Text>
+            </View>
           </TouchableOpacity>
 
           <View style={styles.bottomLinks}>
@@ -322,6 +336,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
     marginBottom: 26,
+  },
+  // Icon + label as separate Text nodes (an emoji + text in ONE Text node can
+  // render just the emoji on Android after a re-layout, e.g. returning Home).
+  btnLabel: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
   },
   avatarWrap: {
     alignItems: "center",
