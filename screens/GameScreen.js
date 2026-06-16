@@ -47,6 +47,10 @@ const BLACKJACK_SLIDES = [
 const BET_OPTIONS = [10, 25, 50, 100, 250];
 const MIN_BET = 10;
 
+// Blackjack is a few-card game, so the cards are sized up for readability.
+// (Hands still wrap to a second row in the rare case of many cards.)
+const CARD_SIZE_SCALE = 1.3;
+
 // Casino-chip palette per denomination: { bg, edge (dashed ring), ring (inner) }.
 const CHIP_COLORS = {
   10: { bg: "#b3242b", edge: "#e35a61", ring: "#f2c9cb" },
@@ -726,7 +730,7 @@ export default function GameScreen({ navigation, route }) {
                   suit={card.suit}
                   faceDown={index === 1 && !showFullDealerHand}
                   animateReveal={index === 1}
-                  sizeScale={1}
+                  sizeScale={CARD_SIZE_SCALE}
                   animateDeal={hasMountedRef.current}
                   dealDelay={dealerHand.length <= 2 ? index * 200 + 100 : 0}
                 />
@@ -754,7 +758,7 @@ export default function GameScreen({ navigation, route }) {
                   key={card.id}
                   rank={card.rank}
                   suit={card.suit}
-                  sizeScale={1}
+                  sizeScale={CARD_SIZE_SCALE}
                   animateDeal={hasMountedRef.current}
                   dealDelay={playerHand.length <= 2 ? index * 200 : 0}
                 />
@@ -783,7 +787,7 @@ export default function GameScreen({ navigation, route }) {
                     key={card.id}
                     rank={card.rank}
                     suit={card.suit}
-                    sizeScale={1}
+                    sizeScale={CARD_SIZE_SCALE}
                     animateDeal={hasMountedRef.current}
                     dealDelay={splitHand.length <= 2 ? index * 100 : 0}
                   />
