@@ -46,6 +46,12 @@ import { addCoins } from "../game/wallet";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import { recordWin } from "../game/profile";
 import { getTableTheme } from "../game/tableThemes";
+import {
+  hapticImpact,
+  hapticNotify,
+  HapticStyle,
+  HapticType,
+} from "../game/haptics";
 
 const SAVE_KEY_LASTCARD = "@cardnight:save:lastcard";
 
@@ -435,6 +441,7 @@ export default function LastCardGameScreen({ navigation, route }) {
       clearGame(SAVE_KEY_LASTCARD);
       addCoins(500).then(() => setCoinsEarned(500));
       recordWin("lastcard");
+      hapticNotify(HapticType.Success); // celebratory buzz on a win
     }
     if (phase !== "gameOver") {
       coinRewardedRef.current = false;
@@ -965,8 +972,11 @@ export default function LastCardGameScreen({ navigation, route }) {
     const hasColorMatch = hand.some((c) => c.color === s.activeColor);
     if (!isPlayable(card, topCard, s.activeColor, hasColorMatch)) {
       triggerShake(card.id);
+      hapticNotify(HapticType.Warning); // gentle "nope" on an illegal card
       return;
     }
+
+    hapticImpact(HapticStyle.Light); // satisfying tap when a card plays
 
     if (card.type === "wild" || card.type === "wild_draw4") {
       pendingWildRef.current = card;

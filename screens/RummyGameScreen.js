@@ -23,6 +23,7 @@ import { scale, scaleFont } from "../game/responsive";
 import { addCoins } from "../game/wallet";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import { recordWin } from "../game/profile";
+import { hapticNotify, HapticType } from "../game/haptics";
 import {
   broadcastToClients,
   sendToClient,
@@ -779,6 +780,7 @@ export default function RummyGameScreen({ navigation, route }) {
       coinRewardedRef.current = true;
       addCoins(500).then(() => setCoinsEarned(500));
       recordWin("rummy");
+      hapticNotify(HapticType.Success); // celebratory buzz on a win
     }
     if (gameState?.winner == null && !gameState?.tie) {
       coinRewardedRef.current = false;

@@ -49,6 +49,7 @@ import { scale, scaleFont } from "../game/responsive";
 import { addCoins } from "../game/wallet";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import { recordWin } from "../game/profile";
+import { hapticNotify, HapticType } from "../game/haptics";
 import { getTableTheme } from "../game/tableThemes";
 
 const AI_MOVE_DELAY_MS = 700; // delay between AI opponent moves (ms)
@@ -1006,6 +1007,7 @@ export default function ConquianGameScreen({ navigation, route }) {
       coinRewardedRef.current = true;
       addCoins(500).then(() => setCoinsEarned(500));
       recordWin("conquian");
+      hapticNotify(HapticType.Success); // celebratory buzz on a win
     }
     if (gameState?.phase !== "results") {
       coinRewardedRef.current = false;

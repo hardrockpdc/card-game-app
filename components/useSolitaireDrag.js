@@ -4,6 +4,7 @@ import { Gesture } from "react-native-gesture-handler";
 
 import Card from "./Card";
 import { getTopCard, getLegalTargets, moveAction } from "../game/solitaire";
+import { hapticImpact, hapticSelection, HapticStyle } from "../game/haptics";
 
 // Where on the picked-up card the finger "holds" it: dead center of the grabbed
 // card on both axes, so the stylus/finger sits in the middle of the card.
@@ -174,6 +175,7 @@ export default function useSolitaireDrag(state, dispatch, sizing) {
       }
       draggingRef.current = true;
       setDrag({ source, run, legalTargets });
+      hapticSelection(); // soft tick when a card lifts
     },
     [lift, measureZones, overlayPos, pan],
   );
@@ -203,6 +205,7 @@ export default function useSolitaireDrag(state, dispatch, sizing) {
       });
 
       if (hit) {
+        hapticImpact(HapticStyle.Light); // satisfying tap when it lands
         dispatchRef.current(moveAction(source, hit));
         clearDrag();
         return;

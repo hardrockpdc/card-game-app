@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { hapticImpact, HapticStyle } from "../game/haptics";
 
 // Flash the "Your Turn!" banner for ~1.5s whenever the turn flips TO the local
 // player. `active` gates it (e.g. only during the playing phase, not on the
@@ -15,8 +16,9 @@ export default function useYourTurnBanner(isMyTurn, active = true) {
 
   useEffect(() => {
     if (active && isMyTurn && !prevRef.current) {
-      // Turn just became mine → flash the banner for ~1.5s.
+      // Turn just became mine → flash the banner for ~1.5s + a soft nudge.
       setVisible(true);
+      hapticImpact(HapticStyle.Light);
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {
         timerRef.current = null;

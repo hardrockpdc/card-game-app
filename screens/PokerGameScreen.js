@@ -13,6 +13,7 @@ import { createDeck, shuffleDeck } from "../game/deck";
 import { addCoins, subtractCoins } from "../game/wallet";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import { recordWin } from "../game/profile";
+import { hapticNotify, HapticType } from "../game/haptics";
 import Card from "../components/Card";
 import { scale, scaleFont } from "../game/responsive";
 import GameHeader from "../components/GameHeader";
@@ -772,6 +773,7 @@ export default function PokerGameScreen({ navigation, route }) {
               const wonChips = chipsRef.current["host"] ?? 0;
               addCoins(wonChips).then(() => setTournamentCoins(wonChips));
               recordWin("poker");
+              hapticNotify(HapticType.Success); // celebratory buzz on a win
             }
           }
           return;

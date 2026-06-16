@@ -19,6 +19,7 @@ import { addCoins } from "../game/wallet";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import { recordWin } from "../game/profile";
 import { getTableTheme } from "../game/tableThemes";
+import { hapticNotify, HapticType } from "../game/haptics";
 
 const BG = getTableTheme("gofish").table;
 const SAVE_KEY_GOFISH = "@cardnight:save:gofish";
@@ -213,6 +214,7 @@ export default function GoFishGameScreen({ navigation, route }) {
       coinRewardedRef.current = true;
       addCoins(500).then(() => setCoinsEarned(500));
       recordWin("gofish");
+      hapticNotify(HapticType.Success); // celebratory buzz on a win
     }
     if (gameState?.phase !== "results") {
       coinRewardedRef.current = false;

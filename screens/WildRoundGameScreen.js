@@ -35,6 +35,7 @@ import {
 } from "../game/GameNetwork";
 import { scale, scaleFont } from "../game/responsive";
 import { getTableTheme } from "../game/tableThemes";
+import { hapticNotify, HapticType } from "../game/haptics";
 
 const WIN_SCORE = 10;
 const BG = getTableTheme("wildround").table;
@@ -114,6 +115,9 @@ export default function WildRoundGameScreen({ navigation, route }) {
   useEffect(() => {
     if (!gameState || gameState.phase !== "gameOver") return;
     setShowRoundModal(true);
+    if (String(gameState.winner) === myPid) {
+      hapticNotify(HapticType.Success); // celebratory buzz when you win
+    }
   }, [gameState?.phase]);
   const revealCardWidth = Math.max(width - 32, 0);
   const revealCardHeight = Math.round(height * 0.38);
