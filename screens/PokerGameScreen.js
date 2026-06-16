@@ -4,11 +4,11 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
   Alert,
   BackHandler,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import { createDeck, shuffleDeck } from "../game/deck";
 import { addCoins, subtractCoins } from "../game/wallet";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";

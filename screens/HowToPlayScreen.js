@@ -3,10 +3,10 @@ import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   StyleSheet,
   Image,
 } from "react-native";
+import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import { scale, scaleFont } from "../game/responsive";
 import Card from "../components/Card";
 import { POKER_VARIANT_OPTIONS } from "../components/PokerVariantWheel";

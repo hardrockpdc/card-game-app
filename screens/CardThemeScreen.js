@@ -3,11 +3,11 @@ import {
   View,
   Text,
   Image,
-  TouchableOpacity,
   FlatList,
   StyleSheet,
   useWindowDimensions,
 } from "react-native";
+import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   THEMES_LIST,

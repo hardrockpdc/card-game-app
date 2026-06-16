@@ -48,6 +48,7 @@ import { recordWin } from "../game/profile";
 import { getTableTheme } from "../game/tableThemes";
 import {
   hapticImpact,
+  hapticButton,
   hapticWin,
   hapticLose,
   hapticError,
@@ -1023,6 +1024,8 @@ export default function LastCardGameScreen({ navigation, route }) {
     const hasPlay = hasPlayableCard(s, myPid);
     if (hasPlay) return;
 
+    hapticButton(); // tick when you draw from the deck
+
     lockedRef.current = true;
     if (isHost) {
       const next = doHostDraw(myPid);
@@ -1042,6 +1045,8 @@ export default function LastCardGameScreen({ navigation, route }) {
     const s = getCurrentState();
     const pending = pendingWildRef.current;
     if (!s || !pending || s.gameOver) return;
+
+    hapticButton(); // tick when picking a wild color
 
     pendingWildRef.current = null;
     setPhase("playing");

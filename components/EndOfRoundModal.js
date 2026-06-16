@@ -1,6 +1,7 @@
 import React from "react";
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Modal, StyleSheet, Text, View } from "react-native";
 import { scale, scaleFont } from "../game/responsive";
+import { HapticPressable as Pressable } from "./Haptic";
 
 export default function EndOfRoundModal({
   visible,

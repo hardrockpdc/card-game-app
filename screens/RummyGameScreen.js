@@ -2,13 +2,13 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   BackHandler,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { HapticPressable as Pressable } from "../components/Haptic";
 
 import Card from "../components/Card";
 import Toast, { useToast } from "../components/Toast";

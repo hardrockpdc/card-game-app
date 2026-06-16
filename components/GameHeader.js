@@ -1,12 +1,7 @@
 import React, { useState } from "react";
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions,
-} from "react-native";
+import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { scale, scaleFont } from "../game/responsive";
+import { HapticPressable as Pressable } from "./Haptic";
 import { getTableTheme } from "../game/tableThemes";
 import GameMenuItems, { MenuDivider } from "./GameMenu";
 

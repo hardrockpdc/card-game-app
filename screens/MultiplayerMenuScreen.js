@@ -3,11 +3,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
   ScrollView,
   useWindowDimensions,
 } from "react-native";
+import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import { scale, scaleFont } from "../game/responsive";
 
 export default function MultiplayerMenuScreen({ navigation }) {

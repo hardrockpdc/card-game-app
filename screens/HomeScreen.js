@@ -4,13 +4,13 @@ import {
   ScrollView,
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
   useWindowDimensions,
   Platform,
   Alert,
   BackHandler,
 } from "react-native";
+import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import { useFocusEffect } from "@react-navigation/native";
 import {
   loadProfile,

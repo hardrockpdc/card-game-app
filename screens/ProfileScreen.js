@@ -3,8 +3,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import {
   View,
   Text,
-  TouchableOpacity,
-  Pressable,
   StyleSheet,
   ScrollView,
   TextInput,
@@ -12,6 +10,10 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
+import {
+  HapticTouchable as TouchableOpacity,
+  HapticPressable as Pressable,
+} from "../components/Haptic";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { useFocusEffect } from "@react-navigation/native";

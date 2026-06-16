@@ -3,7 +3,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import {
   View,
   Text,
-  TouchableOpacity,
   FlatList,
   StyleSheet,
   useWindowDimensions,
@@ -11,6 +10,7 @@ import {
   ActivityIndicator,
   ImageBackground,
 } from "react-native";
+import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import {
   getCachedProfile,
   getDisplayName,

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { scale, scaleFont } from "../game/responsive";
 import GameMenuItems from "./GameMenu";
+import { HapticPressable } from "./Haptic";
 
 // Self-contained hamburger button + dropdown, usable anywhere (not just the
 // GameHeader bar). The menu opens in a Modal so it always renders above the
@@ -11,7 +12,7 @@ export default function GameMenuButton({ menuItems, style }) {
 
   return (
     <View style={style}>
-      <Pressable
+      <HapticPressable
         onPress={() => setOpen(true)}
         style={({ pressed }) => [
           styles.btn,
@@ -22,7 +23,7 @@ export default function GameMenuButton({ menuItems, style }) {
         accessibilityLabel="Open game menu"
       >
         <Text style={styles.btnText}>☰</Text>
-      </Pressable>
+      </HapticPressable>
 
       <Modal
         visible={open}

@@ -4,12 +4,12 @@ import {
   Text,
   StyleSheet,
   TextInput,
-  TouchableOpacity,
   ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import {
   connectToHost,
   disconnectFromHost,

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Modal, View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { Modal, View, Text, StyleSheet } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { HapticTouchable as TouchableOpacity } from "./Haptic";
 import { scale, scaleFont } from "../game/responsive";
 
 const KEY_PREFIX = "@cardnight:tutorial:";

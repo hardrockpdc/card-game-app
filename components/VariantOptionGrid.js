@@ -1,12 +1,7 @@
 import React from "react";
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions,
-} from "react-native";
+import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { scale, scaleFont } from "../game/responsive";
+import { HapticPressable as Pressable } from "./Haptic";
 
 const ACCENT = "#77AEF7";
 

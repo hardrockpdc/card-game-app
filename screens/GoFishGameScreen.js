@@ -4,10 +4,10 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
   Alert,
   BackHandler,
 } from "react-native";
+import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import {
   dealGoFish,
   doAsk,

@@ -3,11 +3,11 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import * as Network from "expo-network";
 import * as Clipboard from "expo-clipboard";
 import {

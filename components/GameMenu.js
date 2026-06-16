@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, StyleSheet, Text, View } from "react-native";
+import { HapticPressable as Pressable } from "./Haptic";
 import { useNavigation } from "@react-navigation/native";
 import { scale, scaleFont } from "../game/responsive";
 import { getMuted, setMuted } from "../game/sounds";

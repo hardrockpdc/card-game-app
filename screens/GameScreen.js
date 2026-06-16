@@ -4,12 +4,12 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
   useWindowDimensions,
   Alert,
   BackHandler,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import { createDeck, shuffleDeck, calculateHandValue } from "../game/deck";
 import Card from "../components/Card";
 import GameHeader from "../components/GameHeader";
@@ -22,13 +22,7 @@ import TutorialOverlay, { hasSeen } from "../components/TutorialOverlay";
 import EndOfRoundModal from "../components/EndOfRoundModal";
 import StatsStrip from "../components/StatsStrip";
 import Confetti from "../components/Confetti";
-import {
-  hapticImpact,
-  hapticButton,
-  hapticWin,
-  hapticLose,
-  HapticStyle,
-} from "../game/haptics";
+import { hapticImpact, hapticWin, hapticLose, HapticStyle } from "../game/haptics";
 import { getTableTheme } from "../game/tableThemes";
 const BG = getTableTheme("blackjack").table;
 const ACCENT = getTableTheme("blackjack").accent;
@@ -652,10 +646,7 @@ export default function GameScreen({ navigation, route }) {
                     !canAfford && styles.chipDisabled,
                   ]}
                   onPress={() => {
-                    if (canAfford) {
-                      setSelectedBet(amount);
-                      hapticButton();
-                    }
+                    if (canAfford) setSelectedBet(amount);
                   }}
                   disabled={!canAfford}
                   accessibilityRole="button"

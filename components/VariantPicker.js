@@ -1,5 +1,6 @@
 import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+import { HapticPressable as Pressable } from "./Haptic";
 
 const DEFAULT_ACCENT_COLOR = "#E94560";
 

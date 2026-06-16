@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
   Alert,
   BackHandler,
   Animated,
@@ -50,6 +49,7 @@ import { addCoins } from "../game/wallet";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import { recordWin } from "../game/profile";
 import { hapticWin, hapticLose } from "../game/haptics";
+import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import { getTableTheme } from "../game/tableThemes";
 
 const AI_MOVE_DELAY_MS = 700; // delay between AI opponent moves (ms)
