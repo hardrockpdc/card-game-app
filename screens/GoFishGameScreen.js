@@ -28,7 +28,6 @@ import Card from "../components/Card";
 import { scale, scaleFont } from "../game/responsive";
 import GameHeader from "../components/GameHeader";
 import EndOfRoundModal from "../components/EndOfRoundModal";
-import StatsStrip from "../components/StatsStrip";
 import YourTurnBanner from "../components/YourTurnBanner";
 import useYourTurnBanner from "../components/useYourTurnBanner";
 import {
@@ -345,124 +344,95 @@ export default function GoFishGameScreen({ navigation, route }) {
         subtitle={isSinglePlayer ? "Single Player" : "Multiplayer"}
         menuItems={menuItems}
       />
-      <StatsStrip
-        gameId="gofish"
-        items={[
-          {
-            label: "Phase",
-            value:
-              phase === "results"
-                ? "Results"
-                : phase === "playing"
-                  ? "Playing"
-                  : phase,
-          },
-          {
-            label: "Turn",
-            value:
-              isMyTurn && phase !== "results"
-                ? extraTurn
-                  ? "Extra Turn"
-                  : "Your Turn"
-                : `Turn: ${currentPlayer?.name ?? "—"}`,
-          },
-          { label: "Ocean", value: oceanSize, accent: true },
-        ]}
-      />
-      <ScrollView contentContainerStyle={styles.container}>
-        {/* Banner */}
-        <View
-          style={[styles.banner, phase === "results" && styles.bannerResults]}
-        >
-          <Text style={styles.bannerText}>
+      <View style={styles.felt}>
+        {/* Opponents seated; on your turn, tap a seat to choose who to ask */}
+        <View style={styles.seatsRow}>
+          {players.map((p, idx) => {
+            if (idx === myIndex) return null;
+            const pid = String(p.id);
+            const isActive = idx === currentPlayerIndex && phase !== "results";
+            const isWinner = phase === "results" && String(winner?.id) === pid;
+            const canTarget = isMyTurn && phase === "playing";
+            const isSelected = selectedTarget === p.id;
+            return (
+              <TouchableOpacity
+                key={pid}
+                activeOpacity={canTarget ? 0.7 : 1}
+                disabled={!canTarget}
+                onPress={() => setSelectedTarget(isSelected ? null : p.id)}
+                style={[
+                  styles.seat,
+                  isActive && styles.seatActive,
+                  isWinner && styles.seatWinner,
+                  isSelected && styles.seatSelected,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={`Ask ${p.name}`}
+              >
+                <Text style={styles.seatName} numberOfLines={1}>
+                  {isWinner ? "🏆 " : ""}
+                  {isActive ? "▶ " : ""}
+                  {p.name}
+                </Text>
+                <Text style={styles.seatBooks}>
+                  📚 {books[pid]?.length ?? 0}
+                </Text>
+                <Text style={styles.seatCards}>{handSizes[pid] ?? 0} cards</Text>
+                {canTarget ? (
+                  <Text
+                    style={[
+                      styles.seatTap,
+                      isSelected && styles.seatTapSelected,
+                    ]}
+                  >
+                    {isSelected ? "✓ asking" : "tap to ask"}
+                  </Text>
+                ) : null}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {/* Center: the ocean (draw pool) + your books + status */}
+        <View style={styles.board}>
+          <View style={styles.oceanPill}>
+            <Text style={styles.oceanLabel}>🌊 OCEAN</Text>
+            <Text style={styles.oceanValue}>{oceanSize}</Text>
+          </View>
+          <Text style={styles.myBooksText}>
+            Your books: {books[String(myPlayer?.id)]?.length ?? 0}
+          </Text>
+          <Text style={styles.statusLine} numberOfLines={1}>
             {phase === "results"
-              ? `🏆  ${winner?.name} wins!`
+              ? `🏆 ${winner?.name} wins!`
               : isMyTurn && extraTurn
-                ? "⭐  Extra turn!"
+                ? "⭐ Extra turn!"
                 : isMyTurn
-                  ? "▶  Your turn"
+                  ? selectedTarget !== null
+                    ? `Asking ${players.find((p) => p.id === selectedTarget)?.name ?? ""}…`
+                    : "▶ Your turn"
                   : `Waiting for ${currentPlayer?.name}…`}
           </Text>
-        </View>
-
-        {/* Last action message */}
-        {lastAction ? (
-          <View style={styles.actionBox}>
-            <Text style={styles.actionText}>{lastAction}</Text>
-          </View>
-        ) : null}
-
-        {/* Ocean + Books summary */}
-        <View style={styles.infoRow}>
-          <View style={styles.infoCard}>
-            <Text style={styles.infoLabel}>🌊 Ocean</Text>
-            <Text style={styles.infoValue}>{oceanSize} cards</Text>
-          </View>
-          {players.map((p) => (
-            <View key={String(p.id)} style={styles.infoCard}>
-              <Text style={styles.infoLabel}>
-                {p.name}
-                {String(p.id) === String(myPlayer?.id) ? " (you)" : ""}
-              </Text>
-              <Text style={styles.infoValue}>
-                {books[String(p.id)]?.length ?? 0}
-              </Text>
-              <Text style={styles.infoSub}>
-                {handSizes[String(p.id)] ?? 0} cards
-              </Text>
-            </View>
-          ))}
-        </View>
-
-        {/* Other players — tap to select as target */}
-        {isMyTurn && phase === "playing" && (
-          <View style={styles.targetSection}>
-            <Text style={styles.sectionLabel}>Ask who?</Text>
-            <View style={styles.targetRow}>
-              {players.map((p, idx) => {
-                if (idx === myIndex) return null;
-                const isSelected = selectedTarget === p.id;
-                return (
-                  <TouchableOpacity
-                    key={String(p.id)}
-                    style={[
-                      styles.targetBtn,
-                      isSelected && styles.targetBtnSelected,
-                    ]}
-                    onPress={() => setSelectedTarget(isSelected ? null : p.id)}
-                    accessibilityRole="button"
-                    accessibilityLabel={p.name}
-                    accessibilityHint={`Ask ${p.name} for cards`}
-                  >
-                    <Text
-                      style={[
-                        styles.targetBtnText,
-                        isSelected && styles.targetBtnTextSelected,
-                      ]}
-                    >
-                      {p.name}
-                    </Text>
-                    <Text style={styles.targetCardCount}>
-                      {handSizes[String(p.id)] ?? 0} cards
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-        )}
-
-        {/* My hand */}
-        <View style={styles.mySection}>
-          <Text style={styles.myLabel}>
-            Your Hand ({displayHand.length} cards)
-          </Text>
-          {isMyTurn && phase === "playing" && (
-            <Text style={styles.myHint}>
-              Tap a card to pick the rank you want to ask for
+          {lastAction ? (
+            <Text style={styles.lastActionLine} numberOfLines={2}>
+              {lastAction}
             </Text>
-          )}
-          <View style={styles.handRow}>
+          ) : null}
+        </View>
+
+        {/* You: hand + ask */}
+        <View style={styles.youArea}>
+          <View style={styles.youLabelRow}>
+            <Text style={styles.youLabel}>Your Hand ({displayHand.length})</Text>
+            {isMyTurn && phase === "playing" ? (
+              <Text style={styles.youHint}>tap a rank</Text>
+            ) : null}
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.handRow}
+          >
             {displayHand.map((card, index) => {
               const isSelected = card.rank === selectedRank;
               return (
@@ -490,37 +460,36 @@ export default function GoFishGameScreen({ navigation, route }) {
                 </TouchableOpacity>
               );
             })}
-          </View>
-        </View>
+          </ScrollView>
 
-        {/* Ask button */}
-        {isMyTurn && phase === "playing" && (
-          <TouchableOpacity
-            style={[
-              styles.askBtn,
-              (!selectedRank || selectedTarget === null) && styles.askBtnDimmed,
-            ]}
-            onPress={handleAsk}
-            disabled={!selectedRank || selectedTarget === null}
-            accessibilityRole="button"
-            accessibilityLabel={
-              selectedRank && selectedTarget !== null
-                ? `Ask for ${selectedRank}s`
-                : "Ask"
-            }
-            accessibilityHint="Ask the selected player for your chosen rank"
-            accessibilityState={{
-              disabled: !selectedRank || selectedTarget === null,
-            }}
-          >
-            <Text style={styles.askBtnText}>
-              {selectedRank && selectedTarget !== null
-                ? `Ask for ${selectedRank}s →`
-                : "Pick a rank and a player first"}
-            </Text>
-          </TouchableOpacity>
-        )}
-      </ScrollView>
+          {isMyTurn && phase === "playing" ? (
+            <TouchableOpacity
+              style={[
+                styles.askBtn,
+                (!selectedRank || selectedTarget === null) &&
+                  styles.askBtnDimmed,
+              ]}
+              onPress={handleAsk}
+              disabled={!selectedRank || selectedTarget === null}
+              accessibilityRole="button"
+              accessibilityLabel={
+                selectedRank && selectedTarget !== null
+                  ? `Ask for ${selectedRank}s`
+                  : "Ask"
+              }
+              accessibilityState={{
+                disabled: !selectedRank || selectedTarget === null,
+              }}
+            >
+              <Text style={styles.askBtnText}>
+                {selectedRank && selectedTarget !== null
+                  ? `Ask ${players.find((p) => p.id === selectedTarget)?.name ?? ""} for ${selectedRank}s →`
+                  : "Pick a rank and a player"}
+              </Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      </View>
 
       <EndOfRoundModal
         visible={showRoundModal}
@@ -563,92 +532,124 @@ const styles = StyleSheet.create({
     paddingBottom: scale(40),
   },
 
-  banner: {
-    backgroundColor: "#e94560",
-    borderRadius: scale(10),
-    paddingVertical: scale(10),
-    alignItems: "center",
-    marginBottom: scale(10),
-  },
-  bannerResults: { backgroundColor: "#0d3d2e" },
-  bannerText: { color: "#fff", fontSize: scaleFont(16), fontWeight: "bold" },
+  felt: { flex: 1, paddingBottom: scale(4) },
 
-  actionBox: {
-    backgroundColor: "#16213e",
-    borderRadius: scale(10),
-    padding: scale(12),
-    marginBottom: scale(10),
-    borderLeftWidth: 3,
-    borderLeftColor: "#e94560",
-  },
-  actionText: { color: "#fff", fontSize: scaleFont(14) },
-
-  infoRow: {
+  seatsRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: scale(8),
-    marginBottom: scale(12),
+    justifyContent: "center",
+    alignItems: "flex-start",
+    gap: scale(10),
+    paddingHorizontal: scale(10),
+    paddingTop: scale(10),
   },
-  infoCard: {
-    flex: 1,
-    minWidth: scale(80),
-    backgroundColor: "#16213e",
-    borderRadius: scale(10),
-    padding: scale(10),
+  seat: {
+    width: scale(120),
     alignItems: "center",
-  },
-  infoLabel: {
-    color: "#c4c4d4",
-    fontSize: scaleFont(11),
-    textAlign: "center",
-    marginBottom: scale(4),
-  },
-  infoValue: { color: "#fff", fontSize: scaleFont(20), fontWeight: "bold" },
-  infoSub: { color: "#9090a8", fontSize: scaleFont(11), marginTop: scale(2) },
-
-  sectionLabel: {
-    color: "#c4c4d4",
-    fontSize: scaleFont(12),
-    textTransform: "uppercase",
-    letterSpacing: scale(1),
-    marginBottom: scale(8),
-  },
-
-  targetSection: { marginBottom: scale(12) },
-  targetRow: { flexDirection: "row", flexWrap: "wrap", gap: scale(10) },
-  targetBtn: {
-    flex: 1,
-    minWidth: scale(100),
-    backgroundColor: "#16213e",
-    borderRadius: scale(10),
-    padding: scale(14),
-    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.28)",
+    borderRadius: scale(12),
     borderWidth: 1.5,
-    borderColor: "#334",
+    borderColor: "transparent",
+    paddingVertical: scale(8),
+    paddingHorizontal: scale(8),
   },
-  targetBtnSelected: { backgroundColor: "#e94560", borderColor: "#e94560" },
-  targetBtnText: { color: "#fff", fontSize: scaleFont(16), fontWeight: "bold" },
-  targetBtnTextSelected: { color: "#fff" },
-  targetCardCount: {
-    color: "#aaa",
-    fontSize: scaleFont(12),
+  seatActive: {
+    borderColor: "#ffd700",
+    backgroundColor: "rgba(255,215,0,0.10)",
+  },
+  seatWinner: {
+    borderColor: "#4caf50",
+    backgroundColor: "rgba(76,175,80,0.16)",
+  },
+  seatSelected: {
+    borderColor: "#e94560",
+    backgroundColor: "rgba(233,69,96,0.16)",
+  },
+  seatName: {
+    color: "#fff",
+    fontSize: scaleFont(13),
+    fontWeight: "800",
+    maxWidth: scale(112),
+    textAlign: "center",
+  },
+  seatBooks: {
+    color: "#ffd700",
+    fontSize: scaleFont(13),
+    fontWeight: "700",
+    marginTop: scale(3),
+  },
+  seatCards: { color: "#cfe0e6", fontSize: scaleFont(11), marginTop: scale(1) },
+  seatTap: {
+    color: "#9fd0dd",
+    fontSize: scaleFont(10),
+    fontWeight: "700",
     marginTop: scale(4),
   },
+  seatTapSelected: { color: "#ff8aa0" },
 
-  mySection: {
-    backgroundColor: "rgba(255,255,255,0.05)",
-    borderRadius: scale(12),
-    padding: scale(12),
-    marginBottom: scale(12),
+  board: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: scale(10),
+    paddingHorizontal: scale(12),
   },
-  myLabel: {
+  oceanPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: scale(10),
+    backgroundColor: "rgba(0,0,0,0.34)",
+    borderRadius: scale(999),
+    borderWidth: 1,
+    borderColor: "rgba(168,230,255,0.4)",
+    paddingVertical: scale(8),
+    paddingHorizontal: scale(22),
+  },
+  oceanLabel: {
+    color: "#a8e6ff",
+    fontSize: scaleFont(13),
+    fontWeight: "800",
+    letterSpacing: scale(1.5),
+  },
+  oceanValue: { color: "#fff", fontSize: scaleFont(24), fontWeight: "900" },
+  myBooksText: {
+    color: "#ffd700",
+    fontSize: scaleFont(14),
+    fontWeight: "700",
+  },
+  statusLine: {
     color: "#fff",
     fontSize: scaleFont(15),
-    fontWeight: "bold",
-    marginBottom: scale(6),
+    fontWeight: "700",
+    textAlign: "center",
   },
-  myHint: { color: "#888", fontSize: scaleFont(12), marginBottom: scale(10) },
-  handRow: { flexDirection: "row", flexWrap: "wrap" },
+  lastActionLine: {
+    color: "#d7eef5",
+    fontSize: scaleFont(12),
+    textAlign: "center",
+  },
+
+  youArea: {
+    paddingHorizontal: scale(12),
+    paddingTop: scale(8),
+    gap: scale(8),
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.08)",
+  },
+  youLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  youLabel: { color: "#fff", fontSize: scaleFont(14), fontWeight: "800" },
+  youHint: { color: "#9fd0dd", fontSize: scaleFont(12), fontWeight: "700" },
+  handRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: scale(8),
+    paddingHorizontal: scale(2),
+    gap: scale(2),
+  },
   cardWrap: { borderRadius: scale(6) },
   cardSelected: {
     transform: [{ translateY: -10 }],
