@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useWindowDimensions } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
-import { useResumePrompt } from "../game/useResumePrompt";
+import { useHasSave } from "../game/useResumePrompt";
+import { clearGame } from "../game/gameSaves";
 
 import { POKER_VARIANT_OPTIONS } from "../components/PokerVariantWheel";
 import VariantOptionGrid from "../components/VariantOptionGrid";
@@ -67,7 +68,8 @@ function PokerVariantPickerScreen({ navigation, route }) {
   const [difficulty, setDifficulty] = useState("medium");
   const [coins, setCoins] = useState(null);
   const [buyIn, setBuyIn] = useState(100);
-  const promptIfSaved = useResumePrompt();
+  const saveKey = `@cardnight:save:poker:${selectedVariant}`;
+  const hasSavedGame = useHasSave(saveKey);
 
   // Refresh wallet balance each time this screen comes into focus.
   useFocusEffect(
@@ -103,41 +105,35 @@ function PokerVariantPickerScreen({ navigation, route }) {
   const canAffordMin = !coinsLoaded || coins >= 100;
   const canPlay = isLobby || canAffordMin;
 
-  const handleContinue = async () => {
-    if (isLobby) {
-      navigation.navigate({
-        name: "Lobby",
-        params: { selectedPokerVariant: selectedVariant },
-        merge: true,
-      });
-      return;
-    }
+  const saveToLobby = () =>
+    navigation.navigate({
+      name: "Lobby",
+      params: { selectedPokerVariant: selectedVariant },
+      merge: true,
+    });
 
+  const goGame = (resumeFromSave) => {
     const launchPayload =
       launchParams && typeof launchParams === "object" ? launchParams : {};
-    const players = buildPlayers(launchPayload.myName ?? playerName, aiCount);
-    const variantLabel =
-      POKER_VARIANT_OPTIONS.find((o) => o.value === selectedVariant)?.label ??
-      "Poker";
-    const navParams = {
+    navigation.navigate("PokerGame", {
       ...launchPayload,
       role: "singleplayer",
       myName: launchPayload.myName ?? playerName,
-      players,
+      players: buildPlayers(launchPayload.myName ?? playerName, aiCount),
       difficulty,
       variant: selectedVariant,
       buyIn,
-    };
-    await promptIfSaved({
-      saveKey: `@cardnight:save:poker:${selectedVariant}`,
-      gameName: variantLabel,
-      onFresh: () =>
-        navigation.navigate("PokerGame", { ...navParams, resumeFromSave: false }),
-      onResume: () =>
-        navigation.navigate("PokerGame", { ...navParams, resumeFromSave: true }),
-      extraMessage: "Note: starting fresh will use a new buy-in.",
+      resumeFromSave,
     });
   };
+  const goFresh = () => goGame(false);
+  const goResume = () => goGame(true);
+  const startNew = async () => {
+    await clearGame(saveKey);
+    goFresh();
+  };
+
+  const onStart = isLobby ? saveToLobby : goFresh;
 
   return (
     <GameSetupLayout
@@ -182,9 +178,14 @@ function PokerVariantPickerScreen({ navigation, route }) {
           </>
         )
       }
-      onStart={handleContinue}
+      onStart={onStart}
       startLabel={modeCopy.buttonLabel}
       startDisabled={!canPlay}
+      resume={
+        !isLobby && hasSavedGame
+          ? { onContinue: goResume, onStartNew: startNew }
+          : null
+      }
     />
   );
 }

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { useResumePrompt } from "../game/useResumePrompt";
+import { useHasSave } from "../game/useResumePrompt";
+import { clearGame } from "../game/gameSaves";
 import {
   getCachedProfile,
   getDisplayName,
@@ -25,7 +26,8 @@ export default function GoFishPickerScreen({ navigation }) {
   const [playerName, setPlayerName] = useState("Player");
   const [aiCount, setAiCount] = useState(1);
   const [difficulty, setDifficulty] = useState("medium");
-  const promptIfSaved = useResumePrompt();
+  const saveKey = "@cardnight:save:gofish";
+  const hasSavedGame = useHasSave(saveKey);
 
   useEffect(() => {
     let isMounted = true;
@@ -42,28 +44,19 @@ export default function GoFishPickerScreen({ navigation }) {
     };
   }, []);
 
-  const startGame = async () => {
-    const players = buildPlayers(playerName, aiCount);
-    await promptIfSaved({
-      saveKey: "@cardnight:save:gofish",
-      gameName: "Go Fish",
-      onFresh: () =>
-        navigation.navigate("GoFishGame", {
-          role: "singleplayer",
-          myName: playerName,
-          players,
-          difficulty,
-          resumeFromSave: false,
-        }),
-      onResume: () =>
-        navigation.navigate("GoFishGame", {
-          role: "singleplayer",
-          myName: playerName,
-          players,
-          difficulty,
-          resumeFromSave: true,
-        }),
+  const go = (resumeFromSave) =>
+    navigation.navigate("GoFishGame", {
+      role: "singleplayer",
+      myName: playerName,
+      players: buildPlayers(playerName, aiCount),
+      difficulty,
+      resumeFromSave,
     });
+  const goFresh = () => go(false);
+  const goResume = () => go(true);
+  const startNew = async () => {
+    await clearGame(saveKey);
+    goFresh();
   };
 
   return (
@@ -81,8 +74,11 @@ export default function GoFishPickerScreen({ navigation }) {
           <DifficultyPills value={difficulty} onChange={setDifficulty} />
         </>
       }
-      onStart={startGame}
+      onStart={goFresh}
       startLabel="Start Game"
+      resume={
+        hasSavedGame ? { onContinue: goResume, onStartNew: startNew } : null
+      }
     />
   );
 }

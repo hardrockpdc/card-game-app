@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { useResumePrompt } from "../game/useResumePrompt";
+import { useHasSave } from "../game/useResumePrompt";
+import { clearGame } from "../game/gameSaves";
 import GameSetupLayout, {
   OpponentStepper,
   SetupNote,
@@ -30,32 +31,24 @@ export default function ConquianSetupScreen({ navigation, route }) {
       ? params.launchParams
       : {};
 
-  const promptIfSaved = useResumePrompt();
+  const saveKey = "@cardnight:save:conquian:default";
+  const hasSavedGame = useHasSave(saveKey);
 
-  const handleStart = async () => {
+  const go = (resumeFromSave) => {
     const playerName = launchParams.myName ?? "Player";
-    const players = buildPlayers(playerName, aiCount);
-
-    await promptIfSaved({
-      saveKey: "@cardnight:save:conquian:default",
-      gameName: "Conquián",
-      onFresh: () =>
-        navigation.navigate("ConquianGame", {
-          ...launchParams,
-          role: "singleplayer",
-          myName: playerName,
-          players,
-          resumeFromSave: false,
-        }),
-      onResume: () =>
-        navigation.navigate("ConquianGame", {
-          ...launchParams,
-          role: "singleplayer",
-          myName: playerName,
-          players,
-          resumeFromSave: true,
-        }),
+    navigation.navigate("ConquianGame", {
+      ...launchParams,
+      role: "singleplayer",
+      myName: playerName,
+      players: buildPlayers(playerName, aiCount),
+      resumeFromSave,
     });
+  };
+  const goFresh = () => go(false);
+  const goResume = () => go(true);
+  const startNew = async () => {
+    await clearGame(saveKey);
+    goFresh();
   };
 
   return (
@@ -73,8 +66,11 @@ export default function ConquianSetupScreen({ navigation, route }) {
           <SetupNote>{NOTES[aiCount]}</SetupNote>
         </>
       }
-      onStart={handleStart}
+      onStart={goFresh}
       startLabel="Start Game"
+      resume={
+        hasSavedGame ? { onContinue: goResume, onStartNew: startNew } : null
+      }
     />
   );
 }

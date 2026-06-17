@@ -1,8 +1,9 @@
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import { useWindowDimensions } from "react-native";
 
 import { SPIDER_MODE_OPTIONS, VARIANT_OPTIONS } from "../game/solitaire";
-import { useResumePrompt } from "../game/useResumePrompt";
+import { useHasSave } from "../game/useResumePrompt";
+import { clearGame } from "../game/gameSaves";
 import VariantOptionGrid from "../components/VariantOptionGrid";
 import GameSetupLayout, {
   SetupSection,
@@ -13,37 +14,30 @@ export default function SolitaireVariantPickerScreen({ navigation, route }) {
   const initialVariantId = route?.params?.variantId || VARIANT_OPTIONS[0].id;
   const [variantId, setVariantId] = useState(initialVariantId);
   const [spiderMode, setSpiderMode] = useState(4);
-  const promptIfSaved = useResumePrompt();
 
   const { width, height } = useWindowDimensions();
   const isLandscape = width > height;
 
-  const selectedVariant = useMemo(
-    () =>
-      VARIANT_OPTIONS.find((option) => option.id === variantId) ||
-      VARIANT_OPTIONS[0],
-    [variantId],
-  );
+  const saveKey = `@cardnight:save:solitaire:${variantId}`;
+  const hasSavedGame = useHasSave(saveKey);
 
-  const startGame = async () => {
-    const navParams = {
-      variantId,
-      spiderMode: variantId === "spider" ? spiderMode : undefined,
-    };
-    await promptIfSaved({
-      saveKey: `@cardnight:save:solitaire:${variantId}`,
-      gameName: selectedVariant.label,
-      onFresh: () =>
-        navigation.navigate("SolitaireGame", {
-          ...navParams,
-          resumeFromSave: false,
-        }),
-      onResume: () =>
-        navigation.navigate("SolitaireGame", {
-          ...navParams,
-          resumeFromSave: true,
-        }),
+  const navParams = () => ({
+    variantId,
+    spiderMode: variantId === "spider" ? spiderMode : undefined,
+  });
+  const goFresh = () =>
+    navigation.navigate("SolitaireGame", {
+      ...navParams(),
+      resumeFromSave: false,
     });
+  const goResume = () =>
+    navigation.navigate("SolitaireGame", {
+      ...navParams(),
+      resumeFromSave: true,
+    });
+  const startNew = async () => {
+    await clearGame(saveKey);
+    goFresh();
   };
 
   return (
@@ -69,8 +63,11 @@ export default function SolitaireVariantPickerScreen({ navigation, route }) {
           ) : null}
         </>
       }
-      onStart={startGame}
+      onStart={goFresh}
       startLabel="Start Game"
+      resume={
+        hasSavedGame ? { onContinue: goResume, onStartNew: startNew } : null
+      }
     />
   );
 }

@@ -17,7 +17,8 @@ import {
   hasProfileName,
   subscribeProfile,
 } from "../game/profile";
-import { useResumePrompt } from "../game/useResumePrompt";
+import { useHasSave } from "../game/useResumePrompt";
+import { clearGame } from "../game/gameSaves";
 
 // ─── Display data for the carousel (order + visuals) ─────────────────────────
 
@@ -184,7 +185,8 @@ export default function SinglePlayerSetupScreen({ navigation }) {
     };
   }, []);
 
-  const promptIfSaved = useResumePrompt();
+  const BLACKJACK_SAVE_KEY = "@cardnight:save:blackjack";
+  const hasBlackjackSave = useHasSave(BLACKJACK_SAVE_KEY);
 
   // ─── Carousel geometry ──────────────────────────────────────────────────────
   const CARD_WIDTH = width * 0.78;
@@ -253,14 +255,19 @@ export default function SinglePlayerSetupScreen({ navigation }) {
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 }).current;
 
   // ─── Play handler ───────────────────────────────────────────────────────────
+  // Blackjack has no variant screen, so its resume choice lives here as two
+  // buttons (shown below only when a save exists).
+  const blackjackResume = () =>
+    navigation.navigate("Game", { resumeFromSave: true });
+  const blackjackStartNew = async () => {
+    await clearGame(BLACKJACK_SAVE_KEY);
+    navigation.navigate("Game", { resumeFromSave: false });
+  };
+
   async function handlePlay() {
     if (game.id === "blackjack") {
-      await promptIfSaved({
-        saveKey: "@cardnight:save:blackjack",
-        gameName: "Blackjack",
-        onFresh: () => navigation.navigate("Game", { resumeFromSave: false }),
-        onResume: () => navigation.navigate("Game", { resumeFromSave: true }),
-      });
+      // No save (or this path wouldn't be the single button): start fresh.
+      navigation.navigate("Game", { resumeFromSave: false });
       return;
     }
 
@@ -429,22 +436,56 @@ export default function SinglePlayerSetupScreen({ navigation }) {
           ))}
         </View>
 
-        {/* Play button */}
-        <View style={{ paddingHorizontal: padH }}>
-          <TouchableOpacity
-            style={[
-              styles.playBtn,
-              { paddingVertical: isSmallScreen ? 16 : 18 },
-            ]}
-            onPress={handlePlay}
-          >
-            <Text
-              style={[styles.playBtnText, { fontSize: playButtonTextSize }]}
+        {/* Play button(s) */}
+        {game.id === "blackjack" && hasBlackjackSave ? (
+          <View style={{ paddingHorizontal: padH, gap: 10 }}>
+            <TouchableOpacity
+              style={[
+                styles.playBtn,
+                { paddingVertical: isSmallScreen ? 16 : 18 },
+              ]}
+              onPress={blackjackResume}
             >
-              {playButtonLabel}
-            </Text>
-          </TouchableOpacity>
-        </View>
+              <Text
+                style={[styles.playBtnText, { fontSize: playButtonTextSize }]}
+              >
+                Continue Game
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.playBtnSecondary,
+                { paddingVertical: isSmallScreen ? 16 : 18 },
+              ]}
+              onPress={blackjackStartNew}
+            >
+              <Text
+                style={[
+                  styles.playBtnSecondaryText,
+                  { fontSize: playButtonTextSize },
+                ]}
+              >
+                Start New Game
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={{ paddingHorizontal: padH }}>
+            <TouchableOpacity
+              style={[
+                styles.playBtn,
+                { paddingVertical: isSmallScreen ? 16 : 18 },
+              ]}
+              onPress={handlePlay}
+            >
+              <Text
+                style={[styles.playBtnText, { fontSize: playButtonTextSize }]}
+              >
+                {playButtonLabel}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -721,6 +762,17 @@ const styles = StyleSheet.create({
   },
   playBtnText: {
     color: "#fff",
+    fontWeight: "bold",
+  },
+  playBtnSecondary: {
+    backgroundColor: "transparent",
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: "#3a4358",
+    alignItems: "center",
+  },
+  playBtnSecondaryText: {
+    color: "#d3dcec",
     fontWeight: "bold",
   },
 });

@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useResumePrompt } from "../game/useResumePrompt";
+import { useHasSave } from "../game/useResumePrompt";
+import { clearGame } from "../game/gameSaves";
 
 import {
   getCachedProfile,
@@ -72,48 +73,36 @@ export default function GameSetupScreen({ navigation, route }) {
     setAiCount((current) => clamp(current, minAI ?? 1, maxAI ?? 3));
   }, [minAI, maxAI]);
 
-  const promptIfSaved = useResumePrompt();
-
   const clampedAI = useMemo(
     () => clamp(aiCount, minAI, maxAI),
     [aiCount, minAI, maxAI],
   );
 
-  async function handlePlay() {
-    const players = buildPlayers(playerName, clampedAI);
+  const saveKey =
+    gameId === "goFish"
+      ? "@cardnight:save:gofish"
+      : "@cardnight:save:lastcard";
+  const hasSavedGame = useHasSave(saveKey);
+
+  const go = (resumeFromSave) => {
     const launchParams = {
       role: "singleplayer",
       myName: playerName,
-      players,
+      players: buildPlayers(playerName, clampedAI),
       gameId,
       gameName,
       screenName,
+      resumeFromSave,
     };
-
-    if (hasDifficulty) {
-      launchParams.difficulty = difficulty;
-    }
-
-    const saveKey =
-      gameId === "goFish"
-        ? "@cardnight:save:gofish"
-        : "@cardnight:save:lastcard";
-
-    await promptIfSaved({
-      saveKey,
-      gameName,
-      onFresh: () =>
-        navigation.navigate(screenName, {
-          ...launchParams,
-          resumeFromSave: false,
-        }),
-      onResume: () =>
-        navigation.navigate(screenName, {
-          ...launchParams,
-          resumeFromSave: true,
-        }),
-    });
-  }
+    if (hasDifficulty) launchParams.difficulty = difficulty;
+    navigation.navigate(screenName, launchParams);
+  };
+  const goFresh = () => go(false);
+  const goResume = () => go(true);
+  const startNew = async () => {
+    await clearGame(saveKey);
+    goFresh();
+  };
 
   if (isLoadingProfile) {
     return (
@@ -143,8 +132,11 @@ export default function GameSetupScreen({ navigation, route }) {
           ) : null}
         </>
       }
-      onStart={handlePlay}
+      onStart={goFresh}
       startLabel="Start Game"
+      resume={
+        hasSavedGame ? { onContinue: goResume, onStartNew: startNew } : null
+      }
     />
   );
 }

@@ -22,6 +22,9 @@ export default function GameSetupLayout({
   onStart,
   startLabel = "Start Game",
   startDisabled = false,
+  // When a save exists, pass { onContinue, onStartNew } to replace the single
+  // Start button with two inline buttons (no resume pop-up).
+  resume = null,
 }) {
   const { width, height } = useWindowDimensions();
   const isLandscape = width > height;
@@ -53,19 +56,48 @@ export default function GameSetupLayout({
             </View>
           )}
 
-          <Pressable
-            onPress={onStart}
-            disabled={startDisabled}
-            style={({ pressed }) => [
-              styles.playButton,
-              startDisabled && styles.playButtonDisabled,
-              pressed && !startDisabled && styles.playButtonPressed,
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel={startLabel}
-          >
-            <Text style={styles.playButtonText}>{startLabel}</Text>
-          </Pressable>
+          {resume ? (
+            <View style={styles.buttonStack}>
+              <Pressable
+                onPress={resume.onContinue}
+                style={({ pressed }) => [
+                  styles.playButton,
+                  pressed && styles.playButtonPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel="Continue Game"
+              >
+                <Text style={styles.playButtonText}>Continue Game</Text>
+              </Pressable>
+              <Pressable
+                onPress={resume.onStartNew}
+                style={({ pressed }) => [
+                  styles.playButtonSecondary,
+                  pressed && styles.playButtonPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel="Start New Game"
+              >
+                <Text style={styles.playButtonSecondaryText}>
+                  Start New Game
+                </Text>
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable
+              onPress={onStart}
+              disabled={startDisabled}
+              style={({ pressed }) => [
+                styles.playButton,
+                startDisabled && styles.playButtonDisabled,
+                pressed && !startDisabled && styles.playButtonPressed,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel={startLabel}
+            >
+              <Text style={styles.playButtonText}>{startLabel}</Text>
+            </Pressable>
+          )}
         </View>
       </View>
     </SafeAreaView>
@@ -336,6 +368,10 @@ const styles = StyleSheet.create({
     opacity: 0.92,
     transform: [{ scale: 0.99 }],
   },
+  buttonStack: {
+    marginTop: scale(4),
+    gap: scale(10),
+  },
   playButton: {
     borderRadius: scale(16),
     backgroundColor: ACCENT,
@@ -351,6 +387,19 @@ const styles = StyleSheet.create({
   },
   playButtonText: {
     color: "#08111f",
+    fontSize: scaleFont(16),
+    fontWeight: "900",
+  },
+  playButtonSecondary: {
+    borderRadius: scale(16),
+    backgroundColor: "transparent",
+    borderWidth: 1.5,
+    borderColor: "#2c3750",
+    alignItems: "center",
+    paddingVertical: scale(14),
+  },
+  playButtonSecondaryText: {
+    color: "#d3dcec",
     fontSize: scaleFont(16),
     fontWeight: "900",
   },

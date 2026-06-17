@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useWindowDimensions } from "react-native";
-import { useResumePrompt } from "../game/useResumePrompt";
+import { useHasSave } from "../game/useResumePrompt";
+import { clearGame } from "../game/gameSaves";
 
 import VariantOptionGrid from "../components/VariantOptionGrid";
 import GameSetupLayout, {
@@ -51,9 +52,11 @@ function RummyVariantPickerScreen({ navigation, route }) {
   );
   const [aiCount, setAiCount] = useState(1);
   const [difficulty, setDifficulty] = useState("medium");
-  const promptIfSaved = useResumePrompt();
   const { width, height } = useWindowDimensions();
   const isLandscape = width > height;
+
+  const saveKey = `@cardnight:save:rummy:${selectedVariant}`;
+  const hasSavedGame = useHasSave(saveKey);
 
   useEffect(() => {
     setSelectedVariant(getInitialVariant(currentVariant, pickerOptions));
@@ -61,47 +64,35 @@ function RummyVariantPickerScreen({ navigation, route }) {
 
   const modeCopy = useMemo(() => getModeCopy(mode), [mode]);
 
-  const handleContinue = async () => {
-    if (mode === "lobby") {
-      navigation.navigate({
-        name: "Lobby",
-        params: { selectedRummyVariant: selectedVariant },
-        merge: true,
-      });
-      return;
-    }
+  // Lobby mode: just hand the chosen variant back to the lobby (no save).
+  const saveToLobby = () =>
+    navigation.navigate({
+      name: "Lobby",
+      params: { selectedRummyVariant: selectedVariant },
+      merge: true,
+    });
 
+  const goGame = (resumeFromSave) => {
     const launchPayload =
       launchParams && typeof launchParams === "object" ? launchParams : {};
     const playerName = launchPayload.myName ?? "Player";
-    const players = buildPlayers(playerName, aiCount);
-    const variantLabel =
-      RUMMY_VARIANT_OPTIONS.find((o) => o.value === selectedVariant)?.label ??
-      "Rummy";
-
-    await promptIfSaved({
-      saveKey: `@cardnight:save:rummy:${selectedVariant}`,
-      gameName: variantLabel,
-      onFresh: () =>
-        navigation.navigate("RummyGame", {
-          ...launchPayload,
-          players,
-          difficulty,
-          variantId: selectedVariant,
-          variant: selectedVariant,
-          resumeFromSave: false,
-        }),
-      onResume: () =>
-        navigation.navigate("RummyGame", {
-          ...launchPayload,
-          players,
-          difficulty,
-          variantId: selectedVariant,
-          variant: selectedVariant,
-          resumeFromSave: true,
-        }),
+    navigation.navigate("RummyGame", {
+      ...launchPayload,
+      players: buildPlayers(playerName, aiCount),
+      difficulty,
+      variantId: selectedVariant,
+      variant: selectedVariant,
+      resumeFromSave,
     });
   };
+  const goFresh = () => goGame(false);
+  const goResume = () => goGame(true);
+  const startNew = async () => {
+    await clearGame(saveKey);
+    goFresh();
+  };
+
+  const onStart = isSinglePlayer ? goFresh : saveToLobby;
 
   return (
     <GameSetupLayout
@@ -128,8 +119,13 @@ function RummyVariantPickerScreen({ navigation, route }) {
           </>
         ) : null
       }
-      onStart={handleContinue}
+      onStart={onStart}
       startLabel={modeCopy.buttonLabel}
+      resume={
+        isSinglePlayer && hasSavedGame
+          ? { onContinue: goResume, onStartNew: startNew }
+          : null
+      }
     />
   );
 }
