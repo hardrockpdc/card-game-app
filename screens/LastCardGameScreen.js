@@ -10,9 +10,7 @@ import {
   useWindowDimensions,
   Alert,
   BackHandler,
-  AccessibilityInfo,
 } from "react-native";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 import GameHeader from "../components/GameHeader";
 import EndOfRoundModal from "../components/EndOfRoundModal";
@@ -308,82 +306,6 @@ function toPublic(state) {
   };
 }
 
-// Swipe-up-to-play tuning.
-const SWIPE_PLAY_THRESHOLD = 56; // px upward to count as a play
-const SWIPE_FOLLOW_MAX = 150; // clamp how far the card follows the finger
-const SWIPE_FLY = 130; // fly-up distance on release-to-play
-
-// Wraps a hand card so an upward swipe plays it (tap still works as a fallback).
-// Only an upward drag activates; sideways/downward is left to the scroll list.
-function SwipeToPlayCard({ card, onPlay, playable, reduceMotionRef, children }) {
-  const ty = useRef(new Animated.Value(0)).current;
-  const onPlayRef = useRef(onPlay);
-  onPlayRef.current = onPlay;
-  const cardRef = useRef(card);
-  cardRef.current = card;
-  const playableRef = useRef(playable);
-  playableRef.current = playable;
-
-  const gesture = useRef(
-    Gesture.Pan()
-      .activeOffsetY(-12) // start only on an upward drag
-      .failOffsetX([-24, 24]) // sideways → not a play (let the list scroll)
-      .runOnJS(true)
-      .onUpdate((e) => {
-        if (e.translationY < 0) {
-          ty.setValue(Math.max(e.translationY, -SWIPE_FOLLOW_MAX));
-        }
-      })
-      .onEnd((e) => {
-        const intendsPlay =
-          e.translationY < -SWIPE_PLAY_THRESHOLD || e.velocityY < -900;
-        const rm = reduceMotionRef?.current;
-        const springBack = () => {
-          if (rm) ty.setValue(0);
-          else
-            Animated.spring(ty, {
-              toValue: 0,
-              useNativeDriver: true,
-              friction: 7,
-              tension: 90,
-            }).start();
-        };
-        if (!intendsPlay) {
-          springBack();
-          return;
-        }
-        if (playableRef.current) {
-          // Fly the card up, then play it.
-          if (rm) {
-            ty.setValue(0);
-            onPlayRef.current(cardRef.current);
-          } else {
-            Animated.timing(ty, {
-              toValue: -SWIPE_FLY,
-              duration: 130,
-              useNativeDriver: true,
-            }).start(() => {
-              ty.setValue(0);
-              onPlayRef.current(cardRef.current);
-            });
-          }
-        } else {
-          // Not playable: snap back and let onPlay surface the shake/feedback.
-          springBack();
-          onPlayRef.current(cardRef.current);
-        }
-      }),
-  ).current;
-
-  return (
-    <GestureDetector gesture={gesture}>
-      <Animated.View style={{ transform: [{ translateY: ty }] }}>
-        {children}
-      </Animated.View>
-    </GestureDetector>
-  );
-}
-
 export default function LastCardGameScreen({ navigation, route }) {
   const {
     role,
@@ -425,25 +347,6 @@ export default function LastCardGameScreen({ navigation, route }) {
   const coinRewardedRef = useRef(false);
   const outcomeBuzzedRef = useRef(false); // fire win/lose haptic once per game
   const lastSaveRef = useRef(0); // BUG-4: auto-save throttle (once / 3s)
-
-  // Reduced-motion: swipe-to-play snaps instead of animating when enabled.
-  const reduceMotionRef = useRef(false);
-  useEffect(() => {
-    let mounted = true;
-    AccessibilityInfo.isReduceMotionEnabled().then((v) => {
-      if (mounted) reduceMotionRef.current = v;
-    });
-    const sub = AccessibilityInfo.addEventListener(
-      "reduceMotionChanged",
-      (v) => {
-        reduceMotionRef.current = v;
-      },
-    );
-    return () => {
-      mounted = false;
-      sub?.remove?.();
-    };
-  }, []);
 
   // Keep the table palette in sync (loaded at app start; may change via the
   // in-game Table Colour picker).
@@ -1379,24 +1282,18 @@ export default function LastCardGameScreen({ navigation, route }) {
             const isShaking = card.id === shakeId;
             const shouldDimUnplayable = difficulty === "easy" && !playable;
             return (
-              <SwipeToPlayCard
+              <TouchableOpacity
                 key={card.id}
-                card={card}
-                onPlay={onCardTap}
-                playable={playable}
-                reduceMotionRef={reduceMotionRef}
+                onPress={() => onCardTap(card)}
+                activeOpacity={0.85}
               >
-                <TouchableOpacity
-                  onPress={() => onCardTap(card)}
-                  activeOpacity={0.85}
+                <Animated.View
+                  style={
+                    isShaking
+                      ? { transform: [{ translateX: shakeAnim }] }
+                      : null
+                  }
                 >
-                  <Animated.View
-                    style={
-                      isShaking
-                        ? { transform: [{ translateX: shakeAnim }] }
-                        : null
-                    }
-                  >
                     <View
                       style={[
                         styles.cardShell,
@@ -1417,9 +1314,8 @@ export default function LastCardGameScreen({ navigation, route }) {
                         {cardTitle(card)}
                       </Text>
                     </View>
-                  </Animated.View>
-                </TouchableOpacity>
-              </SwipeToPlayCard>
+                </Animated.View>
+              </TouchableOpacity>
             );
           })}
         </ScrollView>
