@@ -4,6 +4,7 @@ import { scale, scaleFont } from "../game/responsive";
 import { HapticPressable as Pressable } from "./Haptic";
 import { getTableTheme } from "../game/tableThemes";
 import GameMenuItems, { MenuDivider } from "./GameMenu";
+import CardThemePicker from "./CardThemePicker";
 
 const KICKER_LABELS = {
   blackjack: "BLACKJACK",
@@ -28,6 +29,7 @@ export default function GameHeader({
   const theme = getTableTheme(gameId);
   const accent = theme.accent;
   const [open, setOpen] = useState(false);
+  const [showCardTheme, setShowCardTheme] = useState(false);
   // Landscape: shrink the header to reclaim scarce vertical space (portrait
   // is unchanged). Affects every game's header consistently.
   const { width, height } = useWindowDimensions();
@@ -114,10 +116,16 @@ export default function GameHeader({
             <GameMenuItems
               menuItems={menuItems}
               onClose={() => setOpen(false)}
+              onOpenCardTheme={() => setShowCardTheme(true)}
             />
           </>
         )}
       </View>
+
+      <CardThemePicker
+        visible={showCardTheme}
+        onClose={() => setShowCardTheme(false)}
+      />
     </View>
   );
 }

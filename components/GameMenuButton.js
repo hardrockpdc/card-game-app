@@ -3,12 +3,14 @@ import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { scale, scaleFont } from "../game/responsive";
 import GameMenuItems from "./GameMenu";
 import { HapticPressable } from "./Haptic";
+import CardThemePicker from "./CardThemePicker";
 
 // Self-contained hamburger button + dropdown, usable anywhere (not just the
 // GameHeader bar). The menu opens in a Modal so it always renders above the
 // board without zIndex/elevation fights with the cards below it.
 export default function GameMenuButton({ menuItems, style }) {
   const [open, setOpen] = useState(false);
+  const [showCardTheme, setShowCardTheme] = useState(false);
 
   return (
     <View style={style}>
@@ -37,10 +39,16 @@ export default function GameMenuButton({ menuItems, style }) {
             <GameMenuItems
               menuItems={menuItems}
               onClose={() => setOpen(false)}
+              onOpenCardTheme={() => setShowCardTheme(true)}
             />
           </Pressable>
         </Pressable>
       </Modal>
+
+      <CardThemePicker
+        visible={showCardTheme}
+        onClose={() => setShowCardTheme(false)}
+      />
     </View>
   );
 }

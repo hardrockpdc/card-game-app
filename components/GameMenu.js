@@ -21,7 +21,7 @@ export function MenuDivider() {
 
 // Pure item-list renderer — no modal, no hamburger button.
 // GameHeader owns the open/close state and calls this when expanded.
-export default function GameMenuItems({ menuItems, onClose }) {
+export default function GameMenuItems({ menuItems, onClose, onOpenCardTheme }) {
   const navigation = useNavigation();
   const [muted, setMutedState] = useState(getMuted());
   const [hapticsOn, setHapticsOnState] = useState(getHapticsEnabled());
@@ -199,8 +199,15 @@ export default function GameMenuItems({ menuItems, onClose }) {
             <Pressable
               key={key}
               onPress={() => {
-                if (isFunction(onClose)) onClose();
-                navigation.navigate("CardThemes");
+                // Open the in-game popup if the host provides it; otherwise fall
+                // back to the full Card Theme screen.
+                if (isFunction(onOpenCardTheme)) {
+                  if (isFunction(onClose)) onClose();
+                  onOpenCardTheme();
+                } else {
+                  if (isFunction(onClose)) onClose();
+                  navigation.navigate("CardThemes");
+                }
               }}
               style={({ pressed }) => [
                 styles.menuRow,
