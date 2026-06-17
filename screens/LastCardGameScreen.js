@@ -1185,7 +1185,7 @@ export default function LastCardGameScreen({ navigation, route }) {
     { type: "theme" },
     {
       icon: "🎨",
-      label: "Table Colour",
+      label: "Table Theme",
       onPress: () => setShowTablePicker(true),
     },
     { type: "divider" },
@@ -1448,7 +1448,7 @@ export default function LastCardGameScreen({ navigation, route }) {
 
       {showTablePicker && (
         <View style={styles.overlay}>
-          <Text style={styles.overlayTitle}>Table Colour</Text>
+          <Text style={styles.overlayTitle}>Table Theme</Text>
           <View style={styles.tableSwatchGrid}>
             {LAST_CARD_TABLES.map((t) => {
               const selected = t.id === tableId;
