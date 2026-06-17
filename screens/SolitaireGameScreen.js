@@ -326,10 +326,14 @@ export default function SolitaireGameScreen({ navigation, route }) {
   const tabCardH = tabCardW * 1.43;
   const slotH = Math.round(slotW * 1.43);
   const slotScale = slotW / (42 * cardClamp);
+  // Keep refs in sync so the fly-away useEffect can read current sizing.
+  spiderTabCardWRef.current = tabCardW;
+  spiderTabCardHRef.current = tabCardH;
   // Comfortable constant overlap; columns longer than DESIGN_LEN compress a bit
   // (per column) as a fallback — see tableauColumnMargins.
   const faceUpPeek = Math.round(tabCardH * FU_FRAC);
   const faceDownPeek = Math.round(tabCardH * FD_FRAC);
+  spiderFaceUpPeekRef.current = faceUpPeek;
 
   if (isLandscape) {
     const availH = tableauBoxH > 0 ? tableauBoxH : Math.max(height - 30, 150);
@@ -411,7 +415,10 @@ export default function SolitaireGameScreen({ navigation, route }) {
   const spiderWinModalTimeoutRef = useRef(null);
   const spiderFlyAwayTimeoutRef = useRef(null);
 
-  const spiderFlyAwayAnimValuesRef = useRef(new Map()); // cardId -> { translateY, opacity, scale }
+  const spiderFlyAwayAnimValuesRef = useRef(new Map()); // cardId -> { translateX, translateY, opacity, scale }
+  const spiderFaceUpPeekRef = useRef(16); // faceUpPeek px — updated each render, read in fly-away effect
+  const spiderTabCardWRef = useRef(0); // tabCardW px — updated each render
+  const spiderTabCardHRef = useRef(0); // tabCardH px — updated each render
 
   const [spiderFlyAwayCards, setSpiderFlyAwayCards] = useState([]); // { cardId, card, x, y, w, h }
 
@@ -566,40 +573,63 @@ export default function SolitaireGameScreen({ navigation, route }) {
       }
 
       if (removedIds.length > 0) {
-        removedIds.sort((a, b) => {
-          const la = prevCardLayouts[a];
-          const lb = prevCardLayouts[b];
-          if (!la || !lb) return 0;
-          if (la.pileIndex !== lb.pileIndex) return la.pileIndex - lb.pileIndex;
-          return (la.cardIndex ?? 0) - (lb.cardIndex ?? 0);
+        // Find the completion column: the one with the most removed cards.
+        // That column is always where the final move landed. All ghosts fly
+        // from this single column so the animation doesn't split across two.
+        const pileCount = {};
+        removedIds.forEach((id) => {
+          const pi = prevCardLayouts[id]?.pileIndex;
+          if (pi !== undefined)
+            pileCount[pi] = (pileCount[pi] || 0) + 1;
+        });
+        const completionPileIndex = parseInt(
+          Object.entries(pileCount).sort((a, b) => b[1] - a[1])[0]?.[0] ?? 0,
+        );
+        const completionColPos =
+          prevColumnLayouts[completionPileIndex] || { x: 0, y: 0 };
+
+        // Find the topmost removed card in the completion column (= the King).
+        // Its y gives us the visual anchor for the whole stack.
+        const completionColRemoved = removedIds.filter(
+          (id) => prevCardLayouts[id]?.pileIndex === completionPileIndex,
+        );
+        const topLayout = completionColRemoved
+          .map((id) => prevCardLayouts[id])
+          .filter(Boolean)
+          .sort((a, b) => (a.y ?? 0) - (b.y ?? 0))[0];
+        const kingY = topLayout
+          ? (completionColPos.y ?? 0) + (topLayout.y ?? 0)
+          : completionColPos.y ?? 0;
+
+        const peek = spiderFaceUpPeekRef.current || 16;
+        const cardW = spiderTabCardWRef.current || 42;
+        const cardH = spiderTabCardHRef.current || 60;
+
+        // Sort cards King→Ace (rank 13→1) so they stack top-to-bottom correctly.
+        const sortedIds = [...removedIds].sort((a, b) => {
+          const ra = prevCardsMap.get(a)?.rank ?? 0;
+          const rb = prevCardsMap.get(b)?.rank ?? 0;
+          return rb - ra; // King first
         });
 
-        const ghostCards = removedIds
-          .map((cardId) => {
+        const ghostCards = sortedIds
+          .map((cardId, stackIndex) => {
             const layout = prevCardLayouts[cardId];
-            if (!layout) return null;
             const card = prevCardsMap.get(cardId);
-            if (!card) return null;
-
-            const col = prevColumnLayouts[layout.pileIndex] || { x: 0, y: 0 };
-            const x = (col.x ?? 0) + (layout.x ?? 0);
-            const y = (col.y ?? 0) + (layout.y ?? 0);
-
+            if (!layout || !card) return null;
             return {
               cardId,
               card,
-              x,
-              y,
-              w: layout.w,
-              h: layout.h,
+              x: completionColPos.x ?? 0,
+              y: kingY + stackIndex * peek,
+              w: cardW,
+              h: cardH,
             };
           })
           .filter(Boolean);
 
         if (ghostCards.length > 0) {
           // P1: If reduced motion is enabled, skip the animation entirely.
-          // Cards have already been removed from game state, so there's nothing
-          // visually to do. Just trigger the pending win modal if applicable.
           if (reduceMotionRef.current) {
             if (spiderPendingWinModalRef.current) {
               spiderPendingWinModalRef.current = false;
@@ -609,10 +639,6 @@ export default function SolitaireGameScreen({ navigation, route }) {
           }
 
           // P4: Guard against starting a new fly-away while one is in progress.
-          // If a second run completes before the first animation finishes (rare,
-          // but possible with auto-complete-style move chains), we let the first
-          // one finish and skip the second — its cards have already been removed
-          // from state anyway.
           if (spiderFlyAwayInProgressRef.current) {
             return;
           }
@@ -624,6 +650,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
 
           for (const ghost of ghostCards) {
             spiderFlyAwayAnimValuesRef.current.set(ghost.cardId, {
+              translateX: new Animated.Value(0),
               translateY: new Animated.Value(0),
               opacity: new Animated.Value(1),
               scale: new Animated.Value(1),
@@ -632,73 +659,66 @@ export default function SolitaireGameScreen({ navigation, route }) {
 
           setSpiderFlyAwayCards(ghostCards);
 
-          // P5: Final-run celebration — when this run pushes us to 8 (game won),
-          // boost the animation: bigger travel distance and brief bloom-then-shrink
-          // scale curve so the victory feels weightier.
           const isFinalRun = (state.completedRuns ?? 0) >= 8;
 
-          const STAGGER_MS = 160;
-          const ANIM_MS = 620;
-          const TRAVEL_MULTIPLIER = isFinalRun ? 1.6 : 1.0;
-          const SHRINK_TARGET = isFinalRun ? 0.78 : 0.86;
-          const BLOOM_TARGET = 1.12;
-          const BLOOM_DURATION = Math.round(ANIM_MS * 0.3);
+          // Cards arc toward the top-center of the screen.
+          // translateY accelerates upward (Easing.in = starts slow, ends fast).
+          // translateX eases toward center (Easing.out = starts fast, slows off).
+          // Different easing on each axis produces the arc.
+          const screenCenterX = width / 2;
+          const STAGGER_MS = 30;
+          const ANIM_MS = isFinalRun ? 480 : 380;
+          const BLOOM_TARGET = isFinalRun ? 1.15 : 1.08;
+          const BLOOM_DURATION = 90;
 
           let finishedCount = 0;
           ghostCards.forEach((ghost, index) => {
             const anim = spiderFlyAwayAnimValuesRef.current.get(ghost.cardId);
             if (!anim) return;
 
-            const translateTarget = -((ghost.h + 30) * TRAVEL_MULTIPLIER);
+            const cardCenterX = ghost.x + ghost.w / 2;
+            const xTarget = screenCenterX - cardCenterX;
+            const yTarget = -(ghost.y + ghost.h + 20);
 
             const animations = [
-              Animated.timing(anim.translateY, {
-                toValue: translateTarget,
+              Animated.timing(anim.translateX, {
+                toValue: xTarget,
                 duration: ANIM_MS,
                 delay: index * STAGGER_MS,
-                easing: Easing.out(Easing.quad),
+                easing: Easing.out(Easing.cubic),
+                useNativeDriver: true,
+              }),
+              Animated.timing(anim.translateY, {
+                toValue: yTarget,
+                duration: ANIM_MS,
+                delay: index * STAGGER_MS,
+                easing: Easing.in(Easing.cubic),
                 useNativeDriver: true,
               }),
               Animated.timing(anim.opacity, {
                 toValue: 0,
-                duration: Math.round(ANIM_MS * 0.75),
-                delay: index * STAGGER_MS,
-                easing: Easing.out(Easing.quad),
+                duration: Math.round(ANIM_MS * 0.7),
+                delay: index * STAGGER_MS + Math.round(ANIM_MS * 0.3),
+                easing: Easing.in(Easing.quad),
                 useNativeDriver: true,
               }),
-            ];
-
-            if (isFinalRun) {
-              // Bloom-then-shrink for the final run: scale up briefly, then down.
-              animations.push(
-                Animated.sequence([
-                  Animated.delay(index * STAGGER_MS),
-                  Animated.timing(anim.scale, {
-                    toValue: BLOOM_TARGET,
-                    duration: BLOOM_DURATION,
-                    easing: Easing.out(Easing.quad),
-                    useNativeDriver: true,
-                  }),
-                  Animated.timing(anim.scale, {
-                    toValue: SHRINK_TARGET,
-                    duration: ANIM_MS - BLOOM_DURATION,
-                    easing: Easing.out(Easing.quad),
-                    useNativeDriver: true,
-                  }),
-                ]),
-              );
-            } else {
-              // Standard runs: simple shrink.
-              animations.push(
+              // Pop then shrink: brief bloom before flying away.
+              Animated.sequence([
+                Animated.delay(index * STAGGER_MS),
                 Animated.timing(anim.scale, {
-                  toValue: SHRINK_TARGET,
-                  duration: Math.round(ANIM_MS * 0.75),
-                  delay: index * STAGGER_MS,
+                  toValue: BLOOM_TARGET,
+                  duration: BLOOM_DURATION,
                   easing: Easing.out(Easing.quad),
                   useNativeDriver: true,
                 }),
-              );
-            }
+                Animated.timing(anim.scale, {
+                  toValue: 0.2,
+                  duration: ANIM_MS - BLOOM_DURATION,
+                  easing: Easing.in(Easing.cubic),
+                  useNativeDriver: true,
+                }),
+              ]),
+            ];
 
             Animated.parallel(animations).start(() => {
               finishedCount += 1;
@@ -1030,7 +1050,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
             width: ghost.w,
             height: ghost.h,
             opacity: anim.opacity,
-            transform: [{ translateY: anim.translateY }, { scale: anim.scale }],
+            transform: [{ translateX: anim.translateX }, { translateY: anim.translateY }, { scale: anim.scale }],
             zIndex: 50,
           }}
         >
