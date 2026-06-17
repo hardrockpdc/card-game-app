@@ -429,9 +429,9 @@ export default function GoFishGameScreen({ navigation, route }) {
             ) : null}
           </View>
           <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.handRow}
+            showsVerticalScrollIndicator={false}
+            style={styles.handScroll}
+            contentContainerStyle={styles.handGrid}
           >
             {displayHand.map((card, index) => {
               const isSelected = card.rank === selectedRank;
@@ -643,12 +643,15 @@ const styles = StyleSheet.create({
   },
   youLabel: { color: "#fff", fontSize: scaleFont(14), fontWeight: "800" },
   youHint: { color: "#9fd0dd", fontSize: scaleFont(12), fontWeight: "700" },
-  handRow: {
+  // ~2 rows of small cards tall; wraps and scrolls if the hand grows.
+  handScroll: { maxHeight: scale(154), flexGrow: 0 },
+  handGrid: {
     flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
     alignItems: "center",
     paddingVertical: scale(8),
-    paddingHorizontal: scale(2),
-    gap: scale(2),
+    gap: scale(4),
   },
   cardWrap: { borderRadius: scale(6) },
   cardSelected: {
