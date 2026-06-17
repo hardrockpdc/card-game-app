@@ -1100,7 +1100,7 @@ export default function LastCardGameScreen({ navigation, route }) {
 
   const PILE_W = Math.min(width * 0.26, 108);
   const PILE_H = PILE_W * 1.4;
-  const HAND_W = Math.min(width * 0.195, 84);
+  const HAND_W = Math.min(width * 0.23, 100);
   const HAND_H = HAND_W * 1.4;
   const activeHex = COLOR_HEX[gameState?.activeColor] ?? "#555";
 
