@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   Alert,
   BackHandler,
 } from "react-native";
@@ -20,7 +19,6 @@ import GameHeader from "../components/GameHeader";
 import EndOfRoundModal from "../components/EndOfRoundModal";
 import YourTurnBanner from "../components/YourTurnBanner";
 import useYourTurnBanner from "../components/useYourTurnBanner";
-import StatsStrip from "../components/StatsStrip";
 import {
   setServerListeners,
   broadcastToClients,
@@ -883,14 +881,6 @@ export default function PokerGameScreen({ navigation, route }) {
   // At showdown: reveal hands
   const revealedHands = handResult?.hands ?? {};
 
-  const phaseLabel = {
-    preflop: "Pre-Flop",
-    flop: "Flop",
-    turn: "Turn",
-    river: "River",
-    showdown: "Showdown",
-  };
-
   function handleQuit() {
     if (isSinglePlayer && saveKey) clearGame(saveKey);
     else if (isHost) stopServer();
@@ -936,118 +926,126 @@ export default function PokerGameScreen({ navigation, route }) {
             <Text style={styles.headerVariant}>
               {variant || "Texas Hold'em"}
             </Text>
-            <View style={styles.headerChipRow}>
-              <Text style={styles.headerChips}>🪙 {myChips}</Text>
-              {pot > 0 && <Text style={styles.headerPot}>Pot: {pot}</Text>}
-            </View>
+            <Text style={styles.headerBlinds}>
+              Blinds {SMALL_BLIND}/{BIG_BLIND}
+            </Text>
           </View>
         }
         menuItems={menuItems}
       />
-      <StatsStrip
-        gameId="poker"
-        items={[
-          { label: "Chips", value: myChips, accent: true },
-          { label: "Pot", value: pot },
-          { label: "Blinds", value: `${SMALL_BLIND}/${BIG_BLIND}` },
-          { label: "Hand", value: phaseLabel[phase] ?? phase },
-        ]}
-      />
-      <ScrollView contentContainerStyle={styles.container}>
-        {/* Banner */}
-        <View
-          style={[styles.banner, phase === "showdown" && styles.bannerShowdown]}
-        >
-          <Text style={styles.bannerText}>
+      <View style={styles.felt}>
+        {/* Opponents seated across the top */}
+        <View style={styles.seatsRow}>
+          {players.map((p, idx) => {
+            if (idx === myIndex) return null;
+            const pid = String(p.id);
+            const ps = playerStates[pid] ?? {};
+            const isCurrent =
+              idx === currentPlayerIndex && phase !== "showdown";
+            const isWinner = handResult?.winners?.some(
+              (w) => String(w.id) === pid,
+            );
+            const showCards =
+              phase === "showdown" && !ps.folded && revealedHands[pid];
+            const handDesc = handResult?.handDescriptions?.[pid];
+            return (
+              <View
+                key={pid}
+                style={[
+                  styles.seat,
+                  isCurrent && styles.seatActive,
+                  isWinner && styles.seatWinner,
+                  ps.folded && styles.seatFolded,
+                ]}
+              >
+                <Text style={styles.seatName} numberOfLines={1}>
+                  {idx === dealerIdx ? "🎩 " : ""}
+                  {isWinner ? "🏆 " : ""}
+                  {isCurrent ? "▶ " : ""}
+                  {p.name}
+                </Text>
+                <Text style={styles.seatChips}>🪙 {ps.chips ?? 0}</Text>
+                {ps.bet > 0 ? (
+                  <Text style={styles.seatBet}>bet {ps.bet}</Text>
+                ) : null}
+                {ps.folded ? (
+                  <Text style={styles.seatFold}>FOLDED</Text>
+                ) : ps.allIn ? (
+                  <Text style={styles.seatAllIn}>ALL-IN</Text>
+                ) : null}
+                {showCards ? (
+                  <>
+                    <View style={styles.seatReveal}>
+                      {revealedHands[pid].map((c) => (
+                        <Card key={c.id} rank={c.rank} suit={c.suit} small />
+                      ))}
+                    </View>
+                    {handDesc ? (
+                      <Text style={styles.seatHandDesc} numberOfLines={1}>
+                        {handDesc}
+                      </Text>
+                    ) : null}
+                  </>
+                ) : null}
+              </View>
+            );
+          })}
+        </View>
+
+        {/* Center board: pot + community cards + status */}
+        <View style={styles.board}>
+          <View style={styles.potPill}>
+            <Text style={styles.potLabel}>POT</Text>
+            <Text style={styles.potValue}>{pot}</Text>
+          </View>
+
+          <View style={styles.communityRow}>
+            {communityCards.map((c) => (
+              <Card
+                key={c.id}
+                rank={c.rank}
+                suit={c.suit}
+                small
+                sizeScale={1.15}
+              />
+            ))}
+            {Array(5 - communityCards.length)
+              .fill(null)
+              .map((_, i) => (
+                <View key={`ph-${i}`} style={styles.cardPlaceholder} />
+              ))}
+          </View>
+
+          <Text style={styles.statusLine} numberOfLines={1}>
             {phase === "showdown"
               ? handResult?.type === "fold"
-                ? `🏆  ${handResult.winnerName} wins (everyone folded)`
-                : `🏆  ${handResult?.winners?.map((w) => w.name).join(" & ")} win!`
+                ? `🏆 ${handResult.winnerName} wins (all folded)`
+                : `🏆 ${handResult?.winners?.map((w) => w.name).join(" & ")} win!`
               : isMyTurn
-                ? `▶  Your turn  ·  ${phaseLabel[phase]}`
-                : `${currentPlayer?.name}'s turn  ·  ${phaseLabel[phase]}`}
+                ? "▶ Your turn"
+                : `${currentPlayer?.name}'s turn`}
           </Text>
+          {lastAction ? (
+            <Text style={styles.lastActionLine} numberOfLines={1}>
+              {lastAction}
+            </Text>
+          ) : null}
         </View>
 
-        {/* Last action */}
-        {lastAction ? (
-          <View style={styles.actionBox}>
-            <Text style={styles.actionText}>{lastAction}</Text>
+        {/* You: cards + chips + actions */}
+        <View style={styles.youArea}>
+          <View style={styles.youTopRow}>
+            <Text style={styles.youName} numberOfLines={1}>
+              {dealerIdx === myIndex ? "🎩 " : ""}You
+              {myPS.folded ? "  ·  FOLDED" : ""}
+            </Text>
+            <Text style={styles.youChips}>
+              🪙 {myChips}
+              {myPS.bet > 0 ? `  ·  bet ${myPS.bet}` : ""}
+            </Text>
           </View>
-        ) : null}
 
-        {/* Pot + community cards */}
-        <View style={styles.communitySection}>
-          <Text style={styles.potText}>Pot: {pot} chips</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.communityRow}>
-              {communityCards.map((c) => (
-                <Card key={c.id} rank={c.rank} suit={c.suit} />
-              ))}
-              {Array(5 - communityCards.length)
-                .fill(null)
-                .map((_, i) => (
-                  <View key={`ph-${i}`} style={styles.cardPlaceholder} />
-                ))}
-            </View>
-          </ScrollView>
-        </View>
-
-        {/* Players */}
-        {players.map((p, idx) => {
-          const pid = String(p.id);
-          const ps = playerStates[pid] ?? {};
-          const isCurrent = idx === currentPlayerIndex && phase !== "showdown";
-          const isMe = idx === myIndex;
-          const showCards =
-            phase === "showdown" && !ps.folded && revealedHands[pid];
-          const handDesc = handResult?.handDescriptions?.[pid];
-          const isWinner = handResult?.winners?.some(
-            (w) => String(w.id) === pid,
-          );
-          return (
-            <View
-              key={pid}
-              style={[
-                styles.playerCard,
-                isCurrent && styles.playerCardActive,
-                ps.folded && styles.playerCardFolded,
-                isWinner && styles.playerCardWinner,
-              ]}
-            >
-              <View style={styles.playerTop}>
-                <Text style={styles.playerName}>
-                  {isCurrent ? "▶ " : ""}
-                  {isWinner ? "🏆 " : ""}
-                  {idx === dealerIdx ? "🎩 " : ""}
-                  {p.name}
-                  {isMe ? " (you)" : ""}
-                </Text>
-                <Text style={styles.playerChips}>{ps.chips} chips</Text>
-              </View>
-              {ps.bet > 0 && (
-                <Text style={styles.playerBet}>Bet: {ps.bet}</Text>
-              )}
-              {ps.folded && <Text style={styles.foldedLabel}>FOLDED</Text>}
-              {ps.allIn && !ps.folded && (
-                <Text style={styles.allInLabel}>ALL-IN</Text>
-              )}
-              {showCards && (
-                <View style={styles.revealRow}>
-                  {revealedHands[pid].map((c) => (
-                    <Card key={c.id} rank={c.rank} suit={c.suit} />
-                  ))}
-                  {handDesc && <Text style={styles.handDesc}>{handDesc}</Text>}
-                </View>
-              )}
-            </View>
-          );
-        })}
-
-        {/* My hole cards */}
-        <View style={styles.myHand}>
-          <Text style={styles.myHandLabel}>Your Cards</Text>
-          <View style={styles.myHandRow}>
+          <View style={styles.yourCardsRow}>
             {myHand.map((c, index) => (
               <Card
                 key={c.id}
@@ -1057,60 +1055,72 @@ export default function PokerGameScreen({ navigation, route }) {
                 dealDelay={myHand.length <= 2 ? index * 100 : 0}
               />
             ))}
+            {phase === "showdown" && handResult?.handDescriptions?.[myPid] ? (
+              <Text style={styles.youHandDesc}>
+                {handResult.handDescriptions[myPid]}
+              </Text>
+            ) : null}
           </View>
-        </View>
 
-        {/* Action buttons */}
-        {isMyTurn && (
-          <View>
-            <View style={styles.actionRow}>
-              <TouchableOpacity
-                style={[styles.actionBtn, styles.foldBtn]}
-                onPress={() => act({ action: "fold" })}
-                accessibilityRole="button"
-                accessibilityLabel="Fold"
-                accessibilityHint="Give up your hand and exit this round"
-              >
-                <Text style={styles.actionBtnText}>Fold</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.actionBtn, styles.callBtn]}
-                onPress={() => act({ action: canCheck ? "check" : "call" })}
-                accessibilityRole="button"
-                accessibilityLabel={
-                  canCheck ? "Check" : `Call ${currentBet - (myPS.bet ?? 0)}`
-                }
-                accessibilityHint={
-                  canCheck
-                    ? "Stay in without betting more"
-                    : "Match the current bet to stay in"
-                }
-              >
-                <Text style={styles.actionBtnText}>
-                  {canCheck ? "Check" : `Call ${currentBet - (myPS.bet ?? 0)}`}
-                </Text>
-              </TouchableOpacity>
-            </View>
-            {raiseOptions.length > 0 && (
-              <View style={styles.raiseRow}>
-                {raiseOptions.map((opt) => (
-                  <TouchableOpacity
-                    key={opt.label}
-                    style={styles.raiseBtn}
-                    onPress={() => act({ action: "raise", amount: opt.amount })}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Raise ${opt.label}`}
-                    accessibilityHint="Increase the current bet"
-                  >
-                    <Text style={styles.raiseBtnText}>Raise</Text>
-                    <Text style={styles.raiseBtnAmt}>{opt.label}</Text>
-                  </TouchableOpacity>
-                ))}
+          {isMyTurn ? (
+            <>
+              <View style={styles.actionRow}>
+                <TouchableOpacity
+                  style={[styles.actionBtn, styles.foldBtn]}
+                  onPress={() => act({ action: "fold" })}
+                  accessibilityRole="button"
+                  accessibilityLabel="Fold"
+                  accessibilityHint="Give up your hand and exit this round"
+                >
+                  <Text style={styles.actionBtnText}>Fold</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.actionBtn, styles.callBtn]}
+                  onPress={() => act({ action: canCheck ? "check" : "call" })}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    canCheck ? "Check" : `Call ${currentBet - (myPS.bet ?? 0)}`
+                  }
+                  accessibilityHint={
+                    canCheck
+                      ? "Stay in without betting more"
+                      : "Match the current bet to stay in"
+                  }
+                >
+                  <Text style={styles.actionBtnText}>
+                    {canCheck
+                      ? "Check"
+                      : `Call ${currentBet - (myPS.bet ?? 0)}`}
+                  </Text>
+                </TouchableOpacity>
               </View>
-            )}
-          </View>
-        )}
-      </ScrollView>
+              {raiseOptions.length > 0 && (
+                <View style={styles.raiseRow}>
+                  {raiseOptions.map((opt) => (
+                    <TouchableOpacity
+                      key={opt.label}
+                      style={styles.raiseBtn}
+                      onPress={() =>
+                        act({ action: "raise", amount: opt.amount })
+                      }
+                      accessibilityRole="button"
+                      accessibilityLabel={`Raise ${opt.label}`}
+                      accessibilityHint="Increase the current bet"
+                    >
+                      <Text style={styles.raiseBtnText}>Raise</Text>
+                      <Text style={styles.raiseBtnAmt}>{opt.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </>
+          ) : (
+            <Text style={styles.waitText}>
+              {phase === "showdown" ? "Round over" : "Waiting…"}
+            </Text>
+          )}
+        </View>
+      </View>
 
       <EndOfRoundModal
         visible={phase === "showdown"}
@@ -1142,9 +1152,11 @@ const styles = StyleSheet.create({
     fontSize: scaleFont(13),
     fontWeight: "700",
   },
-  headerChipRow: { flexDirection: "row", alignItems: "center", gap: scale(12) },
-  headerChips: { color: "#ffd700", fontSize: scaleFont(14), fontWeight: "800" },
-  headerPot: { color: "#b0d4b0", fontSize: scaleFont(13), fontWeight: "700" },
+  headerBlinds: {
+    color: "#b0d4b0",
+    fontSize: scaleFont(13),
+    fontWeight: "700",
+  },
   loading: {
     flex: 1,
     backgroundColor: BG,
@@ -1159,119 +1171,158 @@ const styles = StyleSheet.create({
     paddingBottom: scale(40),
   },
 
-  banner: {
-    backgroundColor: "#e94560",
-    borderRadius: scale(10),
-    paddingVertical: scale(10),
+  felt: {
+    flex: 1,
+    paddingBottom: scale(4),
+  },
+
+  seatsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    alignItems: "flex-start",
+    gap: scale(8),
+    paddingHorizontal: scale(10),
+    paddingTop: scale(8),
+  },
+  seat: {
+    width: scale(98),
     alignItems: "center",
-    marginBottom: scale(8),
-  },
-  bannerShowdown: { backgroundColor: "#7b2d8b" },
-  bannerText: { color: "#fff", fontSize: scaleFont(15), fontWeight: "bold" },
-
-  actionBox: {
-    backgroundColor: "#16213e",
-    borderRadius: scale(8),
-    padding: scale(10),
-    marginBottom: scale(8),
-    borderLeftWidth: 3,
-    borderLeftColor: "#e94560",
-  },
-  actionText: { color: "#ccc", fontSize: scaleFont(13) },
-
-  communitySection: {
-    backgroundColor: "rgba(255,255,255,0.05)",
+    backgroundColor: "rgba(0,0,0,0.28)",
     borderRadius: scale(12),
-    padding: scale(12),
-    marginBottom: scale(10),
-    alignItems: "center",
-  },
-  potText: {
-    color: "#ffd700",
-    fontSize: scaleFont(18),
-    fontWeight: "bold",
-    marginBottom: scale(10),
-  },
-  communityRow: { flexDirection: "row", gap: scale(6) },
-  cardPlaceholder: {
-    width: scale(56),
-    height: scale(80),
-    backgroundColor: "#16213e",
-    borderRadius: scale(6),
-    borderWidth: 1,
-    borderColor: "#334",
-    borderStyle: "dashed",
-  },
-
-  playerCard: {
-    backgroundColor: "#16213e",
-    borderRadius: scale(10),
-    padding: scale(12),
-    marginBottom: scale(8),
     borderWidth: 1.5,
     borderColor: "transparent",
+    paddingVertical: scale(7),
+    paddingHorizontal: scale(6),
   },
-  playerCardActive: {
+  seatActive: {
     borderColor: "#ffd700",
-    backgroundColor: "rgba(255,215,0,0.06)",
+    backgroundColor: "rgba(255,215,0,0.12)",
   },
-  playerCardFolded: { opacity: 0.45 },
-  playerCardWinner: {
+  seatWinner: {
     borderColor: "#4caf50",
-    backgroundColor: "rgba(76,175,80,0.08)",
+    backgroundColor: "rgba(76,175,80,0.16)",
   },
-  playerTop: {
+  seatFolded: { opacity: 0.45 },
+  seatName: {
+    color: "#fff",
+    fontSize: scaleFont(12),
+    fontWeight: "800",
+    maxWidth: scale(92),
+    textAlign: "center",
+  },
+  seatChips: {
+    color: "#ffd700",
+    fontSize: scaleFont(12),
+    fontWeight: "700",
+    marginTop: scale(2),
+  },
+  seatBet: { color: "#cfe0d0", fontSize: scaleFont(11), marginTop: scale(1) },
+  seatFold: {
+    color: "#e94560",
+    fontSize: scaleFont(10),
+    fontWeight: "800",
+    marginTop: scale(2),
+  },
+  seatAllIn: {
+    color: "#ff9800",
+    fontSize: scaleFont(10),
+    fontWeight: "800",
+    marginTop: scale(2),
+  },
+  seatReveal: { flexDirection: "row", gap: scale(3), marginTop: scale(5) },
+  seatHandDesc: {
+    color: "#ffd700",
+    fontSize: scaleFont(10),
+    fontWeight: "700",
+    maxWidth: scale(92),
+    textAlign: "center",
+    marginTop: scale(2),
+  },
+
+  board: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: scale(12),
+    paddingHorizontal: scale(12),
+  },
+  potPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: scale(8),
+    backgroundColor: "rgba(0,0,0,0.38)",
+    borderRadius: scale(999),
+    borderWidth: 1,
+    borderColor: "rgba(255,215,0,0.45)",
+    paddingVertical: scale(6),
+    paddingHorizontal: scale(18),
+  },
+  potLabel: {
+    color: "#ffd700",
+    fontSize: scaleFont(12),
+    fontWeight: "800",
+    letterSpacing: scale(1.5),
+  },
+  potValue: { color: "#fff", fontSize: scaleFont(20), fontWeight: "900" },
+  communityRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cardPlaceholder: {
+    width: scale(48),
+    height: scale(68),
+    marginHorizontal: scale(2),
+    backgroundColor: "rgba(0,0,0,0.22)",
+    borderRadius: scale(6),
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.18)",
+    borderStyle: "dashed",
+  },
+  statusLine: {
+    color: "#fff",
+    fontSize: scaleFont(14),
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  lastActionLine: {
+    color: "#cfd8e3",
+    fontSize: scaleFont(12),
+    textAlign: "center",
+  },
+
+  youArea: {
+    paddingHorizontal: scale(14),
+    paddingTop: scale(8),
+    gap: scale(8),
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.08)",
+  },
+  youTopRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  playerName: { color: "#fff", fontSize: scaleFont(15), fontWeight: "bold" },
-  playerChips: {
-    color: "#ffd700",
+  youName: {
+    color: "#fff",
     fontSize: scaleFont(14),
-    fontWeight: "bold",
+    fontWeight: "800",
+    flexShrink: 1,
   },
-  playerBet: { color: "#c4c4d4", fontSize: scaleFont(12), marginTop: scale(4) },
-  foldedLabel: {
-    color: "#e94560",
-    fontSize: scaleFont(12),
-    fontWeight: "bold",
-    marginTop: scale(4),
-  },
-  allInLabel: {
-    color: "#ff9800",
-    fontSize: scaleFont(12),
-    fontWeight: "bold",
-    marginTop: scale(4),
-  },
-  revealRow: {
+  youChips: { color: "#ffd700", fontSize: scaleFont(14), fontWeight: "800" },
+  yourCardsRow: {
     flexDirection: "row",
     alignItems: "center",
-    flexWrap: "wrap",
-    gap: scale(6),
-    marginTop: scale(8),
+    justifyContent: "center",
+    gap: scale(8),
   },
-  handDesc: {
+  youHandDesc: {
     color: "#ffd700",
     fontSize: scaleFont(13),
-    fontWeight: "bold",
+    fontWeight: "700",
     marginLeft: scale(8),
   },
-
-  myHand: {
-    backgroundColor: "rgba(255,255,255,0.05)",
-    borderRadius: scale(12),
-    padding: scale(12),
-    marginBottom: scale(10),
-  },
-  myHandLabel: {
-    color: "#c4c4d4",
-    fontSize: scaleFont(12),
-    textTransform: "uppercase",
-    letterSpacing: scale(1),
-    marginBottom: scale(8),
-  },
-  myHandRow: { flexDirection: "row", gap: scale(8) },
 
   actionRow: { flexDirection: "row", gap: scale(10), marginBottom: scale(8) },
   actionBtn: {
