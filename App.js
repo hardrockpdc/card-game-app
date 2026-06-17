@@ -38,6 +38,7 @@ import { setTheme } from "./game/cardTheme";
 import { warn } from "./game/logger";
 import { initSounds } from "./game/sounds";
 import { initHaptics } from "./game/haptics";
+import { initLastCardTable } from "./game/lastCardTheme";
 import { ThemeProvider } from "./game/ThemeContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import {
@@ -78,6 +79,7 @@ export default function App() {
       });
     initSounds();
     initHaptics();
+    initLastCardTable();
   }, []);
 
   // The app is portrait-first: every screen is designed for portrait except

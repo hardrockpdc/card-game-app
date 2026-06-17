@@ -46,6 +46,12 @@ import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import { recordWin } from "../game/profile";
 import { getTableTheme } from "../game/tableThemes";
 import {
+  LAST_CARD_TABLES,
+  getLastCardTableId,
+  setLastCardTable,
+  subscribeLastCardTable,
+} from "../game/lastCardTheme";
+import {
   hapticImpact,
   hapticButton,
   hapticWin,
@@ -413,6 +419,8 @@ export default function LastCardGameScreen({ navigation, route }) {
   const [shakeId, setShakeId] = useState(null);
   const [coinsEarned, setCoinsEarned] = useState(0);
   const [showRoundModal, setShowRoundModal] = useState(false);
+  const [tableId, setTableId] = useState(getLastCardTableId());
+  const [showTablePicker, setShowTablePicker] = useState(false);
   const shakeAnim = useRef(new Animated.Value(0)).current;
   const coinRewardedRef = useRef(false);
   const outcomeBuzzedRef = useRef(false); // fire win/lose haptic once per game
@@ -435,6 +443,13 @@ export default function LastCardGameScreen({ navigation, route }) {
       mounted = false;
       sub?.remove?.();
     };
+  }, []);
+
+  // Keep the table palette in sync (loaded at app start; may change via the
+  // in-game Table Colour picker).
+  useEffect(() => {
+    setTableId(getLastCardTableId());
+    return subscribeLastCardTable((id) => setTableId(id));
   }, []);
 
   useEffect(
@@ -1103,6 +1118,8 @@ export default function LastCardGameScreen({ navigation, route }) {
   const HAND_W = Math.min(width * 0.23, 100);
   const HAND_H = HAND_W * 1.4;
   const activeHex = COLOR_HEX[gameState?.activeColor] ?? "#555";
+  const pal =
+    LAST_CARD_TABLES.find((t) => t.id === tableId) ?? LAST_CARD_TABLES[0];
 
   function handleQuit() {
     if (isSinglePlayer) clearGame(SAVE_KEY_LASTCARD);
@@ -1166,131 +1183,184 @@ export default function LastCardGameScreen({ navigation, route }) {
       : []),
     { type: "howto", gameId: "lastcard" },
     { type: "theme" },
+    {
+      icon: "🎨",
+      label: "Table Colour",
+      onPress: () => setShowTablePicker(true),
+    },
     { type: "divider" },
     { type: "quit", onQuit: handleQuit },
   ];
 
   return (
-    <SafeAreaView style={styles.root}>
+    <SafeAreaView style={[styles.root, { backgroundColor: pal.rail }]}>
       <GameHeader
         gameId="lastcard"
         title="Last Card"
         subtitle={isSinglePlayer ? "Single Player" : "Multiplayer"}
         menuItems={menuItems}
       />
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.seatBar}
-        contentContainerStyle={styles.seatBarContent}
+
+      {/* The table: a raised felt surface holding the seats + play area. */}
+      <View
+        style={[
+          styles.felt,
+          { backgroundColor: pal.felt, borderColor: pal.feltBorder },
+        ]}
       >
-        {opponents.map((p) => {
-          const isActive = p.id === gameState?.currentTurn;
-          return (
-            <View
-              key={p.id}
-              style={[styles.seat, isActive && styles.seatActive]}
-            >
-              <View style={styles.seatCardWrap}>
-                <Image
-                  source={LC.card_back}
-                  style={styles.seatCardBack}
-                  resizeMode="contain"
-                />
-                <View
-                  style={[
-                    styles.seatCountBadge,
-                    isActive && styles.seatCountBadgeActive,
-                  ]}
-                >
-                  <Text style={styles.seatCountText}>{p.cardCount}</Text>
-                </View>
-              </View>
-              <Text
-                style={[styles.seatName, isActive && styles.seatNameActive]}
-                numberOfLines={1}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={[styles.seatBar, { borderBottomColor: pal.feltBorder }]}
+          contentContainerStyle={styles.seatBarContent}
+        >
+          {opponents.map((p) => {
+            const isActive = p.id === gameState?.currentTurn;
+            return (
+              <View
+                key={p.id}
+                style={[
+                  styles.seat,
+                  {
+                    backgroundColor: pal.panel,
+                    borderColor: pal.panelBorder,
+                  },
+                  isActive && {
+                    backgroundColor: pal.accentBg,
+                    borderColor: pal.accent,
+                  },
+                ]}
               >
-                {isActive ? "▶ " : ""}
-                {p.name}
-              </Text>
-            </View>
-          );
-        })}
-      </ScrollView>
-
-      <View style={styles.playArea}>
-        {/* Draw pile */}
-        <View style={styles.pileColumn}>
-          <TouchableOpacity
-            style={styles.pileWrapper}
-            onPress={onDeckTap}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel="Draw from deck"
-            accessibilityHint="Take a card from the draw pile"
-          >
-            <View style={[styles.cardShell, { width: PILE_W, height: PILE_H }]}>
-              <Image
-                source={LC.card_back}
-                style={styles.cardArt}
-                resizeMode="contain"
-              />
-            </View>
-            <View style={styles.countBadge}>
-              <Text style={styles.countBadgeText}>
-                {gameState?.drawPileCount ?? 0}
-              </Text>
-            </View>
-          </TouchableOpacity>
-          <Text style={styles.pileLabel}>DRAW</Text>
-        </View>
-
-        {/* Direction of play */}
-        <Text style={styles.directionIcon}>{turnDirectionGlyph}</Text>
-
-        {/* Discard pile — haloed + ringed in the active colour */}
-        <View style={styles.pileColumn}>
-          <View
-            style={[
-              styles.discardHalo,
-              { backgroundColor: colorWithAlpha(activeHex, 0.22) },
-            ]}
-          >
-            <View style={[styles.pileWrapper, { borderColor: activeHex }]}>
-              {topCard ? (
-                <View
-                  style={[styles.cardShell, { width: PILE_W, height: PILE_H }]}
-                >
+                <View style={styles.seatCardWrap}>
                   <Image
-                    source={cardImage(topCard)}
-                    style={styles.cardArt}
+                    source={LC.card_back}
+                    style={styles.seatCardBack}
                     resizeMode="contain"
                   />
+                  <View
+                    style={[
+                      styles.seatCountBadge,
+                      {
+                        backgroundColor: pal.panelBorder,
+                        borderColor: pal.rail,
+                      },
+                      isActive && { backgroundColor: pal.accent },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.seatCountText,
+                        { color: isActive ? pal.onAccent : pal.text },
+                      ]}
+                    >
+                      {p.cardCount}
+                    </Text>
+                  </View>
                 </View>
-              ) : (
-                <View
-                  style={[styles.emptyPile, { width: PILE_W, height: PILE_H }]}
+                <Text
+                  style={[
+                    styles.seatName,
+                    { color: isActive ? pal.accent : pal.textDim },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {isActive ? "▶ " : ""}
+                  {p.name}
+                </Text>
+              </View>
+            );
+          })}
+        </ScrollView>
+
+        <View style={styles.playArea}>
+          {/* Draw pile */}
+          <View style={styles.pileColumn}>
+            <TouchableOpacity
+              style={[styles.pileWrapper, { borderColor: pal.panelBorder }]}
+              onPress={onDeckTap}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Draw from deck"
+              accessibilityHint="Take a card from the draw pile"
+            >
+              <View
+                style={[styles.cardShell, { width: PILE_W, height: PILE_H }]}
+              >
+                <Image
+                  source={LC.card_back}
+                  style={styles.cardArt}
+                  resizeMode="contain"
                 />
-              )}
+              </View>
+              <View style={[styles.countBadge, { backgroundColor: pal.accent }]}>
+                <Text style={[styles.countBadgeText, { color: pal.onAccent }]}>
+                  {gameState?.drawPileCount ?? 0}
+                </Text>
+              </View>
+            </TouchableOpacity>
+            <Text style={[styles.pileLabel, { color: pal.textDim }]}>DRAW</Text>
+          </View>
+
+          {/* Direction of play */}
+          <Text style={[styles.directionIcon, { color: pal.textDim }]}>
+            {turnDirectionGlyph}
+          </Text>
+
+          {/* Discard pile — haloed + ringed in the active colour */}
+          <View style={styles.pileColumn}>
+            <View
+              style={[
+                styles.discardHalo,
+                { backgroundColor: colorWithAlpha(activeHex, 0.22) },
+              ]}
+            >
+              <View style={[styles.pileWrapper, { borderColor: activeHex }]}>
+                {topCard ? (
+                  <View
+                    style={[styles.cardShell, { width: PILE_W, height: PILE_H }]}
+                  >
+                    <Image
+                      source={cardImage(topCard)}
+                      style={styles.cardArt}
+                      resizeMode="contain"
+                    />
+                  </View>
+                ) : (
+                  <View
+                    style={[styles.emptyPile, { width: PILE_W, height: PILE_H }]}
+                  />
+                )}
+              </View>
+            </View>
+            <View style={styles.colorTag}>
+              <View style={[styles.colorDot, { backgroundColor: activeHex }]} />
+              <Text
+                style={[styles.colorLabel, { color: pal.text }]}
+                numberOfLines={1}
+              >
+                {COLOR_LABELS[gameState?.activeColor] ?? ""}
+              </Text>
             </View>
           </View>
-          <View style={styles.colorTag}>
-            <View style={[styles.colorDot, { backgroundColor: activeHex }]} />
-            <Text style={styles.colorLabel} numberOfLines={1}>
-              {COLOR_LABELS[gameState?.activeColor] ?? ""}
-            </Text>
-          </View>
+        </View>
+
+        <View
+          style={[
+            styles.statusBar,
+            { backgroundColor: pal.status, borderColor: pal.feltBorder },
+          ]}
+        >
+          <Text
+            style={[styles.statusText, { color: pal.text }]}
+            numberOfLines={2}
+          >
+            {statusMsg}
+          </Text>
         </View>
       </View>
 
-      <View style={styles.statusBar}>
-        <Text style={styles.statusText} numberOfLines={2}>
-          {statusMsg}
-        </Text>
-      </View>
-
-      <View style={styles.handArea}>
-        <Text style={styles.handLabel}>
+      <View style={[styles.handArea, { backgroundColor: pal.tray }]}>
+        <Text style={[styles.handLabel, { color: pal.textDim }]}>
           {isMyTurn ? "YOUR TURN" : "YOUR HAND"}
           {"  "}({myCards.length})
         </Text>
@@ -1376,6 +1446,76 @@ export default function LastCardGameScreen({ navigation, route }) {
         </View>
       )}
 
+      {showTablePicker && (
+        <View style={styles.overlay}>
+          <Text style={styles.overlayTitle}>Table Colour</Text>
+          <View style={styles.tableSwatchGrid}>
+            {LAST_CARD_TABLES.map((t) => {
+              const selected = t.id === tableId;
+              return (
+                <TouchableOpacity
+                  key={t.id}
+                  style={[
+                    styles.tableSwatch,
+                    {
+                      backgroundColor: t.felt,
+                      borderColor: selected ? t.accent : t.feltBorder,
+                    },
+                  ]}
+                  onPress={() => {
+                    setLastCardTable(t.id);
+                    setTableId(t.id);
+                    setShowTablePicker(false);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={t.name}
+                >
+                  <View style={styles.tableSwatchDots}>
+                    <View
+                      style={[
+                        styles.tableSwatchDot,
+                        { backgroundColor: t.rail },
+                      ]}
+                    />
+                    <View
+                      style={[
+                        styles.tableSwatchDot,
+                        { backgroundColor: t.panel },
+                      ]}
+                    />
+                    <View
+                      style={[
+                        styles.tableSwatchDot,
+                        { backgroundColor: t.accent },
+                      ]}
+                    />
+                  </View>
+                  <Text style={[styles.tableSwatchName, { color: t.text }]}>
+                    {t.name}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.tableSwatchCheck,
+                      { color: selected ? t.accent : "transparent" },
+                    ]}
+                  >
+                    ✓ Selected
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          <TouchableOpacity
+            style={styles.tableCloseBtn}
+            onPress={() => setShowTablePicker(false)}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+          >
+            <Text style={styles.tableCloseText}>Close</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       <YourTurnBanner visible={showYourTurnBanner} />
 
       <EndOfRoundModal
@@ -1400,7 +1540,7 @@ export default function LastCardGameScreen({ navigation, route }) {
           onPlayAgain();
         }}
         onLeave={handleQuit}
-        tableColor={BG}
+        tableColor={pal.felt}
       />
     </SafeAreaView>
   );
@@ -1411,10 +1551,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: BG,
   },
+  felt: {
+    marginHorizontal: scale(10),
+    marginTop: scale(8),
+    borderRadius: scale(20),
+    borderWidth: 1.5,
+    overflow: "hidden",
+  },
   seatBar: {
     maxHeight: scale(104),
     borderBottomWidth: 1,
-    borderBottomColor: "#1e1e3a",
   },
   seatBarContent: {
     flexDirection: "row",
@@ -1432,11 +1578,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(4),
     borderRadius: scale(12),
     borderWidth: 1.5,
-    borderColor: "transparent",
-  },
-  seatActive: {
-    backgroundColor: "#2a0f20",
-    borderColor: "#e94560",
   },
   seatCardWrap: {
     width: scale(40),
@@ -1453,7 +1594,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: -scale(6),
     right: -scale(8),
-    backgroundColor: "#3a3a5a",
     borderRadius: scale(10),
     minWidth: scale(20),
     height: scale(20),
@@ -1461,27 +1601,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: scale(4),
     borderWidth: 1.5,
-    borderColor: "#0f0f24",
-  },
-  seatCountBadgeActive: {
-    backgroundColor: "#e94560",
   },
   seatCountText: {
-    color: "#fff",
     fontSize: scaleFont(11),
     fontWeight: "bold",
   },
   seatName: {
-    color: "#9a9ab0",
     fontSize: scaleFont(11),
-    fontWeight: "600",
+    fontWeight: "700",
     marginTop: scale(8),
     maxWidth: scale(64),
     textAlign: "center",
-  },
-  seatNameActive: {
-    color: "#ff6b6b",
-    fontWeight: "800",
   },
   playArea: {
     flexDirection: "row",
@@ -1583,20 +1713,20 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: scale(16),
     minHeight: scale(44),
-    backgroundColor: "#12122a",
     borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: "#1e1e3a",
   },
   statusText: {
-    color: "#e0e0ff",
     fontSize: scaleFont(14),
     textAlign: "center",
     fontWeight: "500",
   },
   handArea: {
     flex: 1,
-    paddingTop: scale(8),
+    marginHorizontal: scale(10),
+    marginTop: scale(8),
+    marginBottom: scale(6),
+    borderRadius: scale(20),
+    paddingTop: scale(10),
     paddingBottom: scale(4),
   },
   handLabel: {
@@ -1686,6 +1816,53 @@ const styles = StyleSheet.create({
   winBtnText: {
     color: "#fff",
     fontSize: scaleFont(18),
+    fontWeight: "bold",
+  },
+  tableSwatchGrid: {
+    width: "100%",
+    gap: scale(12),
+  },
+  tableSwatch: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: scale(12),
+    borderRadius: scale(16),
+    borderWidth: 2,
+    paddingVertical: scale(14),
+    paddingHorizontal: scale(16),
+  },
+  tableSwatchDots: {
+    flexDirection: "row",
+    gap: scale(5),
+  },
+  tableSwatchDot: {
+    width: scale(16),
+    height: scale(16),
+    borderRadius: scale(8),
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.25)",
+  },
+  tableSwatchName: {
+    flex: 1,
+    fontSize: scaleFont(16),
+    fontWeight: "800",
+  },
+  tableSwatchCheck: {
+    fontSize: scaleFont(12),
+    fontWeight: "800",
+  },
+  tableCloseBtn: {
+    marginTop: scale(4),
+    paddingVertical: scale(12),
+    paddingHorizontal: scale(40),
+    borderRadius: scale(12),
+    backgroundColor: "#16213e",
+    borderWidth: 1.5,
+    borderColor: "#334",
+  },
+  tableCloseText: {
+    color: "#fff",
+    fontSize: scaleFont(16),
     fontWeight: "bold",
   },
 });
