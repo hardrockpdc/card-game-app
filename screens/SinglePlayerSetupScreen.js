@@ -19,6 +19,7 @@ import {
 } from "../game/profile";
 import { useHasSave } from "../game/useResumePrompt";
 import { clearGame } from "../game/gameSaves";
+import { confirmStartNew } from "../components/GameSetupLayout";
 
 // ─── Display data for the carousel (order + visuals) ─────────────────────────
 
@@ -457,7 +458,7 @@ export default function SinglePlayerSetupScreen({ navigation }) {
                 styles.playBtnSecondary,
                 { paddingVertical: isSmallScreen ? 16 : 18 },
               ]}
-              onPress={blackjackStartNew}
+              onPress={() => confirmStartNew(blackjackStartNew)}
             >
               <Text
                 style={[

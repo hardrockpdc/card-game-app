@@ -1,10 +1,29 @@
 import React from "react";
-import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import {
+  Alert,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { HapticPressable as Pressable } from "./Haptic";
 import { scale, scaleFont } from "../game/responsive";
 
 const ACCENT = "#77AEF7";
+
+// Confirm before wiping a saved game, then run `onConfirm`.
+export function confirmStartNew(onConfirm) {
+  Alert.alert(
+    "Start New Game?",
+    "This will erase your saved game.",
+    [
+      { text: "Cancel", style: "cancel" },
+      { text: "Start New", style: "destructive", onPress: onConfirm },
+    ],
+    { cancelable: true },
+  );
+}
 
 // Shared chrome for every game's setup screen so they all look identical:
 // centered title (+ subtitle in portrait), one bordered panel holding the
@@ -70,7 +89,7 @@ export default function GameSetupLayout({
                 <Text style={styles.playButtonText}>Continue Game</Text>
               </Pressable>
               <Pressable
-                onPress={resume.onStartNew}
+                onPress={() => confirmStartNew(resume.onStartNew)}
                 style={({ pressed }) => [
                   styles.playButtonSecondary,
                   pressed && styles.playButtonPressed,
