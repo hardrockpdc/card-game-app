@@ -232,19 +232,21 @@ sharp: ^0.34.5                             (used by scripts/compress-cards.js)
 
 Theme switching is live — tap a theme in Profile → Card Theme and all open games update instantly. No restart needed. **Theme is now persisted via AsyncStorage** (saved as part of the profile) — survives app restarts. Theme picker moved from Settings to Profile in Update Phase 4.
 
-| Theme ID | Label    | Asset folder              |
-| -------- | -------- | ------------------------- |
-| neon     | Neon     | assets/cards/             |
-| cowboy   | Cowboy   | assets/cards_cowboy/      |
-| girly    | Girly    | assets/card_images_girly/ |
-| hp       | Hogwarts | assets/card_images_hp/    |
-| jewel    | Jewel    | assets/card_images_jewel/ |
+| Theme ID | Label   | Asset folder                |
+| -------- | ------- | --------------------------- |
+| classic  | Classic | assets/card_images_classic/ |
+| neon     | Neon    | assets/cards/               |
+| cowboy   | Cowboy  | assets/cards_cowboy/        |
+| girly    | Girly   | assets/card_images_girly/   |
+| wizards  | Wizards | assets/card_images_hp/      |
+| gothic   | Gothic  | assets/card_images_gothic/  |
+| pirate   | Pirate  | assets/card_images_pirate/  |
 
 All folders use identical filenames: `{rank}_{suit}.png` (ranks: a 2–10 j q k, suits: spades hearts diamonds clubs) + `card_back.png`.
 
 **Theme system files:**
 
-- `game/cardTheme.js` — module singleton, 265 static requires (5 themes × 53 images), `setTheme`/`getTheme`/`subscribe`/`getCardImage`/`getCardBackImage`/`getThemePreviewImage`/`THEMES_LIST` exports
+- `game/cardTheme.js` — module singleton, 371 static requires (7 themes × 53 images), `setTheme`/`getTheme`/`subscribe`/`getCardImage`/`getCardBackImage`/`getThemePreviewImage`/`THEMES_LIST` exports
 - `game/ThemeContext.js` — React context wrapping `cardTheme.js`; provides `useTheme()` hook; single AppState subscriber shared across all Card instances (replaces per-Card `useEffect` subscribers)
 - `components/Card.js` — uses `ThemeContext` via `useTheme()`; wrapped in `React.memo`; size calculations memoized with `useMemo`
 - `screens/CardThemeScreen.js` — full-screen swiper (FlatList pagingEnabled), Ace of Spades preview, dot indicators, "Use This Theme" button
