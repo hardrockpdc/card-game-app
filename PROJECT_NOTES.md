@@ -904,7 +904,7 @@ app-wide.
 - [x] **BUG-2** — Audited all 9 game screens for hooks-after-early-return (2026-06-01). Only `WildRoundGameScreen` was affected; fixed in commit `9bd069a`. All other screens place every hook above every early return.
 - [x] **BUG-3** — RESOLVED (verified 2026-06-02). `stopBroadcasting()` now runs in the lobby's unmount cleanup (`return () => stopBroadcasting()`), the Start-Game path, and the quit/back path. The broadcast no longer survives leaving the lobby.
 - [x] **BUG-4** — Auto-save throttle added to Rummy, GoFish, Poker, LastCard (same lastSaveRef 3s gate as Conquián). Commit `5748463`.
-- [ ] **BUG-5** — `WildRoundGameScreen` has no save/resume (documented as a known gap in PROJECT_NOTES.md, but still ships)
+- [x] **BUG-5** — N/A: Wild Round is multiplayer-only (removed from single-player carousel). No save/resume needed.
 - [x] **BUG-6** — ✅ FIXED (commit `734dae9`, was **high**) — added a per-connection receive buffer to both TCP handlers in `GameNetwork.js` so messages larger than one segment reassemble instead of being silently dropped. Verify on two devices in a Poker/Conquián game.
 
 ### ⚡ PERFORMANCE
@@ -1299,31 +1299,11 @@ Apply to all 5 games. ~5 min per file, all the same pattern.
 
 ---
 
-## BUG-5. WildRound has no save/resume — only single-player game without it
+## BUG-5. ~~WildRound has no save/resume~~ — N/A
 
-**Effort:** 1 hour
-**Risk if ignored:** Inconsistent UX. Users who pause WildRound mid-game (phone call, etc.) lose their progress.
-
-### What's happening
-
-Per PROJECT_NOTES.md: "WildRound save/resume — add auto-save + resume prompt + Save & Exit (currently the only single-player game without this feature)."
-
-Every other single-player game (Blackjack, Solitaire, Rummy, Conquián, Go Fish, Poker, Last Card) has save/resume. WildRound is the odd one out.
-
-### Why this matters
-
-It's a feature gap that users will notice. Not technically a bug, but listed in PROJECT_NOTES as something to fix before launch.
-
-### The fix
-
-Add the standard save/resume pattern to WildRound:
-1. `SAVE_KEY_WILDROUND` constant
-2. Auto-save useEffect (throttled with `lastSaveRef` 3s gate — see BUG-4 for the pattern)
-3. Resume check on mount
-4. Save & Exit menu item
-5. Wire resume prompt in `WildRoundVariantPickerScreen` (or wherever WildRound is launched from)
-
-> Heads-up: WildRound has unique state — the `wildroundCards.json` content, the carousel position, the judge selection. Saving it properly requires understanding what fields are essential. May warrant a brief design conversation before implementing.
+> **✅ CLOSED (2026-06-17).** Wild Round is multiplayer-only — it was removed from
+> the single-player carousel intentionally. Save/resume doesn't apply to a
+> multiplayer party game session.
 
 ---
 
@@ -1747,7 +1727,7 @@ If you want a suggested path:
 3. **ACC-2** — screen-reader focus during the deal — needs a state flag (not a ref); see the tracker note
 
 ### Post-launch (v1.1)
-10. **BUG-5** — WildRound save/resume (~1 hr)
+10. ~~**BUG-5**~~ — closed (Wild Round is multiplayer-only, no save needed)
 11. **UX-3** — deal animation re-play (~15 min)
 12. **PERF-1, PERF-2, CQ-5, CQ-6** — image/theme loading
 13. **CQ-13** — uninstall TypeScript (~2 min)
