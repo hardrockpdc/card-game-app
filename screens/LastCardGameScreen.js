@@ -1182,7 +1182,6 @@ export default function LastCardGameScreen({ navigation, route }) {
       ? [{ type: "saveexit", onSaveExit: handleSaveAndExit }]
       : []),
     { type: "howto", gameId: "lastcard" },
-    { type: "theme" },
     {
       icon: "🎨",
       label: "Table Theme",
