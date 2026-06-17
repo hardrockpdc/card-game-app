@@ -1018,8 +1018,16 @@ export default function LastCardGameScreen({ navigation, route }) {
 
   const PILE_W = Math.min(width * 0.26, 108);
   const PILE_H = PILE_W * 1.4;
-  const HAND_W = Math.min(width * 0.23, 100);
-  const HAND_H = HAND_W * 1.4;
+  // Size hand cards so at least 5 fit per row: full width minus the grid's
+  // horizontal padding and the gaps between 5 cards, divided five ways (with a
+  // 2px safety margin so rounding never wraps to 4).
+  const HAND_COLS = 5;
+  const HAND_GAP = scale(6); // matches styles.handGrid gap
+  const HAND_W =
+    Math.floor(
+      (width - scale(10) * 2 - HAND_GAP * (HAND_COLS - 1)) / HAND_COLS,
+    ) - 2;
+  const HAND_H = Math.round(HAND_W * 1.4);
   const activeHex = COLOR_HEX[gameState?.activeColor] ?? "#555";
   const pal =
     LAST_CARD_TABLES.find((t) => t.id === tableId) ?? LAST_CARD_TABLES[0];
@@ -1297,11 +1305,7 @@ export default function LastCardGameScreen({ navigation, route }) {
                     <View
                       style={[
                         styles.cardShell,
-                        {
-                          width: HAND_W,
-                          height: HAND_H,
-                          marginHorizontal: 3,
-                        },
+                        { width: HAND_W, height: HAND_H },
                         shouldDimUnplayable && styles.dimmed,
                       ]}
                     >
