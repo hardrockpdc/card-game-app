@@ -1274,12 +1274,6 @@ export default function LastCardGameScreen({ navigation, route }) {
               )}
             </View>
           </View>
-          <View style={styles.colorTag}>
-            <View style={[styles.colorDot, { backgroundColor: activeHex }]} />
-            <Text style={styles.colorLabel} numberOfLines={1}>
-              {COLOR_LABELS[gameState?.activeColor] ?? ""}
-            </Text>
-          </View>
         </View>
       </View>
 
@@ -1505,11 +1499,6 @@ const styles = StyleSheet.create({
     borderRadius: scale(18),
     padding: scale(10),
   },
-  colorTag: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: scale(6),
-  },
   pileWrapper: {
     borderRadius: scale(10),
     borderWidth: 2,
@@ -1563,20 +1552,6 @@ const styles = StyleSheet.create({
   directionIcon: {
     color: "#8a8aa8",
     fontSize: scaleFont(34),
-  },
-  colorDot: {
-    width: scale(14),
-    height: scale(14),
-    borderRadius: scale(7),
-    borderWidth: 2,
-    borderColor: "#fff",
-  },
-  colorLabel: {
-    color: "#d4d4e4",
-    fontSize: scaleFont(12),
-    fontWeight: "700",
-    textAlign: "center",
-    maxWidth: scale(90),
   },
   statusBar: {
     alignItems: "center",
