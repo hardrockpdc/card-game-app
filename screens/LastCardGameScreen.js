@@ -16,7 +16,6 @@ import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 import GameHeader from "../components/GameHeader";
 import EndOfRoundModal from "../components/EndOfRoundModal";
-import StatsStrip from "../components/StatsStrip";
 import YourTurnBanner from "../components/YourTurnBanner";
 import {
   COLORS,
@@ -72,6 +71,19 @@ const COLOR_LABELS = {
   turquoise: "Turquoise",
   coral: "Coral",
 };
+
+// Translucent version of a #rrggbb hex — used for the active-colour halo behind
+// the discard pile. (A coloured glow via elevation doesn't render on Android, so
+// we draw a soft colour wash instead.)
+function colorWithAlpha(hex, alpha) {
+  if (typeof hex !== "string" || hex[0] !== "#" || hex.length < 7) {
+    return `rgba(85,85,85,${alpha})`;
+  }
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
 
 const LC = {
   card_back: require("../assets/card_images_lastcard/card_back.png"),
@@ -1086,10 +1098,11 @@ export default function LastCardGameScreen({ navigation, route }) {
   const turnDirectionGlyph =
     gameState?.turnDirection === "clockwise" ? "↻" : "↺";
 
-  const PILE_W = Math.min(width * 0.21, 88);
+  const PILE_W = Math.min(width * 0.26, 108);
   const PILE_H = PILE_W * 1.4;
-  const HAND_W = Math.min(width * 0.175, 74);
+  const HAND_W = Math.min(width * 0.195, 84);
   const HAND_H = HAND_W * 1.4;
+  const activeHex = COLOR_HEX[gameState?.activeColor] ?? "#555";
 
   function handleQuit() {
     if (isSinglePlayer) clearGame(SAVE_KEY_LASTCARD);
@@ -1165,125 +1178,108 @@ export default function LastCardGameScreen({ navigation, route }) {
         subtitle={isSinglePlayer ? "Single Player" : "Multiplayer"}
         menuItems={menuItems}
       />
-      <StatsStrip
-        gameId="lastcard"
-        items={[
-          { label: "Cards", value: myCards.length, accent: true },
-          {
-            label: "Deck",
-            value: gameState?.drawPileCount ?? 0,
-            accent: false,
-          },
-          {
-            label: "Direction",
-            value:
-              gameState?.turnDirection === "clockwise"
-                ? "→"
-                : gameState?.turnDirection === "counterclockwise"
-                  ? "←"
-                  : "—",
-            accent: false,
-          },
-          {
-            label: "Turn",
-            value:
-              gameState?.currentTurn && gameState?.players
-                ? (gameState.players.find((p) => p.id === gameState.currentTurn)
-                    ?.name ?? "—")
-                : "—",
-            accent: false,
-          },
-        ]}
-      />
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={styles.topBar}
-        contentContainerStyle={styles.topBarContent}
+        style={styles.seatBar}
+        contentContainerStyle={styles.seatBarContent}
       >
         {opponents.map((p) => {
           const isActive = p.id === gameState?.currentTurn;
           return (
             <View
               key={p.id}
-              style={[
-                styles.opponentChip,
-                isActive && styles.opponentChipActive,
-              ]}
+              style={[styles.seat, isActive && styles.seatActive]}
             >
+              <View style={styles.seatCardWrap}>
+                <Image
+                  source={LC.card_back}
+                  style={styles.seatCardBack}
+                  resizeMode="contain"
+                />
+                <View
+                  style={[
+                    styles.seatCountBadge,
+                    isActive && styles.seatCountBadgeActive,
+                  ]}
+                >
+                  <Text style={styles.seatCountText}>{p.cardCount}</Text>
+                </View>
+              </View>
               <Text
-                style={[
-                  styles.opponentName,
-                  isActive && styles.opponentNameActive,
-                ]}
+                style={[styles.seatName, isActive && styles.seatNameActive]}
                 numberOfLines={1}
               >
                 {isActive ? "▶ " : ""}
                 {p.name}
               </Text>
-              <Text style={styles.opponentCount}>{p.cardCount}</Text>
             </View>
           );
         })}
       </ScrollView>
 
       <View style={styles.playArea}>
-        <TouchableOpacity
-          style={styles.pileWrapper}
-          onPress={onDeckTap}
-          activeOpacity={0.8}
-          accessibilityRole="button"
-          accessibilityLabel="Draw from deck"
-          accessibilityHint="Take a card from the draw pile"
-        >
-          <View style={[styles.cardShell, { width: PILE_W, height: PILE_H }]}>
-            <Image
-              source={LC.card_back}
-              style={styles.cardArt}
-              resizeMode="contain"
-            />
-            <Text style={styles.cardFallbackText}>Deck</Text>
-          </View>
-          <View style={styles.countBadge}>
-            <Text style={styles.countBadgeText}>
-              {gameState?.drawPileCount ?? 0}
-            </Text>
-          </View>
-        </TouchableOpacity>
-
-        <View style={styles.centerInfo}>
-          <Text style={styles.directionIcon}>{turnDirectionGlyph}</Text>
-          <View
-            style={[
-              styles.colorDot,
-              { backgroundColor: COLOR_HEX[gameState?.activeColor] ?? "#555" },
-            ]}
-          />
-          <Text style={styles.colorLabel}>
-            {COLOR_LABELS[gameState?.activeColor] ?? ""}
-          </Text>
-        </View>
-
-        <View
-          style={[
-            styles.pileWrapper,
-            { borderColor: COLOR_HEX[gameState?.activeColor] ?? "#555" },
-          ]}
-        >
-          {topCard ? (
+        {/* Draw pile */}
+        <View style={styles.pileColumn}>
+          <TouchableOpacity
+            style={styles.pileWrapper}
+            onPress={onDeckTap}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Draw from deck"
+            accessibilityHint="Take a card from the draw pile"
+          >
             <View style={[styles.cardShell, { width: PILE_W, height: PILE_H }]}>
               <Image
-                source={cardImage(topCard)}
+                source={LC.card_back}
                 style={styles.cardArt}
                 resizeMode="contain"
               />
-              <Text style={styles.cardFallbackText}>{cardTitle(topCard)}</Text>
             </View>
-          ) : (
-            <View
-              style={[styles.emptyPile, { width: PILE_W, height: PILE_H }]}
-            />
-          )}
+            <View style={styles.countBadge}>
+              <Text style={styles.countBadgeText}>
+                {gameState?.drawPileCount ?? 0}
+              </Text>
+            </View>
+          </TouchableOpacity>
+          <Text style={styles.pileLabel}>DRAW</Text>
+        </View>
+
+        {/* Direction of play */}
+        <Text style={styles.directionIcon}>{turnDirectionGlyph}</Text>
+
+        {/* Discard pile — haloed + ringed in the active colour */}
+        <View style={styles.pileColumn}>
+          <View
+            style={[
+              styles.discardHalo,
+              { backgroundColor: colorWithAlpha(activeHex, 0.22) },
+            ]}
+          >
+            <View style={[styles.pileWrapper, { borderColor: activeHex }]}>
+              {topCard ? (
+                <View
+                  style={[styles.cardShell, { width: PILE_W, height: PILE_H }]}
+                >
+                  <Image
+                    source={cardImage(topCard)}
+                    style={styles.cardArt}
+                    resizeMode="contain"
+                  />
+                </View>
+              ) : (
+                <View
+                  style={[styles.emptyPile, { width: PILE_W, height: PILE_H }]}
+                />
+              )}
+            </View>
+          </View>
+          <View style={styles.colorTag}>
+            <View style={[styles.colorDot, { backgroundColor: activeHex }]} />
+            <Text style={styles.colorLabel} numberOfLines={1}>
+              {COLOR_LABELS[gameState?.activeColor] ?? ""}
+            </Text>
+          </View>
         </View>
       </View>
 
@@ -1415,52 +1411,104 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: BG,
   },
-  topBar: {
-    maxHeight: scale(72),
+  seatBar: {
+    maxHeight: scale(104),
     borderBottomWidth: 1,
     borderBottomColor: "#1e1e3a",
   },
-  topBarContent: {
+  seatBarContent: {
     flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: scale(10),
-    paddingVertical: scale(10),
-    gap: scale(8),
-  },
-  opponentChip: {
-    alignItems: "center",
-    backgroundColor: "#16213e",
-    borderRadius: scale(10),
+    alignItems: "flex-start",
+    justifyContent: "center",
+    flexGrow: 1,
     paddingHorizontal: scale(12),
+    paddingVertical: scale(10),
+    gap: scale(12),
+  },
+  seat: {
+    alignItems: "center",
+    width: scale(72),
     paddingVertical: scale(6),
+    paddingHorizontal: scale(4),
+    borderRadius: scale(12),
     borderWidth: 1.5,
-    borderColor: "#2a2a4a",
-    minWidth: scale(70),
+    borderColor: "transparent",
   },
-  opponentChipActive: {
-    borderColor: "#e94560",
+  seatActive: {
     backgroundColor: "#2a0f20",
+    borderColor: "#e94560",
   },
-  opponentName: {
-    color: "#c4c4d4",
-    fontSize: scaleFont(12),
-    fontWeight: "600",
-    maxWidth: scale(80),
+  seatCardWrap: {
+    width: scale(40),
+    height: scale(54),
+    alignItems: "center",
+    justifyContent: "center",
   },
-  opponentNameActive: {
-    color: "#ff6b6b",
+  seatCardBack: {
+    width: scale(40),
+    height: scale(54),
+    borderRadius: scale(6),
   },
-  opponentCount: {
-    color: "#666",
+  seatCountBadge: {
+    position: "absolute",
+    bottom: -scale(6),
+    right: -scale(8),
+    backgroundColor: "#3a3a5a",
+    borderRadius: scale(10),
+    minWidth: scale(20),
+    height: scale(20),
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: scale(4),
+    borderWidth: 1.5,
+    borderColor: "#0f0f24",
+  },
+  seatCountBadgeActive: {
+    backgroundColor: "#e94560",
+  },
+  seatCountText: {
+    color: "#fff",
     fontSize: scaleFont(11),
-    marginTop: scale(2),
+    fontWeight: "bold",
+  },
+  seatName: {
+    color: "#9a9ab0",
+    fontSize: scaleFont(11),
+    fontWeight: "600",
+    marginTop: scale(8),
+    maxWidth: scale(64),
+    textAlign: "center",
+  },
+  seatNameActive: {
+    color: "#ff6b6b",
+    fontWeight: "800",
   },
   playArea: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-evenly",
-    paddingVertical: scale(16),
+    justifyContent: "center",
+    gap: scale(20),
+    paddingVertical: scale(20),
     paddingHorizontal: scale(8),
+  },
+  pileColumn: {
+    alignItems: "center",
+    gap: scale(8),
+  },
+  pileLabel: {
+    color: "#5b5b78",
+    fontSize: scaleFont(10),
+    fontWeight: "800",
+    letterSpacing: scale(1.5),
+  },
+  discardHalo: {
+    borderRadius: scale(18),
+    padding: scale(10),
+  },
+  colorTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: scale(6),
   },
   pileWrapper: {
     borderRadius: scale(10),
@@ -1512,27 +1560,23 @@ const styles = StyleSheet.create({
     borderRadius: scale(8),
     backgroundColor: "#1a1a3a",
   },
-  centerInfo: {
-    alignItems: "center",
-    gap: scale(6),
-    paddingHorizontal: scale(4),
-  },
   directionIcon: {
-    color: "#ffffff",
-    fontSize: scaleFont(28),
+    color: "#8a8aa8",
+    fontSize: scaleFont(34),
   },
   colorDot: {
-    width: scale(18),
-    height: scale(18),
-    borderRadius: scale(9),
+    width: scale(14),
+    height: scale(14),
+    borderRadius: scale(7),
     borderWidth: 2,
     borderColor: "#fff",
   },
   colorLabel: {
-    color: "#c4c4d4",
-    fontSize: scaleFont(10),
+    color: "#d4d4e4",
+    fontSize: scaleFont(12),
+    fontWeight: "700",
     textAlign: "center",
-    maxWidth: scale(60),
+    maxWidth: scale(90),
   },
   statusBar: {
     alignItems: "center",
