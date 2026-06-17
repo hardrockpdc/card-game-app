@@ -17,10 +17,9 @@ export function useResumePrompt() {
         "Game in Progress",
         body,
         [
-          { text: "Cancel", style: "cancel" },
-          { text: "Continue Saved", onPress: onResume },
+          { text: "Continue Game", onPress: onResume },
           {
-            text: "Start New (Erase Save)",
+            text: "Start New Game",
             style: "destructive",
             onPress: async () => {
               await clearGame(saveKey);
@@ -28,6 +27,8 @@ export function useResumePrompt() {
             },
           },
         ],
+        // Tapping outside / back still dismisses with no action (an implicit
+        // cancel), so no dedicated Cancel button is needed.
         { cancelable: true }
       );
     },
