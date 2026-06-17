@@ -10,7 +10,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import { createDeck, shuffleDeck } from "../game/deck";
-import { addCoins, subtractCoins } from "../game/wallet";
+import { addCoins } from "../game/wallet";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import { recordWin } from "../game/profile";
 import { hapticWin, hapticLose } from "../game/haptics";
@@ -39,6 +39,7 @@ const BG = getTableTheme("poker").table;
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const STARTING_CHIPS = 500;
+const POKER_WIN_REWARD = 500; // flat coins for winning a single-player tournament
 const SMALL_BLIND = 10;
 const BIG_BLIND = 20;
 
@@ -549,13 +550,12 @@ export default function PokerGameScreen({ navigation, route }) {
     myName,
     players: initialPlayers,
     difficulty = "medium",
-    buyIn,
     variant,
   } = route.params;
   const isSinglePlayer = role === "singleplayer";
   const isHost = role === "host" || isSinglePlayer;
-  // In single-player, use the chosen buy-in as starting chips; fall back for multiplayer.
-  const startingChips = isSinglePlayer && buyIn ? buyIn : STARTING_CHIPS;
+  // Everyone starts with the same chip stack; wagering happens in-game.
+  const startingChips = STARTING_CHIPS;
   const saveKey =
     isSinglePlayer && variant ? `@cardnight:save:poker:${variant}` : null;
 
@@ -643,7 +643,6 @@ export default function PokerGameScreen({ navigation, route }) {
       if (saveKey && route?.params?.resumeFromSave) {
         const saved = await loadGame(saveKey);
         if (saved?.fullState) {
-          // Restore without subtracting buy-in (already paid in the original session).
           applyState(saved.fullState);
           // UX-3: enable the deal animation on the NEXT tick so the RESTORED
           // hand appears instantly (no replayed deal); cards drawn later still
@@ -656,10 +655,6 @@ export default function PokerGameScreen({ navigation, route }) {
       }
       hasMountedRef.current = true;
       applyState(initDeal(initialPlayers, 0, null, startingChips));
-      // Deduct the buy-in from the wallet when a single-player tournament starts.
-      if (isSinglePlayer && buyIn) {
-        subtractCoins(buyIn);
-      }
     }
     init();
 
@@ -770,8 +765,9 @@ export default function PokerGameScreen({ navigation, route }) {
               !coinRewardedRef.current
             ) {
               coinRewardedRef.current = true;
-              const wonChips = chipsRef.current["host"] ?? 0;
-              addCoins(wonChips).then(() => setTournamentCoins(wonChips));
+              addCoins(POKER_WIN_REWARD).then(() =>
+                setTournamentCoins(POKER_WIN_REWARD),
+              );
               recordWin("poker");
               hapticWin(); // rising flourish on a tournament win
             } else if (hostIsOut && !coinRewardedRef.current) {
@@ -918,9 +914,8 @@ export default function PokerGameScreen({ navigation, route }) {
     navigation.navigate("Home");
   }
 
-  // NOTE: Restart is omitted for Poker — tournament restart logic
-  // (same chips vs new buy-in?) is unresolved. Future: re-add when
-  // decided.
+  // NOTE: Restart is omitted for Poker — tournament restart semantics are
+  // unresolved. Future: re-add when decided.
   const menuItems = [
     ...(isSinglePlayer && saveKey
       ? [{ type: "saveexit", onSaveExit: handleSaveAndExit }]

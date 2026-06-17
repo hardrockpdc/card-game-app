@@ -1,6 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useWindowDimensions } from "react-native";
-import { useFocusEffect } from "@react-navigation/native";
 import { useHasSave } from "../game/useResumePrompt";
 import { clearGame } from "../game/gameSaves";
 
@@ -9,18 +8,12 @@ import VariantOptionGrid from "../components/VariantOptionGrid";
 import GameSetupLayout, {
   OpponentStepper,
   DifficultyPills,
-  SetupSection,
-  PillRow,
-  SetupNote,
 } from "../components/GameSetupLayout";
 import {
   getCachedProfile,
   getDisplayName,
   subscribeProfile,
 } from "../game/profile";
-import { getCoins } from "../game/wallet";
-
-const BUY_INS = [100, 250, 500, 1000];
 
 function getInitialVariant(currentVariant) {
   const found = POKER_VARIANT_OPTIONS.find(
@@ -66,20 +59,8 @@ function PokerVariantPickerScreen({ navigation, route }) {
   );
   const [aiCount, setAiCount] = useState(1);
   const [difficulty, setDifficulty] = useState("medium");
-  const [coins, setCoins] = useState(null);
-  const [buyIn, setBuyIn] = useState(100);
   const saveKey = `@cardnight:save:poker:${selectedVariant}`;
   const hasSavedGame = useHasSave(saveKey);
-
-  // Refresh wallet balance each time this screen comes into focus.
-  useFocusEffect(
-    useCallback(() => {
-      getCoins().then((c) => {
-        setCoins(c);
-        setBuyIn((prev) => (c >= prev ? prev : 100));
-      });
-    }, []),
-  );
 
   useEffect(() => {
     setSelectedVariant(getInitialVariant(currentVariant));
@@ -101,9 +82,6 @@ function PokerVariantPickerScreen({ navigation, route }) {
   const { width, height } = useWindowDimensions();
   const isLandscape = width > height;
   const modeCopy = useMemo(() => getModeCopy(mode), [mode]);
-  const coinsLoaded = coins !== null;
-  const canAffordMin = !coinsLoaded || coins >= 100;
-  const canPlay = isLobby || canAffordMin;
 
   const saveToLobby = () =>
     navigation.navigate({
@@ -122,7 +100,6 @@ function PokerVariantPickerScreen({ navigation, route }) {
       players: buildPlayers(launchPayload.myName ?? playerName, aiCount),
       difficulty,
       variant: selectedVariant,
-      buyIn,
       resumeFromSave,
     });
   };
@@ -157,30 +134,11 @@ function PokerVariantPickerScreen({ navigation, route }) {
               onChange={setAiCount}
             />
             <DifficultyPills value={difficulty} onChange={setDifficulty} />
-            <SetupSection label="Buy-In">
-              <PillRow
-                value={buyIn}
-                onChange={setBuyIn}
-                options={BUY_INS.map((amount) => ({
-                  value: amount,
-                  label: String(amount),
-                  disabled: coinsLoaded && coins < amount,
-                }))}
-              />
-              {coinsLoaded ? (
-                <SetupNote>
-                  {coins < 100
-                    ? "You need at least 🪙 100 to play. Visit your Profile to reset coins."
-                    : `Balance: 🪙 ${coins.toLocaleString()}`}
-                </SetupNote>
-              ) : null}
-            </SetupSection>
           </>
         )
       }
       onStart={onStart}
       startLabel={modeCopy.buttonLabel}
-      startDisabled={!canPlay}
       resume={
         !isLobby && hasSavedGame
           ? { onContinue: goResume, onStartNew: startNew }
