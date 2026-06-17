@@ -1016,7 +1016,9 @@ export default function LastCardGameScreen({ navigation, route }) {
   const turnDirectionGlyph =
     gameState?.turnDirection === "clockwise" ? "↻" : "↺";
 
-  const PILE_W = Math.min(width * 0.26, 108);
+  // Cap keeps tablets looking right; the lower multiplier shrinks the piles on
+  // phones (where 0.26·width was eating the screen — the cap never applied).
+  const PILE_W = Math.min(width * 0.18, 108);
   const PILE_H = PILE_W * 1.4;
   // Size hand cards so at least 5 fit per row: full width minus the grid's
   // horizontal padding and the gaps between 5 cards, divided five ways (with a
@@ -1516,8 +1518,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: scale(20),
-    paddingVertical: scale(20),
+    gap: scale(18),
+    paddingVertical: scale(14),
     paddingHorizontal: scale(8),
   },
   pileColumn: {
