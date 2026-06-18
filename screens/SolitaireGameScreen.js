@@ -578,18 +578,26 @@ export default function SolitaireGameScreen({ navigation, route }) {
       }
 
       if (removedIds.length > 0) {
-        // Find the completion column: the one with the most removed cards.
-        // That column is always where the final move landed. All ghosts fly
-        // from this single column so the animation doesn't split across two.
-        const pileCount = {};
-        removedIds.forEach((id) => {
-          const pi = prevCardLayouts[id]?.pileIndex;
-          if (pi !== undefined)
-            pileCount[pi] = (pileCount[pi] || 0) + 1;
-        });
-        const completionPileIndex = parseInt(
-          Object.entries(pileCount).sort((a, b) => b[1] - a[1])[0]?.[0] ?? 0,
+        // The completion column is where the King sits. A K–A run is built by
+        // moving lower cards ONTO higher ones, so the King never moves — its
+        // column is always the destination where the run lands. (Counting "most
+        // removed cards" was wrong: the moved stack can be bigger than the part
+        // that stayed, so it picked the source column the cards came from.)
+        const kingId = removedIds.find(
+          (id) => prevCardsMap.get(id)?.rank === 13,
         );
+        let completionPileIndex = prevCardLayouts[kingId]?.pileIndex;
+        if (completionPileIndex === undefined) {
+          // Fallback: the column with the most removed cards.
+          const pileCount = {};
+          removedIds.forEach((id) => {
+            const pi = prevCardLayouts[id]?.pileIndex;
+            if (pi !== undefined) pileCount[pi] = (pileCount[pi] || 0) + 1;
+          });
+          completionPileIndex = parseInt(
+            Object.entries(pileCount).sort((a, b) => b[1] - a[1])[0]?.[0] ?? 0,
+          );
+        }
         const completionColPos =
           prevColumnLayouts[completionPileIndex] || { x: 0, y: 0 };
 
