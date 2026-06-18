@@ -1839,7 +1839,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "center",
-    columnGap: 2,
+    columnGap: 0,
     rowGap: 6,
   },
   cardWrap: {
@@ -1850,7 +1850,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   cardWrapSmall: {
-    transform: [{ scale: 0.92 }],
+    // No scale transform here: a transform shrinks the card visually but still
+    // reserves the full-size layout box, leaving dead space between cards.
+    // A small negative margin instead tucks the hand cards close together.
+    marginHorizontal: -3,
   },
   cardWrapSelected: {
     borderColor: "#4caf50",
