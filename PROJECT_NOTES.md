@@ -610,6 +610,47 @@ JS-only, no EAS rebuild needed. All picker screens brought to a shared visual co
 
 Phone checks passed for **S10** (Wild Round) and **S3** (Multiplayer Blackjack): “all good”.
 
+### Table-Layout + Table-Theme Session (2026-06-17) — COMPLETE ✅
+
+Pure-JS UI work (no native changes, no EAS build needed). All committed on `main`.
+
+**Table-style layout redesigns** — gave Poker, Go Fish, and Rummy a consistent
+"table" feel: opponents seated, a centered board/piles area, and the player's
+hand pinned at the bottom. The old `StatsStrip` was **removed** from these three
+screens (so the S5/S6/S8 StatsStrips above are no longer present in Poker/Rummy/
+Go Fish — the info moved into seats, a minimal header, and a status line).
+- **Poker** (`screens/PokerGameScreen.js`): seated opponents (chips/bet/fold/all-in),
+  centered pot + community board, you at the bottom. Buy-in option removed from
+  the variant picker earlier; poker now bets chips in-game with a flat 500-coin win.
+- **Go Fish** (`screens/GoFishGameScreen.js`): seated opponents double as ask
+  targets (tap a seat to choose who to ask); hand wraps into ~2 rows.
+- **Rummy** (`screens/RummyGameScreen.js`): Conquián-style layout — full-width
+  opponent bars showing each opponent's own melds, centered Stock/Discard piles,
+  a "Your melds" zone, hand pinned at the bottom. Extras: bigger Stock/Discard
+  piles rendered as real themed cards with an accent **glow** on your draw turn;
+  tighter hand spacing (removed a `scale(0.92)` that reserved dead space); status
+  line wraps instead of truncating; **Knock button now hidden until you can
+  legally knock** (new `canRummyPlayerKnock()` export in `game/rummy.js`, defers
+  to the reducer's own `canPlayerFinish` so UI and rules can't drift).
+
+**Switchable Table Themes** (Indigo / Green / Teal felt palettes, like Last Card)
+added to **Rummy, Poker, and Go Fish**. Each game has a "🎨 Table Theme" menu item
+and stores its **own** choice.
+- New shared pieces: `game/tablePalette.js` (a `createTablePalette(key, default)`
+  factory reusing `LAST_CARD_TABLES`) and `components/TableThemePicker.js` (the
+  reusable picker overlay). Per-game wrappers: `game/rummyTheme.js`,
+  `game/pokerTheme.js`, `game/gofishTheme.js`. All `init*Table()` called in `App.js`.
+- Defaults: Rummy + Poker = Green Felt, Go Fish = Teal. Palette colours the rail
+  (background), felt surface, seats/panels, pot/ocean pill, status text, and the
+  active-player accent. Action buttons keep their distinct colours on purpose.
+- This fixed Rummy's low-contrast firebrick-red felt + navy-panel clash.
+
+**Also this session:** removed the title/subtitle from the single-player Rummy
+variant setup screen (`GameSetupLayout` now skips an empty title).
+
+278 Jest tests still pass throughout. Reference commits: `38e7d66` (Poker/Go Fish
+themes) back through the Rummy redesign series.
+
 ## 💡 Important Reminders
 
 ### Daily workflow
