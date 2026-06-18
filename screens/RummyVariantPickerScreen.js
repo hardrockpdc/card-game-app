@@ -24,8 +24,8 @@ function getModeCopy(mode) {
     };
   }
   return {
-    title: "Rummy",
-    subtitle: "Pick a variant, then start a new game.",
+    title: "",
+    subtitle: "",
     buttonLabel: "Start Game",
   };
 }

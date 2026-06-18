@@ -52,12 +52,14 @@ export default function GameSetupLayout({
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={[styles.content, isLandscape && styles.contentLandscape]}>
-        <Text
-          style={[styles.title, isLandscape && styles.titleLandscape]}
-          numberOfLines={1}
-        >
-          {title}
-        </Text>
+        {title ? (
+          <Text
+            style={[styles.title, isLandscape && styles.titleLandscape]}
+            numberOfLines={1}
+          >
+            {title}
+          </Text>
+        ) : null}
         {subtitle && !isLandscape ? (
           <Text style={styles.subtitle}>{subtitle}</Text>
         ) : null}
