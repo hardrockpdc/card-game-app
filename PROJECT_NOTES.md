@@ -704,6 +704,47 @@ Three real logic bugs surfaced (and fixed) while tuning, not just cosmetics:
 Reference commits: `352daf1`/`54f20b1` (pickers), `f4b6bb3` (landscape menu),
 `5dfa341`→`25c77c7` (Spider fly-away).
 
+### Solitaire Hints — Klondike Pilot (2026-06-18) — COMPLETE ✅
+
+Pure-JS feature (no native changes, no rebuild). Committed on `main` as
+`996f3d9`. 285 Jest tests pass (278 + 7 new). Planned in plan mode first.
+
+**Why:** Pedro asked whether hints were possible across the Solitaire games.
+They are — and most of the engine already existed: `getLegalTargets(state,
+source)` brute-forces candidate moves through the reducer, so it already knows
+every legal move for every variant. We shipped a **Klondike-only pilot** to
+prove the UX before spreading it. Behaviour: **highlight only** (glow the move,
+player makes it) — Pedro's choice over auto-play.
+
+**Engine — `getHint(state)` in `game/solitaire.js`.** Enumerates sources (waste
+top + every face-up tableau card), runs each through `getLegalTargets`, and
+ranks: **reveal a face-down card > advance a foundation > empty a column >
+build from the waste > any other legal build.** Skips two junk categories:
+pure relocations (moving a whole pile to an empty column), and any move that
+would just undo the previous one (compared via a board signature against the
+last `state.history` snapshot — history stores full board snapshots, not move
+descriptors, so this signature compare is how we detect the inverse). Returns
+`{ source, target }`, a `{ source: { type: "stock" } }` draw hint when nothing
+else helps, or `null` when stuck. Klondike-only; other variants return `null`.
+
+**UI — `screens/SolitaireGameScreen.js`.** A "💡 Hint" item in the ☰ menu
+(Klondike only; uses the generic menu-item shape so `GameMenu.js` is untouched)
+sets a transient `hint` state that glows the source card + destination in
+**amber** (`cardTouchHint` / `tableauColumnHint`) — deliberately a different
+colour from the green drag-target highlight so the two never look alike.
+Clears on the next move (effect keyed on `state.moves`) and auto-clears after
+4s; reduced-motion safe (static glow, no animation). All new hooks sit above
+the early returns (CLAUDE.md §2.1).
+
+**Tests:** 7 `getHint` cases in `__tests__/solitaire.reducer.test.js` — flip
+priority, Ace→foundation, stock fallback, stuck→null, anti-loop, and the
+variant/won guards.
+
+**Next (deferred, not started):** FreeCell + Spider reuse the same engine almost
+for free (FreeCell adds free-cells as sources/targets; Spider should rank
+"completes a run" highest). Pyramid/TriPeaks are a separate, simpler "find a
+matchable pair" shape. Decide after living with the Klondike pilot.
+
 ## 💡 Important Reminders
 
 ### Daily workflow
