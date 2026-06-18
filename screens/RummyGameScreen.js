@@ -1079,7 +1079,7 @@ export default function RummyGameScreen({ navigation, route }) {
       ) : null}
 
       {/* Status line */}
-      <Text style={styles.rummyStatusLine} numberOfLines={1}>
+      <Text style={styles.rummyStatusLine} numberOfLines={2}>
         {isMyTurn
           ? getActionLabel(gameState, true)
           : `Waiting for ${getPlayerName(currentPlayers, currentPlayerIndex)}…`}
@@ -1566,6 +1566,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
     textAlign: "center",
+    paddingHorizontal: 12,
   },
 
   handHeader: {
@@ -1812,7 +1813,9 @@ const styles = StyleSheet.create({
   handRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
+    justifyContent: "center",
+    columnGap: 2,
+    rowGap: 6,
   },
   cardWrap: {
     borderRadius: 16,
