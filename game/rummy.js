@@ -1557,3 +1557,20 @@ export function getRummyScoreSummary(state, pid) {
     ),
   };
 }
+
+// Lightweight "can this player legally knock / go out?" check for the UI.
+// Only needs the player's own hand + the public melds, so it works for both
+// the host (full state) and a multiplayer client (public state + own hand).
+// Single source of truth: defers to the same canPlayerFinish the reducer uses.
+export function canRummyPlayerKnock(state, pid) {
+  const config = getRummyVariantConfig(state && state.variantId);
+  try {
+    return canPlayerFinish(
+      state || { hands: [], melds: [], players: [] },
+      pid,
+      config,
+    );
+  } catch (_) {
+    return false;
+  }
+}

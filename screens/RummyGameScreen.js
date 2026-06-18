@@ -45,6 +45,7 @@ import {
   rummyAiChooseMove,
   getRummyVariantLabel,
   calculateRummyDeadwood,
+  canRummyPlayerKnock,
 } from "../game/rummy";
 
 const AI_MOVE_DELAY_MS = 700; // delay between AI opponent moves (ms)
@@ -271,6 +272,20 @@ export default function RummyGameScreen({ navigation, route }) {
   const myDeadwood = useMemo(() => {
     return calculateRummyDeadwood(myHand, myMelds);
   }, [myHand, myMelds]);
+
+  // Whether I can legally knock right now (deadwood under the variant's limit,
+  // plus any go-out conditions). Built from my own hand + the public melds so
+  // it works for host and client. Used to show/hide the Knock button.
+  const canKnock = useMemo(() => {
+    if (!gameState) return false;
+    const liteState = {
+      variantId: gameState.variantId || variantId,
+      players: gameState.players || [],
+      hands: { [localPlayerIndex]: myHand },
+      melds: gameState.melds || [],
+    };
+    return canRummyPlayerKnock(liteState, localPlayerIndex);
+  }, [gameState, myHand, localPlayerIndex, variantId]);
 
   const discardTop =
     gameState?.discardTop ||
@@ -1194,24 +1209,21 @@ export default function RummyGameScreen({ navigation, route }) {
               <Text style={styles.actionButtonText}>Discard</Text>
             </Pressable>
 
-            <Pressable
-              onPress={handleKnock}
-              disabled={gameState?.winner != null}
-              style={({ pressed }) => [
-                styles.actionButton,
-                styles.knockButton,
-                gameState?.winner != null && styles.actionButtonDisabled,
-                pressed &&
-                  gameState?.winner == null &&
-                  styles.actionButtonPressed,
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel="Knock"
-              accessibilityHint="End the round and reveal all hands"
-              accessibilityState={{ disabled: gameState?.winner != null }}
-            >
-              <Text style={styles.actionButtonText}>Knock</Text>
-            </Pressable>
+            {canKnock && gameState?.winner == null ? (
+              <Pressable
+                onPress={handleKnock}
+                style={({ pressed }) => [
+                  styles.actionButton,
+                  styles.knockButton,
+                  pressed && styles.actionButtonPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel="Knock"
+                accessibilityHint="End the round and reveal all hands"
+              >
+                <Text style={styles.actionButtonText}>Knock</Text>
+              </Pressable>
+            ) : null}
           </View>
         ) : null}
 
