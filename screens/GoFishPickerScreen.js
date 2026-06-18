@@ -61,8 +61,8 @@ export default function GoFishPickerScreen({ navigation }) {
 
   return (
     <GameSetupLayout
-      title="Go Fish"
-      subtitle="Ask opponents for cards to collect matching books. Most books wins."
+      title=""
+      subtitle=""
       controls={
         <>
           <OpponentStepper

@@ -31,8 +31,8 @@ function getModeCopy(mode) {
     };
   }
   return {
-    title: "Poker",
-    subtitle: "Pick a variant, then start a new game.",
+    title: "",
+    subtitle: "",
     buttonLabel: "Start Game",
   };
 }

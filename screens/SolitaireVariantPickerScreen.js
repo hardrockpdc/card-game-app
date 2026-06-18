@@ -42,8 +42,8 @@ export default function SolitaireVariantPickerScreen({ navigation, route }) {
 
   return (
     <GameSetupLayout
-      title="Solitaire"
-      subtitle="Pick a mode, then start a new game."
+      title=""
+      subtitle=""
       variantSlot={
         <>
           <VariantOptionGrid
