@@ -48,6 +48,7 @@ import {
 } from "../game/rummy";
 
 const AI_MOVE_DELAY_MS = 700; // delay between AI opponent moves (ms)
+const PILE_SCALE = 1.15; // make the Stock/Discard piles a bit larger to read
 
 const BG = getTableTheme("rummy").table;
 
@@ -965,6 +966,22 @@ export default function RummyGameScreen({ navigation, route }) {
   const canDrawStock = isMyTurn && currentPhase === "draw";
   const canTakeDiscard = canDrawStock && !!discardTop;
 
+  // Frame around each pile; glows with the table accent when it's tappable.
+  const pileGlow = (active) => [
+    styles.pileFrame,
+    active
+      ? {
+          borderColor: pal.accent,
+          backgroundColor: pal.accentBg,
+          shadowColor: pal.accent,
+          shadowOpacity: 0.95,
+          shadowRadius: 12,
+          shadowOffset: { width: 0, height: 0 },
+          elevation: 10,
+        }
+      : { borderColor: "transparent" },
+  ];
+
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: pal.rail }]}>
       <GameHeader
@@ -1004,13 +1021,8 @@ export default function RummyGameScreen({ navigation, route }) {
               accessibilityRole="button"
               accessibilityLabel="Draw from stock"
             >
-              <View
-                style={[
-                  styles.pileBack,
-                  { backgroundColor: pal.panel, borderColor: pal.panelBorder },
-                ]}
-              >
-                <Text style={styles.pileBackGlyph}>🂠</Text>
+              <View style={pileGlow(canDrawStock)}>
+                <Card faceDown sizeScale={PILE_SCALE} />
               </View>
               <Text style={styles.pileTag}>
                 STOCK · {gameState.stockCount ?? 0}
@@ -1027,13 +1039,19 @@ export default function RummyGameScreen({ navigation, route }) {
               accessibilityRole="button"
               accessibilityLabel="Take discard"
             >
-              {discardTop ? (
-                <RummyCard card={discardTop} small disabled />
-              ) : (
-                <View style={styles.pileEmptyBox}>
-                  <Text style={styles.pileEmptyGlyph}>—</Text>
-                </View>
-              )}
+              <View style={pileGlow(canTakeDiscard)}>
+                {discardTop ? (
+                  <Card
+                    rank={discardTop.rank}
+                    suit={discardTop.suit}
+                    sizeScale={PILE_SCALE}
+                  />
+                ) : (
+                  <View style={styles.pileEmptyBox}>
+                    <Text style={styles.pileEmptyGlyph}>—</Text>
+                  </View>
+                )}
+              </View>
               <Text style={styles.pileTag}>DISCARD</Text>
             </Pressable>
           </View>
@@ -1514,6 +1532,13 @@ const styles = StyleSheet.create({
   },
   pileBtn: { alignItems: "center", gap: 6 },
   pileBtnPressed: { opacity: 0.75 },
+  pileFrame: {
+    borderRadius: 12,
+    borderWidth: 2,
+    padding: 3,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   pileBack: {
     width: 56,
     height: 80,
@@ -1526,8 +1551,8 @@ const styles = StyleSheet.create({
   },
   pileBackGlyph: { color: "#8aa0c0", fontSize: 30 },
   pileEmptyBox: {
-    width: 56,
-    height: 80,
+    width: 81,
+    height: 115,
     borderRadius: 8,
     backgroundColor: "rgba(0,0,0,0.22)",
     borderWidth: 1,
