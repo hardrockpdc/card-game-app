@@ -1068,6 +1068,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
             opacity: anim.opacity,
             transform: [{ translateX: anim.translateX }, { translateY: anim.translateY }, { scale: anim.scale }],
             zIndex: 50,
+            elevation: 20,
           }}
         >
           <Card
@@ -1207,7 +1208,13 @@ export default function SolitaireGameScreen({ navigation, route }) {
           <View
             ref={spiderTableauRowRef}
             collapsable={false}
-            style={styles.tableauRowSpiderLandscape}
+            style={[
+              styles.tableauRowSpiderLandscape,
+              // Lift the row (and its fly-away ghosts) above the right rail so a
+              // completed run is visible as it flies into the Runs counter
+              // instead of disappearing under the rail.
+              { zIndex: 5, elevation: 5 },
+            ]}
             onLayout={(e) => {
               const w = Math.round(e.nativeEvent.layout.width);
               const h = Math.round(e.nativeEvent.layout.height);
@@ -1215,11 +1222,11 @@ export default function SolitaireGameScreen({ navigation, route }) {
               setTableauBoxH((prev) => (Math.abs(prev - h) > 1 ? h : prev));
             }}
           >
-            {ghosts}
             {columns}
+            {ghosts}
           </View>
 
-          <View style={styles.rightRail}>
+          <View style={[styles.rightRail, { zIndex: 1 }]}>
             <View style={styles.landscapeHeaderRight}>
               <StatsStrip gameId="solitaire" items={statsItems} bare />
               <GameMenuButton menuItems={menuItems} />
