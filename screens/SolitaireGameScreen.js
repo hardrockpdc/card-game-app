@@ -593,22 +593,32 @@ export default function SolitaireGameScreen({ navigation, route }) {
         const completionColPos =
           prevColumnLayouts[completionPileIndex] || { x: 0, y: 0 };
 
-        // Find the topmost removed card in the completion column (= the King).
-        // Its y gives us the visual anchor for the whole stack.
-        const completionColRemoved = removedIds.filter(
-          (id) => prevCardLayouts[id]?.pileIndex === completionPileIndex,
-        );
-        const topLayout = completionColRemoved
-          .map((id) => prevCardLayouts[id])
-          .filter(Boolean)
-          .sort((a, b) => (a.y ?? 0) - (b.y ?? 0))[0];
-        const kingY = topLayout
-          ? (completionColPos.y ?? 0) + (topLayout.y ?? 0)
-          : completionColPos.y ?? 0;
-
         const peek = spiderFaceUpPeekRef.current || 16;
         const cardW = spiderTabCardWRef.current || 42;
         const cardH = spiderTabCardHRef.current || 60;
+
+        // Anchor the reconstructed run just below whatever cards REMAIN in the
+        // completion column — that's exactly where the run lands after the
+        // completing move, so the King starts from its real spot instead of
+        // snapping to the column top. (The pre-move snapshot can still place the
+        // King in the column it was dragged from, which made the old
+        // topmost-removed-card anchor wrong and caused a visible jump.)
+        let lastRemainingY = null;
+        for (const id of Object.keys(prevCardLayouts)) {
+          if (
+            currentCardIds.has(id) &&
+            prevCardLayouts[id]?.pileIndex === completionPileIndex
+          ) {
+            const ly = prevCardLayouts[id].y ?? 0;
+            if (lastRemainingY === null || ly > lastRemainingY) {
+              lastRemainingY = ly;
+            }
+          }
+        }
+        const kingY =
+          lastRemainingY !== null
+            ? (completionColPos.y ?? 0) + lastRemainingY + peek
+            : completionColPos.y ?? 0;
 
         // Sort cards King→Ace (rank 13→1) so they stack top-to-bottom correctly.
         const sortedIds = [...removedIds].sort((a, b) => {
