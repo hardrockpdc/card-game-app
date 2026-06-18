@@ -20,6 +20,13 @@ import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import { recordWin } from "../game/profile";
 import { getTableTheme } from "../game/tableThemes";
 import { hapticWin, hapticLose } from "../game/haptics";
+import {
+  GOFISH_TABLES,
+  getGofishTableId,
+  setGofishTable,
+  subscribeGofishTable,
+} from "../game/gofishTheme";
+import TableThemePicker from "../components/TableThemePicker";
 
 const BG = getTableTheme("gofish").table;
 const SAVE_KEY_GOFISH = "@cardnight:save:gofish";
@@ -60,6 +67,8 @@ export default function GoFishGameScreen({ navigation, route }) {
   const [selectedTarget, setSelectedTarget] = useState(null);
   const [coinsEarned, setCoinsEarned] = useState(0);
   const [showRoundModal, setShowRoundModal] = useState(false);
+  const [tableId, setTableId] = useState(getGofishTableId());
+  const [showTablePicker, setShowTablePicker] = useState(false);
   const fullRef = useRef(null);
   const coinRewardedRef = useRef(false);
   const outcomeBuzzedRef = useRef(false); // fire win/lose haptic once per game
@@ -116,6 +125,15 @@ export default function GoFishGameScreen({ navigation, route }) {
       if (aiTimerRef.current) clearTimeout(aiTimerRef.current);
     };
   }, []);
+
+  // Keep the table palette in sync (loaded at app start; may change via the
+  // in-game Table Theme picker).
+  useEffect(() => {
+    setTableId(getGofishTableId());
+    return subscribeGofishTable((id) => setTableId(id));
+  }, []);
+
+  const pal = GOFISH_TABLES.find((t) => t.id === tableId) ?? GOFISH_TABLES[0];
 
   // Auto-save after each state change in single-player.
   useEffect(() => {
@@ -294,6 +312,11 @@ export default function GoFishGameScreen({ navigation, route }) {
       : []),
     { type: "howto", gameId: "gofish" },
     { type: "theme" },
+    {
+      icon: "🎨",
+      label: "Table Theme",
+      onPress: () => setShowTablePicker(true),
+    },
     { type: "divider" },
     { type: "quit", onQuit: handleQuit },
   ];
@@ -311,7 +334,7 @@ export default function GoFishGameScreen({ navigation, route }) {
 
   if (!gameState) {
     return (
-      <View style={styles.loading}>
+      <View style={[styles.loading, { backgroundColor: pal.rail }]}>
         <Text style={styles.loadingText}>Dealing cards…</Text>
       </View>
     );
@@ -337,14 +360,19 @@ export default function GoFishGameScreen({ navigation, route }) {
   const displayHand = sortHand(myHand);
 
   return (
-    <SafeAreaView style={styles.screenRoot}>
+    <SafeAreaView style={[styles.screenRoot, { backgroundColor: pal.rail }]}>
       <GameHeader
         gameId="gofish"
         title="Go Fish"
         subtitle={isSinglePlayer ? "Single Player" : "Multiplayer"}
         menuItems={menuItems}
       />
-      <View style={styles.felt}>
+      <View
+        style={[
+          styles.felt,
+          { backgroundColor: pal.felt, borderColor: pal.feltBorder },
+        ]}
+      >
         {/* Opponents seated; on your turn, tap a seat to choose who to ask */}
         <View style={styles.seatsRow}>
           {players.map((p, idx) => {
@@ -362,7 +390,11 @@ export default function GoFishGameScreen({ navigation, route }) {
                 onPress={() => setSelectedTarget(isSelected ? null : p.id)}
                 style={[
                   styles.seat,
-                  isActive && styles.seatActive,
+                  { backgroundColor: pal.panel, borderColor: pal.panelBorder },
+                  isActive && {
+                    backgroundColor: pal.accentBg,
+                    borderColor: pal.accent,
+                  },
                   isWinner && styles.seatWinner,
                   isSelected && styles.seatSelected,
                 ]}
@@ -395,14 +427,24 @@ export default function GoFishGameScreen({ navigation, route }) {
 
         {/* Center: the ocean (draw pool) + your books + status */}
         <View style={styles.board}>
-          <View style={styles.oceanPill}>
-            <Text style={styles.oceanLabel}>🌊 OCEAN</Text>
+          <View
+            style={[
+              styles.oceanPill,
+              { backgroundColor: pal.panel, borderColor: pal.accent },
+            ]}
+          >
+            <Text style={[styles.oceanLabel, { color: pal.accent }]}>
+              🌊 OCEAN
+            </Text>
             <Text style={styles.oceanValue}>{oceanSize}</Text>
           </View>
           <Text style={styles.myBooksText}>
             Your books: {books[String(myPlayer?.id)]?.length ?? 0}
           </Text>
-          <Text style={styles.statusLine} numberOfLines={1}>
+          <Text
+            style={[styles.statusLine, { color: pal.text }]}
+            numberOfLines={1}
+          >
             {phase === "results"
               ? `🏆 ${winner?.name} wins!`
               : isMyTurn && extraTurn
@@ -421,7 +463,7 @@ export default function GoFishGameScreen({ navigation, route }) {
         </View>
 
         {/* You: hand + ask */}
-        <View style={styles.youArea}>
+        <View style={[styles.youArea, { borderTopColor: pal.panelBorder }]}>
           <View style={styles.youLabelRow}>
             <Text style={styles.youLabel}>Your Hand ({displayHand.length})</Text>
             {isMyTurn && phase === "playing" ? (
@@ -509,6 +551,18 @@ export default function GoFishGameScreen({ navigation, route }) {
         tableColor={BG}
       />
 
+      <TableThemePicker
+        visible={showTablePicker}
+        tables={GOFISH_TABLES}
+        currentId={tableId}
+        onPick={(id) => {
+          setGofishTable(id);
+          setTableId(id);
+          setShowTablePicker(false);
+        }}
+        onClose={() => setShowTablePicker(false)}
+      />
+
       <YourTurnBanner visible={showTurnBanner} />
     </SafeAreaView>
   );
@@ -532,7 +586,13 @@ const styles = StyleSheet.create({
     paddingBottom: scale(40),
   },
 
-  felt: { flex: 1, paddingBottom: scale(4) },
+  felt: {
+    flex: 1,
+    margin: scale(10),
+    borderRadius: scale(16),
+    borderWidth: 1,
+    paddingBottom: scale(4),
+  },
 
   seatsRow: {
     flexDirection: "row",

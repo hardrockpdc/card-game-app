@@ -29,6 +29,13 @@ import {
   disconnectFromHost,
 } from "../game/GameNetwork";
 import { getTableTheme } from "../game/tableThemes";
+import {
+  POKER_TABLES,
+  getPokerTableId,
+  setPokerTable,
+  subscribePokerTable,
+} from "../game/pokerTheme";
+import TableThemePicker from "../components/TableThemePicker";
 
 const AI_MOVE_DELAY_MS = 700; // delay between AI opponent moves (ms)
 
@@ -561,6 +568,8 @@ export default function PokerGameScreen({ navigation, route }) {
   const [myHand, setMyHand] = useState([]);
   const [tournamentWinner, setTournamentWinner] = useState(null);
   const [tournamentCoins, setTournamentCoins] = useState(0);
+  const [tableId, setTableId] = useState(getPokerTableId());
+  const [showTablePicker, setShowTablePicker] = useState(false);
   const fullRef = useRef(null);
   const dealerRef = useRef(0);
   const chipsRef = useRef(null);
@@ -568,6 +577,14 @@ export default function PokerGameScreen({ navigation, route }) {
   const aiTimerRef = useRef(null);
   const hasMountedRef = useRef(false);
   const lastSaveRef = useRef(0); // BUG-4: auto-save throttle (once / 3s)
+
+  // Keep the table palette in sync (loaded at app start; may change via the
+  // in-game Table Theme picker).
+  useEffect(() => {
+    setTableId(getPokerTableId());
+    return subscribePokerTable((id) => setTableId(id));
+  }, []);
+  const pal = POKER_TABLES.find((t) => t.id === tableId) ?? POKER_TABLES[0];
 
   function applyState(next) {
     fullRef.current = next;
@@ -813,7 +830,7 @@ export default function PokerGameScreen({ navigation, route }) {
 
   if (!gameState) {
     return (
-      <View style={styles.loading}>
+      <View style={[styles.loading, { backgroundColor: pal.rail }]}>
         <Text style={styles.loadingText}>Dealing…</Text>
       </View>
     );
@@ -912,12 +929,17 @@ export default function PokerGameScreen({ navigation, route }) {
       : []),
     { type: "howto", gameId: "poker" },
     { type: "theme" },
+    {
+      icon: "🎨",
+      label: "Table Theme",
+      onPress: () => setShowTablePicker(true),
+    },
     { type: "divider" },
     { type: "quit", onQuit: handleQuit },
   ];
 
   return (
-    <SafeAreaView style={styles.screenRoot}>
+    <SafeAreaView style={[styles.screenRoot, { backgroundColor: pal.rail }]}>
       <GameHeader
         gameId="poker"
         title="Poker"
@@ -933,7 +955,12 @@ export default function PokerGameScreen({ navigation, route }) {
         }
         menuItems={menuItems}
       />
-      <View style={styles.felt}>
+      <View
+        style={[
+          styles.felt,
+          { backgroundColor: pal.felt, borderColor: pal.feltBorder },
+        ]}
+      >
         {/* Opponents seated across the top */}
         <View style={styles.seatsRow}>
           {players.map((p, idx) => {
@@ -953,7 +980,11 @@ export default function PokerGameScreen({ navigation, route }) {
                 key={pid}
                 style={[
                   styles.seat,
-                  isCurrent && styles.seatActive,
+                  { backgroundColor: pal.panel, borderColor: pal.panelBorder },
+                  isCurrent && {
+                    backgroundColor: pal.accentBg,
+                    borderColor: pal.accent,
+                  },
                   isWinner && styles.seatWinner,
                   ps.folded && styles.seatFolded,
                 ]}
@@ -994,8 +1025,13 @@ export default function PokerGameScreen({ navigation, route }) {
 
         {/* Center board: pot + community cards + status */}
         <View style={styles.board}>
-          <View style={styles.potPill}>
-            <Text style={styles.potLabel}>POT</Text>
+          <View
+            style={[
+              styles.potPill,
+              { backgroundColor: pal.panel, borderColor: pal.accent },
+            ]}
+          >
+            <Text style={[styles.potLabel, { color: pal.accent }]}>POT</Text>
             <Text style={styles.potValue}>{pot}</Text>
           </View>
 
@@ -1016,7 +1052,10 @@ export default function PokerGameScreen({ navigation, route }) {
               ))}
           </View>
 
-          <Text style={styles.statusLine} numberOfLines={1}>
+          <Text
+            style={[styles.statusLine, { color: pal.text }]}
+            numberOfLines={1}
+          >
             {phase === "showdown"
               ? handResult?.type === "fold"
                 ? `🏆 ${handResult.winnerName} wins (all folded)`
@@ -1033,7 +1072,7 @@ export default function PokerGameScreen({ navigation, route }) {
         </View>
 
         {/* You: cards + chips + actions */}
-        <View style={styles.youArea}>
+        <View style={[styles.youArea, { borderTopColor: pal.panelBorder }]}>
           <View style={styles.youTopRow}>
             <Text style={styles.youName} numberOfLines={1}>
               {dealerIdx === myIndex ? "🎩 " : ""}You
@@ -1137,6 +1176,18 @@ export default function PokerGameScreen({ navigation, route }) {
         tableColor={BG}
       />
 
+      <TableThemePicker
+        visible={showTablePicker}
+        tables={POKER_TABLES}
+        currentId={tableId}
+        onPick={(id) => {
+          setPokerTable(id);
+          setTableId(id);
+          setShowTablePicker(false);
+        }}
+        onClose={() => setShowTablePicker(false)}
+      />
+
       <YourTurnBanner visible={showTurnBanner} />
     </SafeAreaView>
   );
@@ -1173,6 +1224,9 @@ const styles = StyleSheet.create({
 
   felt: {
     flex: 1,
+    margin: scale(10),
+    borderRadius: scale(16),
+    borderWidth: 1,
     paddingBottom: scale(4),
   },
 

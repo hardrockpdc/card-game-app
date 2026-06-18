@@ -40,6 +40,8 @@ import { initSounds } from "./game/sounds";
 import { initHaptics } from "./game/haptics";
 import { initLastCardTable } from "./game/lastCardTheme";
 import { initRummyTable } from "./game/rummyTheme";
+import { initPokerTable } from "./game/pokerTheme";
+import { initGofishTable } from "./game/gofishTheme";
 import { ThemeProvider } from "./game/ThemeContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import {
@@ -82,6 +84,8 @@ export default function App() {
     initHaptics();
     initLastCardTable();
     initRummyTable();
+    initPokerTable();
+    initGofishTable();
   }, []);
 
   // The app is portrait-first: every screen is designed for portrait except
