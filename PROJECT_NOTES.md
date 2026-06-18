@@ -1056,9 +1056,15 @@ app-wide.
   for 7 images that render at normal card size. Downscaled to 200×280 to match
   the deck: **3.96 MB → 0.20 MB**, no visible change. Repro:
   `scripts/resize-jokers.js`. (Card PNGs are otherwise already well-optimized at
-  ~15 KB.) Menu thumbnails (`assets/images/thumb_*.png`, 900×1200, ~300–426 KB
-  each, ~2.4 MB total) are the next candidate but render *larger* than cards, so
-  they need a conservative downscale to stay crisp — deferred.
+  ~15 KB.)
+- [x] **Thumbnail app-size win (2026-06-18, `b497b7a`).** The 7 carousel/setup
+  thumbnails (`assets/images/thumb_*`) were opaque 900×1200 illustrations. They
+  are **correctly sized** (the setup carousel renders ~`width*0.78` × 3× DPI ≈
+  900px), so downscaling would soften them — instead switched format **PNG →
+  JPEG q85** (PNG is wasteful for photographic content): **2.41 MB → 0.84 MB**,
+  no visible change. Updated require paths in `HowToPlayScreen` +
+  `SinglePlayerSetupScreen`; repro `scripts/convert-thumbnails.js`. With the
+  joker fix, total assets are now ~12 MB (was ~17 MB).
 - [ ] **PERF-3** — `MultiplayerGameScreen` broadcasts the full state on every Hit/Stand even when nothing visible changed (e.g. dealer index increment)
 
 ### ♿ ACCESSIBILITY
