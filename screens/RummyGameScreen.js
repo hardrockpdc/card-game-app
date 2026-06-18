@@ -19,6 +19,12 @@ import useYourTurnBanner from "../components/useYourTurnBanner";
 import EndOfRoundModal from "../components/EndOfRoundModal";
 import TutorialOverlay, { hasSeen } from "../components/TutorialOverlay";
 import { getTableTheme } from "../game/tableThemes";
+import {
+  RUMMY_TABLES,
+  getRummyTableId,
+  setRummyTable,
+  subscribeRummyTable,
+} from "../game/rummyTheme";
 import { scale, scaleFont } from "../game/responsive";
 import { addCoins } from "../game/wallet";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
@@ -228,6 +234,18 @@ export default function RummyGameScreen({ navigation, route }) {
   const [coinsEarned, setCoinsEarned] = useState(0);
   const [showTutorial, setShowTutorial] = useState(false);
   const [showRoundModal, setShowRoundModal] = useState(false);
+  const [tableId, setTableId] = useState(getRummyTableId());
+  const [showTablePicker, setShowTablePicker] = useState(false);
+
+  // Keep the table palette in sync (loaded at app start; may change via the
+  // in-game Table Theme picker). Mirrors Last Card.
+  useEffect(() => {
+    setTableId(getRummyTableId());
+    return subscribeRummyTable((id) => setTableId(id));
+  }, []);
+
+  const pal =
+    RUMMY_TABLES.find((t) => t.id === tableId) ?? RUMMY_TABLES[0];
 
   const variantLabel =
     gameState?.variantLabel || getRummyVariantLabel(variantId);
@@ -330,6 +348,11 @@ export default function RummyGameScreen({ navigation, route }) {
       : []),
     { type: "howto", gameId: "rummy" },
     { type: "theme" },
+    {
+      icon: "🎨",
+      label: "Table Theme",
+      onPress: () => setShowTablePicker(true),
+    },
     { type: "divider" },
     { type: "quit", onQuit: handleQuit },
   ];
@@ -802,7 +825,7 @@ export default function RummyGameScreen({ navigation, route }) {
 
   if (!gameState) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: pal.rail }]}>
         <View style={styles.loadingWrap}>
           <Text style={styles.loadingText}>Dealing cards…</Text>
         </View>
@@ -821,8 +844,13 @@ export default function RummyGameScreen({ navigation, route }) {
         : "Nobody";
 
     return (
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: pal.rail }]}>
+        <ScrollView
+          contentContainerStyle={[
+            styles.scrollContent,
+            { backgroundColor: pal.rail },
+          ]}
+        >
           {renderHeaderCard(true)}
 
           {isSinglePlayer &&
@@ -905,7 +933,8 @@ export default function RummyGameScreen({ navigation, route }) {
         key={player.id || index}
         style={[
           styles.oppBar,
-          isActive && styles.oppBarActive,
+          { backgroundColor: pal.panel, borderColor: pal.panelBorder },
+          isActive && { backgroundColor: pal.accentBg, borderColor: pal.accent },
           isWinner && styles.oppBarWinner,
         ]}
       >
@@ -916,7 +945,9 @@ export default function RummyGameScreen({ navigation, route }) {
           </Text>
           <Text style={styles.oppMeta}>🂠 {player.handCount ?? 0}</Text>
           <Text style={styles.oppMeta}>{player.score ?? 0} pts</Text>
-          {isActive ? <Text style={styles.oppTurnDot}>▶</Text> : null}
+          {isActive ? (
+            <Text style={[styles.oppTurnDot, { color: pal.accent }]}>▶</Text>
+          ) : null}
         </View>
         {oppMelds.length > 0 ? (
           <View style={styles.oppMeldsRow}>
@@ -935,7 +966,7 @@ export default function RummyGameScreen({ navigation, route }) {
   const canTakeDiscard = canDrawStock && !!discardTop;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: pal.rail }]}>
       <GameHeader
         gameId="rummy"
         minimal
@@ -949,7 +980,12 @@ export default function RummyGameScreen({ navigation, route }) {
       <YourTurnBanner visible={showTurnBanner} />
 
       {/* Opponents up top, piles centered below them */}
-      <View style={styles.centerSection}>
+      <View
+        style={[
+          styles.centerSection,
+          { backgroundColor: pal.felt, borderColor: pal.feltBorder },
+        ]}
+      >
         <View style={styles.oppStack}>
           {(gameState.players || []).map((player, index) =>
             index === localPlayerIndex ? null : renderOppBar(player, index),
@@ -968,7 +1004,12 @@ export default function RummyGameScreen({ navigation, route }) {
               accessibilityRole="button"
               accessibilityLabel="Draw from stock"
             >
-              <View style={styles.pileBack}>
+              <View
+                style={[
+                  styles.pileBack,
+                  { backgroundColor: pal.panel, borderColor: pal.panelBorder },
+                ]}
+              >
                 <Text style={styles.pileBackGlyph}>🂠</Text>
               </View>
               <Text style={styles.pileTag}>
@@ -998,7 +1039,9 @@ export default function RummyGameScreen({ navigation, route }) {
           </View>
 
           {canDrawStock ? (
-            <Text style={styles.drawHint}>Tap a pile to draw</Text>
+            <Text style={[styles.drawHint, { color: pal.accent }]}>
+              Tap a pile to draw
+            </Text>
           ) : null}
         </View>
       </View>
@@ -1020,7 +1063,10 @@ export default function RummyGameScreen({ navigation, route }) {
                   onPress={() => toggleMeld(index)}
                   style={({ pressed }) => [
                     styles.myMeldChip,
-                    selected && styles.myMeldChipSelected,
+                    selected && {
+                      borderColor: pal.accent,
+                      backgroundColor: pal.accentBg,
+                    },
                     pressed && styles.meldCardPressed,
                   ]}
                 >
@@ -1040,7 +1086,12 @@ export default function RummyGameScreen({ navigation, route }) {
       </Text>
 
       {/* Hand + actions, pinned at the bottom */}
-      <View style={styles.handPinned}>
+      <View
+        style={[
+          styles.handPinned,
+          { backgroundColor: pal.tray, borderTopColor: pal.panelBorder },
+        ]}
+      >
         <View style={styles.handHeader}>
           <Text style={styles.handTitle}>Your Hand ({myHand.length})</Text>
           {selectedHandIndexes.length > 0 ? (
@@ -1166,6 +1217,70 @@ export default function RummyGameScreen({ navigation, route }) {
         </View>
       </View>
 
+      {showTablePicker ? (
+        <View style={styles.tableOverlay}>
+          <Text style={styles.tableOverlayTitle}>Table Theme</Text>
+          <View style={styles.tableSwatchGrid}>
+            {RUMMY_TABLES.map((t) => {
+              const selected = t.id === tableId;
+              return (
+                <Pressable
+                  key={t.id}
+                  onPress={() => {
+                    setRummyTable(t.id);
+                    setTableId(t.id);
+                    setShowTablePicker(false);
+                  }}
+                  style={[
+                    styles.tableSwatch,
+                    {
+                      backgroundColor: t.felt,
+                      borderColor: selected ? t.accent : t.feltBorder,
+                    },
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel={t.name}
+                >
+                  <View style={styles.tableSwatchDots}>
+                    <View
+                      style={[styles.tableSwatchDot, { backgroundColor: t.rail }]}
+                    />
+                    <View
+                      style={[styles.tableSwatchDot, { backgroundColor: t.panel }]}
+                    />
+                    <View
+                      style={[
+                        styles.tableSwatchDot,
+                        { backgroundColor: t.accent },
+                      ]}
+                    />
+                  </View>
+                  <Text style={[styles.tableSwatchName, { color: t.text }]}>
+                    {t.name}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.tableSwatchCheck,
+                      { color: selected ? t.accent : "transparent" },
+                    ]}
+                  >
+                    ✓ Selected
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <Pressable
+            style={styles.tableCloseBtn}
+            onPress={() => setShowTablePicker(false)}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+          >
+            <Text style={styles.tableCloseText}>Close</Text>
+          </Pressable>
+        </View>
+      ) : null}
+
       <Toast message={toastMessage} revision={toastRevision} />
       <TutorialOverlay
         visible={showTutorial}
@@ -1207,8 +1322,11 @@ const styles = StyleSheet.create({
   },
   centerSection: {
     flex: 1,
+    margin: 10,
+    borderRadius: 16,
+    borderWidth: 1,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 10,
   },
   oppStack: { gap: 6 },
   oppBar: {
@@ -1287,6 +1405,70 @@ const styles = StyleSheet.create({
     backgroundColor: "#0f1626",
     borderTopWidth: 1,
     borderTopColor: "#2a3650",
+  },
+
+  // ── Table Theme picker overlay (mirrors Last Card) ──
+  tableOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.88)",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 16,
+    zIndex: 100,
+    paddingHorizontal: 32,
+  },
+  tableOverlayTitle: {
+    color: "#fff",
+    fontSize: 22,
+    fontWeight: "bold",
+    marginBottom: 8,
+  },
+  tableSwatchGrid: {
+    width: "100%",
+    gap: 12,
+  },
+  tableSwatch: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderRadius: 16,
+    borderWidth: 2,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  tableSwatchDots: {
+    flexDirection: "row",
+    gap: 5,
+  },
+  tableSwatchDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.25)",
+  },
+  tableSwatchName: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  tableSwatchCheck: {
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  tableCloseBtn: {
+    marginTop: 4,
+    paddingVertical: 12,
+    paddingHorizontal: 40,
+    borderRadius: 12,
+    backgroundColor: "#16213e",
+    borderWidth: 1.5,
+    borderColor: "#334",
+  },
+  tableCloseText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "800",
   },
 
   // ── Table layout ──

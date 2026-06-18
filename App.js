@@ -39,6 +39,7 @@ import { warn } from "./game/logger";
 import { initSounds } from "./game/sounds";
 import { initHaptics } from "./game/haptics";
 import { initLastCardTable } from "./game/lastCardTheme";
+import { initRummyTable } from "./game/rummyTheme";
 import { ThemeProvider } from "./game/ThemeContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import {
@@ -80,6 +81,7 @@ export default function App() {
     initSounds();
     initHaptics();
     initLastCardTable();
+    initRummyTable();
   }, []);
 
   // The app is portrait-first: every screen is designed for portrait except
