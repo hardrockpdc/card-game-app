@@ -665,8 +665,8 @@ export default function SolitaireGameScreen({ navigation, route }) {
           setSpiderFlyAwayCards(ghostCards);
 
           const isFinalRun = (state.completedRuns ?? 0) >= 8;
-          const STAGGER_MS = isFinalRun ? 46 : 42;
-          const ANIM_MS = isFinalRun ? 560 : 480;
+          const STAGGER_MS = isFinalRun ? 70 : 64;
+          const ANIM_MS = isFinalRun ? 820 : 720;
 
           // Fly every ghost toward (targetX, targetY) — a point in the tableau
           // row's local coords that the card CENTERS head to. Cards accelerate
