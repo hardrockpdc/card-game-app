@@ -12,7 +12,6 @@ import LobbyScreen from "./screens/LobbyScreen";
 import GameScreen from "./screens/GameScreen";
 import ResultsScreen from "./screens/ResultsScreen";
 import SettingsScreen from "./screens/SettingsScreen";
-import MultiplayerGameScreen from "./screens/MultiplayerGameScreen";
 import GoFishGameScreen from "./screens/GoFishGameScreen";
 import ConquianGameScreen from "./screens/ConquianGameScreen";
 import ConquianSetupScreen from "./screens/ConquianSetupScreen";
@@ -166,11 +165,6 @@ export default function App() {
                   name="Settings"
                   component={SettingsScreen}
                   options={{ title: "Settings" }}
-                />
-                <Stack.Screen
-                  name="MultiplayerGame"
-                  component={MultiplayerGameScreen}
-                  options={{ headerShown: false }}
                 />
                 <Stack.Screen
                   name="GoFishGame"
