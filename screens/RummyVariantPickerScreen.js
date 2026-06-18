@@ -104,6 +104,7 @@ function RummyVariantPickerScreen({ navigation, route }) {
           onChange={setSelectedVariant}
           options={pickerOptions}
           singleColumn={isLandscape}
+          fill
         />
       }
       controls={

@@ -122,6 +122,7 @@ function PokerVariantPickerScreen({ navigation, route }) {
           onChange={setSelectedVariant}
           options={POKER_VARIANT_OPTIONS}
           singleColumn={isLandscape}
+          fill
         />
       }
       controls={

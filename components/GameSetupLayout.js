@@ -1,7 +1,6 @@
 import React from "react";
 import {
   Alert,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -66,17 +65,7 @@ export default function GameSetupLayout({
         ) : null}
 
         <View style={[styles.panel, isLandscape && styles.panelLandscape]}>
-          {/* Scrollable content area — grows to fill, scrolls if content overflows */}
-          <ScrollView
-            style={styles.panelScroll}
-            contentContainerStyle={[
-              styles.panelScrollContent,
-              twoPane && styles.panelScrollContentRow,
-            ]}
-            showsVerticalScrollIndicator={false}
-            bounces={false}
-            keyboardShouldPersistTaps="handled"
-          >
+          <View style={[styles.paneStack, twoPane && styles.paneRow]}>
             {twoPane ? (
               <>
                 <View style={styles.pane}>{variantSlot}</View>
@@ -88,9 +77,8 @@ export default function GameSetupLayout({
                 {controls}
               </>
             )}
-          </ScrollView>
+          </View>
 
-          {/* Buttons pinned outside the scroll so they're always reachable */}
           {resume ? (
             <View style={styles.buttonStack}>
               <Pressable
@@ -298,14 +286,11 @@ const styles = StyleSheet.create({
     padding: scale(10),
     gap: scale(8),
   },
-  panelScroll: {
+  paneStack: {
     flex: 1,
-  },
-  panelScrollContent: {
     gap: scale(16),
-    paddingBottom: scale(4),
   },
-  panelScrollContentRow: {
+  paneRow: {
     flexDirection: "row",
     gap: scale(12),
   },

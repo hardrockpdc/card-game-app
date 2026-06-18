@@ -51,6 +51,7 @@ export default function SolitaireVariantPickerScreen({ navigation, route }) {
             onChange={setVariantId}
             options={VARIANT_OPTIONS}
             singleColumn={isLandscape}
+            fill
           />
           {variantId === "spider" ? (
             <SetupSection label="Spider suits">
