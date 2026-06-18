@@ -745,6 +745,40 @@ for free (FreeCell adds free-cells as sources/targets; Spider should rank
 "completes a run" highest). Pyramid/TriPeaks are a separate, simpler "find a
 matchable pair" shape. Decide after living with the Klondike pilot.
 
+### Solitaire Hints — extended to all five variants (2026-06-18) — COMPLETE ✅
+
+Follow-up to the pilot above (Pedro: "focus on the other solitaire games too").
+Committed `39250c8`. 292 Jest tests pass (285 + 7 new). Pure JS, no rebuild.
+
+`getHint(state)` now dispatches per variant:
+- **Klondike / FreeCell / Spider** share one generalized move engine
+  (`getMoveHint`): enumerate sources (waste, free cells, face-up tableau cards),
+  run `getLegalTargets`, drop junk (pure relocations + any move that just undoes
+  the last one, via a `boardSignature` compare against the last history
+  snapshot), then pick the **highest-scoring** move. Scoring (`scoreMove`):
+  complete a Spider run (1000) > flip a face-down card (500) > play to a
+  foundation (300) > unload a free cell (120) > empty a column (100) > build
+  from waste/free cell (60); parking in a free cell is penalized (−80). This
+  replaced the Klondike pilot's ordered-pick with a score so Spider's
+  run-completion can outrank everything.
+- **Pyramid / TriPeaks** are tap/match games (not source→target), so they get
+  dedicated finders (`getPyramidHint`, `getTriPeaksHint`) that **simulate a
+  single tap** and keep it only if it actually removes a card — so a hint can
+  never disagree with the real rules. Pyramid suggests an exposed card that
+  pairs with the waste (sum 13) or an exposed King; TriPeaks an exposed card one
+  rank from the waste top. Both fall back to a stock-draw hint, else `null`.
+
+**UI:** the 💡 Hint menu item now shows on **every** variant, and all four extra
+render functions (Spider/FreeCell/Pyramid/TriPeaks, portrait + landscape) glow
+the hinted source/target — cards, columns, free cells, foundations, waste, stock
+— in the same amber as the pilot. New screen helpers: `isHintFreecell`,
+`isHintPyramid`, `isHintTriPeaks`.
+
+**Note for future:** Pyramid's reducer only supports pyramid↔waste pairs and
+King-alone removals (no two-pyramid-card pairing); the hint matches that on
+purpose by simulating the real tap. If pyramid-pair rules ever change, the hint
+follows automatically.
+
 ## 💡 Important Reminders
 
 ### Daily workflow
