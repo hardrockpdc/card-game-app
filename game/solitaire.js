@@ -1845,46 +1845,68 @@ export function getLegalTargets(state, source) {
 
 // A stable signature of the playable board, so two states can be compared to
 // tell whether a candidate move would just undo the previous one.
-function klondikeBoardSignature(s) {
+function boardSignature(s) {
   const pile = (cards) =>
-    (cards || []).map((c) => `${c.id}${c.faceUp ? "U" : "D"}`).join(",");
+    (cards || [])
+      .map((c) => (c ? `${c.id}${c.faceUp ? "U" : "D"}` : "_"))
+      .join(",");
   return [
     (s.tableau || []).map(pile).join("|"),
     (s.foundations || []).map(pile).join("|"),
+    (s.freecells || []).map((c) => (c ? c.id : "_")).join(","),
     pile(s.waste),
     pile(s.stock),
   ].join("##");
 }
 
-// Suggest one useful move for the player to make (highlight-only hint). Returns
-// `{ source, target }` for a move, `{ source: { type: "stock" } }` to draw from
-// the stock, or `null` when there's nothing helpful. Klondike-only pilot; other
-// variants return null. Reuses getLegalTargets so it can never disagree with the
-// real move rules.
-export function getHint(state) {
-  if (!state || state.variantId !== "klondike" || state.status === "won") {
-    return null;
+// Score a simulated move by how useful it is. Higher = better. Shared across the
+// "move" variants (Klondike, FreeCell, Spider); irrelevant terms are simply 0.
+function scoreMove(state, source, target, result) {
+  let score = 10; // baseline: any legal, non-junk move beats doing nothing
+  if ((result.completedRuns || 0) > (state.completedRuns || 0)) {
+    score += 1000; // Spider: completed a King-to-Ace run
   }
+  if (source.type === "tableau" && source.cardIndex > 0) {
+    const pile = state.tableau[source.index];
+    if (pile && !pile[source.cardIndex - 1].faceUp) score += 500; // flips a card
+  }
+  if (target.type === "foundation") score += 300;
+  if (source.type === "freecell") score += 120; // unloading a free cell is good
+  if (source.type === "tableau" && source.cardIndex === 0) score += 100; // empties
+  if (
+    target.type === "tableau" &&
+    (source.type === "waste" || source.type === "freecell")
+  ) {
+    score += 60;
+  }
+  if (target.type === "freecell") score -= 80; // parking is a last resort
+  return score;
+}
 
-  // The board we'd return to by undoing the last move — used to skip a hint
-  // that just reverses it (prevents A->B right after B->A loops).
+// Hint engine for the "move" variants (Klondike, FreeCell, Spider). Enumerates
+// sources, asks getLegalTargets which moves are legal, drops junk moves (pure
+// relocations, or a move that just undoes the last one), then returns the
+// highest-scoring move — or a stock draw / null when nothing helps.
+function getMoveHint(state) {
   const prevSnap =
     state.history && state.history.length > 0
       ? state.history[state.history.length - 1]
       : null;
-  const prevSig = prevSnap ? klondikeBoardSignature(prevSnap) : null;
+  const prevSig = prevSnap ? boardSignature(prevSnap) : null;
 
-  // Sources: the waste top + every face-up tableau card (a card and the run
-  // below it). getLegalTargets decides which can actually move.
   const sources = [];
   if ((state.waste || []).length > 0) sources.push({ type: "waste" });
+  (state.freecells || []).forEach((cell, index) => {
+    if (cell) sources.push({ type: "freecell", index });
+  });
   (state.tableau || []).forEach((pile, index) => {
     pile.forEach((card, cardIndex) => {
       if (card.faceUp) sources.push({ type: "tableau", index, cardIndex });
     });
   });
 
-  const candidates = [];
+  let best = null;
+  let bestScore = -Infinity;
   for (const source of sources) {
     for (const target of getLegalTargets(state, source)) {
       // Skip pure relocation: moving a whole pile onto an empty column is no
@@ -1895,45 +1917,91 @@ export function getHint(state) {
       if (source.type === "tableau" && source.cardIndex === 0 && targetEmpty) {
         continue;
       }
+      const result = solitaireReducer(state, moveAction(source, target));
       // Skip a move that just undoes the previous one.
-      if (prevSig) {
-        const result = solitaireReducer(state, moveAction(source, target));
-        if (klondikeBoardSignature(result) === prevSig) continue;
+      if (prevSig && boardSignature(result) === prevSig) continue;
+      const score = scoreMove(state, source, target, result);
+      if (score > bestScore) {
+        bestScore = score;
+        best = { source, target };
       }
-      candidates.push({ source, target });
     }
   }
 
-  if (candidates.length === 0) {
-    // No useful board move — suggest drawing/recycling the stock if possible.
-    if ((state.stock || []).length > 0 || (state.waste || []).length > 0) {
-      return { source: { type: "stock" } };
+  if (best) return best;
+
+  // No useful board move — suggest drawing/recycling the stock if possible.
+  const canDrawStock =
+    (state.stock || []).length > 0 ||
+    (state.variantId === "klondike" && (state.waste || []).length > 0);
+  if (canDrawStock) return { source: { type: "stock" } };
+  return null;
+}
+
+// Pyramid hint: an exposed card that pairs with the waste top (sum 13) or an
+// exposed King removable alone. We simulate a single tap and keep it if it
+// actually removes a card — so we never disagree with the real rules.
+function getPyramidHint(state) {
+  const rows = state.pyramidRows || [];
+  for (let r = 0; r < rows.length; r += 1) {
+    for (let c = 0; c < (rows[r] || []).length; c += 1) {
+      const card = rows[r][c];
+      if (!card || !card.faceUp) continue;
+      const result = solitaireReducer(
+        { ...state, selected: null },
+        tapAction({ type: "pyramid", row: r, col: c }),
+      );
+      const removed = !(result.pyramidRows && result.pyramidRows[r][c]);
+      if (!removed) continue;
+      const pairedWaste = (result.pairs || 0) > (state.pairs || 0);
+      return {
+        source: { type: "pyramid", row: r, col: c },
+        ...(pairedWaste ? { target: { type: "waste" } } : {}),
+      };
     }
-    return null;
   }
+  if ((state.stock || []).length > 0) return { source: { type: "stock" } };
+  return null;
+}
 
-  const flipsFaceDown = ({ source }) => {
-    if (source.type !== "tableau" || source.cardIndex === 0) return false;
-    const pile = state.tableau[source.index];
-    return pile && !pile[source.cardIndex - 1].faceUp;
-  };
-  const toFoundation = ({ target }) => target.type === "foundation";
-  const emptiesColumn = ({ source }) =>
-    source.type === "tableau" && source.cardIndex === 0;
-  const wasteToTableau = ({ source, target }) =>
-    source.type === "waste" && target.type === "tableau";
+// TriPeaks hint: an exposed board card one rank away from the waste top. Same
+// simulate-a-tap approach as Pyramid.
+function getTriPeaksHint(state) {
+  const rows = state.boardRows || [];
+  for (let r = 0; r < rows.length; r += 1) {
+    for (let c = 0; c < (rows[r] || []).length; c += 1) {
+      const card = rows[r][c];
+      if (!card || !card.faceUp) continue;
+      const result = solitaireReducer(
+        { ...state, selected: null },
+        tapAction({ type: "tripeaks", row: r, col: c }),
+      );
+      const removed = !(result.boardRows && result.boardRows[r][c]);
+      if (removed) return { source: { type: "tripeaks", row: r, col: c } };
+    }
+  }
+  if ((state.stock || []).length > 0) return { source: { type: "stock" } };
+  return null;
+}
 
-  const pick = (pred) => candidates.find(pred);
-
-  // Priority: reveal a face-down card > advance a foundation > empty a column >
-  // build from the waste > any other legal build.
-  return (
-    pick(flipsFaceDown) ||
-    pick(toFoundation) ||
-    pick(emptiesColumn) ||
-    pick(wasteToTableau) ||
-    candidates[0]
-  );
+// Suggest one useful move for the player to make (highlight-only hint). Returns
+// a `{ source, target? }` descriptor, `{ source: { type: "stock" } }` to draw,
+// or `null` when there's nothing helpful. Dispatches per variant; reuses the
+// real move/tap logic so a hint can never disagree with the rules.
+export function getHint(state) {
+  if (!state || state.status === "won") return null;
+  switch (state.variantId) {
+    case "klondike":
+    case "freecell":
+    case "spider":
+      return getMoveHint(state);
+    case "pyramid":
+      return getPyramidHint(state);
+    case "tripeaks":
+      return getTriPeaksHint(state);
+    default:
+      return null;
+  }
 }
 
 export function isCardRed(card) {

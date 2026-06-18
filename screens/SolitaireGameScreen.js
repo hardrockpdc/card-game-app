@@ -132,6 +132,30 @@ function isHintTargetFoundation(hint, index) {
   return hint?.target?.type === "foundation" && hint.target.index === index;
 }
 
+// A free cell glows when it's the hint's source (unload) or target (park).
+function isHintFreecell(hint, index) {
+  return (
+    (hint?.source?.type === "freecell" && hint.source.index === index) ||
+    (hint?.target?.type === "freecell" && hint.target.index === index)
+  );
+}
+
+function isHintPyramid(hint, row, col) {
+  return (
+    hint?.source?.type === "pyramid" &&
+    hint.source.row === row &&
+    hint.source.col === col
+  );
+}
+
+function isHintTriPeaks(hint, row, col) {
+  return (
+    hint?.source?.type === "tripeaks" &&
+    hint.source.row === row &&
+    hint.source.col === col
+  );
+}
+
 function CardSlot({
   card,
   label,
@@ -889,10 +913,8 @@ export default function SolitaireGameScreen({ navigation, route }) {
       onUndo: () => dispatch(undoAction()),
       disabled: !state.history || state.history.length === 0,
     },
-    // Hint is a Klondike-only pilot for now; uses the generic menu-item shape.
-    ...(state.variantId === "klondike"
-      ? [{ key: "hint", icon: "💡", label: "Hint", onPress: showHint }]
-      : []),
+    // Hint works on every variant; uses the generic menu-item shape.
+    { key: "hint", icon: "💡", label: "Hint", onPress: showHint },
     { type: "restart", onRestart: restart },
     { type: "saveexit", onSaveExit: handleSaveAndExit },
     { type: "howto", gameId: "solitaire" },
@@ -1190,6 +1212,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
           style={[
             styles.tableauColumn,
             colHighlighted && styles.tableauColumnHighlighted,
+            isHintTargetTableau(hint, pileIndex) && styles.tableauColumnHint,
           ]}
           onLayout={(e) => {
             const layout = e.nativeEvent.layout;
@@ -1256,6 +1279,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                 sizeScale={isLandscape ? tabCardScale : undefined}
                 onPress={() => dispatch(tapAction(source))}
                 selected={selected}
+                hinted={isHintSourceTableau(hint, pileIndex, cardIndex)}
                 disabled={!card.faceUp}
                 dragGesture={
                   dragEnabled && card.faceUp
@@ -1328,6 +1352,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                     : "No deal"
                 }
                 onPress={() => dispatch(tapAction({ type: "stock" }))}
+                hinted={hint?.source?.type === "stock"}
                 style={{ width: slotW, height: slotH }}
               />
             </View>
@@ -1357,6 +1382,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
               state.stock.length > 0 ? `Deal ${state.stock.length}` : "No deal"
             }
             onPress={() => dispatch(tapAction({ type: "stock" }))}
+            hinted={hint?.source?.type === "stock"}
           />
 
           <View style={styles.metaPill}>
@@ -1406,6 +1432,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
           sizeScale={isLandscape ? slotScale : undefined}
           onPress={() => dispatch(tapAction({ type: "freecell", index }))}
           selected={selected}
+          hinted={isHintFreecell(hint, index)}
           dragGesture={
             dragEnabled && card ? makeDragGesture(source) : undefined
           }
@@ -1454,6 +1481,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
           highlighted={
             dragEnabled && isLegalTarget({ type: "foundation", index })
           }
+          hinted={isHintTargetFoundation(hint, index)}
           style={isLandscape ? railSlotStyle : styles.slotCard}
         />
       );
@@ -1477,6 +1505,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
           style={[
             styles.tableauColumn,
             colHighlighted && styles.tableauColumnHighlighted,
+            isHintTargetTableau(hint, pileIndex) && styles.tableauColumnHint,
           ]}
         >
           {pile.length === 0 ? (
@@ -1536,6 +1565,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                 sizeScale={isLandscape ? tabCardScale : undefined}
                 onPress={() => dispatch(tapAction(source))}
                 selected={selected}
+                hinted={isHintSourceTableau(hint, pileIndex, cardIndex)}
                 dragGesture={
                   dragEnabled && card.faceUp
                     ? makeDragGesture(source)
@@ -1707,6 +1737,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                           )
                         }
                         selected={selected}
+                        hinted={isHintPyramid(hint, rowIndex, colIndex)}
                         disabled={!card.faceUp}
                         style={{
                           width: pcW,
@@ -1733,6 +1764,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                   state.stock.length > 0 ? `Stock ${state.stock.length}` : "↻"
                 }
                 onPress={() => dispatch(tapAction({ type: "stock" }))}
+                hinted={hint?.source?.type === "stock"}
                 style={{ width: slotW, height: slotH }}
               />
               <CardSlot
@@ -1741,6 +1773,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                 sizeScale={slotScale}
                 onPress={() => dispatch(tapAction({ type: "waste" }))}
                 selected={sameTarget(state.selected, { type: "waste" })}
+                hinted={hint?.target?.type === "waste"}
                 style={{
                   width: slotW,
                   height: slotH,
@@ -1767,6 +1800,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
           <StockSlot
             label={state.stock.length > 0 ? `Stock ${state.stock.length}` : "↻"}
             onPress={() => dispatch(tapAction({ type: "stock" }))}
+            hinted={hint?.source?.type === "stock"}
           />
 
           <CardSlot
@@ -1774,6 +1808,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
             label="Waste"
             onPress={() => dispatch(tapAction({ type: "waste" }))}
             selected={sameTarget(state.selected, { type: "waste" })}
+            hinted={hint?.target?.type === "waste"}
             style={styles.slotCard}
           />
 
@@ -1826,6 +1861,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                         )
                       }
                       selected={selected}
+                      hinted={isHintPyramid(hint, rowIndex, colIndex)}
                       disabled={!card.faceUp}
                       style={styles.slotCard}
                     />
@@ -1930,6 +1966,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                           )
                         }
                         selected={selected}
+                        hinted={isHintTriPeaks(hint, rowIndex, colIndex)}
                         disabled={!card.faceUp}
                         style={{
                           width: pcW,
@@ -1956,6 +1993,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                   state.stock.length > 0 ? `Stock ${state.stock.length}` : "↻"
                 }
                 onPress={() => dispatch(tapAction({ type: "stock" }))}
+                hinted={hint?.source?.type === "stock"}
                 style={{ width: slotW, height: slotH }}
               />
               <CardSlot
@@ -1964,6 +2002,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                 sizeScale={slotScale}
                 onPress={() => dispatch(tapAction({ type: "waste" }))}
                 selected={sameTarget(state.selected, { type: "waste" })}
+                hinted={hint?.target?.type === "waste"}
                 style={{
                   width: slotW,
                   height: slotH,
@@ -1990,6 +2029,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
           <StockSlot
             label={state.stock.length > 0 ? `Stock ${state.stock.length}` : "↻"}
             onPress={() => dispatch(tapAction({ type: "stock" }))}
+            hinted={hint?.source?.type === "stock"}
           />
 
           <CardSlot
@@ -1997,6 +2037,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
             label="Waste"
             onPress={() => dispatch(tapAction({ type: "waste" }))}
             selected={sameTarget(state.selected, { type: "waste" })}
+            hinted={hint?.target?.type === "waste"}
             style={styles.slotCard}
           />
 
@@ -2049,6 +2090,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                         )
                       }
                       selected={selected}
+                      hinted={isHintTriPeaks(hint, rowIndex, colIndex)}
                       disabled={!card.faceUp}
                       style={styles.slotCard}
                     />

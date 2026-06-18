@@ -208,8 +208,18 @@ describe("getHint (Klondike pilot)", () => {
     ...overrides,
   });
 
-  test("returns null for non-Klondike variants", () => {
-    expect(getHint(createSolitaireState("spider"))).toBeNull();
+  test("returns null for an unknown variant", () => {
+    expect(getHint({ ...createSolitaireState("klondike"), variantId: "nope" }))
+      .toBeNull();
+  });
+
+  test("a fresh game of each supported variant yields a usable hint", () => {
+    for (const v of ["klondike", "spider", "freecell", "pyramid", "tripeaks"]) {
+      const hint = getHint(createSolitaireState(v));
+      // A fresh deal always has either a move or a drawable stock.
+      expect(hint).not.toBeNull();
+      expect(hint.source).toBeTruthy();
+    }
   });
 
   test("returns null when the game is already won", () => {
@@ -268,5 +278,114 @@ describe("getHint (Klondike pilot)", () => {
       },
     ];
     expect(getHint(klondike({ tableau, history }))).toBeNull();
+  });
+});
+
+describe("getHint — FreeCell / Pyramid / TriPeaks", () => {
+  const SYMBOLS = { hearts: "♥", diamonds: "♦", clubs: "♣", spades: "♠" };
+  const mk = (suit, rank, faceUp = true) => {
+    const red = suit === "hearts" || suit === "diamonds";
+    return {
+      id: `${rank}-${suit}`,
+      suit,
+      rank,
+      color: red ? "red" : "black",
+      symbol: SYMBOLS[suit],
+      rankLabel: String(rank),
+      faceUp,
+      faceDown: !faceUp,
+      isFaceUp: faceUp,
+      isFaceDown: !faceUp,
+    };
+  };
+
+  test("FreeCell: unloads a free-cell Ace onto a foundation", () => {
+    const state = {
+      variantId: "freecell",
+      status: "playing",
+      moves: 3,
+      pairs: 0,
+      history: [],
+      stock: [],
+      waste: [],
+      foundations: [[], [], [], []],
+      freecells: [mk("hearts", 1), null, null, null],
+      tableau: [[], [], [], [], [], [], [], []],
+      selected: null,
+    };
+    const hint = getHint(state);
+    expect(hint?.source).toEqual({ type: "freecell", index: 0 });
+    expect(hint?.target?.type).toBe("foundation");
+  });
+
+  const pyramid = (overrides = {}) => ({
+    variantId: "pyramid",
+    status: "playing",
+    moves: 2,
+    pairs: 0,
+    history: [],
+    stock: [],
+    waste: [],
+    pyramidRows: [],
+    selected: null,
+    ...overrides,
+  });
+
+  test("Pyramid: pairs an exposed card with the waste top (sum 13)", () => {
+    const hint = getHint(
+      pyramid({ pyramidRows: [[mk("spades", 7)]], waste: [mk("hearts", 6)] }),
+    );
+    expect(hint).toEqual({
+      source: { type: "pyramid", row: 0, col: 0 },
+      target: { type: "waste" },
+    });
+  });
+
+  test("Pyramid: removes an exposed King alone (no waste pairing)", () => {
+    const hint = getHint(pyramid({ pyramidRows: [[mk("clubs", 13)]] }));
+    expect(hint).toEqual({ source: { type: "pyramid", row: 0, col: 0 } });
+  });
+
+  test("Pyramid: falls back to the stock when no pair is available", () => {
+    const hint = getHint(
+      pyramid({
+        pyramidRows: [[mk("spades", 5)]],
+        waste: [mk("hearts", 3)], // 5 + 3 = 8, no pair
+        stock: [mk("clubs", 9, false)],
+      }),
+    );
+    expect(hint).toEqual({ source: { type: "stock" } });
+  });
+
+  const tripeaks = (overrides = {}) => ({
+    variantId: "tripeaks",
+    status: "playing",
+    moves: 2,
+    pairs: 0,
+    combo: 0,
+    history: [],
+    stock: [],
+    waste: [],
+    boardRows: [],
+    selected: null,
+    ...overrides,
+  });
+
+  test("TriPeaks: clears an exposed card one rank from the waste top", () => {
+    const hint = getHint(
+      tripeaks({ boardRows: [[mk("spades", 7)]], waste: [mk("hearts", 8)] }),
+    );
+    expect(hint).toEqual({ source: { type: "tripeaks", row: 0, col: 0 } });
+  });
+
+  test("TriPeaks: falls back to the stock when nothing is playable", () => {
+    const hint = getHint(
+      tripeaks({
+        boardRows: [[mk("spades", 7)]],
+        waste: [mk("hearts", 10)], // |7 - 10| = 3, not playable
+        stock: [mk("clubs", 2, false)],
+      }),
+    );
+    expect(hint).toEqual({ source: { type: "stock" } });
   });
 });
