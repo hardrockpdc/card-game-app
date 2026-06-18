@@ -31,7 +31,7 @@ const CAROUSEL_GAMES = [
     tag: "Classic",
     color: "#081a0f",
     accent: "#2e7d32",
-    image: require("../assets/images/thumb_blackjack.png"),
+    image: require("../assets/images/thumb_blackjack.jpg"),
   },
   {
     id: "solitaire",
@@ -40,7 +40,7 @@ const CAROUSEL_GAMES = [
     tag: "5 classic modes",
     color: "#101826",
     accent: "#7fb3ff",
-    image: require("../assets/images/thumb_solitaire.png"),
+    image: require("../assets/images/thumb_solitaire.jpg"),
   },
   {
     id: "rummy",
@@ -49,7 +49,7 @@ const CAROUSEL_GAMES = [
     tag: "5 classic modes",
     color: "#14131f",
     accent: "#e94560",
-    image: require("../assets/images/thumb_rummy.png"),
+    image: require("../assets/images/thumb_rummy.jpg"),
   },
   {
     id: "conquian",
@@ -58,7 +58,7 @@ const CAROUSEL_GAMES = [
     tag: "Mexican rummy",
     color: "#14131f",
     accent: "#c4923f",
-    image: require("../assets/images/thumb_conquian.png"),
+    image: require("../assets/images/thumb_conquian.jpg"),
   },
   {
     id: "goFish",
@@ -67,7 +67,7 @@ const CAROUSEL_GAMES = [
     tag: "Go Fish!",
     color: "#080d1f",
     accent: "#1565c0",
-    image: require("../assets/images/thumb_gofish.png"),
+    image: require("../assets/images/thumb_gofish.jpg"),
   },
   {
     id: "poker",
@@ -76,7 +76,7 @@ const CAROUSEL_GAMES = [
     tag: "Texas Hold'em",
     color: "#120822",
     accent: "#6a1b9a",
-    image: require("../assets/images/thumb_poker.png"),
+    image: require("../assets/images/thumb_poker.jpg"),
   },
   {
     id: "lastCard",
@@ -85,7 +85,7 @@ const CAROUSEL_GAMES = [
     tag: "UNO-style",
     color: "#111827",
     accent: "#e94560",
-    image: require("../assets/images/thumb_lastcard.png"),
+    image: require("../assets/images/thumb_lastcard.jpg"),
   },
 ];
 

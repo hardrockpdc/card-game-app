@@ -14,12 +14,12 @@ import { RUMMY_VARIANTS, RUMMY_VARIANT_OPTIONS } from "../game/rummy";
 import { VARIANT_OPTIONS as SOLITAIRE_VARIANT_OPTIONS } from "../game/solitaire";
 
 const GAME_THUMBS = {
-  blackjack: require("../assets/images/thumb_blackjack.png"),
-  goFish: require("../assets/images/thumb_gofish.png"),
-  poker: require("../assets/images/thumb_poker.png"),
-  rummy: require("../assets/images/thumb_rummy.png"),
-  solitaire: require("../assets/images/thumb_solitaire.png"),
-  lastcard: require("../assets/images/thumb_lastcard.png"),
+  blackjack: require("../assets/images/thumb_blackjack.jpg"),
+  goFish: require("../assets/images/thumb_gofish.jpg"),
+  poker: require("../assets/images/thumb_poker.jpg"),
+  rummy: require("../assets/images/thumb_rummy.jpg"),
+  solitaire: require("../assets/images/thumb_solitaire.jpg"),
+  lastcard: require("../assets/images/thumb_lastcard.jpg"),
 };
 
 const GAMES = [
