@@ -33,6 +33,7 @@ import StatsStrip from "../components/StatsStrip";
 import { useLayoutMode } from "../game/useLayoutMode";
 import {
   createSolitaireState,
+  getHint,
   getTopCard,
   getVariantOption,
   newGameAction,
@@ -112,6 +113,25 @@ function isTriPeaksSelection(selected, row, col) {
   );
 }
 
+// Hint highlighting (Klondike pilot). A hint is { source, target? }; the source
+// card (and the run below it) and the destination pile get an amber glow.
+function isHintSourceTableau(hint, pileIndex, cardIndex) {
+  return (
+    hint?.source?.type === "tableau" &&
+    hint.source.index === pileIndex &&
+    typeof hint.source.cardIndex === "number" &&
+    cardIndex >= hint.source.cardIndex
+  );
+}
+
+function isHintTargetTableau(hint, pileIndex) {
+  return hint?.target?.type === "tableau" && hint.target.index === pileIndex;
+}
+
+function isHintTargetFoundation(hint, index) {
+  return hint?.target?.type === "foundation" && hint.target.index === index;
+}
+
 function CardSlot({
   card,
   label,
@@ -126,6 +146,7 @@ function CardSlot({
   containerRef,
   dragGesture,
   highlighted = false,
+  hinted = false,
   hidden = false,
 }) {
   const inner = (
@@ -138,6 +159,7 @@ function CardSlot({
         style,
         selected && styles.cardTouchSelected,
         highlighted && styles.cardTouchHighlighted,
+        hinted && styles.cardTouchHint,
         pressed && !disabled && styles.cardTouchPressed,
         disabled && styles.cardTouchDisabled,
         hidden && styles.cardTouchHidden,
@@ -173,13 +195,14 @@ function CardSlot({
   return inner;
 }
 
-function StockSlot({ label, onPress, disabled = false, style }) {
+function StockSlot({ label, onPress, disabled = false, style, hinted = false }) {
   return (
     <Pressable
       onPress={disabled ? undefined : onPress}
       style={({ pressed }) => [
         styles.stockSlot,
         style,
+        hinted && styles.cardTouchHint,
         pressed && !disabled && styles.cardTouchPressed,
       ]}
       accessibilityRole="button"
@@ -224,6 +247,12 @@ export default function SolitaireGameScreen({ navigation, route }) {
   // feedback (the vibration we hit before). Fallbacks apply until first measure.
   const [tableauBoxH, setTableauBoxH] = useState(0);
   const [tableauBoxW, setTableauBoxW] = useState(0);
+
+  // Highlight-only hint: { source, target? } describing one suggested move.
+  // Cleared on the next move (see effect below) and auto-cleared after a few
+  // seconds. Klondike pilot only.
+  const [hint, setHint] = useState(null);
+  const hintTimeoutRef = useRef(null);
 
   // Klondike has a dedicated landscape layout, so lock the screen to landscape
   // while it's focused and release it on leave. No-op without the native module
@@ -814,6 +843,30 @@ export default function SolitaireGameScreen({ navigation, route }) {
     [state.variantId],
   );
 
+  // A move just happened — clear any showing hint so it never points at a stale
+  // board. (state.moves changes on every real move, not selection-only taps.)
+  useEffect(() => {
+    setHint(null);
+  }, [state.moves]);
+
+  // Clear the auto-hide timer on unmount.
+  useEffect(() => {
+    return () => {
+      if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
+    };
+  }, []);
+
+  const showHint = () => {
+    if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
+    const next = getHint(state);
+    setHint(next);
+    if (next) {
+      hintTimeoutRef.current = setTimeout(() => setHint(null), 4000);
+    } else {
+      Alert.alert("No hint", "No helpful move right now.");
+    }
+  };
+
   const restart = () => {
     coinRewardedRef.current = false;
     setCoinsEarned(0);
@@ -836,6 +889,10 @@ export default function SolitaireGameScreen({ navigation, route }) {
       onUndo: () => dispatch(undoAction()),
       disabled: !state.history || state.history.length === 0,
     },
+    // Hint is a Klondike-only pilot for now; uses the generic menu-item shape.
+    ...(state.variantId === "klondike"
+      ? [{ key: "hint", icon: "💡", label: "Hint", onPress: showHint }]
+      : []),
     { type: "restart", onRestart: restart },
     { type: "saveexit", onSaveExit: handleSaveAndExit },
     { type: "howto", gameId: "solitaire" },
@@ -865,6 +922,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
       <StockSlot
         label={state.stock.length > 0 ? `Stock ${state.stock.length}` : "↻"}
         onPress={() => dispatch(tapAction({ type: "stock" }))}
+        hinted={hint?.source?.type === "stock"}
         style={{ width: slotW, height: slotH }}
       />
     );
@@ -876,6 +934,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
         sizeScale={slotScale}
         onPress={() => dispatch(tapAction({ type: "waste" }))}
         selected={sameTarget(state.selected, { type: "waste" })}
+        hinted={hint?.source?.type === "waste"}
         dragGesture={
           dragEnabled && wasteTop
             ? makeDragGesture({ type: "waste" })
@@ -911,6 +970,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
           highlighted={
             dragEnabled && isLegalTarget({ type: "foundation", index })
           }
+          hinted={isHintTargetFoundation(hint, index)}
           style={{
             width: slotW,
             height: slotH,
@@ -939,6 +999,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
           style={[
             styles.tableauColumn,
             colHighlighted && styles.tableauColumnHighlighted,
+            isHintTargetTableau(hint, pileIndex) && styles.tableauColumnHint,
           ]}
         >
           {pile.length === 0 ? (
@@ -1003,6 +1064,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                 sizeScale={tabCardScale}
                 onPress={() => dispatch(tapAction(source))}
                 selected={selected}
+                hinted={isHintSourceTableau(hint, pileIndex, cardIndex)}
                 disabled={!card.faceUp}
                 dragGesture={
                   dragEnabled && card.faceUp
@@ -2249,6 +2311,13 @@ const styles = StyleSheet.create({
     borderColor: "#7CFFB2",
     backgroundColor: "rgba(124, 255, 178, 0.16)",
   },
+  // Hint: an amber glow on the card to move (and its destination). Deliberately
+  // a different colour from the green drag target so the two never look alike.
+  // Recolor only (keeps borderWidth 1) so highlighting can't shift layout.
+  cardTouchHint: {
+    borderColor: "#FFCC66",
+    backgroundColor: "rgba(255, 204, 102, 0.18)",
+  },
   // A card that's currently lifted in the drag overlay is hidden in place.
   cardTouchHidden: {
     opacity: 0,
@@ -2306,6 +2375,11 @@ const styles = StyleSheet.create({
   tableauColumnHighlighted: {
     borderRadius: 10,
     backgroundColor: "rgba(124, 255, 178, 0.12)",
+  },
+  // Hint: faint amber tint on the destination column (matches cardTouchHint).
+  tableauColumnHint: {
+    borderRadius: 10,
+    backgroundColor: "rgba(255, 204, 102, 0.14)",
   },
   tableauTopSpacer: {
     height: 16,

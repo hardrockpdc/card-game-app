@@ -1843,6 +1843,99 @@ export function getLegalTargets(state, source) {
   });
 }
 
+// A stable signature of the playable board, so two states can be compared to
+// tell whether a candidate move would just undo the previous one.
+function klondikeBoardSignature(s) {
+  const pile = (cards) =>
+    (cards || []).map((c) => `${c.id}${c.faceUp ? "U" : "D"}`).join(",");
+  return [
+    (s.tableau || []).map(pile).join("|"),
+    (s.foundations || []).map(pile).join("|"),
+    pile(s.waste),
+    pile(s.stock),
+  ].join("##");
+}
+
+// Suggest one useful move for the player to make (highlight-only hint). Returns
+// `{ source, target }` for a move, `{ source: { type: "stock" } }` to draw from
+// the stock, or `null` when there's nothing helpful. Klondike-only pilot; other
+// variants return null. Reuses getLegalTargets so it can never disagree with the
+// real move rules.
+export function getHint(state) {
+  if (!state || state.variantId !== "klondike" || state.status === "won") {
+    return null;
+  }
+
+  // The board we'd return to by undoing the last move — used to skip a hint
+  // that just reverses it (prevents A->B right after B->A loops).
+  const prevSnap =
+    state.history && state.history.length > 0
+      ? state.history[state.history.length - 1]
+      : null;
+  const prevSig = prevSnap ? klondikeBoardSignature(prevSnap) : null;
+
+  // Sources: the waste top + every face-up tableau card (a card and the run
+  // below it). getLegalTargets decides which can actually move.
+  const sources = [];
+  if ((state.waste || []).length > 0) sources.push({ type: "waste" });
+  (state.tableau || []).forEach((pile, index) => {
+    pile.forEach((card, cardIndex) => {
+      if (card.faceUp) sources.push({ type: "tableau", index, cardIndex });
+    });
+  });
+
+  const candidates = [];
+  for (const source of sources) {
+    for (const target of getLegalTargets(state, source)) {
+      // Skip pure relocation: moving a whole pile onto an empty column is no
+      // progress (e.g. shuffling a lone King between empty columns).
+      const targetEmpty =
+        target.type === "tableau" &&
+        (state.tableau[target.index] || []).length === 0;
+      if (source.type === "tableau" && source.cardIndex === 0 && targetEmpty) {
+        continue;
+      }
+      // Skip a move that just undoes the previous one.
+      if (prevSig) {
+        const result = solitaireReducer(state, moveAction(source, target));
+        if (klondikeBoardSignature(result) === prevSig) continue;
+      }
+      candidates.push({ source, target });
+    }
+  }
+
+  if (candidates.length === 0) {
+    // No useful board move — suggest drawing/recycling the stock if possible.
+    if ((state.stock || []).length > 0 || (state.waste || []).length > 0) {
+      return { source: { type: "stock" } };
+    }
+    return null;
+  }
+
+  const flipsFaceDown = ({ source }) => {
+    if (source.type !== "tableau" || source.cardIndex === 0) return false;
+    const pile = state.tableau[source.index];
+    return pile && !pile[source.cardIndex - 1].faceUp;
+  };
+  const toFoundation = ({ target }) => target.type === "foundation";
+  const emptiesColumn = ({ source }) =>
+    source.type === "tableau" && source.cardIndex === 0;
+  const wasteToTableau = ({ source, target }) =>
+    source.type === "waste" && target.type === "tableau";
+
+  const pick = (pred) => candidates.find(pred);
+
+  // Priority: reveal a face-down card > advance a foundation > empty a column >
+  // build from the waste > any other legal build.
+  return (
+    pick(flipsFaceDown) ||
+    pick(toFoundation) ||
+    pick(emptiesColumn) ||
+    pick(wasteToTableau) ||
+    candidates[0]
+  );
+}
+
 export function isCardRed(card) {
   return isRed(card);
 }

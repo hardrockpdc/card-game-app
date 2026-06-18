@@ -7,6 +7,7 @@ import {
   tapAction,
   moveAction,
   getLegalTargets,
+  getHint,
 } from "../game/solitaire";
 
 const VARIANTS = ["klondike", "spider", "freecell", "pyramid", "tripeaks"];
@@ -171,5 +172,101 @@ describe("solitaireReducer", () => {
   test("SET_SPIDER_MODE is ignored on a non-spider game", () => {
     const state = createSolitaireState("klondike");
     expect(solitaireReducer(state, setSpiderModeAction(2))).toBe(state);
+  });
+});
+
+describe("getHint (Klondike pilot)", () => {
+  const SYMBOLS = { hearts: "♥", diamonds: "♦", clubs: "♣", spades: "♠" };
+  // Minimal card matching the shape createCard produces (enough for the move
+  // rules the reducer checks: rank, faceUp, suit/color).
+  const mk = (suit, rank, faceUp = true) => {
+    const red = suit === "hearts" || suit === "diamonds";
+    return {
+      id: `${rank}-${suit}`,
+      suit,
+      rank,
+      color: red ? "red" : "black",
+      symbol: SYMBOLS[suit],
+      rankLabel: String(rank),
+      faceUp,
+      faceDown: !faceUp,
+      isFaceUp: faceUp,
+      isFaceDown: !faceUp,
+    };
+  };
+  const klondike = (overrides = {}) => ({
+    variantId: "klondike",
+    status: "playing",
+    moves: 5,
+    pairs: 0,
+    history: [],
+    stock: [],
+    waste: [],
+    foundations: [[], [], [], []],
+    tableau: [[], [], [], [], [], [], []],
+    selected: null,
+    ...overrides,
+  });
+
+  test("returns null for non-Klondike variants", () => {
+    expect(getHint(createSolitaireState("spider"))).toBeNull();
+  });
+
+  test("returns null when the game is already won", () => {
+    expect(getHint(klondike({ status: "won" }))).toBeNull();
+  });
+
+  test("prefers a move that flips a face-down card", () => {
+    // 6♠ sits on a face-down 5♣ and can build onto 7♥ in another column.
+    // A competing Ace→foundation move exists but the flip should win.
+    const tableau = [[], [], [], [], [], [], []];
+    tableau[0] = [mk("clubs", 5, false), mk("spades", 6, true)];
+    tableau[1] = [mk("hearts", 7, true)];
+    tableau[2] = [mk("diamonds", 1, true)]; // Ace → foundation (lower priority)
+    const hint = getHint(klondike({ tableau }));
+    expect(hint).toEqual({
+      source: { type: "tableau", index: 0, cardIndex: 1 },
+      target: { type: "tableau", index: 1 },
+    });
+  });
+
+  test("sends an exposed Ace to a foundation", () => {
+    const tableau = [[], [], [], [], [], [], []];
+    tableau[0] = [mk("diamonds", 1, true)];
+    const hint = getHint(klondike({ tableau }));
+    expect(hint?.source).toEqual({ type: "tableau", index: 0, cardIndex: 0 });
+    expect(hint?.target?.type).toBe("foundation");
+  });
+
+  test("falls back to a stock hint when no board move helps", () => {
+    const tableau = [[], [], [], [], [], [], []];
+    tableau[0] = [mk("spades", 5, true)]; // nowhere useful to go
+    const hint = getHint(klondike({ tableau, stock: [mk("clubs", 9, false)] }));
+    expect(hint).toEqual({ source: { type: "stock" } });
+  });
+
+  test("returns null when truly stuck (no move, empty stock and waste)", () => {
+    const tableau = [[], [], [], [], [], [], []];
+    tableau[0] = [mk("spades", 5, true)];
+    expect(getHint(klondike({ tableau }))).toBeNull();
+  });
+
+  test("skips a move that would just undo the previous one", () => {
+    // Current board: 7♥ in col0, 6♠ in col1. The only move (6♠ → 7♥) recreates
+    // the snapshot at the top of history, so it must be skipped → null.
+    const tableau = [[], [], [], [], [], [], []];
+    tableau[0] = [mk("hearts", 7, true)];
+    tableau[1] = [mk("spades", 6, true)];
+    const snapshotTableau = [[], [], [], [], [], [], []];
+    snapshotTableau[0] = [mk("hearts", 7, true), mk("spades", 6, true)];
+    const history = [
+      {
+        tableau: snapshotTableau,
+        foundations: [[], [], [], []],
+        waste: [],
+        stock: [],
+      },
+    ];
+    expect(getHint(klondike({ tableau, history }))).toBeNull();
   });
 });
