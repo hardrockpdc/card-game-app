@@ -1042,8 +1042,23 @@ app-wide.
 
 ### ⚡ PERFORMANCE
 
-- [ ] **PERF-1** — `cardTheme.js` still loads 7 themes × 53 images at startup
-- [ ] **PERF-2** — LastCard ships 109 images in a single inline module
+- [x] **PERF-1 / PERF-2 — NOT a real startup issue (investigated 2026-06-18).**
+  The "loads 7 themes × 53 images / 109 images at startup" framing was a
+  misconception: in React Native a static `require('img.png')` is a **build-time
+  asset reference (a number)**, not a runtime load. Confirmed there is **no**
+  `prefetch` / `loadAsync` / `Asset.fromModule` anywhere — images load lazily
+  per-`<Image>` on render. Evaluating `cardTheme.js`/`lastCardTheme.js` just
+  builds small objects of numbers (trivial). Splitting per-theme (CQ-6/CQ-5)
+  wouldn't change startup. The real lever was app **download size**, not startup
+  time — see the joker fix below.
+- [x] **App-size win (2026-06-18, `fa0514c`).** Each theme's `joker.png` shipped
+  at 600×840 (3× the 200×280 of every other card) and 300–913 KB each — ~4 MB
+  for 7 images that render at normal card size. Downscaled to 200×280 to match
+  the deck: **3.96 MB → 0.20 MB**, no visible change. Repro:
+  `scripts/resize-jokers.js`. (Card PNGs are otherwise already well-optimized at
+  ~15 KB.) Menu thumbnails (`assets/images/thumb_*.png`, 900×1200, ~300–426 KB
+  each, ~2.4 MB total) are the next candidate but render *larger* than cards, so
+  they need a conservative downscale to stay crisp — deferred.
 - [ ] **PERF-3** — `MultiplayerGameScreen` broadcasts the full state on every Hit/Stand even when nothing visible changed (e.g. dealer index increment)
 
 ### ♿ ACCESSIBILITY
