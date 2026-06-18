@@ -326,14 +326,10 @@ export default function SolitaireGameScreen({ navigation, route }) {
   const tabCardH = tabCardW * 1.43;
   const slotH = Math.round(slotW * 1.43);
   const slotScale = slotW / (42 * cardClamp);
-  // Keep refs in sync so the fly-away useEffect can read current sizing.
-  spiderTabCardWRef.current = tabCardW;
-  spiderTabCardHRef.current = tabCardH;
   // Comfortable constant overlap; columns longer than DESIGN_LEN compress a bit
   // (per column) as a fallback — see tableauColumnMargins.
   const faceUpPeek = Math.round(tabCardH * FU_FRAC);
   const faceDownPeek = Math.round(tabCardH * FD_FRAC);
-  spiderFaceUpPeekRef.current = faceUpPeek;
 
   if (isLandscape) {
     const availH = tableauBoxH > 0 ? tableauBoxH : Math.max(height - 30, 150);
@@ -419,6 +415,11 @@ export default function SolitaireGameScreen({ navigation, route }) {
   const spiderFaceUpPeekRef = useRef(16); // faceUpPeek px — updated each render, read in fly-away effect
   const spiderTabCardWRef = useRef(0); // tabCardW px — updated each render
   const spiderTabCardHRef = useRef(0); // tabCardH px — updated each render
+
+  // Sync sizing refs after the refs are declared (can't write before useRef call).
+  spiderFaceUpPeekRef.current = faceUpPeek;
+  spiderTabCardWRef.current = tabCardW;
+  spiderTabCardHRef.current = tabCardH;
 
   const [spiderFlyAwayCards, setSpiderFlyAwayCards] = useState([]); // { cardId, card, x, y, w, h }
 
