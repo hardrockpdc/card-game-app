@@ -16,7 +16,6 @@ import GameHeader from "../components/GameHeader";
 import YourTurnBanner from "../components/YourTurnBanner";
 import useYourTurnBanner from "../components/useYourTurnBanner";
 import EndOfRoundModal from "../components/EndOfRoundModal";
-import StatsStrip from "../components/StatsStrip";
 import TutorialOverlay, { hasSeen } from "../components/TutorialOverlay";
 import { getTableTheme } from "../game/tableThemes";
 import { scale, scaleFont } from "../game/responsive";
@@ -897,72 +896,98 @@ export default function RummyGameScreen({ navigation, route }) {
         subtitle={isSinglePlayer ? "Single Player" : "Multiplayer"}
         menuItems={menuItems}
       />
-      <StatsStrip
-        gameId="rummy"
-        items={[
-          { label: "Phase", value: currentPhase },
-          { label: "Round", value: gameState?.roundNumber ?? 1 },
-          { label: "Deadwood", value: myDeadwood, accent: true },
-        ]}
-      />
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {renderHeaderCard(false)}
-
-        <View style={styles.tableCard}>
-          <Text style={styles.sectionTitle}>Table</Text>
-
-          <View style={styles.tableTopRow}>
-            <View style={styles.pileBox}>
-              <Text style={styles.pileLabel}>Stock</Text>
-              <Text style={styles.pileCount}>{gameState.stockCount ?? 0}</Text>
-            </View>
-
-            <View style={styles.pileBox}>
-              <Text style={styles.pileLabel}>Discard</Text>
-              {discardTop ? (
-                <RummyCard card={discardTop} small />
-              ) : (
-                <Text style={styles.emptyPileText}>Empty</Text>
-              )}
-            </View>
-          </View>
-
-          <View style={styles.playersRow}>
-            {(gameState.players || []).map((player, index) => (
+        {/* Opponents seated across the top */}
+        <View style={styles.seatRow}>
+          {(gameState.players || []).map((player, index) => {
+            if (index === localPlayerIndex) return null;
+            const isActive = index === currentPlayerIndex;
+            const isWinner = gameState.winner === index;
+            return (
               <View
                 key={player.id || index}
                 style={[
-                  styles.playerChip,
-                  index === currentPlayerIndex && styles.playerChipActive,
-                  index === localPlayerIndex && styles.playerChipMe,
+                  styles.seat,
+                  isActive && styles.seatActive,
+                  isWinner && styles.seatWinner,
                 ]}
               >
-                <Text
-                  style={[
-                    styles.playerChipName,
-                    index === currentPlayerIndex && styles.playerChipNameActive,
-                  ]}
-                >
-                  {index === currentPlayerIndex ? "▶ " : ""}
+                <Text style={styles.seatName} numberOfLines={1}>
+                  {isWinner ? "🏆 " : ""}
+                  {isActive ? "▶ " : ""}
                   {player.name}
                 </Text>
-                <Text style={styles.playerChipMeta}>
-                  {player.handCount ?? 0} cards • {player.score ?? 0} pts
-                </Text>
+                <Text style={styles.seatMeta}>🂠 {player.handCount ?? 0}</Text>
+                <Text style={styles.seatMeta}>{player.score ?? 0} pts</Text>
               </View>
-            ))}
-          </View>
+            );
+          })}
         </View>
 
-        <View style={styles.meldsCard}>
-          <Text style={styles.sectionTitle}>Melds on the table</Text>
+        {/* Center: Stock + Discard piles — tap to draw on your turn */}
+        <View style={styles.pilesRow}>
+          <Pressable
+            onPress={handleDrawStock}
+            disabled={!(isMyTurn && currentPhase === "draw")}
+            style={({ pressed }) => [
+              styles.pileBtn,
+              pressed &&
+                isMyTurn &&
+                currentPhase === "draw" &&
+                styles.pileBtnPressed,
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="Draw from stock"
+          >
+            <View style={styles.pileBack}>
+              <Text style={styles.pileBackGlyph}>🂠</Text>
+            </View>
+            <Text style={styles.pileTag}>
+              STOCK · {gameState.stockCount ?? 0}
+            </Text>
+          </Pressable>
 
+          <Pressable
+            onPress={handleTakeDiscard}
+            disabled={!(isMyTurn && currentPhase === "draw" && discardTop)}
+            style={({ pressed }) => [
+              styles.pileBtn,
+              pressed &&
+                isMyTurn &&
+                currentPhase === "draw" &&
+                discardTop &&
+                styles.pileBtnPressed,
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="Take discard"
+          >
+            {discardTop ? (
+              <RummyCard card={discardTop} small disabled />
+            ) : (
+              <View style={styles.pileEmptyBox}>
+                <Text style={styles.pileEmptyGlyph}>—</Text>
+              </View>
+            )}
+            <Text style={styles.pileTag}>DISCARD</Text>
+          </Pressable>
+        </View>
+
+        {isMyTurn && currentPhase === "draw" ? (
+          <Text style={styles.drawHint}>Tap a pile to draw</Text>
+        ) : null}
+
+        {/* Melds on the table */}
+        <View style={styles.meldsZone}>
+          <Text style={styles.meldsZoneLabel}>Melds</Text>
           {(gameState.melds || []).length > 0 ? (
-            <View style={styles.meldsList}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.meldsStrip}
+            >
               {(gameState.melds || []).map((meld, index) => {
                 const selected = selectedMeldIndex === index;
                 const isOwn = meld.owner === localPlayerIndex;
-
                 return (
                   <Pressable
                     key={`${meld.type || "meld"}-${index}`}
@@ -974,14 +999,9 @@ export default function RummyGameScreen({ navigation, route }) {
                       !isOwn && styles.meldCardDimmed,
                     ]}
                   >
-                    <View style={styles.meldHeader}>
-                      <Text style={styles.meldLabel}>
-                        {meld.type?.toUpperCase() || "MELD"}
-                      </Text>
-                      <Text style={styles.meldOwner}>
-                        {getMeldOwnerName(gameState.players, meld, index)}
-                      </Text>
-                    </View>
+                    <Text style={styles.meldOwner} numberOfLines={1}>
+                      {getMeldOwnerName(gameState.players, meld, index)}
+                    </Text>
                     <View style={styles.meldCards}>
                       {(meld.cards || []).map((card, cardIndex) => (
                         <RummyCard
@@ -995,56 +1015,38 @@ export default function RummyGameScreen({ navigation, route }) {
                   </Pressable>
                 );
               })}
-            </View>
+            </ScrollView>
           ) : (
             <Text style={styles.emptyText}>No melds yet.</Text>
           )}
         </View>
 
+        {/* Status line */}
+        <Text style={styles.rummyStatusLine} numberOfLines={1}>
+          {isMyTurn
+            ? `${getActionLabel(gameState, true)}  ·  Deadwood ${myDeadwood}`
+            : `Waiting for ${getPlayerName(currentPlayers, currentPlayerIndex)}…`}
+        </Text>
+
         <View style={styles.handCard}>
-          <Text style={styles.sectionTitle}>Your Hand ({myHand.length})</Text>
-          <Text style={styles.helperText}>
-            Tap cards to select them. Then lay a meld, extend one, or discard.
-          </Text>
+          <View style={styles.handHeader}>
+            <Text style={styles.handTitle}>Your Hand ({myHand.length})</Text>
+            {selectedHandIndexes.length > 0 ? (
+              <Text style={styles.handSelInfo}>
+                {selectedHandIndexes.length} selected
+                {selectedMeldIndex !== null
+                  ? ` · meld ${selectedMeldIndex + 1}`
+                  : ""}
+              </Text>
+            ) : isMyTurn && currentPhase === "discard" ? (
+              <Text style={styles.handSelInfo}>tap to select</Text>
+            ) : null}
+          </View>
 
           {renderCardList(myHand, isMyTurn && currentPhase === "discard")}
 
-          <View style={styles.actionRow}>
-            {currentPhase === "draw" ? (
-              <>
-                <Pressable
-                  onPress={handleDrawStock}
-                  style={({ pressed }) => [
-                    styles.actionButton,
-                    styles.drawButton,
-                    pressed && styles.actionButtonPressed,
-                  ]}
-                  accessibilityRole="button"
-                  accessibilityLabel="Draw Stock"
-                  accessibilityHint="Take a card from the stock pile"
-                >
-                  <Text style={styles.actionButtonText}>Draw Stock</Text>
-                </Pressable>
-
-                <Pressable
-                  onPress={handleTakeDiscard}
-                  disabled={!discardTop}
-                  style={({ pressed }) => [
-                    styles.actionButton,
-                    styles.takeButton,
-                    !discardTop && styles.actionButtonDisabled,
-                    pressed && discardTop && styles.actionButtonPressed,
-                  ]}
-                  accessibilityRole="button"
-                  accessibilityLabel="Take Discard"
-                  accessibilityHint="Pick up the top card from the discard pile"
-                  accessibilityState={{ disabled: !discardTop }}
-                >
-                  <Text style={styles.actionButtonText}>Take Discard</Text>
-                </Pressable>
-              </>
-            ) : (
-              <>
+          {currentPhase !== "draw" ? (
+            <View style={styles.actionRow}>
                 <Pressable
                   onPress={handleLayMeld}
                   disabled={selectedHandIndexes.length < 3}
@@ -1150,23 +1152,7 @@ export default function RummyGameScreen({ navigation, route }) {
                 >
                   <Text style={styles.actionButtonText}>Knock</Text>
                 </Pressable>
-              </>
-            )}
-          </View>
-
-          {selectedHandIndexes.length > 0 ? (
-            <Text style={styles.selectionText}>
-              Selected {selectedHandIndexes.length} card
-              {selectedHandIndexes.length === 1 ? "" : "s"}
-            </Text>
-          ) : (
-            <Text style={styles.selectionText}>No cards selected.</Text>
-          )}
-
-          {selectedMeldIndex !== null ? (
-            <Text style={styles.selectionText}>
-              Selected meld {selectedMeldIndex + 1}
-            </Text>
+            </View>
           ) : null}
         </View>
       </ScrollView>
@@ -1204,6 +1190,111 @@ const styles = StyleSheet.create({
     color: "#c4c4d4",
     fontSize: 16,
   },
+
+  // ── Table layout ──
+  seatRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  seat: {
+    minWidth: 104,
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.28)",
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: "transparent",
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+  },
+  seatActive: {
+    borderColor: "#ffd700",
+    backgroundColor: "rgba(255,215,0,0.10)",
+  },
+  seatWinner: {
+    borderColor: "#4caf50",
+    backgroundColor: "rgba(76,175,80,0.16)",
+  },
+  seatName: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "800",
+    maxWidth: 130,
+    textAlign: "center",
+  },
+  seatMeta: { color: "#cfe0f0", fontSize: 11, marginTop: 2 },
+
+  pilesRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "flex-start",
+    gap: 28,
+  },
+  pileBtn: { alignItems: "center", gap: 6 },
+  pileBtnPressed: { opacity: 0.75 },
+  pileBack: {
+    width: 56,
+    height: 80,
+    borderRadius: 8,
+    backgroundColor: "#16213e",
+    borderWidth: 1,
+    borderColor: "#3a4a6a",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pileBackGlyph: { color: "#8aa0c0", fontSize: 30 },
+  pileEmptyBox: {
+    width: 56,
+    height: 80,
+    borderRadius: 8,
+    backgroundColor: "rgba(0,0,0,0.22)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.18)",
+    borderStyle: "dashed",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pileEmptyGlyph: { color: "#8aa0c0", fontSize: 20 },
+  pileTag: {
+    color: "#cfe0f0",
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 0.8,
+  },
+  drawHint: {
+    color: "#ffe08a",
+    fontSize: 12,
+    fontWeight: "700",
+    textAlign: "center",
+    marginTop: -6,
+  },
+
+  meldsZone: { gap: 8 },
+  meldsZoneLabel: {
+    color: "#A7B3C9",
+    fontSize: 12,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  meldsStrip: { flexDirection: "row", gap: 10, paddingRight: 8 },
+
+  rummyStatusLine: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+
+  handHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  handTitle: { color: "#fff", fontSize: 15, fontWeight: "800" },
+  handSelInfo: { color: "#9fd0dd", fontSize: 12, fontWeight: "700" },
   headerCard: {
     borderRadius: 22,
     borderWidth: 1,
