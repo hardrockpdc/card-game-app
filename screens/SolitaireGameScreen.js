@@ -662,15 +662,14 @@ export default function SolitaireGameScreen({ navigation, route }) {
 
           const isFinalRun = (state.completedRuns ?? 0) >= 8;
 
-          // Cards arc toward the top-center of the screen.
-          // translateY accelerates upward (Easing.in = starts slow, ends fast).
+          // Cards stay full-size and fly fully off the top edge (no shrink, no
+          // mid-air fade — the trajectory carries them past the screen edge).
+          // translateY accelerates upward (Easing.in = starts slow, ends fast),
           // translateX eases toward center (Easing.out = starts fast, slows off).
           // Different easing on each axis produces the arc.
           const screenCenterX = width / 2;
-          const STAGGER_MS = 30;
-          const ANIM_MS = isFinalRun ? 480 : 380;
-          const BLOOM_TARGET = isFinalRun ? 1.15 : 1.08;
-          const BLOOM_DURATION = 90;
+          const STAGGER_MS = isFinalRun ? 46 : 42;
+          const ANIM_MS = isFinalRun ? 560 : 480;
 
           let finishedCount = 0;
           ghostCards.forEach((ghost, index) => {
@@ -679,7 +678,8 @@ export default function SolitaireGameScreen({ navigation, route }) {
 
             const cardCenterX = ghost.x + ghost.w / 2;
             const xTarget = screenCenterX - cardCenterX;
-            const yTarget = -(ghost.y + ghost.h + 20);
+            // Clear the top edge by a full card height so it fully exits.
+            const yTarget = -(ghost.y + ghost.h * 2 + 40);
 
             const animations = [
               Animated.timing(anim.translateX, {
@@ -696,29 +696,6 @@ export default function SolitaireGameScreen({ navigation, route }) {
                 easing: Easing.in(Easing.cubic),
                 useNativeDriver: true,
               }),
-              Animated.timing(anim.opacity, {
-                toValue: 0,
-                duration: Math.round(ANIM_MS * 0.7),
-                delay: index * STAGGER_MS + Math.round(ANIM_MS * 0.3),
-                easing: Easing.in(Easing.quad),
-                useNativeDriver: true,
-              }),
-              // Pop then shrink: brief bloom before flying away.
-              Animated.sequence([
-                Animated.delay(index * STAGGER_MS),
-                Animated.timing(anim.scale, {
-                  toValue: BLOOM_TARGET,
-                  duration: BLOOM_DURATION,
-                  easing: Easing.out(Easing.quad),
-                  useNativeDriver: true,
-                }),
-                Animated.timing(anim.scale, {
-                  toValue: 0.2,
-                  duration: ANIM_MS - BLOOM_DURATION,
-                  easing: Easing.in(Easing.cubic),
-                  useNativeDriver: true,
-                }),
-              ]),
             ];
 
             Animated.parallel(animations).start(() => {
