@@ -1,5 +1,13 @@
 import React, { useState } from "react";
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from "react-native";
 import { scale, scaleFont } from "../game/responsive";
 import GameMenuItems from "./GameMenu";
 import { HapticPressable } from "./Haptic";
@@ -11,6 +19,10 @@ import CardThemePicker from "./CardThemePicker";
 export default function GameMenuButton({ menuItems, style }) {
   const [open, setOpen] = useState(false);
   const [showCardTheme, setShowCardTheme] = useState(false);
+  // In landscape (Solitaire) the screen is short; cap the menu height so the
+  // last items (e.g. Quit) stay on-screen and the panel scrolls if needed.
+  const { height } = useWindowDimensions();
+  const menuMaxHeight = height - scale(54) - scale(16);
 
   return (
     <View style={style}>
@@ -36,11 +48,18 @@ export default function GameMenuButton({ menuItems, style }) {
         {/* Tapping the dimmed backdrop closes; the panel swallows its own taps */}
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
           <Pressable style={styles.panel} onPress={() => {}}>
-            <GameMenuItems
-              menuItems={menuItems}
-              onClose={() => setOpen(false)}
-              onOpenCardTheme={() => setShowCardTheme(true)}
-            />
+            <ScrollView
+              style={{ maxHeight: menuMaxHeight }}
+              showsVerticalScrollIndicator={false}
+              bounces={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              <GameMenuItems
+                menuItems={menuItems}
+                onClose={() => setOpen(false)}
+                onOpenCardTheme={() => setShowCardTheme(true)}
+              />
+            </ScrollView>
           </Pressable>
         </Pressable>
       </Modal>
