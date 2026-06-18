@@ -415,6 +415,10 @@ export default function SolitaireGameScreen({ navigation, route }) {
   const spiderFaceUpPeekRef = useRef(16); // faceUpPeek px — updated each render, read in fly-away effect
   const spiderTabCardWRef = useRef(0); // tabCardW px — updated each render
   const spiderTabCardHRef = useRef(0); // tabCardH px — updated each render
+  // Refs used to measure where the Runs counter is, so a completed run can fly
+  // into it (the tableau row is the ghost cards' coordinate origin).
+  const spiderTableauRowRef = useRef(null);
+  const spiderRunsPillRef = useRef(null);
 
   // Sync sizing refs after the refs are declared (can't write before useRef call).
   spiderFaceUpPeekRef.current = faceUpPeek;
@@ -661,56 +665,90 @@ export default function SolitaireGameScreen({ navigation, route }) {
           setSpiderFlyAwayCards(ghostCards);
 
           const isFinalRun = (state.completedRuns ?? 0) >= 8;
-
-          // Cards stay full-size and fly fully off the top edge (no shrink, no
-          // mid-air fade — the trajectory carries them past the screen edge).
-          // translateY accelerates upward (Easing.in = starts slow, ends fast),
-          // translateX eases toward center (Easing.out = starts fast, slows off).
-          // Different easing on each axis produces the arc.
-          const screenCenterX = width / 2;
           const STAGGER_MS = isFinalRun ? 46 : 42;
           const ANIM_MS = isFinalRun ? 560 : 480;
 
-          let finishedCount = 0;
-          ghostCards.forEach((ghost, index) => {
-            const anim = spiderFlyAwayAnimValuesRef.current.get(ghost.cardId);
-            if (!anim) return;
-
-            const cardCenterX = ghost.x + ghost.w / 2;
-            const xTarget = screenCenterX - cardCenterX;
-            // Clear the top edge by a full card height so it fully exits.
-            const yTarget = -(ghost.y + ghost.h * 2 + 40);
-
-            const animations = [
-              Animated.timing(anim.translateX, {
-                toValue: xTarget,
-                duration: ANIM_MS,
-                delay: index * STAGGER_MS,
-                easing: Easing.out(Easing.cubic),
-                useNativeDriver: true,
-              }),
-              Animated.timing(anim.translateY, {
-                toValue: yTarget,
-                duration: ANIM_MS,
-                delay: index * STAGGER_MS,
-                easing: Easing.in(Easing.cubic),
-                useNativeDriver: true,
-              }),
-            ];
-
-            Animated.parallel(animations).start(() => {
+          // Fly every ghost toward (targetX, targetY) — a point in the tableau
+          // row's local coords that the card CENTERS head to. Cards accelerate
+          // in (Easing.in) and shrink + fade as they're collected into the
+          // Runs counter.
+          const beginAnimation = (targetX, targetY) => {
+            let finishedCount = 0;
+            const finishOne = () => {
               finishedCount += 1;
               if (finishedCount === lastAnimCount) {
                 spiderFlyAwayInProgressRef.current = false;
                 setSpiderFlyAwayCards([]);
-
                 if (spiderPendingWinModalRef.current) {
                   spiderPendingWinModalRef.current = false;
                   setShowRoundModal(true);
                 }
               }
+            };
+
+            ghostCards.forEach((ghost, index) => {
+              const anim = spiderFlyAwayAnimValuesRef.current.get(ghost.cardId);
+              if (!anim) {
+                finishOne();
+                return;
+              }
+
+              const cardCenterX = ghost.x + ghost.w / 2;
+              const cardCenterY = ghost.y + ghost.h / 2;
+              const xTarget = targetX - cardCenterX;
+              const yTarget = targetY - cardCenterY;
+              const delay = index * STAGGER_MS;
+
+              const animations = [
+                Animated.timing(anim.translateX, {
+                  toValue: xTarget,
+                  duration: ANIM_MS,
+                  delay,
+                  easing: Easing.in(Easing.cubic),
+                  useNativeDriver: true,
+                }),
+                Animated.timing(anim.translateY, {
+                  toValue: yTarget,
+                  duration: ANIM_MS,
+                  delay,
+                  easing: Easing.in(Easing.cubic),
+                  useNativeDriver: true,
+                }),
+                Animated.timing(anim.scale, {
+                  toValue: 0.25,
+                  duration: ANIM_MS,
+                  delay,
+                  easing: Easing.in(Easing.cubic),
+                  useNativeDriver: true,
+                }),
+                Animated.timing(anim.opacity, {
+                  toValue: 0,
+                  duration: Math.round(ANIM_MS * 0.45),
+                  delay: delay + Math.round(ANIM_MS * 0.55),
+                  easing: Easing.in(Easing.quad),
+                  useNativeDriver: true,
+                }),
+              ];
+
+              Animated.parallel(animations).start(finishOne);
             });
-          });
+          };
+
+          // Aim at the Runs counter if we can measure it; otherwise fall back to
+          // flying up off the top-center of the screen.
+          const runsNode = spiderRunsPillRef.current;
+          const rowNode = spiderTableauRowRef.current;
+          if (runsNode?.measureInWindow && rowNode?.measureInWindow) {
+            rowNode.measureInWindow((rowX, rowY) => {
+              runsNode.measureInWindow((pillX, pillY, pillW, pillH) => {
+                const targetX = pillX + pillW / 2 - rowX;
+                const targetY = pillY + pillH / 2 - rowY;
+                beginAnimation(targetX, targetY);
+              });
+            });
+          } else {
+            beginAnimation(width / 2, -200);
+          }
         }
       }
     }
@@ -1167,6 +1205,8 @@ export default function SolitaireGameScreen({ navigation, route }) {
           style={[styles.boardCard, styles.boardCardFill, styles.boardCardRow]}
         >
           <View
+            ref={spiderTableauRowRef}
+            collapsable={false}
             style={styles.tableauRowSpiderLandscape}
             onLayout={(e) => {
               const w = Math.round(e.nativeEvent.layout.width);
@@ -1196,7 +1236,11 @@ export default function SolitaireGameScreen({ navigation, route }) {
               />
             </View>
             <View style={[styles.railSlotRow, styles.railFoundationsTop]}>
-              <View style={styles.metaPill}>
+              <View
+                ref={spiderRunsPillRef}
+                collapsable={false}
+                style={styles.metaPill}
+              >
                 <Text style={styles.metaPillLabel}>Runs</Text>
                 <Text style={styles.metaPillValue}>
                   {state.completedRuns || 0}/8
