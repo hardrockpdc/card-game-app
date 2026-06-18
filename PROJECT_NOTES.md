@@ -653,6 +653,57 @@ variant setup screen (`GameSetupLayout` now skips an empty title).
 278 Jest tests still pass throughout. Reference commits: `38e7d66` (Poker/Go Fish
 themes) back through the Rummy redesign series.
 
+### Variant-Picker Fit + Spider Fly-Away Polish Session (2026-06-18) — COMPLETE ✅
+
+Pure-JS UI/animation work (no native changes, no EAS build needed). All
+committed on `main`. 278 Jest tests pass throughout.
+
+**Variant pickers now fit on screen without scrolling.** Reverted an earlier
+ScrollView approach in `components/GameSetupLayout.js` (back to a flex `paneStack`
+that fills available space) and passed `fill` to `VariantOptionGrid` in the
+Solitaire/Poker/Rummy pickers so the cards flex to share space (min/max bounded)
+instead of using fixed heights that overflowed. Also dropped the in-panel
+title/subtitle from the single-player Solitaire, Poker, and Go Fish pickers to
+match Rummy — the nav bar already shows the game name, so the big title was
+redundant and ate vertical space. (Conquián + generic `GameSetupScreen` left
+as-is: no variant grid, no overflow.)
+
+**Solitaire landscape menu fixed (again, correctly).** The earlier ScrollView
+cap had been added to `components/GameHeader.js`, but Solitaire's landscape board
+renders its menu via `components/GameMenuButton.js` (a Modal panel), not
+GameHeader. Capped that panel to the available height and wrapped the items in a
+ScrollView so the last items (e.g. **Quit**) are reachable on a short landscape
+screen.
+
+**Spider completed-run fly-away — rebuilt to fly into the Runs counter.** The
+animation (in `screens/SolitaireGameScreen.js`, the spider effect ~line 549) now:
+- **Targets the Runs counter pill** via `measureInWindow` on the pill + the
+  tableau row (the ghosts' coordinate origin), so cards stream into where runs
+  are tallied, shrinking + fading as they're "collected." Falls back to
+  up-and-center if measurement isn't available. Refs: `spiderRunsPillRef`,
+  `spiderTableauRowRef`.
+- **Stays visible above the rail** — the tableau row is lifted over the right
+  rail with `zIndex`/`elevation` (cards were disappearing under the rail).
+- **Slower, nicer pace** — ~720/820ms travel, 64/70ms cascade stagger.
+
+Three real logic bugs surfaced (and fixed) while tuning, not just cosmetics:
+1. **King snapped to the column top** before flying. The ghost stack anchored to
+   the topmost *removed* card in the pre-move snapshot; when the King was dragged
+   in from another column that snapshot still placed it elsewhere. Fixed by
+   anchoring **just below the cards that remain** in the completion column.
+2. **Second run flew from the first run's spot.** `onCardLayout` never fires for
+   a removed card, so its layout entry lingered in the live ref and polluted the
+   next run's removed-card detection. Fixed by **pruning** layout entries for
+   cards no longer on the table when snapshotting.
+3. **Run flew from the source column, not the destination.** Completion column
+   was picked as "most removed cards," but the moved stack can be bigger than the
+   part that stayed. **Key rule: the King never moves** (a K–A run is built by
+   moving lower cards onto higher ones), so its column is always the destination.
+   Anchor on the King's column; old count heuristic kept only as a fallback.
+
+Reference commits: `352daf1`/`54f20b1` (pickers), `f4b6bb3` (landscape menu),
+`5dfa341`→`25c77c7` (Spider fly-away).
+
 ## 💡 Important Reminders
 
 ### Daily workflow
