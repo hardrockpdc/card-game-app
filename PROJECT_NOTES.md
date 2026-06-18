@@ -1071,7 +1071,9 @@ app-wide.
   and **nothing navigates to the `"MultiplayerGame"` route**. The screen is now
   orphaned dead code (only referenced by its own `App.js` import + Stack.Screen
   registration). Single-player Blackjack (`GameScreen.js`) is unaffected.
-  Follow-up: remove the dead screen + its `App.js` registration (TBD).
+  **Dead screen removed 2026-06-18 (`5ff6676`)** — deleted
+  `screens/MultiplayerGameScreen.js` (~600 lines) + its `App.js` import and
+  Stack.Screen registration. Recoverable from git history if ever revived.
 
 ### ♿ ACCESSIBILITY
 
