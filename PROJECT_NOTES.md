@@ -413,8 +413,8 @@ All JS-only items from the Month 3 block are done:
 - Final app icons and splash screen (Pedro handling)
 - WildRound save/resume — add auto-save + resume prompt + Save & Exit
   (currently the only single-player game without this feature)
-- Poker Restart — decide whether to restart current tournament or start
-  fresh tournament, then un-stub the menu item
+- ✅ Poker Restart — DONE 2026-06-18 (`1723d77`): in-place fresh tournament,
+  single-player; see the R8 note below for the rationale
 - EAS production build (Pedro is currently 2-3 months out from publishing)
 
 ### Rummy Crash Fix
@@ -465,7 +465,14 @@ All JS-only items from the Month 3 block are done:
 - ✅ **R7** — Solitaire CardSlot empty label text overflow fix (`numberOfLines={1}` + `adjustsFontSizeToFit`, font 9→8, removed `lineHeight`); missing `scale` import added (caused crash on load)
 - ✅ **R8** — Restart per game: all screens except Poker wire `handleRestart()` into the hamburger menu; Poker restart stubbed (disabled) — wallet/buy-in complexity TBD
 
-**Poker restart is intentionally stubbed.** Tapping Restart in Poker's hamburger menu does nothing (disabled). A future session needs to decide: restart the current tournament hand (same chips), or start a fresh tournament (new buy-in)?
+**Poker restart — RESOLVED 2026-06-18 (commit `1723d77`).** Restart is now wired
+into Poker's menu (single-player only). Decision: an **in-place fresh tournament**
+— same opponents/variant/difficulty, all original players reset to the starting
+stack (`initDeal(initialPlayers, 0, null, startingChips)`), a new hand dealt
+immediately behind the standard "Restart Game?" confirm. Matches every other
+game's Restart. ("Restart the current hand / same chips" was rejected — it's
+meaningless mid-tournament since chips already moved with blinds/bets.)
+Multiplayer restart (host re-deals for connected clients) is still out of scope.
 
 **N1–N13 updates (this session):**
 
