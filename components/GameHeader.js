@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { scale, scaleFont } from "../game/responsive";
 import { HapticPressable as Pressable } from "./Haptic";
 import { getTableTheme } from "../game/tableThemes";
@@ -113,11 +113,26 @@ export default function GameHeader({
         {open && (
           <>
             <MenuDivider />
-            <GameMenuItems
-              menuItems={menuItems}
-              onClose={() => setOpen(false)}
-              onOpenCardTheme={() => setShowCardTheme(true)}
-            />
+            {compact ? (
+              <ScrollView
+                style={{ maxHeight: height - scale(80) }}
+                showsVerticalScrollIndicator={false}
+                bounces={false}
+                keyboardShouldPersistTaps="handled"
+              >
+                <GameMenuItems
+                  menuItems={menuItems}
+                  onClose={() => setOpen(false)}
+                  onOpenCardTheme={() => setShowCardTheme(true)}
+                />
+              </ScrollView>
+            ) : (
+              <GameMenuItems
+                menuItems={menuItems}
+                onClose={() => setOpen(false)}
+                onOpenCardTheme={() => setShowCardTheme(true)}
+              />
+            )}
           </>
         )}
       </View>
