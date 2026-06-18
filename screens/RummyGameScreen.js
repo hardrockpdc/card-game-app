@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { HapticPressable as Pressable } from "../components/Haptic";
@@ -200,6 +201,12 @@ export default function RummyGameScreen({ navigation, route }) {
     () => findLocalPlayerIndex(players, myName, isHost),
     [players, myName, isHost],
   );
+
+  // Small-card sizing so opponent/your melds can overlap compactly (matches
+  // Conquián). 42 is Card's base small width; clamp mirrors Card.js.
+  const { width: winW } = useWindowDimensions();
+  const smallClamp = Math.min(Math.max(winW / 390, 0.85), 1.5);
+  const meldOverlap = -Math.round(42 * smallClamp * 0.66);
 
   const [gameState, setGameState] = useState(null);
   const [myHand, setMyHand] = useState([]);
@@ -728,28 +735,6 @@ export default function RummyGameScreen({ navigation, route }) {
     );
   }
 
-  function renderCardList(cards, allowSelect = true) {
-    return (
-      <View style={styles.handRow}>
-        {cards.map((card, index) => {
-          const selected = selectedHandIndexes.includes(index);
-
-          return (
-            <RummyCard
-              key={`${card.id || `${card.rank}-${card.suit}`}-${index}`}
-              card={card}
-              selected={selected}
-              onPress={() => allowSelect && toggleCard(index)}
-              disabled={!allowSelect}
-              animateDeal={hasMountedRef.current}
-              dealDelay={myHand.length <= 10 ? index * 100 : 0}
-            />
-          );
-        })}
-      </View>
-    );
-  }
-
   // Auto-save after each state change in single-player.
   // Must be before the early return below so hook call order is consistent.
   useEffect(() => {
@@ -888,274 +873,299 @@ export default function RummyGameScreen({ navigation, route }) {
     );
   }
 
+  // Group every meld by owner, keeping each meld's global index (needed for
+  // toggleMeld / extend). Opponent melds render under their bar; yours render
+  // in the dedicated "Your melds" zone above the hand.
+  const meldGroups = {};
+  (gameState.melds || []).forEach((meld, index) => {
+    const owner = Number.isInteger(meld?.owner) ? meld.owner : -1;
+    (meldGroups[owner] = meldGroups[owner] || []).push({ meld, index });
+  });
+  const myMeldGroups = meldGroups[localPlayerIndex] || [];
+
+  // A meld's cards as small, lightly overlapped tiles (saves width).
+  const renderMeldCards = (cards) =>
+    (cards || []).map((card, ci) => (
+      <View
+        key={card.id ? `${card.id}-${ci}` : ci}
+        style={ci > 0 ? { marginLeft: meldOverlap } : null}
+      >
+        <Card rank={card.rank} suit={card.suit} small />
+      </View>
+    ));
+
+  // One opponent as a full-width bar: name + hand count + score, with their
+  // melds fanned beneath (Conquián-style).
+  const renderOppBar = (player, index) => {
+    const isActive = index === currentPlayerIndex;
+    const isWinner = gameState.winner === index;
+    const oppMelds = meldGroups[index] || [];
+    return (
+      <View
+        key={player.id || index}
+        style={[
+          styles.oppBar,
+          isActive && styles.oppBarActive,
+          isWinner && styles.oppBarWinner,
+        ]}
+      >
+        <View style={styles.oppBarHeader}>
+          <Text style={styles.oppName} numberOfLines={1}>
+            {isWinner ? "🏆 " : ""}
+            {player.name}
+          </Text>
+          <Text style={styles.oppMeta}>🂠 {player.handCount ?? 0}</Text>
+          <Text style={styles.oppMeta}>{player.score ?? 0} pts</Text>
+          {isActive ? <Text style={styles.oppTurnDot}>▶</Text> : null}
+        </View>
+        {oppMelds.length > 0 ? (
+          <View style={styles.oppMeldsRow}>
+            {oppMelds.map(({ meld, index: gi }) => (
+              <View key={gi} style={styles.oppMeldChip}>
+                {renderMeldCards(meld.cards)}
+              </View>
+            ))}
+          </View>
+        ) : null}
+      </View>
+    );
+  };
+
+  const canDrawStock = isMyTurn && currentPhase === "draw";
+  const canTakeDiscard = canDrawStock && !!discardTop;
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <GameHeader
         gameId="rummy"
-        title={variantLabel}
-        subtitle={isSinglePlayer ? "Single Player" : "Multiplayer"}
+        minimal
+        leftInfo={
+          <Text style={styles.headerInfo}>
+            Stock {gameState.stockCount ?? 0} · Deadwood {myDeadwood}
+          </Text>
+        }
         menuItems={menuItems}
       />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Opponents seated across the top */}
-        <View style={styles.seatRow}>
-          {(gameState.players || []).map((player, index) => {
-            if (index === localPlayerIndex) return null;
-            const isActive = index === currentPlayerIndex;
-            const isWinner = gameState.winner === index;
-            return (
-              <View
-                key={player.id || index}
-                style={[
-                  styles.seat,
-                  isActive && styles.seatActive,
-                  isWinner && styles.seatWinner,
-                ]}
-              >
-                <Text style={styles.seatName} numberOfLines={1}>
-                  {isWinner ? "🏆 " : ""}
-                  {isActive ? "▶ " : ""}
-                  {player.name}
-                </Text>
-                <Text style={styles.seatMeta}>🂠 {player.handCount ?? 0}</Text>
-                <Text style={styles.seatMeta}>{player.score ?? 0} pts</Text>
-              </View>
-            );
-          })}
-        </View>
+      <YourTurnBanner visible={showTurnBanner} />
 
-        {/* Center: Stock + Discard piles — tap to draw on your turn */}
-        <View style={styles.pilesRow}>
-          <Pressable
-            onPress={handleDrawStock}
-            disabled={!(isMyTurn && currentPhase === "draw")}
-            style={({ pressed }) => [
-              styles.pileBtn,
-              pressed &&
-                isMyTurn &&
-                currentPhase === "draw" &&
-                styles.pileBtnPressed,
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel="Draw from stock"
-          >
-            <View style={styles.pileBack}>
-              <Text style={styles.pileBackGlyph}>🂠</Text>
-            </View>
-            <Text style={styles.pileTag}>
-              STOCK · {gameState.stockCount ?? 0}
-            </Text>
-          </Pressable>
-
-          <Pressable
-            onPress={handleTakeDiscard}
-            disabled={!(isMyTurn && currentPhase === "draw" && discardTop)}
-            style={({ pressed }) => [
-              styles.pileBtn,
-              pressed &&
-                isMyTurn &&
-                currentPhase === "draw" &&
-                discardTop &&
-                styles.pileBtnPressed,
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel="Take discard"
-          >
-            {discardTop ? (
-              <RummyCard card={discardTop} small disabled />
-            ) : (
-              <View style={styles.pileEmptyBox}>
-                <Text style={styles.pileEmptyGlyph}>—</Text>
-              </View>
-            )}
-            <Text style={styles.pileTag}>DISCARD</Text>
-          </Pressable>
-        </View>
-
-        {isMyTurn && currentPhase === "draw" ? (
-          <Text style={styles.drawHint}>Tap a pile to draw</Text>
-        ) : null}
-
-        {/* Melds on the table */}
-        <View style={styles.meldsZone}>
-          <Text style={styles.meldsZoneLabel}>Melds</Text>
-          {(gameState.melds || []).length > 0 ? (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.meldsStrip}
-            >
-              {(gameState.melds || []).map((meld, index) => {
-                const selected = selectedMeldIndex === index;
-                const isOwn = meld.owner === localPlayerIndex;
-                return (
-                  <Pressable
-                    key={`${meld.type || "meld"}-${index}`}
-                    onPress={isOwn ? () => toggleMeld(index) : undefined}
-                    style={({ pressed }) => [
-                      styles.meldCard,
-                      selected && styles.meldCardSelected,
-                      pressed && isOwn && styles.meldCardPressed,
-                      !isOwn && styles.meldCardDimmed,
-                    ]}
-                  >
-                    <Text style={styles.meldOwner} numberOfLines={1}>
-                      {getMeldOwnerName(gameState.players, meld, index)}
-                    </Text>
-                    <View style={styles.meldCards}>
-                      {(meld.cards || []).map((card, cardIndex) => (
-                        <RummyCard
-                          key={`${card.id || `${index}-${cardIndex}`}-${cardIndex}`}
-                          card={card}
-                          small
-                          disabled
-                        />
-                      ))}
-                    </View>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          ) : (
-            <Text style={styles.emptyText}>No melds yet.</Text>
+      {/* Opponents up top, piles centered below them */}
+      <View style={styles.centerSection}>
+        <View style={styles.oppStack}>
+          {(gameState.players || []).map((player, index) =>
+            index === localPlayerIndex ? null : renderOppBar(player, index),
           )}
         </View>
 
-        {/* Status line */}
-        <Text style={styles.rummyStatusLine} numberOfLines={1}>
-          {isMyTurn
-            ? `${getActionLabel(gameState, true)}  ·  Deadwood ${myDeadwood}`
-            : `Waiting for ${getPlayerName(currentPlayers, currentPlayerIndex)}…`}
-        </Text>
-
-        <View style={styles.handCard}>
-          <View style={styles.handHeader}>
-            <Text style={styles.handTitle}>Your Hand ({myHand.length})</Text>
-            {selectedHandIndexes.length > 0 ? (
-              <Text style={styles.handSelInfo}>
-                {selectedHandIndexes.length} selected
-                {selectedMeldIndex !== null
-                  ? ` · meld ${selectedMeldIndex + 1}`
-                  : ""}
+        <View style={styles.pileArea}>
+          <View style={styles.pilesRow}>
+            <Pressable
+              onPress={handleDrawStock}
+              disabled={!canDrawStock}
+              style={({ pressed }) => [
+                styles.pileBtn,
+                pressed && canDrawStock && styles.pileBtnPressed,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Draw from stock"
+            >
+              <View style={styles.pileBack}>
+                <Text style={styles.pileBackGlyph}>🂠</Text>
+              </View>
+              <Text style={styles.pileTag}>
+                STOCK · {gameState.stockCount ?? 0}
               </Text>
-            ) : isMyTurn && currentPhase === "discard" ? (
-              <Text style={styles.handSelInfo}>tap to select</Text>
-            ) : null}
+            </Pressable>
+
+            <Pressable
+              onPress={handleTakeDiscard}
+              disabled={!canTakeDiscard}
+              style={({ pressed }) => [
+                styles.pileBtn,
+                pressed && canTakeDiscard && styles.pileBtnPressed,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Take discard"
+            >
+              {discardTop ? (
+                <RummyCard card={discardTop} small disabled />
+              ) : (
+                <View style={styles.pileEmptyBox}>
+                  <Text style={styles.pileEmptyGlyph}>—</Text>
+                </View>
+              )}
+              <Text style={styles.pileTag}>DISCARD</Text>
+            </Pressable>
           </View>
 
-          {renderCardList(myHand, isMyTurn && currentPhase === "discard")}
-
-          {currentPhase !== "draw" ? (
-            <View style={styles.actionRow}>
-                <Pressable
-                  onPress={handleLayMeld}
-                  disabled={selectedHandIndexes.length < 3}
-                  style={({ pressed }) => [
-                    styles.actionButton,
-                    styles.layButton,
-                    selectedHandIndexes.length < 3 &&
-                      styles.actionButtonDisabled,
-                    pressed &&
-                      selectedHandIndexes.length >= 3 &&
-                      styles.actionButtonPressed,
-                  ]}
-                  accessibilityRole="button"
-                  accessibilityLabel="Lay Meld"
-                  accessibilityHint="Place selected cards as a meld on the table"
-                  accessibilityState={{
-                    disabled: selectedHandIndexes.length < 3,
-                  }}
-                >
-                  <Text style={styles.actionButtonText}>Lay Meld</Text>
-                </Pressable>
-
-                <Pressable
-                  onPress={handleExtendMeld}
-                  disabled={
-                    selectedHandIndexes.length !== 1 ||
-                    selectedMeldIndex === null
-                  }
-                  style={({ pressed }) => [
-                    styles.actionButton,
-                    styles.extendButton,
-                    (selectedHandIndexes.length !== 1 ||
-                      selectedMeldIndex === null) &&
-                      styles.actionButtonDisabled,
-                    pressed &&
-                      selectedHandIndexes.length === 1 &&
-                      selectedMeldIndex !== null &&
-                      styles.actionButtonPressed,
-                  ]}
-                  accessibilityRole="button"
-                  accessibilityLabel="Extend"
-                  accessibilityHint="Add selected card to a meld already on the table"
-                  accessibilityState={{
-                    disabled:
-                      selectedHandIndexes.length !== 1 ||
-                      selectedMeldIndex === null,
-                  }}
-                >
-                  <Text style={styles.actionButtonText}>Extend</Text>
-                </Pressable>
-
-                <Pressable
-                  onPress={handleDiscard}
-                  disabled={selectedHandIndexes.length !== 1}
-                  style={({ pressed }) => [
-                    styles.actionButton,
-                    styles.discardButton,
-                    selectedHandIndexes.length !== 1 &&
-                      styles.actionButtonDisabled,
-                    pressed &&
-                      selectedHandIndexes.length === 1 &&
-                      styles.actionButtonPressed,
-                  ]}
-                  accessibilityRole="button"
-                  accessibilityLabel="Discard"
-                  accessibilityHint="Discard the selected card to end your turn"
-                  accessibilityState={{
-                    disabled: selectedHandIndexes.length !== 1,
-                  }}
-                >
-                  <Text style={styles.actionButtonText}>Discard</Text>
-                </Pressable>
-
-                <Pressable
-                  onPress={handleKnock}
-                  disabled={
-                    !isMyTurn ||
-                    currentPhase !== "discard" ||
-                    gameState?.winner != null
-                  }
-                  style={({ pressed }) => [
-                    styles.actionButton,
-                    styles.knockButton,
-                    (!isMyTurn ||
-                      currentPhase !== "discard" ||
-                      gameState?.winner != null) &&
-                      styles.actionButtonDisabled,
-                    pressed &&
-                      isMyTurn &&
-                      currentPhase === "discard" &&
-                      gameState?.winner == null &&
-                      styles.actionButtonPressed,
-                  ]}
-                  accessibilityRole="button"
-                  accessibilityLabel="Knock"
-                  accessibilityHint="End the round and reveal all hands"
-                  accessibilityState={{
-                    disabled:
-                      !isMyTurn ||
-                      currentPhase !== "discard" ||
-                      gameState?.winner != null,
-                  }}
-                >
-                  <Text style={styles.actionButtonText}>Knock</Text>
-                </Pressable>
-            </View>
+          {canDrawStock ? (
+            <Text style={styles.drawHint}>Tap a pile to draw</Text>
           ) : null}
         </View>
-      </ScrollView>
+      </View>
+
+      {/* Your melds — own zone just above the hand (tap to select for Extend) */}
+      {myMeldGroups.length > 0 ? (
+        <View style={styles.myMeldsZone}>
+          <Text style={styles.zoneLabel}>Your melds</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.myMeldsStrip}
+          >
+            {myMeldGroups.map(({ meld, index }) => {
+              const selected = selectedMeldIndex === index;
+              return (
+                <Pressable
+                  key={index}
+                  onPress={() => toggleMeld(index)}
+                  style={({ pressed }) => [
+                    styles.myMeldChip,
+                    selected && styles.myMeldChipSelected,
+                    pressed && styles.meldCardPressed,
+                  ]}
+                >
+                  {renderMeldCards(meld.cards)}
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+      ) : null}
+
+      {/* Status line */}
+      <Text style={styles.rummyStatusLine} numberOfLines={1}>
+        {isMyTurn
+          ? getActionLabel(gameState, true)
+          : `Waiting for ${getPlayerName(currentPlayers, currentPlayerIndex)}…`}
+      </Text>
+
+      {/* Hand + actions, pinned at the bottom */}
+      <View style={styles.handPinned}>
+        <View style={styles.handHeader}>
+          <Text style={styles.handTitle}>Your Hand ({myHand.length})</Text>
+          {selectedHandIndexes.length > 0 ? (
+            <Text style={styles.handSelInfo}>
+              {selectedHandIndexes.length} selected
+              {selectedMeldIndex !== null
+                ? ` · meld ${selectedMeldIndex + 1}`
+                : ""}
+            </Text>
+          ) : isMyTurn && currentPhase === "discard" ? (
+            <Text style={styles.handSelInfo}>tap to select</Text>
+          ) : null}
+        </View>
+
+        {isMyTurn && currentPhase === "discard" ? (
+          <View style={styles.actionRow}>
+            <Pressable
+              onPress={handleLayMeld}
+              disabled={selectedHandIndexes.length < 3}
+              style={({ pressed }) => [
+                styles.actionButton,
+                styles.layButton,
+                selectedHandIndexes.length < 3 && styles.actionButtonDisabled,
+                pressed &&
+                  selectedHandIndexes.length >= 3 &&
+                  styles.actionButtonPressed,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Lay Meld"
+              accessibilityHint="Place selected cards as a meld on the table"
+              accessibilityState={{ disabled: selectedHandIndexes.length < 3 }}
+            >
+              <Text style={styles.actionButtonText}>Lay Meld</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={handleExtendMeld}
+              disabled={
+                selectedHandIndexes.length !== 1 || selectedMeldIndex === null
+              }
+              style={({ pressed }) => [
+                styles.actionButton,
+                styles.extendButton,
+                (selectedHandIndexes.length !== 1 ||
+                  selectedMeldIndex === null) &&
+                  styles.actionButtonDisabled,
+                pressed &&
+                  selectedHandIndexes.length === 1 &&
+                  selectedMeldIndex !== null &&
+                  styles.actionButtonPressed,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Extend"
+              accessibilityHint="Add selected card to a meld already on the table"
+              accessibilityState={{
+                disabled:
+                  selectedHandIndexes.length !== 1 ||
+                  selectedMeldIndex === null,
+              }}
+            >
+              <Text style={styles.actionButtonText}>Extend</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={handleDiscard}
+              disabled={selectedHandIndexes.length !== 1}
+              style={({ pressed }) => [
+                styles.actionButton,
+                styles.discardButton,
+                selectedHandIndexes.length !== 1 && styles.actionButtonDisabled,
+                pressed &&
+                  selectedHandIndexes.length === 1 &&
+                  styles.actionButtonPressed,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Discard"
+              accessibilityHint="Discard the selected card to end your turn"
+              accessibilityState={{
+                disabled: selectedHandIndexes.length !== 1,
+              }}
+            >
+              <Text style={styles.actionButtonText}>Discard</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={handleKnock}
+              disabled={gameState?.winner != null}
+              style={({ pressed }) => [
+                styles.actionButton,
+                styles.knockButton,
+                gameState?.winner != null && styles.actionButtonDisabled,
+                pressed &&
+                  gameState?.winner == null &&
+                  styles.actionButtonPressed,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Knock"
+              accessibilityHint="End the round and reveal all hands"
+              accessibilityState={{ disabled: gameState?.winner != null }}
+            >
+              <Text style={styles.actionButtonText}>Knock</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        <View style={styles.handRow}>
+          {myHand.map((card, index) => {
+            const selected = selectedHandIndexes.includes(index);
+            const allowSelect = isMyTurn && currentPhase === "discard";
+            return (
+              <RummyCard
+                key={`${card.id || `${card.rank}-${card.suit}`}-${index}`}
+                card={card}
+                small
+                selected={selected}
+                onPress={() => allowSelect && toggleCard(index)}
+                disabled={!allowSelect}
+                animateDeal={hasMountedRef.current}
+                dealDelay={myHand.length <= 10 ? index * 100 : 0}
+              />
+            );
+          })}
+        </View>
+      </View>
+
       <Toast message={toastMessage} revision={toastRevision} />
       <TutorialOverlay
         visible={showTutorial}
@@ -1163,8 +1173,6 @@ export default function RummyGameScreen({ navigation, route }) {
         gameId="ginRummy"
         onDone={() => setShowTutorial(false)}
       />
-
-      <YourTurnBanner visible={showTurnBanner} />
     </SafeAreaView>
   );
 }
@@ -1189,6 +1197,96 @@ const styles = StyleSheet.create({
   loadingText: {
     color: "#c4c4d4",
     fontSize: 16,
+  },
+
+  // ── Conquián-style table layout ──
+  headerInfo: {
+    color: "#a4b1c4",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  centerSection: {
+    flex: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  oppStack: { gap: 6 },
+  oppBar: {
+    backgroundColor: "#16213e",
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: "#334",
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    minHeight: 40,
+  },
+  oppBarActive: {
+    borderColor: "#ffd700",
+    backgroundColor: "rgba(255,215,0,0.08)",
+  },
+  oppBarWinner: {
+    borderColor: "#4caf50",
+    backgroundColor: "rgba(76,175,80,0.14)",
+  },
+  oppBarHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  oppName: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "800",
+    flexShrink: 1,
+  },
+  oppMeta: { color: "#cfe0f0", fontSize: 11, fontWeight: "700" },
+  oppTurnDot: { color: "#ffd700", fontSize: 12, fontWeight: "900" },
+  oppMeldsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    marginTop: 6,
+  },
+  oppMeldChip: { flexDirection: "row" },
+
+  pileArea: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  myMeldsZone: {
+    paddingHorizontal: 12,
+    paddingTop: 6,
+    gap: 6,
+  },
+  zoneLabel: {
+    color: "#A7B3C9",
+    fontSize: 12,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  myMeldsStrip: { flexDirection: "row", gap: 12, paddingRight: 8 },
+  myMeldChip: {
+    flexDirection: "row",
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: "transparent",
+    padding: 3,
+  },
+  myMeldChipSelected: {
+    borderColor: "#7fb3ff",
+    backgroundColor: "rgba(127, 179, 255, 0.10)",
+  },
+  handPinned: {
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 8,
+    gap: 10,
+    backgroundColor: "#0f1626",
+    borderTopWidth: 1,
+    borderTopColor: "#2a3650",
   },
 
   // ── Table layout ──
