@@ -905,14 +905,16 @@ export default function PokerGameScreen({ navigation, route }) {
     navigation.navigate("Home");
   }
 
+  // Restart the tournament in place: same opponents/variant/difficulty, everyone
+  // back to the starting stack, a fresh hand dealt immediately (matches how every
+  // other game's Restart behaves). Single-player only.
   function handleRestart() {
     if (saveKey) clearGame(saveKey);
     if (aiTimerRef.current) clearTimeout(aiTimerRef.current);
-    navigation.replace("PokerVariantPicker", {
-      mode: "singleplayer",
-      currentVariant: variant,
-      launchParams: { myName },
-    });
+    coinRewardedRef.current = false;
+    setTournamentCoins(0);
+    setTournamentWinner(null);
+    applyState(initDeal(initialPlayers, 0, null, startingChips));
   }
 
   function handleSaveAndExit() {
@@ -921,11 +923,13 @@ export default function PokerGameScreen({ navigation, route }) {
     navigation.navigate("Home");
   }
 
-  // NOTE: Restart is omitted for Poker — tournament restart semantics are
-  // unresolved. Future: re-add when decided.
   const menuItems = [
     ...(isSinglePlayer && saveKey
       ? [{ type: "saveexit", onSaveExit: handleSaveAndExit }]
+      : []),
+    // Restart re-deals a fresh tournament in place (single-player only).
+    ...(isSinglePlayer
+      ? [{ type: "restart", onRestart: handleRestart }]
       : []),
     { type: "howto", gameId: "poker" },
     { type: "theme" },
