@@ -1065,7 +1065,13 @@ app-wide.
   no visible change. Updated require paths in `HowToPlayScreen` +
   `SinglePlayerSetupScreen`; repro `scripts/convert-thumbnails.js`. With the
   joker fix, total assets are now ~12 MB (was ~17 MB).
-- [ ] **PERF-3** — `MultiplayerGameScreen` broadcasts the full state on every Hit/Stand even when nothing visible changed (e.g. dealer index increment)
+- [x] **PERF-3 — MOOT (2026-06-18).** It was about `MultiplayerGameScreen`
+  (multiplayer Blackjack) over-broadcasting. Multiplayer Blackjack has since been
+  removed from the flow — the lobby only offers Conquián/Poker/Rummy/Wild Round,
+  and **nothing navigates to the `"MultiplayerGame"` route**. The screen is now
+  orphaned dead code (only referenced by its own `App.js` import + Stack.Screen
+  registration). Single-player Blackjack (`GameScreen.js`) is unaffected.
+  Follow-up: remove the dead screen + its `App.js` registration (TBD).
 
 ### ♿ ACCESSIBILITY
 
