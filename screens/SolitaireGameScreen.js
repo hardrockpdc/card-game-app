@@ -763,10 +763,19 @@ export default function SolitaireGameScreen({ navigation, route }) {
       }
     }
 
-    // Update "previous render" snapshots for the next move.
+    // Update "previous render" snapshots for the next move. Prune layout
+    // entries for cards no longer on the table: onCardLayout never fires for a
+    // removed card, so its stale entry would otherwise linger and pollute the
+    // next run's removed-card detection — making run 2 fly from run 1's column.
+    const prunedCardLayouts = {};
+    for (const id of currentCardIds) {
+      const layout = spiderCardLayoutsRef.current[id];
+      if (layout) prunedCardLayouts[id] = layout;
+    }
+    spiderCardLayoutsRef.current = prunedCardLayouts;
     spiderPrevCompletedRunsRef.current = currCompletedRuns;
     spiderPrevColumnLayoutsRef.current = { ...spiderColumnLayoutsRef.current };
-    spiderPrevCardLayoutsRef.current = { ...spiderCardLayoutsRef.current };
+    spiderPrevCardLayoutsRef.current = { ...prunedCardLayouts };
     spiderPrevTableauCardsRef.current = currentCardsMap;
   }, [state.variantId, state.completedRuns, state.tableau]);
 
