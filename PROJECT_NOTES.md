@@ -1114,7 +1114,14 @@ app-wide.
 - [ ] **IMP-6** — Dev-mode tools screen
 - [ ] **IMP-7** — Schema versioning for saves
 - [ ] **IMP-8** — Card move animation (the spec's recipe #3, still not implemented)
-- [ ] **IMP-9** — Solitaire face-down reveal flip (spec mentioned but not built)
+- [x] **IMP-9 — DONE 2026-06-18 (`3ffb20c`).** Was actually wired back in
+  `fed70fd` (animateReveal + FlipCard) but never fired — a face-down card had no
+  drag gesture so `CardSlot` returned a bare Pressable, then gained a gesture
+  once face-up and returned a `<GestureDetector>` wrapper instead. The changing
+  root element type remounted the Card, so the flip never saw the true→false
+  transition (it popped face-up). Fixed by always wrapping in a GestureDetector
+  (stable disabled Tap gesture when not draggable) so the Card instance persists
+  through the uncover and the 260ms flip plays.
 
 ---
 
