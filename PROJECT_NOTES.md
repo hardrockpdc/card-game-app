@@ -1084,7 +1084,13 @@ app-wide.
 
 - [x] **UX-1** — CardThemeScreen accent swapped to `#7fb3ff` blue (dot + "Use This Theme" button); button uses dark text for contrast, dimmed state recolored. Commit `aeeca46`.
 - [x] **UX-2** — Blackjack result-modal delay now conditional: 2s only when the dealer actually plays, 600ms on an instant bust / natural blackjack. Commit `fd37a71`.
-- [ ] **UX-3** — Deal animation runs every time the player navigates back to a single-player game screen (e.g. closing How To Play modal can cause re-mount)
+- [x] **UX-3 — NOT reproducible (investigated 2026-06-18).** The app uses a
+  **native-stack** navigator, which keeps the underlying game screen mounted when
+  How-To-Play (or any screen) is pushed on top, so returning does **not** remount
+  it. The deal is mount-gated (the per-screen init effect runs once; no game
+  re-deals on focus), and the resume-from-save path already suppresses the deal
+  via `hasMountedRef`. So closing How-To-Play can't replay the deal. Speculative
+  review note ("can cause re-mount") that doesn't hold in the current navigator.
 - [ ] **UX-4** — No visual "loading" or "dealing" state during the 50ms `hasMountedRef` delay — usually invisible, occasionally noticeable
 
 ### 🧹 CODE QUALITY (carried forward from v2)
