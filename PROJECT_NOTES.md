@@ -1095,9 +1095,24 @@ app-wide.
 
 ### 🧹 CODE QUALITY (carried forward from v2)
 
-- [ ] **CQ-1** — Extract `useMultiplayerGame` hook (was M-1)
-- [ ] **CQ-2** — Centralize game registry (was M-2)
-- [ ] **CQ-3** — Centralize magic numbers into config.js (was M-8)
+> **CQ triage 2026-06-18.** Worked through the whole list. Several were already
+> satisfied or moot; the rest split into "can't verify safely" (multiplayer /
+> network / 160 mixed-type id sites — a regression there is invisible without a
+> two-device setup) and "low-value churn" (cosmetic refactors that add risk for
+> no user benefit). Did the genuinely safe + valuable ones; deferred the rest
+> with per-item reasoning. Available on request if the value/risk is accepted.
+
+- [ ] **CQ-1 — DEFERRED.** Extract `useMultiplayerGame` hook. Big refactor of
+  shared multiplayer state; un-verifiable without two devices. High risk.
+- [ ] **CQ-2 — DEFERRED.** "Centralize game registry": the three lists
+  (`LobbyScreen` = 6 multiplayer games, `HowToPlayScreen` = all 7,
+  `SinglePlayerSetupScreen` = single-player set) are genuinely **different sets
+  with different fields**, and ids are inconsistently cased (`goFish`/`wildRound`
+  vs `gofish`/`wildround`). A naive merge risks changing what appears where and
+  breaking nav/matching. Reconciling the casing first would be the valuable part,
+  but it's risky to do blind. Low value for a solo shipper.
+- [ ] **CQ-3 — DEFERRED.** "Magic numbers → config.js": no `config.js` exists;
+  the scope is sprawling and subjective with no crisp target. Low value.
 - [x] **CQ-4 — MOOT (2026-06-18).** Multiplayer Blackjack was removed this
   session (`5ff6676`), so there's no MP Blackjack logic left to extract.
   Single-player Blackjack (`GameScreen.js`) uses `calculateHandValue` from
@@ -1106,13 +1121,32 @@ app-wide.
   map to `game/lastCardImages.js`; `LastCardGameScreen.js` imports it. Screen
   dropped ~110 lines. The `../assets` paths resolve identically from `game/` and
   `screens/`, so requires moved verbatim. No behavior change.
-- [ ] **CQ-6** — Split `cardTheme.js` into per-theme files (was M-5)
-- [ ] **CQ-7** — `LobbyScreen` handler closure stale-state risk (was M-7)
-- [ ] **CQ-8** — Standardize `String(id)` vs raw id comparisons (was L-8)
-- [ ] **CQ-9** — Standardize SafeAreaView / KeyboardAvoidingView usage (was L-12)
-- [ ] **CQ-10** — Verify `lastCard.js` action functions are pure (was L-11)
-- [ ] **CQ-11** — Resolve Conquián's half-state in RummyVariantPicker (was L-4)
-- [ ] **CQ-12** — Network message shape inconsistencies (was HI-5)
+- [ ] **CQ-6 — DEFERRED (low value).** `cardTheme.js` is already an isolated
+  theme module; splitting it into 7 per-theme files + an index that re-imports
+  them all is pure file-count churn with no functional benefit (the requires are
+  build-time asset refs either way), and a mistyped path would silently break a
+  theme. Not worth the risk.
+- [ ] **CQ-7 — DEFERRED.** `LobbyScreen` handler closure stale-state risk — a
+  real concern, but it's multiplayer-lobby code; un-verifiable without two
+  devices. Worth doing alongside a device test session.
+- [ ] **CQ-8 — DEFERRED.** Standardize `String(id)` vs raw-id comparisons: ~160
+  comparison sites across game logic **and** multiplayer, where ids are
+  deliberately mixed types (numeric `clientId` vs string player id). Blind
+  normalization is high-risk (could break turn/seat matching) and needs
+  two-device testing. Not safe to ship untested.
+- [x] **CQ-9 — SATISFIED (verified 2026-06-18).** All 18 screens already use
+  `SafeAreaView` from `react-native-safe-area-context` (zero use the wrong
+  `react-native` one). `KeyboardAvoidingView` is used only in the two text-input
+  screens (`JoinScreen`, `HostSetupScreen`), which is appropriate. Nothing to fix.
+- [x] **CQ-10 — DONE 2026-06-18 (`<this commit>`).** The `lastCard.js` action
+  functions (`applyCard`/`drawCard`/`chooseColor`) already build new state via
+  spreads and never mutate input; added purity tests in
+  `__tests__/lastCard.actions.test.js` (deep-compare input before/after) to lock
+  it in. 297 tests pass.
+- [x] **CQ-11 — RESOLVED (verified 2026-06-18).** No Conquián references remain
+  in `RummyVariantPickerScreen` — the half-wired state is gone.
+- [ ] **CQ-12 — DEFERRED.** Network message-shape inconsistencies — networking
+  code; un-verifiable without two devices.
 - [x] **CQ-13** — Removed the unused `typescript` dependency. Commit `3eb638a`.
 - [x] **CQ-14** — ✅ RESOLVED (commit `ba929a5`). Game saves now carry a `SAVE_VERSION` wrapper; a shared validator (used by `loadGame` *and* `hasSave`) discards saves that are missing/corrupt/incompatible-version and wipes them, so an outdated shape starts fresh instead of crashing the screen, and the resume prompt stays consistent. Legacy unwrapped saves treated as v1. Tested.
 
