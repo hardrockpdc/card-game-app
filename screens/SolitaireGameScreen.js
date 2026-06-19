@@ -19,7 +19,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { GestureDetector } from "react-native-gesture-handler";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useFocusEffect } from "@react-navigation/native";
 
 import Card from "../components/Card";
@@ -173,6 +173,12 @@ function CardSlot({
   hinted = false,
   hidden = false,
 }) {
+  // A stable disabled gesture used when this card isn't draggable. We ALWAYS
+  // wrap in a GestureDetector (below) so the element-tree shape never changes
+  // when a card gains/loses its drag gesture as it flips face-down -> face-up.
+  // Without this, the wrapper appeared/disappeared and remounted the Card,
+  // which killed the reveal-flip animation (the card popped face-up instead).
+  const fallbackGesture = useMemo(() => Gesture.Tap().enabled(false), []);
   const inner = (
     <Pressable
       ref={containerRef}
@@ -210,13 +216,16 @@ function CardSlot({
     </Pressable>
   );
 
-  // When a drag gesture is supplied the card becomes draggable. GestureDetector
-  // attaches to the Pressable without adding a view, so the overlap layout is
-  // unchanged; the small activeOffset means a plain tap still fires onPress.
-  if (dragGesture) {
-    return <GestureDetector gesture={dragGesture}>{inner}</GestureDetector>;
-  }
-  return inner;
+  // Always wrap in a GestureDetector (real drag gesture when draggable, an inert
+  // disabled gesture otherwise) so the tree shape is constant — see the comment
+  // on fallbackGesture above. GestureDetector attaches to the Pressable without
+  // adding a view, so the overlap layout is unchanged; the small activeOffset
+  // means a plain tap still fires onPress.
+  return (
+    <GestureDetector gesture={dragGesture ?? fallbackGesture}>
+      {inner}
+    </GestureDetector>
+  );
 }
 
 function StockSlot({ label, onPress, disabled = false, style, hinted = false }) {
