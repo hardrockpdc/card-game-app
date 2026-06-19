@@ -1098,8 +1098,14 @@ app-wide.
 - [ ] **CQ-1** — Extract `useMultiplayerGame` hook (was M-1)
 - [ ] **CQ-2** — Centralize game registry (was M-2)
 - [ ] **CQ-3** — Centralize magic numbers into config.js (was M-8)
-- [ ] **CQ-4** — Move multiplayer Blackjack logic to `game/blackjack.js` (was M-9)
-- [ ] **CQ-5** — Extract LastCard image map to its own file (was M-4)
+- [x] **CQ-4 — MOOT (2026-06-18).** Multiplayer Blackjack was removed this
+  session (`5ff6676`), so there's no MP Blackjack logic left to extract.
+  Single-player Blackjack (`GameScreen.js`) uses `calculateHandValue` from
+  `game/deck.js`, which is already in the logic layer.
+- [x] **CQ-5 — DONE 2026-06-18 (`73e91d6`).** Extracted the 109-image LastCard
+  map to `game/lastCardImages.js`; `LastCardGameScreen.js` imports it. Screen
+  dropped ~110 lines. The `../assets` paths resolve identically from `game/` and
+  `screens/`, so requires moved verbatim. No behavior change.
 - [ ] **CQ-6** — Split `cardTheme.js` into per-theme files (was M-5)
 - [ ] **CQ-7** — `LobbyScreen` handler closure stale-state risk (was M-7)
 - [ ] **CQ-8** — Standardize `String(id)` vs raw id comparisons (was L-8)
