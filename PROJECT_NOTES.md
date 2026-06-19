@@ -1101,6 +1101,16 @@ app-wide.
 > two-device setup) and "low-value churn" (cosmetic refactors that add risk for
 > no user benefit). Did the genuinely safe + valuable ones; deferred the rest
 > with per-item reasoning. Available on request if the value/risk is accepted.
+>
+> **Codebase scan 2026-06-19 (post-CQ).** Swept for missed issues: no orphaned
+> refs to removed features, all screens registered in `App.js`, no TODO/FIXME
+> markers, the only `console.log` is the `game/logger.js` dev util, no unused
+> `game/` modules, working tree clean, all 78 source files parse clean, no
+> hooks-after-early-return (one heuristic flag was a false positive across a
+> helper-fn boundary). **Found + removed dead code:** `RummyVariantWheel`,
+> `SolitaireVariantWheel`, `VariantPicker` (leftover from the picker redesign;
+> ~166 lines, commit `f09bfd8`); `PokerVariantWheel` stripped to its still-used
+> `POKER_VARIANT_OPTIONS` constant.
 
 - [ ] **CQ-1 — DEFERRED.** Extract `useMultiplayerGame` hook. Big refactor of
   shared multiplayer state; un-verifiable without two devices. High risk.
