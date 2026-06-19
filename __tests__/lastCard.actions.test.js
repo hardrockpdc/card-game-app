@@ -1,4 +1,4 @@
-import { applyCard, drawCard } from "../game/lastCard";
+import { applyCard, drawCard, chooseColor } from "../game/lastCard";
 
 const num = (id, color, value) => ({ id, color, type: "number", value });
 const action = (id, color, type) => ({ id, color, type, value: null });
@@ -105,5 +105,55 @@ describe("drawCard", () => {
     expect(next.hands["0"][0].id).toBe("a");
     expect(next.drawPile).toHaveLength(1);
     expect(next.drawPile[0].id).toBe("b");
+  });
+});
+
+// CQ-10: the action functions build new state via spreads and must never mutate
+// their input. These lock that property in (deep-compare the input before/after).
+describe("purity — actions never mutate their input state", () => {
+  const snapshot = (s) => JSON.parse(JSON.stringify(s));
+
+  test("applyCard (number play) leaves the input untouched", () => {
+    const card = num("c1", "crimson", 5);
+    const state = baseState({ hands: { 0: [card], 1: [], 2: [] } });
+    const before = snapshot(state);
+    applyCard(state, 0, card);
+    expect(state).toEqual(before);
+  });
+
+  test("applyCard (skip) leaves the input untouched", () => {
+    const card = action("s1", "crimson", "skip");
+    const state = baseState({ hands: { 0: [card], 1: [], 2: [] } });
+    const before = snapshot(state);
+    applyCard(state, 0, card);
+    expect(state).toEqual(before);
+  });
+
+  test("applyCard (wild awaiting color) leaves the input untouched", () => {
+    const card = wild("w1");
+    const state = baseState({ hands: { 0: [card], 1: [], 2: [] } });
+    const before = snapshot(state);
+    applyCard(state, 0, card);
+    expect(state).toEqual(before);
+  });
+
+  test("drawCard leaves the input untouched", () => {
+    const state = baseState({
+      drawPile: [num("a", "crimson", 1)],
+      hands: { 0: [], 1: [], 2: [] },
+    });
+    const before = snapshot(state);
+    drawCard(state, 0);
+    expect(state).toEqual(before);
+  });
+
+  test("chooseColor leaves the input untouched", () => {
+    const state = baseState({
+      awaitingColorChoiceBy: "0",
+      pendingWildCard: wild("w1"),
+    });
+    const before = snapshot(state);
+    chooseColor(state, 0, "coral");
+    expect(state).toEqual(before);
   });
 });
