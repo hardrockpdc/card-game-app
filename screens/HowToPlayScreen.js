@@ -9,6 +9,7 @@ import {
 import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import { scale, scaleFont } from "../game/responsive";
 import Card from "../components/Card";
+import HowToShot from "../components/HowToShot";
 import { POKER_VARIANT_OPTIONS } from "../components/PokerVariantWheel";
 import { RUMMY_VARIANTS, RUMMY_VARIANT_OPTIONS } from "../game/rummy";
 import { VARIANT_OPTIONS as SOLITAIRE_VARIANT_OPTIONS } from "../game/solitaire";
@@ -162,6 +163,19 @@ const IN_APP_CONTROLS = {
       text: "One player is the judge each round and picks the best answer to win.",
     },
   ],
+};
+
+// Annotated screenshots for the "In the App" section, keyed by game id. Each
+// entry: { source: require(...), caption?, markers: [{x,y}, ...] } where marker
+// #i (a numbered dot at x/y percentages) lines up with IN_APP_CONTROLS[#i].
+// Populated as screenshots are captured (assets/howto/<game>.png) — until then
+// the game just shows the text controls.
+const IN_APP_SHOTS = {
+  // gofish: {
+  //   source: require("../assets/howto/gofish.png"),
+  //   caption: "On your turn…",
+  //   markers: [{ x: 50, y: 86 }, { x: 22, y: 28 }],
+  // },
 };
 
 const BLACKJACK = {
@@ -1157,6 +1171,14 @@ export default function HowToPlayScreen({ navigation, route }) {
       {IN_APP_CONTROLS[gameId] ? (
         <>
           <Text style={styles.sectionHeader}>In the App</Text>
+          {IN_APP_SHOTS[gameId] ? (
+            <HowToShot
+              source={IN_APP_SHOTS[gameId].source}
+              caption={IN_APP_SHOTS[gameId].caption}
+              markers={IN_APP_SHOTS[gameId].markers}
+              accent={accent}
+            />
+          ) : null}
           {IN_APP_CONTROLS[gameId].map((c, i) => (
             <StepRow
               key={`ctrl-${c.title}-${i}`}
