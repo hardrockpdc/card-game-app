@@ -17,9 +17,7 @@ import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import GameHeader from "../components/GameHeader";
 import EndOfRoundModal from "../components/EndOfRoundModal";
 import ProfileAvatar from "../components/ProfileAvatar";
-import { getCachedProfile } from "../game/profile";
-import { AVATAR_CHOICES } from "../game/avatars";
-import { toTransmittableAvatar } from "../game/avatarTransmit";
+import useMultiplayerAvatars from "../components/useMultiplayerAvatars";
 import {
   createGame,
   setSecret,
@@ -85,15 +83,9 @@ export default function WhoAmIGameScreen({ navigation, route }) {
   const fullRef = useRef(null); // host authoritative state
   const botTimerRef = useRef(null);
   const [gameState, setGameState] = useState(null); // public view
-  // Profile pictures, keyed by player id. Exchanged peer-to-peer at game start
-  // (kept out of the per-turn state broadcasts so big custom photos aren't
-  // re-sent every update). Missing → ProfileAvatar shows the name initial.
-  const [avatarById, setAvatarById] = useState({});
-  const avatarByIdRef = useRef({});
-  function mergeAvatars(updates) {
-    avatarByIdRef.current = { ...avatarByIdRef.current, ...updates };
-    setAvatarById(avatarByIdRef.current);
-  }
+  // Profile pictures shared across the table (scoreboard + win banner).
+  const { avatarById, handleHostMessage, handleClientMessage } =
+    useMultiplayerAvatars({ isHost, players: initialPlayers });
   const [privateSecret, setPrivateSecret] = useState(null); // { text } — judge only
   const [secretText, setSecretText] = useState("");
   const [questionText, setQuestionText] = useState("");
@@ -136,37 +128,6 @@ export default function WhoAmIGameScreen({ navigation, route }) {
     applyState(s);
   }, []);
 
-  // ── Profile-picture exchange ────────────────────────────────────────────────
-  // Host seeds its own avatar + the bots' and broadcasts the map; each client
-  // sends its avatar to the host, which merges and re-broadcasts to everyone.
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const mine = await toTransmittableAvatar(getCachedProfile());
-      if (cancelled) return;
-      if (isHost) {
-        const seed = {};
-        if (mine) seed["host"] = mine;
-        (initialPlayers || [])
-          .filter((p) => p.isAI)
-          .forEach((p, i) => {
-            seed[String(p.id)] = {
-              photoType: "avatar",
-              photoValue:
-                AVATAR_CHOICES[(i * 7 + 3) % AVATAR_CHOICES.length].id,
-            };
-          });
-        mergeAvatars(seed);
-        broadcastToClients({ type: "AVATARS", map: avatarByIdRef.current });
-      } else {
-        sendToHost({ type: "AVATAR", avatar: mine });
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   // ── Host server listeners ───────────────────────────────────────────────────
   useEffect(() => {
     if (!isHost) return;
@@ -174,6 +135,7 @@ export default function WhoAmIGameScreen({ navigation, route }) {
       onClientJoined: () => {},
       onClientLeft: () => {},
       onMessage: (msg, clientId) => {
+        if (handleHostMessage(msg, clientId)) return;
         const s = fullRef.current;
         if (!s) return;
         const clientPid = String(clientId);
@@ -202,10 +164,6 @@ export default function WhoAmIGameScreen({ navigation, route }) {
                 : recordAnswer(s, msg.answer),
             );
             break;
-          case "AVATAR":
-            mergeAvatars({ [clientPid]: msg.avatar ?? null });
-            broadcastToClients({ type: "AVATARS", map: avatarByIdRef.current });
-            break;
         }
       },
     });
@@ -216,12 +174,9 @@ export default function WhoAmIGameScreen({ navigation, route }) {
     if (isHost) return;
     setClientListeners({
       onMessage: (msg) => {
+        if (handleClientMessage(msg)) return;
         if (msg.type === "GAME_STATE") setGameState(msg.state);
         if (msg.type === "PRIVATE_SECRET") setPrivateSecret(msg.secret ?? null);
-        if (msg.type === "AVATARS") {
-          avatarByIdRef.current = msg.map ?? {};
-          setAvatarById(msg.map ?? {});
-        }
       },
       onDisconnected: () =>
         Alert.alert("Disconnected", "Lost connection to the host.", [
