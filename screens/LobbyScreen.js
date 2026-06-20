@@ -91,7 +91,7 @@ const GAMES = [
     label: "Who Am I?",
     screen: "WhoAmIGame",
     available: true,
-    hasAI: false,
+    hasAI: true,
     minPlayers: 3,
     maxPlayers: 8,
   },

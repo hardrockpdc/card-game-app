@@ -48,10 +48,20 @@ adjudication), reusing `game/GameNetwork.js`.
   (`WhoAmIGame` route), `game/tableThemes.js` + `components/GameHeader.js`
   (purple "whoami" theme/kicker).
 
+## Test bots
+
+The lobby allows **Add Computer** (`hasAI:true`) so the host can play solo (host
++ bots) to exercise the flow on one device. Bots are **test stubs**, not real
+players: a bot judge picks a secret from a canned list and answers with simple
+logic (Yes/No biased to No; says "You got it!" when a question literally contains
+its secret, so a human asker can still win); bot askers send generic questions to
+drive the turns. The bot's secret is never shown to the host human. Driven on the
+host via a timer effect in `WhoAmIGameScreen` (`BOT_SECRETS`/`BOT_QUESTIONS`).
+
 ## Out of scope (v1)
 
-- Built-in celebrity list / categories.
-- Single-player / AI.
+- Built-in celebrity list / categories (judge types it; bots use a canned list).
+- Real AI opponents (bots can't reason about free text — test stubs only).
 - Mid-game reconnect/pause (the separate, parked reconnect feature — a drop
   currently can stall the round, same as the other games until that lands).
 - In-app How-to entry (menu has Quit only for now).
