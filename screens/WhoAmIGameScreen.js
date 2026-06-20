@@ -209,10 +209,14 @@ export default function WhoAmIGameScreen({ navigation, route }) {
         const judgeIsBot = !!cur.players[cur.judgeIndex]?.isAI;
         if (cur.pendingQuestion && judgeIsBot) {
           const secret = (cur.secret?.text || "").toLowerCase();
-          const q = (cur.pendingQuestion.question || "").toLowerCase();
-          if (secret && q.includes(secret)) applyState(awardRound(cur));
-          else
+          const q = (cur.pendingQuestion.question || "").trim().toLowerCase();
+          // Test cheat: typing "i win" makes a bot judge award the round, so the
+          // flow can be advanced without knowing the bot's secret.
+          if (q === "i win" || (secret && q.includes(secret))) {
+            applyState(awardRound(cur));
+          } else {
             applyState(recordAnswer(cur, Math.random() < 0.35 ? "yes" : "no"));
+          }
         } else if (!cur.pendingQuestion && currentAsker(cur)?.isAI) {
           applyState(askQuestion(cur, pick(BOT_QUESTIONS)));
         }
