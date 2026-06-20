@@ -26,6 +26,8 @@ import {
   subscribeRummyTable,
 } from "../game/rummyTheme";
 import { scale, scaleFont } from "../game/responsive";
+import ProfileAvatar from "../components/ProfileAvatar";
+import useMultiplayerAvatars from "../components/useMultiplayerAvatars";
 import { addCoins } from "../game/wallet";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import { recordWin } from "../game/profile";
@@ -204,6 +206,8 @@ export default function RummyGameScreen({ navigation, route }) {
 
   const isSinglePlayer = role === "singleplayer" || role === "ai" || !role;
   const isHost = role === "host" || isSinglePlayer;
+  const { avatarById, handleHostMessage, handleClientMessage } =
+    useMultiplayerAvatars({ isHost, players });
 
   const localPlayerIndex = useMemo(
     () => findLocalPlayerIndex(players, myName, isHost),
@@ -458,6 +462,7 @@ export default function RummyGameScreen({ navigation, route }) {
     if (!isHost) {
       setClientListeners({
         onMessage: (msg) => {
+          if (handleClientMessage(msg)) return;
           if (msg.type === "GAME_STATE") {
             setGameState(msg);
             clearSelection();
@@ -511,6 +516,7 @@ export default function RummyGameScreen({ navigation, route }) {
     if (!isSinglePlayer) {
       setServerListeners({
         onMessage: (msg, clientId) => {
+          if (handleHostMessage(msg, clientId)) return;
           const state = fullRef.current;
           if (!state || state.phase === "game-over") {
             return;
@@ -955,6 +961,12 @@ export default function RummyGameScreen({ navigation, route }) {
         ]}
       >
         <View style={styles.oppBarHeader}>
+          <ProfileAvatar
+            profile={avatarById[String(player.id)]}
+            name={player.name}
+            size={scale(26)}
+            style={{ marginRight: scale(8) }}
+          />
           <Text style={styles.oppName} numberOfLines={1}>
             {isWinner ? "🏆 " : ""}
             {player.name}

@@ -45,6 +45,8 @@ import {
   disconnectFromHost,
 } from "../game/GameNetwork";
 import { scale, scaleFont } from "../game/responsive";
+import ProfileAvatar from "../components/ProfileAvatar";
+import useMultiplayerAvatars from "../components/useMultiplayerAvatars";
 import { addCoins } from "../game/wallet";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import { recordWin } from "../game/profile";
@@ -99,6 +101,8 @@ export default function ConquianGameScreen({ navigation, route }) {
   const myPid = isHost
     ? "host"
     : String(initialPlayers.find((p) => p.name === myName)?.id ?? myName);
+  const { avatarById, handleHostMessage, handleClientMessage } =
+    useMultiplayerAvatars({ isHost, players: initialPlayers });
 
   const fullRef = useRef(null);
   const coinRewardedRef = useRef(false);
@@ -425,6 +429,7 @@ export default function ConquianGameScreen({ navigation, route }) {
     if (!isSinglePlayer) {
       setServerListeners({
         onMessage: (msg, clientId) => {
+          if (handleHostMessage(msg, clientId)) return;
           const s = fullRef.current;
           if (!s || msg.type !== "ACTION") return;
           handleClientAction(s, String(clientId), msg);
@@ -437,6 +442,7 @@ export default function ConquianGameScreen({ navigation, route }) {
     if (isHost) return;
     setClientListeners({
       onMessage: (msg) => {
+        if (handleClientMessage(msg)) return;
         if (msg.type === "GAME_STATE") {
           setGameState(msg);
           setSelectedHandIds(new Set());
@@ -1531,6 +1537,12 @@ export default function ConquianGameScreen({ navigation, route }) {
         {opp ? (
           <>
             <View style={styles.oppBarHeader}>
+              <ProfileAvatar
+                profile={avatarById[String(opPid)]}
+                name={opp.name}
+                size={scale(24)}
+                style={{ marginRight: scale(8) }}
+              />
               <Text style={styles.opponentName} numberOfLines={1}>
                 {opp.name}
               </Text>

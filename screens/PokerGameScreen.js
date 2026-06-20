@@ -36,6 +36,8 @@ import {
   subscribePokerTable,
 } from "../game/pokerTheme";
 import TableThemePicker from "../components/TableThemePicker";
+import ProfileAvatar from "../components/ProfileAvatar";
+import useMultiplayerAvatars from "../components/useMultiplayerAvatars";
 
 const AI_MOVE_DELAY_MS = 700; // delay between AI opponent moves (ms)
 
@@ -559,6 +561,8 @@ export default function PokerGameScreen({ navigation, route }) {
   } = route.params;
   const isSinglePlayer = role === "singleplayer";
   const isHost = role === "host" || isSinglePlayer;
+  const { avatarById, handleHostMessage, handleClientMessage } =
+    useMultiplayerAvatars({ isHost, players: initialPlayers });
   // Everyone starts with the same chip stack; wagering happens in-game.
   const startingChips = STARTING_CHIPS;
   const saveKey =
@@ -676,6 +680,7 @@ export default function PokerGameScreen({ navigation, route }) {
     if (!isSinglePlayer) {
       setServerListeners({
         onMessage: (msg, clientId) => {
+          if (handleHostMessage(msg, clientId)) return;
           const state = fullRef.current;
           if (!state || msg.type !== "ACTION") return;
           if (state.phase === "showdown" && msg.action === "nextHand") {
@@ -716,6 +721,7 @@ export default function PokerGameScreen({ navigation, route }) {
     if (isHost) return;
     setClientListeners({
       onMessage: (msg) => {
+        if (handleClientMessage(msg)) return;
         if (msg.type === "GAME_STATE") setGameState(msg);
         if (msg.type === "PRIVATE_HAND") setMyHand(msg.hand);
       },
@@ -993,6 +999,12 @@ export default function PokerGameScreen({ navigation, route }) {
                   ps.folded && styles.seatFolded,
                 ]}
               >
+                <ProfileAvatar
+                  profile={avatarById[pid]}
+                  name={p.name}
+                  size={scale(32)}
+                  style={{ marginBottom: scale(4) }}
+                />
                 <Text style={styles.seatName} numberOfLines={1}>
                   {idx === dealerIdx ? "🎩 " : ""}
                   {isWinner ? "🏆 " : ""}
