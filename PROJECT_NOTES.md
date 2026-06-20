@@ -786,6 +786,42 @@ King-alone removals (no two-pyramid-card pairing); the hint matches that on
 purpose by simulating the real tap. If pyramid-pair rules ever change, the hint
 follows automatically.
 
+### Multiplayer session (2026-06-18 → 06-20) — IN PROGRESS
+
+Three threads. All pure-JS, no rebuild; 314 Jest tests pass.
+
+**1. Mid-game reconnect — Phase 1 (Go Fish pilot) — AWAITING DEVICE TEST.**
+Most MP games silently hang when a player drops mid-game (host detects via
+`onClientLeft` but doesn't resolve the missing turn). Built a pause/countdown:
+new `components/ReconnectOverlay.js` + Go Fish wiring → on a drop the host
+broadcasts `PAUSE` with a 60s deadline (new `PAUSE`/`RESUME`/
+`GAME_OVER_DISCONNECT` messages), everyone sees the overlay, and on timeout the
+game ends → Home. Piloted on Go Fish only; **needs a 2-device test before Phase 2
+(reconnect handshake) and Phase 3 (per-game remove-and-continue).**
+
+**2. How to Play → "In the App".** Added a per-game controls section (the actual
+taps/drags/buttons), then **annotated gameplay screenshots**: `components/HowToShot.js`
+(image + numbered dots + legend) + `IN_APP_SHOTS` in `HowToPlayScreen`. Curated
+23 captured screenshots → 8 (resized 3.67 MB → 0.38 MB in `assets/howto/`), dot
+positions verified against each image. Wild Round has no shot (MP-only) → text
+controls.
+
+**3. NEW GAME — "Who Am I?"** (multiplayer party game, no cards) — **the app's 9th
+game.** Rotating judge **types** a secret each round; askers take turns asking
+yes/no questions; judge answers Yes / No / "You got it!" (auto-credits the
+asker); first to 3 round-wins. Built on the Wild Round host/judge/private-info
+pattern. Files: `game/whoami.js` (+ 17 tests), `screens/WhoAmIGameScreen.js`,
+lobby/App/theme wiring, `WHOAMI_SPEC.md`. The new surface is **free-text input**
+(judge's secret + askers' questions). **Test bots** added (lobby `hasAI:true`) so
+it's playable solo — stubs, not real reasoners (canned secrets; a bot judge
+answers Yes/No simply and awards on a secret-name match or the test cheat
+**`i win`**). Round-win banner (styled like the "Your Turn" banner) reveals the
+word to everyone. **Plays well in solo bot testing; still needs a 3-device test
+for real multiplayer.**
+
+> ⚠️ CLAUDE.md still says "8 games across 9 game screens" — now **9 games** with
+> Who Am I? added.
+
 ## 💡 Important Reminders
 
 ### Daily workflow
