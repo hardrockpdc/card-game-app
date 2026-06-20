@@ -55,6 +55,115 @@ const GAMES = [
   { id: "wildround", label: "Wild Round", accent: "#6a1b9a", thumb: null },
 ];
 
+// "In the App" — how to actually operate each game on screen (the taps, drags,
+// and buttons), as opposed to the rules above. Keyed by the GAMES `id`.
+const IN_APP_CONTROLS = {
+  blackjack: [
+    {
+      title: "Place your bet",
+      text: "Set your wager with the Bet control, then tap Deal to start the hand.",
+    },
+    {
+      title: "Hit or Stand",
+      text: "Tap Hit to take another card, or Stand to hold your total.",
+    },
+    {
+      title: "Split",
+      text: "If your first two cards are a pair, tap Split to play them as two hands.",
+    },
+  ],
+  goFish: [
+    {
+      title: "Ask for a rank",
+      text: "On your turn, tap a rank in your hand, then tap an opponent's seat to ask them for it.",
+    },
+    {
+      title: "Collect or Go Fish",
+      text: "If they have that rank you take it and ask again; if not, you draw from the Ocean automatically.",
+    },
+  ],
+  conquian: [
+    {
+      title: "Take a card",
+      text: "Tap the stock to draw, or take the offered discard to use it.",
+    },
+    {
+      title: "Make a meld",
+      text: "Select cards that form a run or set, then tap Meld to lay them down.",
+    },
+    {
+      title: "Discard or Pass",
+      text: "Tap a card to discard and end your turn, or Pass when you don't want the upcard.",
+    },
+  ],
+  poker: [
+    {
+      title: "Your move",
+      text: "Tap Fold to give up the hand, Check or Call to stay in, or Raise to bet more.",
+    },
+    {
+      title: "All-In",
+      text: "Tap All-In to push your entire chip stack into the pot.",
+    },
+  ],
+  rummy: [
+    {
+      title: "Draw",
+      text: "Take the top card from the stock or the discard pile.",
+    },
+    {
+      title: "Meld",
+      text: "Select a valid run or set in your hand, then tap Meld to lay it down.",
+    },
+    {
+      title: "Discard",
+      text: "Tap a card to discard and end your turn.",
+    },
+    {
+      title: "Knock",
+      text: "The Knock button appears once your hand can legally go out — tap it to finish the round.",
+    },
+  ],
+  solitaire: [
+    {
+      title: "Move a card",
+      text: "Tap a card, then tap where it should go — or drag it directly (Klondike, FreeCell and Spider in landscape).",
+    },
+    {
+      title: "Deal from the stock",
+      text: "Tap the stock pile to turn over or deal new cards.",
+    },
+    {
+      title: "Need a hint?",
+      text: "Open the menu (☰) and tap Hint to highlight a useful move.",
+    },
+  ],
+  lastcard: [
+    {
+      title: "Play a card",
+      text: "Tap a card that matches the top card's color or number to play it.",
+    },
+    {
+      title: "Draw",
+      text: "If you can't play, tap the draw pile to pick up a card.",
+    },
+    {
+      title: "Wild cards",
+      text: "Play a wild, then choose the next color.",
+    },
+  ],
+  wildround: [
+    {
+      title: "Answer the prompt",
+      text: "Each round shows a prompt. Tap a card from your hand, then tap Submit.",
+    },
+    {
+      title: "Judging",
+      text: "One player is the judge each round and picks the best answer to win.",
+    },
+  ],
+};
+
 const BLACKJACK = {
   goal: "Beat the dealer by getting closer to 21 — without going over.",
   steps: [
@@ -1044,6 +1153,21 @@ export default function HowToPlayScreen({ navigation, route }) {
           accent={accent}
         />
       ))}
+
+      {IN_APP_CONTROLS[gameId] ? (
+        <>
+          <Text style={styles.sectionHeader}>In the App</Text>
+          {IN_APP_CONTROLS[gameId].map((c, i) => (
+            <StepRow
+              key={`ctrl-${c.title}-${i}`}
+              index={i}
+              title={c.title}
+              text={c.text}
+              accent={accent}
+            />
+          ))}
+        </>
+      ) : null}
 
       <View style={styles.footerSpace} />
     </ScrollView>
