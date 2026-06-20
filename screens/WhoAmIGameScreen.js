@@ -350,44 +350,8 @@ export default function WhoAmIGameScreen({ navigation, route }) {
               Round {gameState.roundNumber} · first to {gameState.target} wins
             </Text>
 
-            {/* Q&A history */}
-            <ScrollView
-              style={styles.history}
-              contentContainerStyle={styles.historyContent}
-            >
-              {(gameState.history ?? []).length === 0 ? (
-                <Text style={styles.muted}>
-                  {phase === "choosing"
-                    ? `${judgeName} is the judge this round.`
-                    : "No questions yet — start asking!"}
-                </Text>
-              ) : (
-                gameState.history.map((h, i) => (
-                  <View key={`h-${i}`} style={styles.qaRow}>
-                    <Text style={styles.qaQ}>
-                      <Text style={styles.qaWho}>{h.askerName}: </Text>
-                      {h.question}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.qaA,
-                        h.answer === "gotit" && { color: "#7CFFB2" },
-                        h.answer === "yes" && { color: "#7CFFB2" },
-                        h.answer === "no" && { color: "#ff6b6b" },
-                      ]}
-                    >
-                      {h.answer === "gotit"
-                        ? "🎉 Got it!"
-                        : h.answer === "yes"
-                          ? "Yes"
-                          : "No"}
-                    </Text>
-                  </View>
-                ))
-              )}
-            </ScrollView>
-
-            {/* ── Phase-specific controls ── */}
+            {/* ── Phase-specific controls (above the history so the keyboard
+                never hides the text input) ── */}
             {phase === "choosing" &&
               (amJudge ? (
                 <View style={styles.panel}>
@@ -476,6 +440,43 @@ export default function WhoAmIGameScreen({ navigation, route }) {
                 )}
               </View>
             )}
+
+            {/* Q&A history (fills the space below the controls) */}
+            <ScrollView
+              style={styles.history}
+              contentContainerStyle={styles.historyContent}
+            >
+              {(gameState.history ?? []).length === 0 ? (
+                <Text style={styles.muted}>
+                  {phase === "choosing"
+                    ? `${judgeName} is the judge this round.`
+                    : "No questions yet — start asking!"}
+                </Text>
+              ) : (
+                gameState.history.map((h, i) => (
+                  <View key={`h-${i}`} style={styles.qaRow}>
+                    <Text style={styles.qaQ}>
+                      <Text style={styles.qaWho}>{h.askerName}: </Text>
+                      {h.question}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.qaA,
+                        h.answer === "gotit" && { color: "#7CFFB2" },
+                        h.answer === "yes" && { color: "#7CFFB2" },
+                        h.answer === "no" && { color: "#ff6b6b" },
+                      ]}
+                    >
+                      {h.answer === "gotit"
+                        ? "🎉 Got it!"
+                        : h.answer === "yes"
+                          ? "Yes"
+                          : "No"}
+                    </Text>
+                  </View>
+                ))
+              )}
+            </ScrollView>
           </>
         )}
       </KeyboardAvoidingView>
