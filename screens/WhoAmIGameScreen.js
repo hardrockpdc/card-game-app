@@ -453,8 +453,11 @@ export default function WhoAmIGameScreen({ navigation, route }) {
                     : "No questions yet — start asking!"}
                 </Text>
               ) : (
-                gameState.history.map((h, i) => (
-                  <View key={`h-${i}`} style={styles.qaRow}>
+                gameState.history
+                  .map((h, i) => ({ h, i }))
+                  .reverse()
+                  .map(({ h, i }) => (
+                    <View key={`h-${i}`} style={styles.qaRow}>
                     <Text style={styles.qaQ}>
                       <Text style={styles.qaWho}>{h.askerName}: </Text>
                       {h.question}
