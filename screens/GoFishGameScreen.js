@@ -28,6 +28,8 @@ import {
 } from "../game/gofishTheme";
 import TableThemePicker from "../components/TableThemePicker";
 import ReconnectOverlay from "../components/ReconnectOverlay";
+import ProfileAvatar from "../components/ProfileAvatar";
+import useMultiplayerAvatars from "../components/useMultiplayerAvatars";
 
 const BG = getTableTheme("gofish").table;
 const SAVE_KEY_GOFISH = "@cardnight:save:gofish";
@@ -63,6 +65,8 @@ export default function GoFishGameScreen({ navigation, route }) {
   } = route.params;
   const isSinglePlayer = role === "singleplayer";
   const isHost = role === "host" || isSinglePlayer;
+  const { avatarById, handleHostMessage, handleClientMessage } =
+    useMultiplayerAvatars({ isHost, players: initialPlayers });
 
   const [gameState, setGameState] = useState(null);
   const [myHand, setMyHand] = useState([]);
@@ -226,6 +230,7 @@ export default function GoFishGameScreen({ navigation, route }) {
     if (!isSinglePlayer) {
       setServerListeners({
         onMessage: (msg, clientId) => {
+          if (handleHostMessage(msg, clientId)) return;
           if (pausedRef.current) return; // ignore actions while paused
           const state = fullRef.current;
           if (!state || msg.type !== "ACTION" || msg.action !== "ask") return;
@@ -254,6 +259,7 @@ export default function GoFishGameScreen({ navigation, route }) {
     if (isHost) return;
     setClientListeners({
       onMessage: (msg) => {
+        if (handleClientMessage(msg)) return;
         if (msg.type === "GAME_STATE") setGameState(msg);
         if (msg.type === "PRIVATE_HAND") setMyHand(msg.hand);
         if (msg.type === "PAUSE")
@@ -476,6 +482,12 @@ export default function GoFishGameScreen({ navigation, route }) {
                 accessibilityRole="button"
                 accessibilityLabel={`Ask ${p.name}`}
               >
+                <ProfileAvatar
+                  profile={avatarById[pid]}
+                  name={p.name}
+                  size={scale(34)}
+                  style={{ marginBottom: scale(4) }}
+                />
                 <Text style={styles.seatName} numberOfLines={1}>
                   {isWinner ? "🏆 " : ""}
                   {isActive ? "▶ " : ""}
