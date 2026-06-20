@@ -86,6 +86,7 @@ export default function WhoAmIGameScreen({ navigation, route }) {
   const [questionText, setQuestionText] = useState("");
   const [showRoundModal, setShowRoundModal] = useState(false);
   const [noticeText, setNoticeText] = useState("");
+  const [noticeWord, setNoticeWord] = useState("");
   const [noticeOn, setNoticeOn] = useState(false);
   const prevRoundRef = useRef(null);
   const noticeTimerRef = useRef(null);
@@ -221,6 +222,7 @@ export default function WhoAmIGameScreen({ navigation, route }) {
     ) {
       const mine = String(gameState.lastWinner.id) === myPid;
       setNoticeText(mine ? "You got it!" : `${gameState.lastWinner.name} got it!`);
+      setNoticeWord(gameState.lastSecret || "");
       setNoticeOn(true);
       if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current);
       noticeTimerRef.current = setTimeout(() => setNoticeOn(false), 2400);
@@ -553,13 +555,20 @@ export default function WhoAmIGameScreen({ navigation, route }) {
         <View style={styles.winNotice}>
           <Text style={styles.winNoticeEmoji}>🎉</Text>
           <Text style={styles.winNoticeText}>{noticeText}</Text>
+          {noticeWord ? (
+            <Text style={styles.winNoticeWord}>
+              The word was “{noticeWord}”
+            </Text>
+          ) : null}
         </View>
       </Animated.View>
 
       <EndOfRoundModal
         visible={showRoundModal}
         title={winnerName}
-        message=""
+        message={
+          gameState?.lastSecret ? `The word was “${gameState.lastSecret}”` : ""
+        }
         showContinue={isHost}
         showLeave
         isGameOver
@@ -733,5 +742,12 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     letterSpacing: 0.5,
     textAlign: "center",
+  },
+  winNoticeWord: {
+    color: ACCENT,
+    fontSize: scaleFont(16),
+    fontWeight: "700",
+    textAlign: "center",
+    marginTop: scale(2),
   },
 });

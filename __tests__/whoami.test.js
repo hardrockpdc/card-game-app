@@ -122,6 +122,7 @@ describe("awardRound", () => {
     // Bob (asker) wins the round
     expect(s.players.find((p) => p.id === "b").score).toBe(1);
     expect(s.lastWinner).toEqual({ id: "b", name: "Bob" });
+    expect(s.lastSecret).toBe("Yoda"); // the word is revealed
     // not yet at target -> next round, judge rotated to player 1 (Bob)
     expect(s.phase).toBe("choosing");
     expect(s.judgeIndex).toBe(1);

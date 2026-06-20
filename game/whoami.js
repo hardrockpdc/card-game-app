@@ -45,6 +45,7 @@ export function createGame(players, options = {}) {
     pendingQuestion: null, // { askerId, askerName, question }
     roundNumber: 1,
     lastWinner: null, // { id, name }
+    lastSecret: null, // the secret revealed when a round is won
     winner: null, // player object once the game is won
     target,
   };
@@ -120,6 +121,7 @@ export function awardRound(state) {
     players,
     pendingQuestion: null,
     lastWinner: { id: winningPlayer.id, name: winningPlayer.name },
+    lastSecret: state.secret?.text ?? null, // reveal the word now the round is over
   };
 
   if (winningPlayer.score >= state.target) {
@@ -167,6 +169,7 @@ export function toPublic(state) {
     pendingQuestion: state.pendingQuestion,
     roundNumber: state.roundNumber,
     lastWinner: state.lastWinner,
+    lastSecret: state.lastSecret ?? null,
     winner: state.winner
       ? { id: state.winner.id, name: state.winner.name, score: state.winner.score }
       : null,
