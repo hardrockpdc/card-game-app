@@ -9,6 +9,8 @@ import {
   Platform,
   Alert,
   BackHandler,
+  Animated,
+  AccessibilityInfo,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
@@ -83,9 +85,12 @@ export default function WhoAmIGameScreen({ navigation, route }) {
   const [secretText, setSecretText] = useState("");
   const [questionText, setQuestionText] = useState("");
   const [showRoundModal, setShowRoundModal] = useState(false);
-  const [roundWinNotice, setRoundWinNotice] = useState(null); // { name, mine }
+  const [noticeText, setNoticeText] = useState("");
+  const [noticeOn, setNoticeOn] = useState(false);
   const prevRoundRef = useRef(null);
   const noticeTimerRef = useRef(null);
+  const noticeOpacity = useRef(new Animated.Value(0)).current;
+  const reduceMotionRef = useRef(false);
 
   // ── Host: apply + broadcast state ───────────────────────────────────────────
   function applyState(newState) {
@@ -187,8 +192,25 @@ export default function WhoAmIGameScreen({ navigation, route }) {
     else hapticLose();
   }, [gameState?.phase]);
 
-  // When the round number advances, the previous round was won — pop a brief
-  // "X got it!" notice (the game auto-advances, so this just announces it).
+  useEffect(() => {
+    let mounted = true;
+    AccessibilityInfo.isReduceMotionEnabled().then((v) => {
+      if (mounted) reduceMotionRef.current = v;
+    });
+    const sub = AccessibilityInfo.addEventListener(
+      "reduceMotionChanged",
+      (v) => {
+        reduceMotionRef.current = v;
+      },
+    );
+    return () => {
+      mounted = false;
+      sub?.remove?.();
+    };
+  }, []);
+
+  // When the round number advances, the previous round was won — show a brief
+  // "X got it!" banner (the game auto-advances, so this just announces it).
   useEffect(() => {
     const rn = gameState?.roundNumber;
     if (rn == null) return;
@@ -197,18 +219,27 @@ export default function WhoAmIGameScreen({ navigation, route }) {
       rn > prevRoundRef.current &&
       gameState?.lastWinner
     ) {
-      setRoundWinNotice({
-        name: gameState.lastWinner.name,
-        mine: String(gameState.lastWinner.id) === myPid,
-      });
+      const mine = String(gameState.lastWinner.id) === myPid;
+      setNoticeText(mine ? "You got it!" : `${gameState.lastWinner.name} got it!`);
+      setNoticeOn(true);
       if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current);
-      noticeTimerRef.current = setTimeout(
-        () => setRoundWinNotice(null),
-        2600,
-      );
+      noticeTimerRef.current = setTimeout(() => setNoticeOn(false), 2400);
     }
     prevRoundRef.current = rn;
   }, [gameState?.roundNumber]);
+
+  // Fade the banner in/out (snap if reduced motion), like the "Your Turn" banner.
+  useEffect(() => {
+    if (reduceMotionRef.current) {
+      noticeOpacity.setValue(noticeOn ? 1 : 0);
+      return;
+    }
+    Animated.timing(noticeOpacity, {
+      toValue: noticeOn ? 1 : 0,
+      duration: noticeOn ? 180 : 320,
+      useNativeDriver: true,
+    }).start();
+  }, [noticeOn]);
 
   // Host drives the test bots: when the current actor (judge or asker) is a bot,
   // auto-act after a short delay so the flow can be exercised on one device.
@@ -515,18 +546,15 @@ export default function WhoAmIGameScreen({ navigation, route }) {
         )}
       </KeyboardAvoidingView>
 
-      {roundWinNotice && (
-        <View style={styles.winNoticeWrap} pointerEvents="none">
-          <View style={styles.winNotice}>
-            <Text style={styles.winNoticeText}>
-              🎉{" "}
-              {roundWinNotice.mine
-                ? "You got it!"
-                : `${roundWinNotice.name} got it!`}
-            </Text>
-          </View>
+      <Animated.View
+        style={[styles.winNoticeWrap, { opacity: noticeOpacity }]}
+        pointerEvents="none"
+      >
+        <View style={styles.winNotice}>
+          <Text style={styles.winNoticeEmoji}>🎉</Text>
+          <Text style={styles.winNoticeText}>{noticeText}</Text>
         </View>
-      )}
+      </Animated.View>
 
       <EndOfRoundModal
         visible={showRoundModal}
@@ -678,29 +706,32 @@ const styles = StyleSheet.create({
   },
   answerBtnText: { color: "#fff", fontSize: scaleFont(16), fontWeight: "900" },
   winNoticeWrap: {
-    position: "absolute",
-    top: scale(78),
-    left: 0,
-    right: 0,
+    ...StyleSheet.absoluteFillObject,
     alignItems: "center",
+    justifyContent: "center",
     zIndex: 60,
   },
   winNotice: {
-    backgroundColor: "rgba(20, 12, 32, 0.97)",
+    backgroundColor: "rgba(10, 8, 32, 0.94)",
     borderRadius: scale(16),
     borderWidth: 2,
     borderColor: ACCENT,
-    paddingVertical: scale(12),
-    paddingHorizontal: scale(24),
+    paddingVertical: scale(20),
+    paddingHorizontal: scale(40),
+    alignItems: "center",
+    gap: scale(6),
     shadowColor: ACCENT,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.5,
     shadowRadius: 14,
     elevation: 10,
   },
+  winNoticeEmoji: { fontSize: scaleFont(34) },
   winNoticeText: {
     color: "#fff",
-    fontSize: scaleFont(19),
+    fontSize: scaleFont(26),
     fontWeight: "900",
+    letterSpacing: 0.5,
+    textAlign: "center",
   },
 });
