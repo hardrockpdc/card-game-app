@@ -42,6 +42,17 @@ export default function HowToShot({ source, caption, markers = [], accent }) {
       </View>
 
       {caption ? <Text style={styles.caption}>{caption}</Text> : null}
+
+      {markers.map((m, i) =>
+        m.label ? (
+          <View key={`leg-${i}`} style={styles.legendRow}>
+            <View style={[styles.legendNum, { backgroundColor: accent }]}>
+              <Text style={styles.legendNumText}>{i + 1}</Text>
+            </View>
+            <Text style={styles.legendText}>{m.label}</Text>
+          </View>
+        ) : null,
+      )}
     </View>
   );
 }
@@ -90,5 +101,30 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
     marginTop: scale(8),
     marginBottom: scale(2),
+  },
+  legendRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: scale(10),
+    marginTop: scale(8),
+  },
+  legendNum: {
+    width: scale(22),
+    height: scale(22),
+    borderRadius: scale(11),
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  legendNumText: {
+    color: "#ffffff",
+    fontSize: scaleFont(12),
+    fontWeight: "900",
+  },
+  legendText: {
+    flex: 1,
+    color: "#e6e9f0",
+    fontSize: scaleFont(14),
+    lineHeight: scaleFont(19),
   },
 });

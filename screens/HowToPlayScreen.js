@@ -166,16 +166,97 @@ const IN_APP_CONTROLS = {
 };
 
 // Annotated screenshots for the "In the App" section, keyed by game id. Each
-// entry: { source: require(...), caption?, markers: [{x,y}, ...] } where marker
-// #i (a numbered dot at x/y percentages) lines up with IN_APP_CONTROLS[#i].
-// Populated as screenshots are captured (assets/howto/<game>.png) — until then
-// the game just shows the text controls.
+// game maps to an array of shots; a shot is { source, caption?, markers } where
+// each marker { x, y, label } draws a numbered dot at x/y percentages of the
+// image and a matching numbered legend row below. Games with shots show these
+// instead of the text controls; games without (e.g. wildround) fall back to the
+// IN_APP_CONTROLS text. x/y were eyeballed from the screenshots — easy to nudge.
 const IN_APP_SHOTS = {
-  // gofish: {
-  //   source: require("../assets/howto/gofish.png"),
-  //   caption: "On your turn…",
-  //   markers: [{ x: 50, y: 86 }, { x: 22, y: 28 }],
-  // },
+  blackjack: [
+    {
+      source: require("../assets/howto/blackjack-bet.jpg"),
+      markers: [
+        { x: 23, y: 54, label: "Tap a chip to set your bet" },
+        { x: 50, y: 76, label: "Then tap Deal to start the hand" },
+      ],
+    },
+    {
+      source: require("../assets/howto/blackjack-play.jpg"),
+      markers: [
+        { x: 33, y: 92, label: "Tap Hit to take another card" },
+        { x: 64, y: 92, label: "Tap Stand to hold your total" },
+      ],
+    },
+  ],
+  goFish: [
+    {
+      source: require("../assets/howto/gofish.jpg"),
+      markers: [
+        { x: 50, y: 75, label: "Tap a rank you hold in your hand" },
+        { x: 50, y: 27, label: "Then tap an opponent to ask for it" },
+      ],
+    },
+  ],
+  conquian: [
+    {
+      source: require("../assets/howto/conquian.jpg"),
+      markers: [
+        { x: 50, y: 31, label: "Tap or drag the active card to take it" },
+        { x: 84, y: 45, label: "Select cards and tap Meld" },
+        { x: 62, y: 55, label: "Or tap Pass" },
+      ],
+    },
+  ],
+  poker: [
+    {
+      source: require("../assets/howto/poker.jpg"),
+      markers: [
+        { x: 28, y: 83, label: "Fold to give up the hand" },
+        { x: 72, y: 83, label: "Check / Call to stay in" },
+        { x: 50, y: 93, label: "Raise to bet more — or All-In" },
+      ],
+    },
+  ],
+  rummy: [
+    {
+      source: require("../assets/howto/rummy.jpg"),
+      markers: [
+        { x: 39, y: 34, label: "Tap the stock or discard to draw" },
+        {
+          x: 50,
+          y: 68,
+          label: "Then meld sets/runs and discard to end your turn",
+        },
+      ],
+    },
+  ],
+  solitaire: [
+    {
+      source: require("../assets/howto/solitaire.jpg"),
+      markers: [
+        {
+          x: 20,
+          y: 28,
+          label: "Tap a card, then tap where to move it (or drag it)",
+        },
+        { x: 79, y: 31, label: "Tap the Stock to deal cards" },
+        { x: 79, y: 57, label: "Build the Foundations (F1–F4) up from Ace" },
+      ],
+    },
+  ],
+  lastcard: [
+    {
+      source: require("../assets/howto/lastcard.jpg"),
+      markers: [
+        {
+          x: 50,
+          y: 58,
+          label: "Tap a card matching the color or number to play it",
+        },
+        { x: 23, y: 32, label: "Can't play? Tap Draw to pick up" },
+      ],
+    },
+  ],
 };
 
 const BLACKJACK = {
@@ -1168,26 +1249,28 @@ export default function HowToPlayScreen({ navigation, route }) {
         />
       ))}
 
-      {IN_APP_CONTROLS[gameId] ? (
+      {IN_APP_SHOTS[gameId] || IN_APP_CONTROLS[gameId] ? (
         <>
           <Text style={styles.sectionHeader}>In the App</Text>
-          {IN_APP_SHOTS[gameId] ? (
-            <HowToShot
-              source={IN_APP_SHOTS[gameId].source}
-              caption={IN_APP_SHOTS[gameId].caption}
-              markers={IN_APP_SHOTS[gameId].markers}
-              accent={accent}
-            />
-          ) : null}
-          {IN_APP_CONTROLS[gameId].map((c, i) => (
-            <StepRow
-              key={`ctrl-${c.title}-${i}`}
-              index={i}
-              title={c.title}
-              text={c.text}
-              accent={accent}
-            />
-          ))}
+          {IN_APP_SHOTS[gameId]
+            ? IN_APP_SHOTS[gameId].map((shot, si) => (
+                <HowToShot
+                  key={`shot-${si}`}
+                  source={shot.source}
+                  caption={shot.caption}
+                  markers={shot.markers}
+                  accent={accent}
+                />
+              ))
+            : IN_APP_CONTROLS[gameId].map((c, i) => (
+                <StepRow
+                  key={`ctrl-${c.title}-${i}`}
+                  index={i}
+                  title={c.title}
+                  text={c.text}
+                  accent={accent}
+                />
+              ))}
         </>
       ) : null}
 
