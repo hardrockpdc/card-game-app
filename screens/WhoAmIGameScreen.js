@@ -16,6 +16,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import GameHeader from "../components/GameHeader";
 import EndOfRoundModal from "../components/EndOfRoundModal";
+import ProfileAvatar from "../components/ProfileAvatar";
+import { getCachedProfile } from "../game/profile";
+import { AVATAR_CHOICES } from "../game/avatars";
+import { toTransmittableAvatar } from "../game/avatarTransmit";
 import {
   createGame,
   setSecret,
@@ -81,12 +85,23 @@ export default function WhoAmIGameScreen({ navigation, route }) {
   const fullRef = useRef(null); // host authoritative state
   const botTimerRef = useRef(null);
   const [gameState, setGameState] = useState(null); // public view
+  // Profile pictures, keyed by player id. Exchanged peer-to-peer at game start
+  // (kept out of the per-turn state broadcasts so big custom photos aren't
+  // re-sent every update). Missing → ProfileAvatar shows the name initial.
+  const [avatarById, setAvatarById] = useState({});
+  const avatarByIdRef = useRef({});
+  function mergeAvatars(updates) {
+    avatarByIdRef.current = { ...avatarByIdRef.current, ...updates };
+    setAvatarById(avatarByIdRef.current);
+  }
   const [privateSecret, setPrivateSecret] = useState(null); // { text } — judge only
   const [secretText, setSecretText] = useState("");
   const [questionText, setQuestionText] = useState("");
   const [showRoundModal, setShowRoundModal] = useState(false);
   const [noticeText, setNoticeText] = useState("");
   const [noticeWord, setNoticeWord] = useState("");
+  const [noticeWinnerId, setNoticeWinnerId] = useState(null);
+  const [noticeWinnerName, setNoticeWinnerName] = useState("");
   const [noticeOn, setNoticeOn] = useState(false);
   const prevRoundRef = useRef(null);
   const noticeTimerRef = useRef(null);
@@ -119,6 +134,37 @@ export default function WhoAmIGameScreen({ navigation, route }) {
     const s = createGame(initialPlayers, { target: TARGET_WINS });
     s.judgeIndex = Math.floor(Math.random() * s.players.length);
     applyState(s);
+  }, []);
+
+  // ── Profile-picture exchange ────────────────────────────────────────────────
+  // Host seeds its own avatar + the bots' and broadcasts the map; each client
+  // sends its avatar to the host, which merges and re-broadcasts to everyone.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const mine = await toTransmittableAvatar(getCachedProfile());
+      if (cancelled) return;
+      if (isHost) {
+        const seed = {};
+        if (mine) seed["host"] = mine;
+        (initialPlayers || [])
+          .filter((p) => p.isAI)
+          .forEach((p, i) => {
+            seed[String(p.id)] = {
+              photoType: "avatar",
+              photoValue:
+                AVATAR_CHOICES[(i * 7 + 3) % AVATAR_CHOICES.length].id,
+            };
+          });
+        mergeAvatars(seed);
+        broadcastToClients({ type: "AVATARS", map: avatarByIdRef.current });
+      } else {
+        sendToHost({ type: "AVATAR", avatar: mine });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // ── Host server listeners ───────────────────────────────────────────────────
@@ -156,6 +202,10 @@ export default function WhoAmIGameScreen({ navigation, route }) {
                 : recordAnswer(s, msg.answer),
             );
             break;
+          case "AVATAR":
+            mergeAvatars({ [clientPid]: msg.avatar ?? null });
+            broadcastToClients({ type: "AVATARS", map: avatarByIdRef.current });
+            break;
         }
       },
     });
@@ -168,6 +218,10 @@ export default function WhoAmIGameScreen({ navigation, route }) {
       onMessage: (msg) => {
         if (msg.type === "GAME_STATE") setGameState(msg.state);
         if (msg.type === "PRIVATE_SECRET") setPrivateSecret(msg.secret ?? null);
+        if (msg.type === "AVATARS") {
+          avatarByIdRef.current = msg.map ?? {};
+          setAvatarById(msg.map ?? {});
+        }
       },
       onDisconnected: () =>
         Alert.alert("Disconnected", "Lost connection to the host.", [
@@ -223,6 +277,8 @@ export default function WhoAmIGameScreen({ navigation, route }) {
       const mine = String(gameState.lastWinner.id) === myPid;
       setNoticeText(mine ? "You got it!" : `${gameState.lastWinner.name} got it!`);
       setNoticeWord(gameState.lastSecret || "");
+      setNoticeWinnerId(String(gameState.lastWinner.id));
+      setNoticeWinnerName(gameState.lastWinner.name || "");
       setNoticeOn(true);
       if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current);
       noticeTimerRef.current = setTimeout(() => setNoticeOn(false), 2400);
@@ -398,6 +454,11 @@ export default function WhoAmIGameScreen({ navigation, route }) {
                       isJudge && { borderColor: ACCENT },
                     ]}
                   >
+                    <ProfileAvatar
+                      profile={avatarById[String(p.id)]}
+                      name={p.name}
+                      size={scale(24)}
+                    />
                     <Text style={styles.scoreName} numberOfLines={1}>
                       {p.name}
                       {p.isAI ? " 🤖" : ""}
@@ -553,7 +614,12 @@ export default function WhoAmIGameScreen({ navigation, route }) {
         pointerEvents="none"
       >
         <View style={styles.winNotice}>
-          <Text style={styles.winNoticeEmoji}>🎉</Text>
+          <ProfileAvatar
+            profile={avatarById[noticeWinnerId]}
+            name={noticeWinnerName}
+            size={scale(72)}
+            style={styles.winNoticeAvatar}
+          />
           <Text style={styles.winNoticeText}>{noticeText}</Text>
           {noticeWord ? (
             <Text style={styles.winNoticeWord}>
@@ -735,7 +801,11 @@ const styles = StyleSheet.create({
     shadowRadius: 14,
     elevation: 10,
   },
-  winNoticeEmoji: { fontSize: scaleFont(34) },
+  winNoticeAvatar: {
+    borderWidth: 2,
+    borderColor: ACCENT,
+    marginBottom: scale(6),
+  },
   winNoticeText: {
     color: "#fff",
     fontSize: scaleFont(26),

@@ -44,6 +44,12 @@ adjudication), reusing `game/GameNetwork.js`.
   only to the judge. Messages: client→host `SET_SECRET` / `ASK_QUESTION` /
   `JUDGE_ANSWER`; host→clients `GAME_STATE` / `PRIVATE_SECRET`. Free-text input
   (TextInput + KeyboardAvoidingView) for both the secret and questions.
+- **Profile pictures:** players' avatars show in the scoreboard + the round-win
+  banner. Exchanged peer-to-peer at game start (not in the per-turn broadcasts):
+  clients `sendToHost({type:"AVATAR"})`, the host merges + broadcasts `AVATARS`
+  (id→avatar). Emoji presets send their id; custom photos are resized + base64
+  data-URI'd by `game/avatarTransmit.js`; rendered via `components/ProfileAvatar`.
+  (Pilot for the multiplayer profile-pictures goal — spread to other games next.)
 - Registration: `screens/LobbyScreen.js` (`GAMES` + `WHEEL_OPTIONS`), `App.js`
   (`WhoAmIGame` route), `game/tableThemes.js` + `components/GameHeader.js`
   (purple "whoami" theme/kicker).
