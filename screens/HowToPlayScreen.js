@@ -201,9 +201,9 @@ const IN_APP_SHOTS = {
     {
       source: require("../assets/howto/conquian.jpg"),
       markers: [
-        { x: 50, y: 31, label: "Tap or drag the active card to take it" },
-        { x: 84, y: 45, label: "Select cards and tap Meld" },
-        { x: 62, y: 55, label: "Or tap Pass" },
+        { x: 50, y: 40, label: "Tap or drag the active card to take it" },
+        { x: 86, y: 58, label: "Select cards and tap Meld" },
+        { x: 63, y: 70, label: "Or tap Pass" },
       ],
     },
   ],
@@ -221,10 +221,10 @@ const IN_APP_SHOTS = {
     {
       source: require("../assets/howto/rummy.jpg"),
       markers: [
-        { x: 39, y: 34, label: "Tap the stock or discard to draw" },
+        { x: 33, y: 42, label: "Tap the stock or discard to draw" },
         {
           x: 50,
-          y: 68,
+          y: 86,
           label: "Then meld sets/runs and discard to end your turn",
         },
       ],
@@ -240,7 +240,7 @@ const IN_APP_SHOTS = {
           label: "Tap a card, then tap where to move it (or drag it)",
         },
         { x: 79, y: 31, label: "Tap the Stock to deal cards" },
-        { x: 79, y: 57, label: "Build the Foundations (F1–F4) up from Ace" },
+        { x: 82, y: 62, label: "Build the Foundations (F1–F4) up from Ace" },
       ],
     },
   ],
@@ -250,10 +250,10 @@ const IN_APP_SHOTS = {
       markers: [
         {
           x: 50,
-          y: 58,
+          y: 73,
           label: "Tap a card matching the color or number to play it",
         },
-        { x: 23, y: 32, label: "Can't play? Tap Draw to pick up" },
+        { x: 29, y: 41, label: "Can't play? Tap Draw to pick up" },
       ],
     },
   ],
