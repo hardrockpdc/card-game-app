@@ -15,6 +15,7 @@ const KICKER_LABELS = {
   solitaire: "SOLITAIRE",
   lastcard: "LAST CARD",
   wildround: "WILD ROUND",
+  whoami: "WHO AM I?",
 };
 
 export default function GameHeader({

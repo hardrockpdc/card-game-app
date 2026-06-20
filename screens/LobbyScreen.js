@@ -86,6 +86,15 @@ const GAMES = [
     minPlayers: 2,
     maxPlayers: 8,
   },
+  {
+    id: "whoami",
+    label: "Who Am I?",
+    screen: "WhoAmIGame",
+    available: true,
+    hasAI: false,
+    minPlayers: 3,
+    maxPlayers: 8,
+  },
 ];
 
 const DEFAULT_MAX_PLAYERS = 4;
@@ -112,6 +121,8 @@ const WHEEL_OPTIONS = [
   { value: "wildRound:mature", title: "Wild Round", subtitle: "Mature 🔞" },
 
   { value: "lastCard", title: "Last Card" },
+
+  { value: "whoami", title: "Who Am I?", subtitle: "Party · type & guess" },
 ];
 
 function parseLobbySelection(value) {

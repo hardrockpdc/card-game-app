@@ -24,6 +24,7 @@ import RummyVariantPickerScreen from "./screens/RummyVariantPickerScreen";
 import RummyGameScreen from "./screens/RummyGameScreen";
 import HowToPlayScreen from "./screens/HowToPlayScreen";
 import WildRoundGameScreen from "./screens/WildRoundGameScreen";
+import WhoAmIGameScreen from "./screens/WhoAmIGameScreen";
 import LastCardGameScreen from "./screens/LastCardGameScreen";
 import GameSetupScreen from "./screens/GameSetupScreen";
 import GoFishPickerScreen from "./screens/GoFishPickerScreen";
@@ -224,6 +225,11 @@ export default function App() {
                 <Stack.Screen
                   name="WildRoundGame"
                   component={WildRoundGameScreen}
+                  options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                  name="WhoAmIGame"
+                  component={WhoAmIGameScreen}
                   options={{ headerShown: false }}
                 />
                 <Stack.Screen
