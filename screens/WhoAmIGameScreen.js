@@ -83,6 +83,9 @@ export default function WhoAmIGameScreen({ navigation, route }) {
   const [secretText, setSecretText] = useState("");
   const [questionText, setQuestionText] = useState("");
   const [showRoundModal, setShowRoundModal] = useState(false);
+  const [roundWinNotice, setRoundWinNotice] = useState(null); // { name, mine }
+  const prevRoundRef = useRef(null);
+  const noticeTimerRef = useRef(null);
 
   // ── Host: apply + broadcast state ───────────────────────────────────────────
   function applyState(newState) {
@@ -184,6 +187,29 @@ export default function WhoAmIGameScreen({ navigation, route }) {
     else hapticLose();
   }, [gameState?.phase]);
 
+  // When the round number advances, the previous round was won — pop a brief
+  // "X got it!" notice (the game auto-advances, so this just announces it).
+  useEffect(() => {
+    const rn = gameState?.roundNumber;
+    if (rn == null) return;
+    if (
+      prevRoundRef.current != null &&
+      rn > prevRoundRef.current &&
+      gameState?.lastWinner
+    ) {
+      setRoundWinNotice({
+        name: gameState.lastWinner.name,
+        mine: String(gameState.lastWinner.id) === myPid,
+      });
+      if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current);
+      noticeTimerRef.current = setTimeout(
+        () => setRoundWinNotice(null),
+        2600,
+      );
+    }
+    prevRoundRef.current = rn;
+  }, [gameState?.roundNumber]);
+
   // Host drives the test bots: when the current actor (judge or asker) is a bot,
   // auto-act after a short delay so the flow can be exercised on one device.
   useEffect(() => {
@@ -233,6 +259,7 @@ export default function WhoAmIGameScreen({ navigation, route }) {
   useEffect(
     () => () => {
       if (botTimerRef.current) clearTimeout(botTimerRef.current);
+      if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current);
     },
     [],
   );
@@ -488,6 +515,19 @@ export default function WhoAmIGameScreen({ navigation, route }) {
         )}
       </KeyboardAvoidingView>
 
+      {roundWinNotice && (
+        <View style={styles.winNoticeWrap} pointerEvents="none">
+          <View style={styles.winNotice}>
+            <Text style={styles.winNoticeText}>
+              🎉{" "}
+              {roundWinNotice.mine
+                ? "You got it!"
+                : `${roundWinNotice.name} got it!`}
+            </Text>
+          </View>
+        </View>
+      )}
+
       <EndOfRoundModal
         visible={showRoundModal}
         title={winnerName}
@@ -637,4 +677,30 @@ const styles = StyleSheet.create({
     paddingVertical: scale(14),
   },
   answerBtnText: { color: "#fff", fontSize: scaleFont(16), fontWeight: "900" },
+  winNoticeWrap: {
+    position: "absolute",
+    top: scale(78),
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    zIndex: 60,
+  },
+  winNotice: {
+    backgroundColor: "rgba(20, 12, 32, 0.97)",
+    borderRadius: scale(16),
+    borderWidth: 2,
+    borderColor: ACCENT,
+    paddingVertical: scale(12),
+    paddingHorizontal: scale(24),
+    shadowColor: ACCENT,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 14,
+    elevation: 10,
+  },
+  winNoticeText: {
+    color: "#fff",
+    fontSize: scaleFont(19),
+    fontWeight: "900",
+  },
 });
