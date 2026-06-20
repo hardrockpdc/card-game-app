@@ -27,9 +27,12 @@ import {
   subscribeGofishTable,
 } from "../game/gofishTheme";
 import TableThemePicker from "../components/TableThemePicker";
+import ReconnectOverlay from "../components/ReconnectOverlay";
 
 const BG = getTableTheme("gofish").table;
 const SAVE_KEY_GOFISH = "@cardnight:save:gofish";
+// Grace window a dropped player has to reconnect before the game ends/continues.
+const RECONNECT_WINDOW_MS = 60000;
 import { SafeAreaView } from "react-native-safe-area-context";
 import Card from "../components/Card";
 import { scale, scaleFont } from "../game/responsive";
@@ -75,6 +78,54 @@ export default function GoFishGameScreen({ navigation, route }) {
   const aiTimerRef = useRef(null);
   const hasMountedRef = useRef(false);
   const lastSaveRef = useRef(0); // BUG-4: auto-save throttle (once / 3s)
+
+  // Mid-game disconnect: when a player drops, the host pauses everyone with a
+  // countdown overlay. `pause` = { name, deadline } while paused (null otherwise);
+  // pausedRef mirrors it so the (mount-time) network listeners read the live value.
+  const [pause, setPause] = useState(null);
+  const pausedRef = useRef(false);
+  const pauseTimerRef = useRef(null);
+
+  function setPaused(next) {
+    pausedRef.current = !!next;
+    setPause(next);
+  }
+
+  // Host: a player dropped — freeze the game and start the reconnect countdown.
+  function startPause(name) {
+    if (aiTimerRef.current) clearTimeout(aiTimerRef.current);
+    const deadline = Date.now() + RECONNECT_WINDOW_MS;
+    setPaused({ name, deadline });
+    broadcastToClients({ type: "PAUSE", name, deadline });
+    if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
+    pauseTimerRef.current = setTimeout(
+      () => endForDisconnect(name),
+      RECONNECT_WINDOW_MS,
+    );
+  }
+
+  // Host: the grace window expired with no reconnect. Phase 1 ends the game.
+  function endForDisconnect(name) {
+    if (pauseTimerRef.current) {
+      clearTimeout(pauseTimerRef.current);
+      pauseTimerRef.current = null;
+    }
+    setPaused(null);
+    broadcastToClients({ type: "GAME_OVER_DISCONNECT", name });
+    Alert.alert(
+      "Player left",
+      `${name} didn't reconnect in time. The game has ended.`,
+      [
+        {
+          text: "OK",
+          onPress: () => {
+            stopServer();
+            navigation.navigate("Home");
+          },
+        },
+      ],
+    );
+  }
   function applyState(next) {
     fullRef.current = next;
     setMyHand(next.hands["host"] ?? []);
@@ -94,7 +145,7 @@ export default function GoFishGameScreen({ navigation, route }) {
   }
 
   function scheduleAI(state) {
-    if (!isHost || state.phase !== "playing") return;
+    if (!isHost || state.phase !== "playing" || pausedRef.current) return;
     const currentP = state.players[state.currentPlayerIndex];
     if (!currentP?.isAI) return;
     if (aiTimerRef.current) clearTimeout(aiTimerRef.current);
@@ -123,6 +174,7 @@ export default function GoFishGameScreen({ navigation, route }) {
   useEffect(() => {
     return () => {
       if (aiTimerRef.current) clearTimeout(aiTimerRef.current);
+      if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
     };
   }, []);
 
@@ -174,6 +226,7 @@ export default function GoFishGameScreen({ navigation, route }) {
     if (!isSinglePlayer) {
       setServerListeners({
         onMessage: (msg, clientId) => {
+          if (pausedRef.current) return; // ignore actions while paused
           const state = fullRef.current;
           if (!state || msg.type !== "ACTION" || msg.action !== "ask") return;
           if (
@@ -182,6 +235,16 @@ export default function GoFishGameScreen({ navigation, route }) {
           )
             return;
           applyState(doAsk(state, clientId, msg.targetId, msg.rank));
+        },
+        // A player dropped mid-game — pause everyone and start the countdown.
+        onClientLeft: ({ id }) => {
+          const state = fullRef.current;
+          if (!state || state.phase !== "playing" || pausedRef.current) return;
+          const player = state.players.find(
+            (p) => String(p.id) === String(id),
+          );
+          if (!player || player.isAI || player.id === "host") return;
+          startPause(player.name);
         },
       });
     }
@@ -193,6 +256,17 @@ export default function GoFishGameScreen({ navigation, route }) {
       onMessage: (msg) => {
         if (msg.type === "GAME_STATE") setGameState(msg);
         if (msg.type === "PRIVATE_HAND") setMyHand(msg.hand);
+        if (msg.type === "PAUSE")
+          setPaused({ name: msg.name, deadline: msg.deadline });
+        if (msg.type === "RESUME") setPaused(null);
+        if (msg.type === "GAME_OVER_DISCONNECT") {
+          setPaused(null);
+          Alert.alert(
+            "Game ended",
+            `${msg.name} left and didn't reconnect in time.`,
+            [{ text: "OK", onPress: () => navigation.navigate("Home") }],
+          );
+        }
       },
       onDisconnected: () =>
         Alert.alert("Disconnected", "Lost connection to the host.", [
@@ -202,6 +276,7 @@ export default function GoFishGameScreen({ navigation, route }) {
   }, []);
 
   function handleAsk() {
+    if (pausedRef.current) return; // frozen while a player is reconnecting
     if (!selectedRank || selectedTarget === null) return;
     if (isHost) {
       const state = fullRef.current;
@@ -564,6 +639,12 @@ export default function GoFishGameScreen({ navigation, route }) {
       />
 
       <YourTurnBanner visible={showTurnBanner} />
+
+      <ReconnectOverlay
+        visible={!!pause}
+        name={pause?.name}
+        deadline={pause?.deadline}
+      />
     </SafeAreaView>
   );
 }
