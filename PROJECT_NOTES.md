@@ -822,6 +822,48 @@ for real multiplayer.**
 > ⚠️ CLAUDE.md still says "8 games across 9 game screens" — now **9 games** with
 > Who Am I? added.
 
+### Multiplayer session, cont. (2026-06-20 → 06-21) — profile pics, bots, Wild Round polish
+
+All pure-JS, no rebuild; 314 Jest tests pass throughout. **All multiplayer
+changes still need device testing — none are verified on real devices.**
+
+**4. Profile pictures across multiplayer — DONE (all 7 MP games).** New reusable
+hook `components/useMultiplayerAvatars.js` + `game/avatarTransmit.js` (emoji
+presets pass through; custom photos resized to 120px JPEG base64). Avatars are
+exchanged **once at game start** (not per-turn) and keyed by player id; bots get
+seeded presets; everything falls back to the name initial. Wired into Who Am I
+(scoreboard + win banner), Go Fish, Poker, Rummy, Conquián, **Last Card**
+(replaced the meaningless face-down card-back with the avatar, kept the
+card-count badge), and **Wild Round** (reveal screen only). **Reason avatars are
+reveal-only in Wild Round:** during `judging` the submissions are anonymous
+(`anonymousSubmissions` strips `playerId`), so showing an author avatar there
+would leak who wrote what.
+
+**5. Solitaire Spider rail compressed.** Stacked Moves/Time vertically (new
+opt-in `stacked` prop on `StatsStrip`) so the landscape right rail is narrower →
+more board width; also tighter gaps/padding and a shorter Deal slot. Applied to
+all five Solitaire variant landscape rails; the non-rail header `leftInfo` stays
+side-by-side.
+
+**6. Test bots: retired from Who Am I, enabled for Wild Round.** Who Am I plays
+well, so its bot scaffolding was removed (lobby `hasAI:false`). Wild Round
+**already had** a complete AI block (judge skip/keep, bot submissions, judge
+pick-winner) that was dead code (gated on single-player, which Wild Round can't
+launch as) — re-gated to run on the **host whenever bots are present**, with the
+AI-judge check fixed to use the `isAI` flag instead of "not me" (otherwise it
+would auto-drive real human clients). Lobby `hasAI:true`.
+
+**7. Wild Round layout review + polish.** Removed the dead "Theme" menu item (it
+never rendered a `TableThemePicker` and read its bg once at module load),
+dropped the redundant "To Win" stat (= 10 − Score) for a static "Goal", deleted
+5 unused style blocks, de-duped the byte-identical `deckCard*` styles into the
+`submissionCard*` ones, and made the selected card obvious (accent border + glow
+instead of a thin white line). Commits: `e712e66` (bots), `85fae35` (WR polish +
+avatars), plus the avatar-rollout and Spider-rail commits.
+
+> **Standing decision:** every commit is pushed to origin immediately (set
+> 2026-06-20) — no longer gated on an explicit "push".
+
 ## 💡 Important Reminders
 
 ### Daily workflow
