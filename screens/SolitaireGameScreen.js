@@ -1362,7 +1362,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                 }
                 onPress={() => dispatch(tapAction({ type: "stock" }))}
                 hinted={hint?.source?.type === "stock"}
-                style={{ width: slotW, height: slotH }}
+                style={{ width: slotW, height: Math.round(slotW * 1.05) }}
               />
             </View>
             <View style={[styles.railSlotRow, styles.railFoundationsTop]}>
@@ -2229,13 +2229,13 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   rightRail: {
-    gap: 8,
+    gap: 5,
     alignItems: "stretch",
     backgroundColor: "#1b2433", // a touch lighter than the board (#141a24)
     borderWidth: 1,
     borderColor: "#2a3650",
     borderRadius: 14,
-    padding: 8,
+    padding: 6,
   },
   railSlotRow: {
     flexDirection: "row",
@@ -2243,7 +2243,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   railFoundationsTop: {
-    marginTop: 6, // small gap between the Stock/Waste row and the foundations
+    marginTop: 2, // small gap between the Stock/Waste row and the foundations
   },
   statsBar: {
     flexDirection: "row",
@@ -2266,13 +2266,13 @@ const styles = StyleSheet.create({
   metaPill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
     borderRadius: 999,
     borderWidth: 1,
     borderColor: "#263146",
     backgroundColor: "#101521",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
   },
   metaPillLabel: {
     color: "#8799b8",
