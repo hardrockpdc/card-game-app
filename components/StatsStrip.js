@@ -24,7 +24,7 @@ function toRgba(hex, alpha) {
  * - gameId: string (used to pull accent color from getTableTheme)
  * - items: Array<{ label: string, value: string | number, accent?: boolean }>
  */
-export default function StatsStrip({ gameId, items, bare }) {
+export default function StatsStrip({ gameId, items, bare, stacked }) {
   const theme = getTableTheme(gameId);
   const accent = theme.accent;
   // Landscape: lay each stat out as "LABEL value" on one line and trim the
@@ -43,9 +43,9 @@ export default function StatsStrip({ gameId, items, bare }) {
         bare ? styles.stripBare : { borderColor: toRgba(theme.accent, 0.12) },
       ]}
     >
-      <View style={styles.row}>
+      <View style={[styles.row, stacked && styles.rowStacked]}>
         {items?.map((item, idx) => {
-          const showDivider = idx !== 0;
+          const showDivider = idx !== 0 && !stacked;
           const baseValueColor = item?.accent ? accent : styles.value.color;
           const valueColor = item?.valueColor ?? baseValueColor;
 
@@ -108,6 +108,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "nowrap",
     alignItems: "center",
+  },
+  // Stacked: each stat sits on its own line ("MOVES 0" over "TIME 0:00"), so the
+  // strip is narrow instead of wide — used in the Spider right rail.
+  rowStacked: {
+    flexDirection: "column",
+    alignItems: "flex-start",
+    gap: scale(2),
   },
   item: {
     flex: 1,

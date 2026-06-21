@@ -1350,7 +1350,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
 
           <View style={[styles.rightRail, { zIndex: 1 }]}>
             <View style={styles.landscapeHeaderRight}>
-              <StatsStrip gameId="solitaire" items={statsItems} bare />
+              <StatsStrip gameId="solitaire" items={statsItems} bare stacked />
               <GameMenuButton menuItems={menuItems} />
             </View>
             <View style={styles.railSlotRow}>
