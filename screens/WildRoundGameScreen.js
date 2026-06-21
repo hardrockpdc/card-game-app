@@ -1229,7 +1229,15 @@ export default function WildRoundGameScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: BG, padding: scale(16) },
+  container: {
+    flex: 1,
+    backgroundColor: BG,
+    paddingHorizontal: scale(16),
+    paddingTop: scale(16),
+    // Extra bottom room so the Submit / Next Round button clears the gesture
+    // area when the system bars are hidden (immersive). Matches Go Fish.
+    paddingBottom: scale(40),
+  },
 
   promptBox: {
     backgroundColor: "#2d1b69",
