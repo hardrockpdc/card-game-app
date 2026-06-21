@@ -58,6 +58,8 @@ import {
   HapticStyle,
 } from "../game/haptics";
 import { LC } from "../game/lastCardImages";
+import ProfileAvatar from "../components/ProfileAvatar";
+import useMultiplayerAvatars from "../components/useMultiplayerAvatars";
 
 const SAVE_KEY_LASTCARD = "@cardnight:save:lastcard";
 
@@ -204,6 +206,8 @@ export default function LastCardGameScreen({ navigation, route }) {
   } = route.params;
   const isSinglePlayer = role === "singleplayer";
   const isHost = role === "host" || isSinglePlayer;
+  const { avatarById, handleHostMessage, handleClientMessage } =
+    useMultiplayerAvatars({ isHost, players: initialPlayers });
   const myPid = isHost
     ? MY_ID
     : String(initialPlayers.find((p) => p.name === myName)?.id ?? myName);
@@ -673,6 +677,7 @@ export default function LastCardGameScreen({ navigation, route }) {
           setStatusMsg(`Player ${id} left the game.`);
         },
         onMessage: (msg, clientId) => {
+          if (handleHostMessage(msg, clientId)) return;
           const s = fullRef.current;
           if (!s || s.gameOver) return;
           const pid = String(clientId);
@@ -742,6 +747,7 @@ export default function LastCardGameScreen({ navigation, route }) {
     if (isHost) return;
     setClientListeners({
       onMessage: (msg) => {
+        if (handleClientMessage(msg)) return;
         if (msg.type === "GAME_STATE") {
           const shouldShowColorPicker =
             awaitingDrawRef.current &&
@@ -1033,10 +1039,10 @@ export default function LastCardGameScreen({ navigation, route }) {
                 ]}
               >
                 <View style={styles.seatCardWrap}>
-                  <Image
-                    source={LC.card_back}
-                    style={styles.seatCardBack}
-                    resizeMode="contain"
+                  <ProfileAvatar
+                    profile={avatarById[String(p.id)]}
+                    name={p.name}
+                    size={scale(48)}
                   />
                   <View
                     style={[
@@ -1370,15 +1376,10 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
   },
   seatCardWrap: {
-    width: scale(40),
-    height: scale(54),
+    width: scale(48),
+    height: scale(48),
     alignItems: "center",
     justifyContent: "center",
-  },
-  seatCardBack: {
-    width: scale(40),
-    height: scale(54),
-    borderRadius: scale(6),
   },
   seatCountBadge: {
     position: "absolute",
