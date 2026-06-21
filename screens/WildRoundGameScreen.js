@@ -1143,7 +1143,7 @@ export default function WildRoundGameScreen({ navigation, route }) {
                           styles.revealCarouselPage,
                           {
                             width: revealCardWidth,
-                            height: revealCardHeight,
+                            height: "100%",
                           },
                         ]}
                       >
@@ -1301,6 +1301,7 @@ const styles = StyleSheet.create({
   },
   revealBody: {
     flex: 1,
+    minHeight: 0,
   },
   revealPromptSection: {
     marginBottom: scale(16),
@@ -1347,10 +1348,12 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   revealCarouselSection: {
+    flex: 1,
+    minHeight: 0,
     marginBottom: scale(16),
   },
   revealCarouselList: {
-    flexGrow: 0,
+    flex: 1,
   },
   revealCarouselContent: {
     alignItems: "stretch",
