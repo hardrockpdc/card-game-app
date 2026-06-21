@@ -45,34 +45,6 @@ const theme = getTableTheme("whoami");
 const BG = theme.table;
 const ACCENT = theme.accent;
 
-// Test bots (canned content). They can't truly reason about free text — a bot
-// judge picks a secret from this list and answers with simple logic; bot askers
-// send generic questions to drive the turns. Enough to exercise the flow solo.
-const BOT_DELAY_MS = 1300;
-const BOT_SECRETS = [
-  "Tom Hanks",
-  "Batman",
-  "Taylor Swift",
-  "a giraffe",
-  "Spider-Man",
-  "Albert Einstein",
-  "Mickey Mouse",
-  "a slice of pizza",
-  "Serena Williams",
-  "Yoda",
-];
-const BOT_QUESTIONS = [
-  "Are you a real person?",
-  "Are you fictional?",
-  "Are you an animal?",
-  "Are you alive today?",
-  "Are you in movies?",
-  "Are you an athlete?",
-  "Are you a musician?",
-  "Do you wear a costume?",
-];
-const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
-
 export default function WhoAmIGameScreen({ navigation, route }) {
   const { role, myName, players: initialPlayers } = route.params;
   const isHost = role === "host";
@@ -81,7 +53,6 @@ export default function WhoAmIGameScreen({ navigation, route }) {
     : String(initialPlayers.find((p) => p.name === myName)?.id ?? myName);
 
   const fullRef = useRef(null); // host authoritative state
-  const botTimerRef = useRef(null);
   const [gameState, setGameState] = useState(null); // public view
   // Profile pictures shared across the table (scoreboard + win banner).
   const { avatarById, handleHostMessage, handleClientMessage } =
@@ -254,55 +225,8 @@ export default function WhoAmIGameScreen({ navigation, route }) {
     }).start();
   }, [noticeOn]);
 
-  // Host drives the test bots: when the current actor (judge or asker) is a bot,
-  // auto-act after a short delay so the flow can be exercised on one device.
-  useEffect(() => {
-    if (!isHost) return;
-    if (botTimerRef.current) clearTimeout(botTimerRef.current);
-    const s = fullRef.current;
-    if (!s || s.phase === "gameOver") return;
-
-    let actorIsBot = false;
-    if (s.phase === "choosing") actorIsBot = !!s.players[s.judgeIndex]?.isAI;
-    else if (s.phase === "asking")
-      actorIsBot = s.pendingQuestion
-        ? !!s.players[s.judgeIndex]?.isAI
-        : !!currentAsker(s)?.isAI;
-    if (!actorIsBot) return;
-
-    botTimerRef.current = setTimeout(() => {
-      const cur = fullRef.current;
-      if (!cur) return;
-      if (cur.phase === "choosing" && cur.players[cur.judgeIndex]?.isAI) {
-        applyState(setSecret(cur, pick(BOT_SECRETS)));
-      } else if (cur.phase === "asking") {
-        const judgeIsBot = !!cur.players[cur.judgeIndex]?.isAI;
-        if (cur.pendingQuestion && judgeIsBot) {
-          const secret = (cur.secret?.text || "").toLowerCase();
-          const q = (cur.pendingQuestion.question || "").trim().toLowerCase();
-          // Test cheat: typing "i win" makes a bot judge award the round, so the
-          // flow can be advanced without knowing the bot's secret.
-          if (q === "i win" || (secret && q.includes(secret))) {
-            applyState(awardRound(cur));
-          } else {
-            applyState(recordAnswer(cur, Math.random() < 0.35 ? "yes" : "no"));
-          }
-        } else if (!cur.pendingQuestion && currentAsker(cur)?.isAI) {
-          applyState(askQuestion(cur, pick(BOT_QUESTIONS)));
-        }
-      }
-    }, BOT_DELAY_MS);
-  }, [
-    isHost,
-    gameState?.phase,
-    gameState?.roundNumber,
-    gameState?.askerIndex,
-    gameState?.pendingQuestion,
-  ]);
-
   useEffect(
     () => () => {
-      if (botTimerRef.current) clearTimeout(botTimerRef.current);
       if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current);
     },
     [],
@@ -416,7 +340,6 @@ export default function WhoAmIGameScreen({ navigation, route }) {
                     />
                     <Text style={styles.scoreName} numberOfLines={1}>
                       {p.name}
-                      {p.isAI ? " 🤖" : ""}
                       {isJudge ? " 🎙️" : ""}
                     </Text>
                     <Text style={[styles.scoreVal, { color: ACCENT }]}>

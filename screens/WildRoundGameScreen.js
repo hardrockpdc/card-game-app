@@ -506,14 +506,19 @@ export default function WildRoundGameScreen({ navigation, route }) {
     return () => sub.remove();
   }, [navigation, isHost]);
 
-  // ── AI automation (singleplayer only) ──────────────────────────────────────
+  // ── AI automation (host drives the bots) ────────────────────────────────────
+  // Runs on the host for both single-player and a multiplayer game that has bot
+  // players in it (added from the lobby). The host owns the authoritative state,
+  // so it acts for every `isAI` player — judges skip/keep prompts and pick a
+  // winner; non-judge bots submit a random card. Human clients (no `isAI`) are
+  // never auto-driven.
   const aiPhase = gameState?.phase;
   const aiJudgeIndex = gameState?.judgeIndex;
   useEffect(() => {
-    if (!isSinglePlayer || !gameState) return;
+    if (!isHost || !gameState) return;
     const s = fullRef.current;
     if (!s) return;
-    const isAIJudge = s.players[s.judgeIndex]?.id !== myPid;
+    const isAIJudge = !!s.players[s.judgeIndex]?.isAI;
 
     if (gameState.phase === "judgeSkip" && isAIJudge) {
       const t = setTimeout(() => {
