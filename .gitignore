@@ -45,3 +45,7 @@ assets/_card_originals_backup/
 
 # scratch / temp files
 *.tmp
+
+# review screenshots — temporary holding area; keep the folder + README, ignore the images
+review-screenshots/*
+!review-screenshots/README.md
