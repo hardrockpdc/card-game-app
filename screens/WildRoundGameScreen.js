@@ -15,6 +15,8 @@ import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import GameHeader from "../components/GameHeader";
 import EndOfRoundModal from "../components/EndOfRoundModal";
 import StatsStrip from "../components/StatsStrip";
+import ProfileAvatar from "../components/ProfileAvatar";
+import useMultiplayerAvatars from "../components/useMultiplayerAvatars";
 import {
   createDeck,
   dealHands,
@@ -92,6 +94,10 @@ export default function WildRoundGameScreen({ navigation, route }) {
   const myPid = isHost
     ? "host"
     : String(initialPlayers.find((p) => p.name === myName)?.id ?? myName);
+
+  // Profile pictures shared across the table (shown on the reveal screen).
+  const { avatarById, handleHostMessage, handleClientMessage } =
+    useMultiplayerAvatars({ isHost, players: initialPlayers });
 
   const fullRef = useRef(null);
   const lastPromptRef = useRef(null);
@@ -380,6 +386,7 @@ export default function WildRoundGameScreen({ navigation, route }) {
       onClientJoined: () => {},
       onClientLeft: () => {},
       onMessage: (msg, clientId) => {
+        if (handleHostMessage(msg, clientId)) return;
         const s = fullRef.current;
         if (!s) return;
         const clientPid = String(clientId);
@@ -449,6 +456,7 @@ export default function WildRoundGameScreen({ navigation, route }) {
     if (isHost) return;
     setClientListeners({
       onMessage: (msg) => {
+        if (handleClientMessage(msg)) return;
         if (msg.type === "GAME_STATE") setGameState(msg.state);
         if (msg.type === "PRIVATE_HAND") {
           setMyHand(msg.hand ?? []);
@@ -702,7 +710,6 @@ export default function WildRoundGameScreen({ navigation, route }) {
       disabled: !isHost,
     },
     { type: "howto", gameId: "wildround" },
-    { type: "theme" },
     { type: "divider" },
     {
       type: "quit",
@@ -734,13 +741,7 @@ export default function WildRoundGameScreen({ navigation, route }) {
           },
           { label: "Round", value: gs.roundNumber ?? 1 },
           { label: "Judge", value: gs.players?.[gs.judgeIndex]?.name ?? "—" },
-          {
-            label: "To Win",
-            value:
-              WIN_SCORE -
-              (gs.players.find((p) => String(p.id) === String(myPid))?.score ??
-                0),
-          },
+          { label: "Goal", value: WIN_SCORE },
         ]}
       />
       {/* Prompt box */}
@@ -951,10 +952,10 @@ export default function WildRoundGameScreen({ navigation, route }) {
                 >
                   <TouchableOpacity
                     style={[
-                      styles.deckCard,
+                      styles.submissionCard,
                       selectedSub ===
                         gs.anonymousSubmissions?.[judgeDeckIndex]?.cardId &&
-                        styles.deckCardSelected,
+                        styles.submissionCardSelected,
                     ]}
                     onPress={() => {
                       const card = gs.anonymousSubmissions?.[judgeDeckIndex];
@@ -965,7 +966,7 @@ export default function WildRoundGameScreen({ navigation, route }) {
                     }}
                     activeOpacity={0.9}
                   >
-                    <Text style={styles.deckCardText}>
+                    <Text style={styles.submissionCardText}>
                       {gs.anonymousSubmissions?.[judgeDeckIndex]?.cardText}
                     </Text>
                   </TouchableOpacity>
@@ -1029,8 +1030,8 @@ export default function WildRoundGameScreen({ navigation, route }) {
                       ]}
                       {...viewerPanResponder.panHandlers}
                     >
-                      <View style={styles.deckCard}>
-                        <Text style={styles.deckCardText}>
+                      <View style={styles.submissionCard}>
+                        <Text style={styles.submissionCardText}>
                           {subs[viewerDeckIndex]?.cardText}
                         </Text>
                       </View>
@@ -1098,10 +1099,19 @@ export default function WildRoundGameScreen({ navigation, route }) {
                   </View>
                 </View>
 
-                <Text style={styles.revealWinnerLabel}>🏆 WINNER</Text>
-                <Text style={styles.revealWinnerName}>
-                  {winPlayer?.name ?? "Winner"}
-                </Text>
+                <View style={styles.revealWinnerRow}>
+                  <ProfileAvatar
+                    profile={avatarById[String(gs.lastWinnerId)]}
+                    name={winPlayer?.name ?? "Winner"}
+                    size={scale(40)}
+                  />
+                  <View style={styles.revealWinnerTextWrap}>
+                    <Text style={styles.revealWinnerLabel}>🏆 WINNER</Text>
+                    <Text style={styles.revealWinnerName}>
+                      {winPlayer?.name ?? "Winner"}
+                    </Text>
+                  </View>
+                </View>
 
                 <View style={styles.revealCarouselSection}>
                   <FlatList
@@ -1148,9 +1158,16 @@ export default function WildRoundGameScreen({ navigation, route }) {
                           <Text style={styles.revealAnswerText}>
                             {item.cardText}
                           </Text>
-                          <Text style={styles.revealCardPlayerName}>
-                            {item.playerName}
-                          </Text>
+                          <View style={styles.revealCardAuthor}>
+                            <ProfileAvatar
+                              profile={avatarById[String(item.playerId)]}
+                              name={item.playerName}
+                              size={scale(22)}
+                            />
+                            <Text style={styles.revealCardPlayerName}>
+                              {item.playerName}
+                            </Text>
+                          </View>
                         </View>
                       </View>
                     )}
@@ -1249,22 +1266,6 @@ const styles = StyleSheet.create({
     marginBottom: scale(8),
   },
 
-  cardList: { flex: 1, marginBottom: scale(12) },
-  answerCard: {
-    backgroundColor: "#16213e",
-    borderRadius: scale(10),
-    borderWidth: 1.5,
-    borderColor: "#334",
-    padding: scale(14),
-    marginBottom: scale(8),
-  },
-  answerCardSelected: { borderColor: "#e94560", backgroundColor: "#2a1020" },
-  answerCardText: {
-    color: "#ffffff",
-    fontSize: scaleFont(15),
-    lineHeight: scale(21),
-  },
-
   primaryBtn: {
     backgroundColor: "#e94560",
     borderRadius: scale(10),
@@ -1324,19 +1325,26 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     textAlign: "center",
   },
+  revealWinnerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: scale(10),
+    marginBottom: scale(16),
+  },
+  revealWinnerTextWrap: {
+    alignItems: "flex-start",
+  },
   revealWinnerLabel: {
     color: "#FFD700",
     fontSize: scaleFont(18),
     fontWeight: "800",
-    textAlign: "center",
-    marginBottom: scale(4),
+    marginBottom: scale(2),
   },
   revealWinnerName: {
     color: "#ffffff",
     fontSize: scaleFont(16),
     fontWeight: "700",
-    textAlign: "center",
-    marginBottom: scale(16),
   },
   revealCarouselSection: {
     marginBottom: scale(16),
@@ -1382,11 +1390,17 @@ const styles = StyleSheet.create({
     textAlign: "center",
     flex: 1,
   },
+  revealCardAuthor: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: scale(8),
+    marginTop: scale(16),
+  },
   revealCardPlayerName: {
     color: "#c4c4d4",
     fontSize: scaleFont(14),
     textAlign: "center",
-    marginTop: scale(16),
   },
   revealDotsRow: {
     flexDirection: "row",
@@ -1406,13 +1420,6 @@ const styles = StyleSheet.create({
     height: scale(10),
     borderRadius: scale(5),
     backgroundColor: "#FFD700",
-  },
-  revealScoreLine: {
-    color: "#FFD700",
-    fontSize: scaleFont(16),
-    fontWeight: "700",
-    textAlign: "center",
-    marginBottom: scale(12),
   },
   revealFooter: {
     marginTop: "auto",
@@ -1450,32 +1457,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: scale(24),
   },
+  // Selected answer/judge card — a clear accent border + glow, not a thin white
+  // line that's easy to miss. Shared by the submission and judging carousels.
   submissionCardSelected: {
-    borderColor: "#ffffff",
+    borderColor: "#e94560",
+    borderWidth: 2.5,
+    shadowColor: "#e94560",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.7,
+    shadowRadius: 12,
+    elevation: 8,
   },
   submissionCardText: {
-    color: "#ffffff",
-    fontSize: scaleFont(22),
-    fontWeight: "700",
-    textAlign: "center",
-    lineHeight: scale(30),
-  },
-  deckCard: {
-    flex: 1,
-    backgroundColor: "#1a1a3e",
-    borderWidth: 1,
-    borderColor: "#333",
-    borderRadius: scale(16),
-    overflow: "hidden",
-    position: "relative",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: scale(24),
-  },
-  deckCardSelected: {
-    borderColor: "#ffffff",
-  },
-  deckCardText: {
     color: "#ffffff",
     fontSize: scaleFont(22),
     fontWeight: "700",
