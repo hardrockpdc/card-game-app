@@ -1277,7 +1277,7 @@ app-wide.
 ### 🚀 IMPROVEMENTS (post-launch)
 
 - [ ] **IMP-1** — `__DEV__` debug overlay
-- [~] **IMP-2** — Jest tests for game logic. Lean app-decoupled Jest setup (`npm test`). **323 tests across 22 suites as of 2026-06-23** (started at 150 on 2026-06-01/02). Covers all pure-logic modules (deck/blackjack, poker, conquian, rummy, lastCard, solitaire, gofish, wildround, whoami) **plus** several reducers (`solitaire.reducer`, `rummy.reducer`, `conquian.transitions`), AI move selection (`ai-pickers`, `poker.ai`), `gameSaves`, `wallet`, and `profile`. Still not covered: `GameNetwork` (TCP/UDP — needs a two-device harness) and the React screen components themselves.
+- [~] **IMP-2** — Jest tests for game logic. Lean app-decoupled Jest setup (`npm test`). **331 tests across 23 suites as of 2026-06-23** (started at 150 on 2026-06-01/02). Covers all pure-logic modules (deck/blackjack, poker, conquian, rummy, lastCard, solitaire, gofish, wildround, whoami) **plus** several reducers (`solitaire.reducer`, `rummy.reducer`, `conquian.transitions`), AI move selection (`ai-pickers`, `poker.ai`), `gameSaves`, `wallet`, and `profile`. Still not covered: `GameNetwork` (TCP/UDP — needs a two-device harness) and the React screen components themselves.
 - [ ] **IMP-3** — Remote-loadable wildround cards (OTA content updates)
 - [ ] **IMP-4** — Centralized round-over helper
 - [ ] **IMP-5** — "Quick Match" button on Home
@@ -2147,8 +2147,10 @@ If you want a suggested path:
   was present) so jest/bundler run here. Confirmed the full suite green, then
   **expanded `whoami.test.js` 17→26 tests** (awardRound no-pending + phase-guard +
   'gotit' history branches, single/two-player asker edges, purity of
-  recordAnswer/awardRound/nextRound). Suite now **323 tests / 22 suites, all
-  green**. Updated IMP-2 to reflect real current coverage.
+  recordAnswer/awardRound/nextRound). Added `__tests__/rummy.knock.test.js` (8
+  tests) for `canRummyPlayerKnock` — gin/500 knock thresholds, variant routing
+  (same hand, different verdict), Indian-Rummy run requirement, null-safety. Suite
+  now **331 tests / 23 suites, all green**. Updated IMP-2 to reflect real coverage.
 - Notes: standing rule added as CLAUDE.md §3.6 — keep docs updated as part of every
   change, no stale docs.
 
