@@ -110,7 +110,7 @@ export default function WildRoundGameScreen({ navigation, route }) {
   const [judgeDeckIndex, setJudgeDeckIndex] = useState(0);
   const [viewerDeckIndex, setViewerDeckIndex] = useState(0);
   const [showRoundModal, setShowRoundModal] = useState(false);
-  const { width, height } = useWindowDimensions();
+  const { width } = useWindowDimensions();
   const [revealIndex, setRevealIndex] = useState(0);
   useEffect(() => {
     if (privateJudgePrompt) lastPromptRef.current = privateJudgePrompt;
@@ -128,7 +128,6 @@ export default function WildRoundGameScreen({ navigation, route }) {
     }
   }, [gameState?.phase]);
   const revealCardWidth = Math.max(width - 32, 0);
-  const revealCardHeight = Math.round(height * 0.50);
 
   const deckIndexRef = useRef(0);
   const myHandRef = useRef(myHand);
@@ -848,7 +847,7 @@ export default function WildRoundGameScreen({ navigation, route }) {
                       styles.submissionCarouselPage,
                       {
                         width: revealCardWidth,
-                        height: revealCardHeight,
+                        height: "100%",
                       },
                     ]}
                   >
@@ -1447,7 +1446,7 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   submissionCarouselList: {
-    flexGrow: 0,
+    flex: 1,
   },
   submissionCarouselContent: {
     alignItems: "stretch",
