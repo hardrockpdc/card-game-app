@@ -176,4 +176,86 @@ describe("checkWin / toPublic", () => {
     expect(pub.pendingQuestion.question).toBe("Real?");
     expect(pub.target).toBe(3);
   });
+
+  test("toPublic surfaces lastWinner/lastSecret/winner after a win", () => {
+    const pub = toPublic(awardRound(setSecret(fresh({ target: 1 }), "Yoda")));
+    expect(pub.secret).toBeUndefined();
+    expect(pub.lastWinner).toEqual({ id: "b", name: "Bob" });
+    expect(pub.lastSecret).toBe("Yoda");
+    expect(pub.winner).toEqual({ id: "b", name: "Bob", score: 1 });
+  });
+});
+
+describe("awardRound — edge cases", () => {
+  test("ignored when not in the asking phase", () => {
+    const s = fresh(); // still "choosing"
+    expect(awardRound(s)).toBe(s);
+    const over = awardRound(setSecret(fresh({ target: 1 }), "Yoda"));
+    expect(over.phase).toBe("gameOver");
+    expect(awardRound(over)).toBe(over); // gameOver is not "asking"
+  });
+
+  test("with NO pending question, credits the current asker and logs no 'gotit'", () => {
+    const asking = setSecret(fresh(), "Yoda"); // Bob is current asker, none pending
+    const s = awardRound(asking);
+    expect(s.players.find((p) => p.id === "b").score).toBe(1);
+    expect(s.lastWinner).toEqual({ id: "b", name: "Bob" });
+    // no pending question -> history is not extended with a 'gotit' marker
+    expect(s.history).toEqual([]);
+  });
+
+  test("with a pending question, logs a 'gotit' history entry for that asker", () => {
+    let s = setSecret(fresh({ target: 1 }), "Yoda");
+    s = recordAnswer(askQuestion(s, "Fictional?"), "yes"); // Bob asked, -> Cara
+    s = askQuestion(s, "Is it Yoda?"); // Cara now pending
+    const won = awardRound(s);
+    expect(won.winner.id).toBe("c"); // Cara, the pending asker, wins (not Bob)
+    expect(won.history).toContainEqual({
+      askerId: "c",
+      askerName: "Cara",
+      question: "Is it Yoda?",
+      answer: "gotit",
+    });
+  });
+});
+
+describe("single / two-player asker edges", () => {
+  test("currentAsker is null when the only player is the judge", () => {
+    const solo = createGame([{ id: "a", name: "Ann" }]);
+    expect(nonJudgePlayers(solo)).toEqual([]);
+    expect(currentAsker(solo)).toBeNull();
+    // askQuestion can't proceed with no asker
+    expect(askQuestion(setSecret(solo, "Yoda"), "Real?").pendingQuestion).toBeNull();
+  });
+
+  test("two players: the single asker keeps the turn after answers", () => {
+    const two = createGame([
+      { id: "a", name: "Ann" },
+      { id: "b", name: "Bob" },
+    ]);
+    let s = recordAnswer(askQuestion(setSecret(two, "Yoda"), "Real?"), "no");
+    expect(currentAsker(s).id).toBe("b"); // wraps back to the same lone asker
+  });
+});
+
+describe("purity — mutating functions return new state", () => {
+  const snap = (s) => JSON.parse(JSON.stringify(s));
+  test("recordAnswer does not mutate input", () => {
+    const p = askQuestion(setSecret(fresh(), "Yoda"), "Fictional?");
+    const before = snap(p);
+    recordAnswer(p, "yes");
+    expect(p).toEqual(before);
+  });
+  test("awardRound does not mutate input", () => {
+    const p = askQuestion(setSecret(fresh(), "Yoda"), "Is it Yoda?");
+    const before = snap(p);
+    awardRound(p);
+    expect(p).toEqual(before);
+  });
+  test("nextRound does not mutate input", () => {
+    const s = setSecret(fresh(), "Yoda");
+    const before = snap(s);
+    nextRound(s);
+    expect(s).toEqual(before);
+  });
 });
