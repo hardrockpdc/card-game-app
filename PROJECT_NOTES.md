@@ -1181,7 +1181,7 @@ app-wide.
 ### ♿ ACCESSIBILITY
 
 - [x] **ACC-1** — Wild Round pagination dots + Spider fly-away ghosts now hidden from screen readers (decorative; the "X / Y" counter already announces position). Commit `79bc656`.
-- [ ] **ACC-2** — Deal animation may interfere with screen reader focus (Rummy/Conquián 10-card deal). ⚠️ NOTE (2026-06-02): the v3 recipe `accessibilityElementsHidden={!hasMountedRef.current}` keys off a **ref**, which doesn't trigger a re-render — the hand would stay hidden after the deal. Needs a state flag instead. Deferred.
+- [x] **ACC-2 — DONE 2026-06-23 (`80e2850`), pending device test.** Hand container in `RummyGameScreen` + `ConquianGameScreen` is hidden from screen readers during the fresh-deal animation, then re-revealed. Uses a **state flag** (`handReady`) — not the ref the old recipe wrongly specified — so the re-reveal actually re-renders. Fail-safe: defaults to `true`, set `false` only on a fresh deal, with a guaranteed 1400ms `setTimeout` re-reveal (timer cleared on unmount); a missed re-reveal can never permanently hide the hand. Cross-platform (`accessibilityElementsHidden` iOS + `importantForAccessibility` Android). **Not yet verified with TalkBack/VoiceOver on a device.**
 
 ### 🎨 UX POLISH
 
@@ -1800,6 +1800,14 @@ In `SolitaireGameScreen.js`, find the fly-away ghost cards render (the `spiderFl
 
 ## ACC-2. Deal animation may interfere with screen reader focus on rapidly-mounting cards
 
+> **✅ RESOLVED 2026-06-23 (`80e2850`) — pending device test.** Implemented in
+> `RummyGameScreen.js` + `ConquianGameScreen.js` with a `handReady` **state flag**
+> (fail-safe default `true`; hidden only during the fresh deal; guaranteed 1400ms
+> re-reveal timer). See the tracker entry above. The original "The fix" recipe
+> below is **wrong** (it keys off `hasMountedRef`, a ref — no re-render — so the
+> hand would never un-hide); kept only to show what NOT to do. Still needs a
+> TalkBack/VoiceOver pass on a real device.
+
 **Effort:** 15 minutes
 **Risk if ignored:** Screen-reader users may have their focus jump around or get lost when cards animate in (especially Rummy's 10-card deal)
 
@@ -2052,7 +2060,7 @@ If you want a suggested path:
 
 ### Polish
 - ✅ ~~BUG-4~~ (`5748463`), ✅ ~~BUG-3~~ (lobby `stopBroadcasting`), ✅ ~~CQ-13~~ (`3eb638a`), ✅ ~~UX-1~~ (`aeeca46`), ✅ ~~UX-2~~ (`fd37a71`), ✅ ~~ACC-1~~ (`79bc656`)
-3. **ACC-2** — screen-reader focus during the deal — needs a state flag (not a ref); see the tracker note
+- ✅ ~~**ACC-2**~~ — screen-reader focus during the deal — DONE 2026-06-23 (`80e2850`) with a state flag; pending device test
 
 ### Post-launch (v1.1)
 10. ~~**BUG-5**~~ — closed (Wild Round is multiplayer-only, no save needed)
@@ -2103,6 +2111,24 @@ If you want a suggested path:
   - Verified still-open/deferred: CQ-14 (raw `JSON.parse`, no schema), PERF-3 (full-state broadcast — compounds BUG-6). `wallet.js` looks solid (write-serializing queue); `ErrorBoundary` fine.
 - Incidental: `react-native-reanimated` is already present in `node_modules` as a transitive dep (not in package.json) — relevant to KICKOFF Task 1.
 - **Fixes landed same day** (all device-free to write, verify on device): **BUG-6** TCP reassembly buffer (`734dae9`), **UX-1** theme accent + contrast (`aeeca46`), **UX-2** conditional Blackjack modal delay (`fd37a71`), **ACC-1** hide decorative dots/ghosts from screen readers (`79bc656`). **ACC-2 deferred** (ref → no re-render; needs a state flag). Remaining open bug: **BUG-5** (WildRound save/resume — a feature, needs a design pass). Deliberately not touched: CQ-1…12 refactors, PERF-1/2 image rework, CQ-14 (v1.1 schema versioning).
+
+### Session 4 — 2026-06-23 (doc sync + branch cleanup + ACC-2)
+- **Doc accuracy sweep** (`ff8876a`, `8b18a79`): brought CLAUDE.md + PROJECT_NOTES
+  back in line with the actual codebase. 8→9 games (Who Am I? added; multiplayer
+  Blackjack removed); CLAUDE.md key-files list expanded; PROJECT_NOTES file tree
+  fixed — removed deleted `MultiplayerGameScreen.js`, added `WhoAmIGameScreen.js`,
+  and **rewrote the components/ tree** (it listed 3 deleted files — two marked
+  "still live" — and omitted ~12 that exist). Dependency list rewritten to match
+  package.json (added @sentry, expo-asset/constants/haptics/screen-orientation/
+  system-ui, react-native-gesture-handler; dropped react-native-draggable-flatlist).
+- **Branch cleanup:** consolidated work onto `main` and removed the
+  session's auto-created feature branch (`claude/ecstatic-cannon-vx06pn`). Single
+  branch (`main`) going forward.
+- **ACC-2 fixed** (`80e2850`): screen-reader hand-hiding during the fresh deal in
+  Rummy + Conquián, via a fail-safe state flag. Pending device test (no TalkBack
+  available in the dev environment).
+- Notes: standing rule reaffirmed — keep docs updated as part of every change, no
+  stale docs.
 
 ### Session N — [Date]
 - [ ] ...

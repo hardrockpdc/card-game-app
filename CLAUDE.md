@@ -71,6 +71,9 @@ Never prompt for a dev-client rebuild after each individual native-touching chan
 ### 3.4 Verify before claiming done
 Confirm the files compile (Metro/bundler, not tsc), confirm the specific changes landed, and report honestly what changed vs. what was skipped and why.
 
+### 3.6 Keep docs current — no stale docs
+Docs are part of the change, not an afterthought. Whenever a change makes something in `CLAUDE.md`, `PROJECT_NOTES.md`, or a per-game spec inaccurate — a new/removed/renamed file, a changed dependency, a resolved tracker item, a new game/feature — update the doc **in the same unit of work** (ideally the same commit). When marking a tracker item done, fix every place it's referenced, not just the checkbox. If a fix isn't verified yet (e.g. needs a device test), say so in the doc rather than claiming it's fully done. Stale docs have repeatedly caused wasted effort here; treat them as a bug.
+
 ---
 
 ## 4. Child-safety / content note
