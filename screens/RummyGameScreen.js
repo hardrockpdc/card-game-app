@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  AccessibilityInfo,
   Alert,
   BackHandler,
   ScrollView,
@@ -232,6 +233,7 @@ export default function RummyGameScreen({ navigation, route }) {
   const outcomeBuzzedRef = useRef(false); // fire win/lose haptic once per game
   const hasMountedRef = useRef(false);
   const handReadyTimerRef = useRef(null); // ACC-2: guaranteed hand re-reveal timer
+  const reduceMotionRef = useRef(false);
   const lastSaveRef = useRef(0); // BUG-4: auto-save throttle (once / 3s)
   const {
     show: showToast,
@@ -243,6 +245,23 @@ export default function RummyGameScreen({ navigation, route }) {
   // animation, then re-reveal. Defaults to true (always accessible) so a
   // missed re-reveal can never permanently hide the hand — fail-safe.
   const [handReady, setHandReady] = useState(true);
+
+  // Cache the reduced-motion preference so the ACC-2 hand-hide is skipped
+  // when there's no deal animation to wait for (CLAUDE.md §2.4).
+  useEffect(() => {
+    let mounted = true;
+    AccessibilityInfo.isReduceMotionEnabled().then((v) => {
+      if (mounted) reduceMotionRef.current = v;
+    });
+    const sub = AccessibilityInfo.addEventListener("reduceMotionChanged", (v) => {
+      reduceMotionRef.current = v;
+    });
+    return () => {
+      mounted = false;
+      sub?.remove?.();
+    };
+  }, []);
+
   const [showTutorial, setShowTutorial] = useState(false);
   const [showRoundModal, setShowRoundModal] = useState(false);
   const [tableId, setTableId] = useState(getRummyTableId());
@@ -514,9 +533,12 @@ export default function RummyGameScreen({ navigation, route }) {
       hasMountedRef.current = true;
       // ACC-2: hide the hand from screen readers while the staggered deal
       // animates in (~10 cards × 100ms + 350ms), then guarantee a re-reveal.
-      setHandReady(false);
-      if (handReadyTimerRef.current) clearTimeout(handReadyTimerRef.current);
-      handReadyTimerRef.current = setTimeout(() => setHandReady(true), 1400);
+      // Skip entirely when reduce-motion is on — no animation means no wait.
+      if (!reduceMotionRef.current) {
+        setHandReady(false);
+        if (handReadyTimerRef.current) clearTimeout(handReadyTimerRef.current);
+        handReadyTimerRef.current = setTimeout(() => setHandReady(true), 1400);
+      }
       applyState(
         createRummyState({ variantId, players: initialPlayers, difficulty }),
       );

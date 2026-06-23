@@ -429,9 +429,12 @@ export default function ConquianGameScreen({ navigation, route }) {
       hasMountedRef.current = true;
       // ACC-2: hide the hand from screen readers while the staggered deal
       // animates in, then guarantee a re-reveal.
-      setHandReady(false);
-      if (handReadyTimerRef.current) clearTimeout(handReadyTimerRef.current);
-      handReadyTimerRef.current = setTimeout(() => setHandReady(true), 1400);
+      // Skip entirely when reduce-motion is on — no animation means no wait.
+      if (!reduceMotionRef.current) {
+        setHandReady(false);
+        if (handReadyTimerRef.current) clearTimeout(handReadyTimerRef.current);
+        handReadyTimerRef.current = setTimeout(() => setHandReady(true), 1400);
+      }
       applyState(deal(initialPlayers));
     }
     init();
