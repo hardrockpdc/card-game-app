@@ -1142,7 +1142,7 @@ app-wide.
 
 ### 🚨 LAUNCH-BLOCKING
 
-- [ ] **LAUNCH-1** — Privacy policy file still not actually hosted at the wired URL
+- [x] **LAUNCH-1** — Privacy policy file hosted at `https://hardrockpdc.github.io/card-game-app/privacy.html` (docs/privacy.html committed to main; GitHub Pages must be enabled in repo Settings → Pages → main branch /docs folder — pending that one-time manual step)
 - [ ] **LAUNCH-2** — EAS production build pending — required for the iOS permission descriptions added in v2 to take effect on real devices
 
 ### 🐛 BUGS (real or likely)
@@ -1358,14 +1358,16 @@ These two items are the only things between you and a working App Store / Google
 
 ---
 
-## LAUNCH-1. Privacy policy file still not actually hosted
+## LAUNCH-1. Privacy policy file ✅ RESOLVED (2026-06-23)
+
+`docs/privacy.html` committed to main. **One manual step remaining:** Enable GitHub Pages in repo Settings → Pages → Source: main branch, /docs folder → Save. Once done, `https://hardrockpdc.github.io/card-game-app/privacy.html` will be live within ~1 minute.
 
 **Effort:** 15 minutes
 **Risk if ignored:** **App Store will reject the submission** — they tap the privacy policy URL and get a 404.
 
-### What's happening
+### What was happening
 
-Back in DEEP_REVIEW v2 we set the URL `https://hardrockpdc.github.io/card-game-app/privacy.html` in `screens/AboutScreen.js` and `APP_STORE_REVIEW_NOTES.md`. The URL is wired in code, but **the file at that URL doesn't actually exist yet.** This is the missing post-code step we deferred.
+Back in DEEP_REVIEW v2 we set the URL `https://hardrockpdc.github.io/card-game-app/privacy.html` in `screens/AboutScreen.js` and `APP_STORE_REVIEW_NOTES.md`. The URL was wired in code, but the file didn't exist. Now resolved — see `docs/privacy.html`.
 
 When the App Store reviewer taps "Privacy Policy" in your app, the browser opens that URL and gets a "Page Not Found." That's an automatic rejection.
 
@@ -1402,7 +1404,7 @@ Three options ranked by simplicity:
 </head>
 <body>
   <h1>Card Night — Privacy Policy</h1>
-  <p><strong>Last updated:</strong> May 17, 2026</p>
+  <p><strong>Last updated:</strong> June 23, 2026</p>
 
   <h2>What we collect</h2>
   <p>Card Night does not collect, store, or transmit any personal data to any server.</p>
