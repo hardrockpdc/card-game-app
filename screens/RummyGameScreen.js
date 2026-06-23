@@ -231,6 +231,7 @@ export default function RummyGameScreen({ navigation, route }) {
   const coinRewardedRef = useRef(false);
   const outcomeBuzzedRef = useRef(false); // fire win/lose haptic once per game
   const hasMountedRef = useRef(false);
+  const handReadyTimerRef = useRef(null); // ACC-2: guaranteed hand re-reveal timer
   const lastSaveRef = useRef(0); // BUG-4: auto-save throttle (once / 3s)
   const {
     show: showToast,
@@ -238,6 +239,10 @@ export default function RummyGameScreen({ navigation, route }) {
     revision: toastRevision,
   } = useToast();
   const [coinsEarned, setCoinsEarned] = useState(0);
+  // ACC-2: hide the hand from screen readers ONLY during the fresh-deal
+  // animation, then re-reveal. Defaults to true (always accessible) so a
+  // missed re-reveal can never permanently hide the hand — fail-safe.
+  const [handReady, setHandReady] = useState(true);
   const [showTutorial, setShowTutorial] = useState(false);
   const [showRoundModal, setShowRoundModal] = useState(false);
   const [tableId, setTableId] = useState(getRummyTableId());
@@ -507,6 +512,11 @@ export default function RummyGameScreen({ navigation, route }) {
         }
       }
       hasMountedRef.current = true;
+      // ACC-2: hide the hand from screen readers while the staggered deal
+      // animates in (~10 cards × 100ms + 350ms), then guarantee a re-reveal.
+      setHandReady(false);
+      if (handReadyTimerRef.current) clearTimeout(handReadyTimerRef.current);
+      handReadyTimerRef.current = setTimeout(() => setHandReady(true), 1400);
       applyState(
         createRummyState({ variantId, players: initialPlayers, difficulty }),
       );
@@ -555,6 +565,9 @@ export default function RummyGameScreen({ navigation, route }) {
     return () => {
       if (aiTimerRef.current) {
         clearTimeout(aiTimerRef.current);
+      }
+      if (handReadyTimerRef.current) {
+        clearTimeout(handReadyTimerRef.current);
       }
       if (!isSinglePlayer) {
         setServerListeners({});
@@ -1239,7 +1252,13 @@ export default function RummyGameScreen({ navigation, route }) {
           </View>
         ) : null}
 
-        <View style={styles.handRow}>
+        <View
+          style={styles.handRow}
+          accessibilityElementsHidden={!handReady}
+          importantForAccessibility={
+            handReady ? "auto" : "no-hide-descendants"
+          }
+        >
           {myHand.map((card, index) => {
             const selected = selectedHandIndexes.includes(index);
             const allowSelect = isMyTurn && currentPhase === "discard";

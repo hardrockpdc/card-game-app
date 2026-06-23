@@ -109,6 +109,7 @@ export default function ConquianGameScreen({ navigation, route }) {
   const outcomeBuzzedRef = useRef(false); // fire win/lose haptic once per game
   const aiTimerRef = useRef(null);
   const hasMountedRef = useRef(false);
+  const handReadyTimerRef = useRef(null); // ACC-2: guaranteed hand re-reveal timer
   const lastSaveRef = useRef(0);
   const activeCardShakeRef = useRef(new Animated.Value(0)).current;
   // Auto-Take feedback: glow + pulse the card right where it lands in your meld,
@@ -118,6 +119,10 @@ export default function ConquianGameScreen({ navigation, route }) {
   const lastAutoTookSigRef = useRef(null);
   const autoGlowTimerRef = useRef(null);
   const [highlightCardId, setHighlightCardId] = useState(null);
+  // ACC-2: hide the hand from screen readers ONLY during the fresh-deal
+  // animation, then re-reveal. Defaults to true (always accessible) so a
+  // missed re-reveal can never permanently hide the hand — fail-safe.
+  const [handReady, setHandReady] = useState(true);
   const [gameState, setGameState] = useState(null);
   const [myHand, setMyHand] = useState([]);
   const [selectedHandIds, setSelectedHandIds] = useState(new Set());
@@ -422,6 +427,11 @@ export default function ConquianGameScreen({ navigation, route }) {
         }
       }
       hasMountedRef.current = true;
+      // ACC-2: hide the hand from screen readers while the staggered deal
+      // animates in, then guarantee a re-reveal.
+      setHandReady(false);
+      if (handReadyTimerRef.current) clearTimeout(handReadyTimerRef.current);
+      handReadyTimerRef.current = setTimeout(() => setHandReady(true), 1400);
       applyState(deal(initialPlayers));
     }
     init();
@@ -436,6 +446,10 @@ export default function ConquianGameScreen({ navigation, route }) {
         },
       });
     }
+
+    return () => {
+      if (handReadyTimerRef.current) clearTimeout(handReadyTimerRef.current);
+    };
   }, []);
 
   useEffect(() => {
@@ -1865,6 +1879,10 @@ export default function ConquianGameScreen({ navigation, route }) {
             }
             collapsable={false}
             style={styles.handGrid}
+            accessibilityElementsHidden={!handReady}
+            importantForAccessibility={
+              handReady ? "auto" : "no-hide-descendants"
+            }
           >
               {[0, 5].map((start) => (
                 <View key={start} style={styles.handGridRow}>
