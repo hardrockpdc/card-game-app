@@ -359,20 +359,13 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   quitPill: {
-    flexDirection: "row",
-    alignItems: "center",
     paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 999,
-    backgroundColor: "rgba(233,69,96,0.14)",
-    borderWidth: 1,
-    borderColor: "rgba(233,69,96,0.55)",
+    paddingHorizontal: 10,
   },
   quitPillText: {
     color: "#ff6b81",
-    fontSize: 15,
-    fontWeight: "700",
-    letterSpacing: 0.3,
+    fontSize: 16,
+    fontWeight: "400",
   },
   namePill: {
     backgroundColor: "#16213e",
