@@ -1277,7 +1277,7 @@ app-wide.
 ### 🚀 IMPROVEMENTS (post-launch)
 
 - [ ] **IMP-1** — `__DEV__` debug overlay
-- [~] **IMP-2** — Jest tests for game logic. Lean app-decoupled Jest setup (`npm test`). **331 tests across 23 suites as of 2026-06-23** (started at 150 on 2026-06-01/02). Covers all pure-logic modules (deck/blackjack, poker, conquian, rummy, lastCard, solitaire, gofish, wildround, whoami) **plus** several reducers (`solitaire.reducer`, `rummy.reducer`, `conquian.transitions`), AI move selection (`ai-pickers`, `poker.ai`), `gameSaves`, `wallet`, and `profile`. Still not covered: `GameNetwork` (TCP/UDP — needs a two-device harness) and the React screen components themselves.
+- [~] **IMP-2** — Jest tests for game logic. Lean app-decoupled Jest setup (`npm test`). **357 tests across 26 suites as of 2026-06-23** (started at 150 on 2026-06-01/02). Covers all pure-logic modules (deck/blackjack, poker, conquian, rummy, lastCard, solitaire, gofish, wildround, whoami) **plus** several reducers (`solitaire.reducer`, `rummy.reducer`, `conquian.transitions`), AI move selection (`ai-pickers`, `poker.ai`), `gameSaves`, `wallet`, and `profile`. Still not covered: `GameNetwork` (TCP/UDP — needs a two-device harness) and the React screen components themselves.
 - [ ] **IMP-3** — Remote-loadable wildround cards (OTA content updates)
 - [ ] **IMP-4** — Centralized round-over helper
 - [ ] **IMP-5** — "Quick Match" button on Home
@@ -2149,8 +2149,13 @@ If you want a suggested path:
   'gotit' history branches, single/two-player asker edges, purity of
   recordAnswer/awardRound/nextRound). Added `__tests__/rummy.knock.test.js` (8
   tests) for `canRummyPlayerKnock` — gin/500 knock thresholds, variant routing
-  (same hand, different verdict), Indian-Rummy run requirement, null-safety. Suite
-  now **331 tests / 23 suites, all green**. Updated IMP-2 to reflect real coverage.
+  (same hand, different verdict), Indian-Rummy run requirement, null-safety.
+  Mined more pure-logic gaps: `lastCard.draw.test.js` (reshuffleDeck +
+  drawUntilPlayable — draw loop, empty-pile reshuffle, exhaustion), `poker.util.test.js`
+  (combinationsOfSize C(n,k) + getPokerVariantConfig fallback), and
+  `conquian.borrow.test.js` (doTakeWithBorrow — the spec's 7-set→run borrow,
+  auto-take-after-rearrange, and pool/validity/turn rejections). Suite now
+  **357 tests / 26 suites, all green**. Updated IMP-2 to reflect real coverage.
 - Notes: standing rule added as CLAUDE.md §3.6 — keep docs updated as part of every
   change, no stale docs.
 
