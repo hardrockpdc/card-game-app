@@ -133,25 +133,36 @@ card-game-app/
 │    replaced by GameHeader. Historical session entries below still name these files.)
 ├── game/
 │   ├── deck.js                    (createDeck, shuffleDeck, calculateHandValue)
-│   ├── cardTheme.js               (module singleton — 265 static requires (5 themes × 53 images); setTheme/getTheme/subscribe/getCardImage/...)
+│   ├── cardTheme.js               (module singleton — 386 static requires across 7 themes; setTheme/getTheme/subscribe/getCardImage/...)
 │   ├── ThemeContext.js            (React context wrapping cardTheme.js — single listener, shared across all Cards)
 │   ├── conquian.js                (Conquián game logic — pure functions)
 │   ├── wildround.js               (Wild Round game logic — pure functions)
+│   ├── whoami.js                  (Who Am I? game logic — pure functions; + test bots)
 │   ├── lastCard.js                (Last Card game logic — pure functions)
+│   ├── lastCardImages.js          (109-image LastCard require map — extracted from the screen, CQ-5)
 │   ├── gofish.js                  (Go Fish game logic — pure functions; extracted from the screen 2026-06-02)
 │   ├── poker.js                  (Poker variant logic — Texas Hold'em, Omaha, Five Card Draw, Seven Card Stud)
-│   ├── solitaire.js               (Solitaire game logic — Klondike, Spider, FreeCell, Pyramid, TriPeaks)
+│   ├── solitaire.js               (Solitaire game logic — Klondike, Spider, FreeCell, Pyramid, TriPeaks; getLegalTargets/getHint)
 │   ├── rummy.js                   (Rummy game logic — Gin Rummy, Rummy 500, Indian Rummy, Canasta)
 │   ├── wildroundCards.json        (100 prompts + 300 answers — Phase E complete)
 │   ├── GameNetwork.js             (TCP server/client + UDP discovery)
 │   ├── wallet.js                  (coin balance + lifetime earnings — plain AsyncStorage, local-only)
-│   ├── gameSaves.js               (saveGame/loadGame/clearGame/hasSave — AsyncStorage, JSON, error-safe)
+│   ├── gameSaves.js               (saveGame/loadGame/clearGame/hasSave — AsyncStorage, JSON, SAVE_VERSION-validated)
 │   ├── useResumePrompt.js         (custom hook — the "Game in Progress?" save/resume Alert pattern)
+│   ├── useLayoutMode.js           (wide/tall/balanced hook off useWindowDimensions — responsive sizing)
 │   ├── logger.js                  (log/warn — no-ops in production builds via __DEV__)
+│   ├── haptics.js                 (initHaptics/haptic — expo-haptics wrapper; graceful no-op if unavailable)
+│   ├── avatars.js                 (emoji preset avatar list/helpers)
+│   ├── avatarTransmit.js          (encode/decode avatars for multiplayer — emoji pass-through, photos → 120px JPEG base64)
 │   ├── profile.js                 (loadProfile, saveProfile, subscribeProfile, getDisplayName, recordWin — AsyncStorage)
 │   ├── responsive.js              (scale(), scaleFont() — BASE_WIDTH 390, clamped factors)
 │   ├── sounds.js                  (initSounds/playSound/getMuted/setMuted — expo-audio; preloads 4 sounds on app start; graceful no-op if unavailable)
-│   └── tableThemes.js             (TABLE_THEMES map + getTableTheme(gameId) — table/accent colors for all 8 games)
+│   ├── tablePalette.js            (createTablePalette factory — switchable felt palettes, reuses LAST_CARD_TABLES)
+│   ├── lastCardTheme.js           (Last Card felt-palette wrapper — init/get/set)
+│   ├── rummyTheme.js              (Rummy felt-palette wrapper — init/get/set)
+│   ├── pokerTheme.js              (Poker felt-palette wrapper — init/get/set)
+│   ├── gofishTheme.js             (Go Fish felt-palette wrapper — init/get/set)
+│   └── tableThemes.js             (TABLE_THEMES map + getTableTheme(gameId) — table/accent colors per game)
 ├── screens/
 │   ├── HomeScreen.js              (main menu)
 │   ├── HostSetupScreen.js         (name from profile, starts TCP server, shows IP)
@@ -270,7 +281,7 @@ All folders use identical filenames: `{rank}_{suit}.png` (ranks: a 2–10 j q k,
 
 **Theme system files:**
 
-- `game/cardTheme.js` — module singleton, 371 static requires (7 themes × 53 images), `setTheme`/`getTheme`/`subscribe`/`getCardImage`/`getCardBackImage`/`getThemePreviewImage`/`THEMES_LIST` exports
+- `game/cardTheme.js` — module singleton, 386 static requires across 7 themes (52 cards + back + joker + preview per theme), `setTheme`/`getTheme`/`subscribe`/`getCardImage`/`getCardBackImage`/`getThemePreviewImage`/`THEMES_LIST` exports
 - `game/ThemeContext.js` — React context wrapping `cardTheme.js`; provides `useTheme()` hook; single AppState subscriber shared across all Card instances (replaces per-Card `useEffect` subscribers)
 - `components/Card.js` — uses `ThemeContext` via `useTheme()`; wrapped in `React.memo`; size calculations memoized with `useMemo`
 - `screens/CardThemeScreen.js` — full-screen swiper (FlatList pagingEnabled), Ace of Spades preview, dot indicators, "Use This Theme" button
@@ -844,8 +855,8 @@ answers Yes/No simply and awards on a secret-name match or the test cheat
 word to everyone. **Plays well in solo bot testing; still needs a 3-device test
 for real multiplayer.**
 
-> ⚠️ CLAUDE.md still says "8 games across 9 game screens" — now **9 games** with
-> Who Am I? added.
+> ✅ Resolved 2026-06-23: CLAUDE.md + this doc now say **9 games** (Who Am I?
+> added; multiplayer Blackjack screen removed).
 
 ### Multiplayer session, cont. (2026-06-20 → 06-21) — profile pics, bots, Wild Round polish
 
@@ -2127,8 +2138,13 @@ If you want a suggested path:
 - **ACC-2 fixed** (`80e2850`): screen-reader hand-hiding during the fresh deal in
   Rummy + Conquián, via a fail-safe state flag. Pending device test (no TalkBack
   available in the dev environment).
-- Notes: standing rule reaffirmed — keep docs updated as part of every change, no
-  stale docs.
+- **`game/` file tree completed**: added the 11 missing files (whoami, lastCardImages,
+  useLayoutMode, haptics, avatars, avatarTransmit, tablePalette, lastCardTheme,
+  rummyTheme, pokerTheme, gofishTheme); fixed stale `cardTheme.js` figure
+  (265/5-themes → 386/7-themes; theme-system-files list 371→386); resolved the
+  "CLAUDE.md still says 8 games" warning note.
+- Notes: standing rule added as CLAUDE.md §3.6 — keep docs updated as part of every
+  change, no stale docs.
 
 ### Session N — [Date]
 - [ ] ...
