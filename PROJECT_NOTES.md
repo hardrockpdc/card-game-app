@@ -143,7 +143,7 @@ card-game-app/
 │   ├── JoinScreen.js              (UDP auto-discovery list, tap to join)
 │   ├── LobbyScreen.js             (player list, game selector, Start Game)
 │   ├── GameScreen.js              (single-player Blackjack — always casino/coins; Free Play removed 2026-06-02)
-│   ├── MultiplayerGameScreen.js   (multiplayer Blackjack)
+│   │                              (MultiplayerGameScreen.js — multiplayer Blackjack — REMOVED 2026-06-18, dropped from flow)
 │   ├── GoFishGameScreen.js        (Go Fish — single + multiplayer)
 │   ├── GoFishPickerScreen.js      (Go Fish setup — variant card + AI count + difficulty)
 │   ├── PokerGameScreen.js         (Poker variants: Texas Hold'em, Omaha, Five Card Draw, Seven Card Stud)
@@ -153,6 +153,7 @@ card-game-app/
 │   ├── ConquianGameScreen.js      (Conquián — single + multiplayer)
 │   ├── ConquianSetupScreen.js     (Conquián setup screen — registered route "ConquianSetup")
 │   ├── WildRoundGameScreen.js     (Wild Round — single + multiplayer)
+│   ├── WhoAmIGameScreen.js        (Who Am I? — multiplayer party game, no cards; the app's 9th game, added 2026-06-18→20)
 │   ├── LastCardGameScreen.js      (Last Card — single + multiplayer)
 │   ├── SinglePlayerSetupScreen.js (single-player game + AI picker; Wild Round removed from carousel)
 │   ├── MultiplayerMenuScreen.js   (Host Online/Join Online = Coming Soon; Host Local/Join Local = functional)
@@ -181,32 +182,40 @@ dependencies:
 @react-native-async-storage/async-storage: ^2.2.0  (profile/save persistence — requires EAS build)
 @react-navigation/native: ^7.2.2
 @react-navigation/native-stack: ^7.14.11
-expo: ~54.0.33
+@sentry/react-native: ~7.2.0               (crash/error reporting — native, requires EAS build)
+expo: ~54.0.35
+expo-asset: ~12.0.13
 expo-audio: ~1.1.1                         (sound effects — NOTE: expo-audio, not the older expo-av; requires EAS build)
 expo-clipboard: ~8.0.8                     (tap-to-copy IP — requires EAS build)
-expo-dev-client: ~6.0.20
+expo-constants: ~18.0.13
+expo-dev-client: ~6.0.21
+expo-haptics: ~15.0.8                       (haptic feedback — native, requires EAS build; see game/haptics.js)
 expo-image-manipulator: ~14.0.8            (photo crop to 1:1 — Expo-native, no extra native module)
 expo-image-picker: ~17.0.11               (camera roll + camera access — Expo-native)
-react-native-edge-to-edge                   (SystemBars — hide status + nav bars under edge-to-edge; requires rebuild)
 expo-network: ~8.0.8
+expo-screen-orientation: ~9.0.9            (runtime orientation lock — portrait app-wide, landscape for Solitaire; requires EAS build)
 expo-status-bar: ~3.0.9
-expo-updates: ~29.0.17                     (OTA updates channel)
+expo-system-ui: ~6.0.9
+expo-updates: ~29.0.18                     (OTA updates channel)
 fbjs: ^3.0.5
 react: 19.1.0
 react-dom: 19.1.0                          (web build only)
 react-native: 0.81.5
-react-native-draggable-flatlist: ^4.0.3   (reserved for planned Wild Round hand-sort polish — NOT yet used)
+react-native-edge-to-edge: ^1.8.1          (SystemBars — hide status + nav bars under edge-to-edge; requires rebuild)
+react-native-gesture-handler: ~2.28.0      (drag-and-drop for Solitaire/Conquián; requires EAS build)
 react-native-safe-area-context: ~5.6.0
 react-native-screens: ~4.16.0
 react-native-tcp-socket: ^6.4.1
 react-native-udp: ^4.1.7
 react-native-web: ^0.21.0                  (web build only)
 
+(react-native-draggable-flatlist was removed 2026-06-04 — never used; hand-sort polish was dropped.)
+
 devDependencies:
 jest: ^29.7.0                              (unit tests for pure game logic — `npm test`)
 babel-jest: ^29.7.0
-@babel/core: ^7.x
-@babel/preset-env: ^7.x
+@babel/core: ^7.29.7
+@babel/preset-env: ^7.29.7
 prettier: ^3.8.3
 sharp: ^0.34.5                             (used by scripts/compress-cards.js)
 ```
@@ -337,9 +346,9 @@ both explicitly for LAN-only play.
 - Rummy added back as a single + multiplayer game with Gin Rummy, Rummy 500, Indian Rummy, and Canasta
 - Variant pickers unified behind a shared `components/VariantPicker.js` component
 
-**Card Night currently includes 8 working games:**
+**Card Night currently includes 9 working games:**
 
-- Blackjack (single + multiplayer)
+- Blackjack (single-player; multiplayer Blackjack screen removed 2026-06-18)
 - Go Fish (single + multiplayer, with AI Easy/Medium/Hard; hand auto-sorts by rank)
 - Texas Hold'em Poker (single + multiplayer, with AI Easy/Medium/Hard)
 - Conquián (single + multiplayer, with AI Easy/Medium/Hard)
@@ -347,6 +356,7 @@ both explicitly for LAN-only play.
 - Wild Round (single + multiplayer, 3-8 players, party-style)
 - Last Card (single + multiplayer, 2-8 players, AI single difficulty)
 - Solitaire (single-player only, Klondike / Spider / FreeCell / Pyramid / TriPeaks)
+- Who Am I? (multiplayer party game, no cards; first to 3 round-wins — added 2026-06-18→20)
 
 **Visual assets update:** Cards now use neon image assets in `assets/cards/` (replaced procedural drawing).
 

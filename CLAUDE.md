@@ -82,13 +82,17 @@ This is a family-friendly card game. Keep all content, copy, and assets appropri
 
 - **Stack:** React Native 0.81.5, Expo SDK 54, React 19.1.0. JavaScript. Dev build via expo-dev-client.
 - **Distribution:** Android-only (Google Play). Privacy policy must be hosted for Play submission. Cross-platform code stays intact regardless.
-- **8 games across 9 game screens** (Blackjack has separate single-player + multiplayer screens): Blackjack (single + multiplayer), Solitaire (Klondike/Spider/etc.), Conquián, Rummy, Go Fish, Poker, Last Card, Wild Round.
+- **9 games across 9 game screens**: Blackjack (single-player; the separate multiplayer Blackjack screen was removed 2026-06-18), Solitaire (Klondike/Spider/etc.), Conquián, Rummy, Go Fish, Poker, Last Card, Wild Round, Who Am I? (multiplayer party game, no cards — added 2026-06-18→20).
 - **Key files:**
   - `App.js` — root; provider nesting; navigation stack
   - `components/Card.js` — the card render + animation engine (flip via `animateReveal`, deal via `animateDeal`+`dealDelay`)
-  - `game/conquian.js`, `game/rummy.js`, `game/solitaire.js`, etc. — pure game logic
+  - `game/conquian.js`, `game/rummy.js`, `game/solitaire.js`, `game/poker.js`, `game/gofish.js`, `game/lastCard.js`, `game/wildround.js`, `game/whoami.js`, `game/deck.js` — pure game logic (no React)
   - `game/GameNetwork.js` — local TCP/UDP multiplayer
-  - `game/tableThemes.js` — per-game table colors
+  - `game/tableThemes.js` — per-game table colors; `game/tablePalette.js` + per-game wrappers (`rummyTheme.js`, `pokerTheme.js`, `gofishTheme.js`, `lastCardTheme.js`) for switchable felt palettes
+  - `game/haptics.js` + `components/Haptic.js` — haptic feedback (expo-haptics; native, needs a dev build)
+  - `game/avatarTransmit.js` + `components/useMultiplayerAvatars.js` — exchange profile pics across multiplayer at game start
+  - `components/ReconnectOverlay.js` — mid-game drop pause/countdown (Go Fish pilot; PAUSE/RESUME messages)
+  - `components/useSolitaireDrag.js`, `components/useConquianMeldDrag.js` — gesture-handler drag hooks
   - `screens/*GameScreen.js` — per-game screens
 - **Standard patterns:**
   - `hasMountedRef` set true *before* the fresh-deal `applyState` (so deals animate) and *after* the resume `applyState` (so restored games don't animate). Used in `ConquianGameScreen.js` and `RummyGameScreen.js`; Solitaire uses a different approach (`initialGameDispatched` ref).
