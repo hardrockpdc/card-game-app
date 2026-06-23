@@ -3,7 +3,7 @@
     "name": "Card Night",
     "slug": "card-game-app",
     "version": "1.0.0",
-    "orientation": "default",
+    "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
@@ -32,6 +32,7 @@
         "backgroundColor": "#1a1a2e"
       },
       "package": "com.pedro.cardgameapp",
+      "versionCode": 1,
       "permissions": [
         "android.permission.NEARBY_WIFI_DEVICES",
         "android.permission.ACCESS_NETWORK_STATE",
