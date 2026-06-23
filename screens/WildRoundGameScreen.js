@@ -128,7 +128,7 @@ export default function WildRoundGameScreen({ navigation, route }) {
     }
   }, [gameState?.phase]);
   const revealCardWidth = Math.max(width - 32, 0);
-  const revealCardHeight = Math.round(height * 0.38);
+  const revealCardHeight = Math.round(height * 0.45);
 
   const deckIndexRef = useRef(0);
   const myHandRef = useRef(myHand);
