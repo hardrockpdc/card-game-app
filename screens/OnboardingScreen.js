@@ -198,6 +198,14 @@ export default function OnboardingScreen({ navigation }) {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.stepContainer}>
+          <View style={styles.welcomeBlock}>
+            <Text style={styles.welcomeTitle}>Welcome to Card Night! 🎴</Text>
+            <Text style={styles.welcomeText}>
+              Your home for classic card games — play solo against the computer
+              or gather friends for multiplayer. Let's set up your profile.
+            </Text>
+          </View>
+
           <Text style={styles.stepLabel}>STEP 1 OF 3</Text>
           <Text style={styles.title}>What's your name?</Text>
           <Text style={styles.subtitle}>This is how you'll appear in games.</Text>
@@ -354,6 +362,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(24),
     paddingTop: scale(32),
     paddingBottom: scale(24),
+  },
+  welcomeBlock: {
+    marginBottom: scale(32),
+  },
+  welcomeTitle: {
+    color: "#ffffff",
+    fontSize: scaleFont(26),
+    fontWeight: "800",
+    marginBottom: scale(10),
+  },
+  welcomeText: {
+    color: "#aab",
+    fontSize: scaleFont(15),
+    lineHeight: scaleFont(22),
   },
   stepLabel: {
     color: "#7fb3ff",
