@@ -6,7 +6,6 @@ import {
   StyleSheet,
   Image,
   ActivityIndicator,
-  useWindowDimensions,
 } from "react-native";
 import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import {
@@ -80,8 +79,6 @@ const DEFAULT_RUMMY_VARIANT = "ginRummy";
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function SinglePlayerSetupScreen({ navigation }) {
-  const { width, height } = useWindowDimensions();
-
   const [playerName, setPlayerName] = useState("Player");
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [selectedId, setSelectedId] = useState(null); // for blackjack resume dialog
@@ -162,16 +159,9 @@ export default function SinglePlayerSetupScreen({ navigation }) {
   // ─── Layout ───────────────────────────────────────────────────────────────
 
   const COLS = 2;
-  const PAD = scale(16);
   const GAP = scale(12);
-  const tileSize = Math.floor((width - PAD * 2 - GAP * (COLS - 1)) / COLS);
-  // Estimate available height for grid rows (subtract header ~72dp + nav bar safe area)
-  const ROWS = 4; // ceil(7/2)
-  const HEADER_H = scale(72);
-  const gridH = height - HEADER_H;
-  const rowH = Math.floor((gridH - GAP * (ROWS - 1)) / ROWS);
-  // Image height: whichever is smaller — 62% of tile width or 72% of row height
-  const imageH = Math.min(Math.round(tileSize * 0.62), Math.round(rowH * 0.72));
+  // Heights come from flex (each row gets an equal slice of available space),
+  // so all 7 tiles always fit on screen regardless of nav header / safe area.
 
   if (isLoadingProfile) {
     return (
@@ -226,7 +216,6 @@ export default function SinglePlayerSetupScreen({ navigation }) {
               key={rowIdx}
               style={[
                 styles.row,
-                row.length < COLS && styles.rowCentered,
                 rowIdx < rows.length - 1 && { marginBottom: GAP },
               ]}
             >
@@ -236,18 +225,18 @@ export default function SinglePlayerSetupScreen({ navigation }) {
                   style={[
                     styles.tile,
                     {
-                      width: tileSize,
-                      height: rowH,
                       borderColor: game.accent + "66",
                       marginLeft: colIdx > 0 ? GAP : 0,
                     },
+                    // Odd last tile: don't stretch full width, keep it half-width
+                    row.length < COLS && styles.tileHalf,
                   ]}
                   onPress={() => handleGamePress(game)}
                   activeOpacity={0.85}
                 >
                   <Image
                     source={game.image}
-                    style={[styles.tileImage, { height: imageH }]}
+                    style={styles.tileImage}
                     resizeMode="cover"
                   />
                   <View style={styles.tileFooter}>
@@ -297,21 +286,25 @@ const styles = StyleSheet.create({
   },
   grid: {
     flex: 1,
-    justifyContent: "space-evenly",
   },
   row: {
+    flex: 1,
     flexDirection: "row",
   },
-  rowCentered: {
-    justifyContent: "center",
-  },
   tile: {
+    flex: 1,
     backgroundColor: "#0d1424",
     borderRadius: scale(14),
     borderWidth: 1.5,
     overflow: "hidden",
   },
+  // Odd final tile: take only one column's worth of width (left-aligned)
+  tileHalf: {
+    flex: 0,
+    width: "50%",
+  },
   tileImage: {
+    flex: 1,
     width: "100%",
   },
   tileFooter: {
