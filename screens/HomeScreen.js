@@ -173,7 +173,6 @@ export default function HomeScreen({ navigation }) {
           <TouchableOpacity
             style={[
               styles.singlePlayerButton,
-              !profileHasName && styles.singlePlayerButtonDisabled,
               {
                 paddingVertical: buttonVertical,
                 paddingHorizontal: buttonHorizontal,
@@ -182,27 +181,16 @@ export default function HomeScreen({ navigation }) {
             onPress={goToSinglePlayer}
             accessibilityRole="button"
             accessibilityLabel="Single Player"
-            accessibilityHint={
-              !profileHasName
-                ? "Set up your profile first to enable this button"
-                : "Opens single-player game setup"
-            }
-            accessibilityState={{ disabled: !profileHasName }}
+            accessibilityHint="Opens single-player game setup"
           >
             <Text
               style={[
                 styles.singlePlayerButtonText,
-                !profileHasName && styles.singlePlayerButtonTextDisabled,
                 { fontSize: buttonTextSize },
               ]}
             >
               Single Player
             </Text>
-            {!profileHasName && (
-              <Text style={styles.singlePlayerButtonHint}>
-                Set up your profile to play
-              </Text>
-            )}
           </TouchableOpacity>
 
           <TouchableOpacity

@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { AppState } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -33,7 +33,8 @@ import MultiplayerMenuScreen from "./screens/MultiplayerMenuScreen";
 import ProfileScreen from "./screens/ProfileScreen";
 import AboutScreen from "./screens/AboutScreen";
 import StatsScreen from "./screens/StatsScreen";
-import { loadProfile } from "./game/profile";
+import OnboardingScreen from "./screens/OnboardingScreen";
+import { loadProfile, hasProfileName } from "./game/profile";
 import { setTheme } from "./game/cardTheme";
 import { warn } from "./game/logger";
 import { initSounds } from "./game/sounds";
@@ -70,15 +71,19 @@ try {
 const Stack = createNativeStackNavigator();
 
 export default function App() {
+  const [initialRoute, setInitialRoute] = useState(null); // null = loading
+
   useEffect(() => {
     loadProfile()
       .then((profile) => {
         if (profile?.cardTheme) {
           setTheme(profile.cardTheme);
         }
+        setInitialRoute(hasProfileName(profile) ? "Home" : "Onboarding");
       })
       .catch((err) => {
         warn("Failed to load profile theme:", err);
+        setInitialRoute("Onboarding");
       });
     initSounds();
     initHaptics();
@@ -115,6 +120,9 @@ export default function App() {
     return () => sub.remove();
   }, []);
 
+  // Wait until we've checked whether the user needs onboarding
+  if (!initialRoute) return null;
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ErrorBoundary>
@@ -125,13 +133,18 @@ export default function App() {
           <ThemeProvider>
             <NavigationContainer>
               <Stack.Navigator
-                initialRouteName="Home"
+                initialRouteName={initialRoute}
                 screenOptions={{
                   headerStyle: { backgroundColor: "#1a1a2e" },
                   headerTintColor: "#ffffff",
                   headerTitleStyle: { fontWeight: "bold" },
                 }}
               >
+                <Stack.Screen
+                  name="Onboarding"
+                  component={OnboardingScreen}
+                  options={{ headerShown: false }}
+                />
                 <Stack.Screen
                   name="Home"
                   component={HomeScreen}
