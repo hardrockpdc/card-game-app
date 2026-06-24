@@ -17,7 +17,6 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { useFocusEffect } from "@react-navigation/native";
-import { THEMES_LIST } from "../game/cardTheme";
 import {
   loadProfile,
   saveProfile,
@@ -28,10 +27,6 @@ import { getCoins, resetCoins as resetWalletCoins } from "../game/wallet";
 import { warn } from "../game/logger";
 import { scale, scaleFont } from "../game/responsive";
 import { AVATAR_CHOICES, getAvatarChoice } from "../game/avatars";
-
-function getThemeLabel(themeId) {
-  return THEMES_LIST.find(([key]) => key === themeId)?.[1]?.name || "Classic";
-}
 
 async function cropImageToSquareAsync(uri, width, height) {
   const side = Math.min(width || 0, height || 0);
@@ -466,9 +461,7 @@ export default function ProfileScreen({ navigation, route }) {
             <Text style={styles.sectionLabel}>Card Theme</Text>
             <View style={styles.themeRow}>
               <View style={styles.themeInfo}>
-                <Text style={styles.themeName}>
-                  {getThemeLabel(profile?.cardTheme)}
-                </Text>
+                <Text style={styles.themeName}>Card Art</Text>
                 <Text style={styles.themeHint}>Choose your card art style</Text>
               </View>
               <TouchableOpacity

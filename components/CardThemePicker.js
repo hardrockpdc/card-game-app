@@ -57,7 +57,7 @@ export default function CardThemePicker({ visible, onClose }) {
             contentContainerStyle={styles.grid}
             showsVerticalScrollIndicator={false}
           >
-            {THEMES_LIST.map(([key, theme]) => {
+            {THEMES_LIST.map(([key], idx) => {
               const selected = key === active;
               return (
                 <TouchableOpacity
@@ -65,7 +65,7 @@ export default function CardThemePicker({ visible, onClose }) {
                   style={[styles.card, selected && styles.cardSelected]}
                   onPress={() => pick(key)}
                   accessibilityRole="button"
-                  accessibilityLabel={theme.name}
+                  accessibilityLabel={`Card style ${idx + 1}`}
                   accessibilityState={{ selected }}
                 >
                   <Image
@@ -73,9 +73,6 @@ export default function CardThemePicker({ visible, onClose }) {
                     style={styles.cardImg}
                     resizeMode="contain"
                   />
-                  <Text style={styles.cardName} numberOfLines={1}>
-                    {theme.name}
-                  </Text>
                   {selected && (
                     <View style={styles.check}>
                       <Text style={styles.checkText}>✓</Text>
@@ -150,14 +147,6 @@ const styles = StyleSheet.create({
     width: scale(78),
     height: scale(109), // ~5:7
     borderRadius: scale(8),
-  },
-  cardName: {
-    color: "#d4dcea",
-    fontSize: scaleFont(12),
-    fontWeight: "700",
-    marginTop: scale(6),
-    maxWidth: scale(86),
-    textAlign: "center",
   },
   check: {
     position: "absolute",

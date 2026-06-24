@@ -315,9 +315,8 @@ export default function OnboardingScreen({ navigation }) {
           offset: width * index,
           index,
         })}
-        renderItem={({ item: [key, theme] }) => (
+        renderItem={({ item: [key] }) => (
           <View style={[styles.themePage, { width }]}>
-            <Text style={styles.themeName}>{theme.name}</Text>
             <Image
               source={getThemePreviewImage(key)}
               style={{ width: previewW, height: previewH, borderRadius: 12 }}
@@ -511,12 +510,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 24,
     gap: scale(16),
-  },
-  themeName: {
-    color: "#ffffff",
-    fontSize: scaleFont(26),
-    fontWeight: "bold",
-    letterSpacing: 1,
   },
   swipeHint: {
     color: "#444",

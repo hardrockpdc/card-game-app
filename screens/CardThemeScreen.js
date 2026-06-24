@@ -93,10 +93,8 @@ export default function CardThemeScreen() {
           offset: width * index,
           index,
         })}
-        renderItem={({ item: [key, theme] }) => (
+        renderItem={({ item: [key] }) => (
           <View style={[styles.page, { width }]}>
-            <Text style={styles.themeName}>{theme.name}</Text>
-
             <View style={styles.previewWrapper}>
               <Image
                 source={getThemePreviewImage(key)}
@@ -167,13 +165,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 16,
     paddingBottom: 8,
-  },
-  themeName: {
-    color: "#ffffff",
-    fontSize: 32,
-    fontWeight: "bold",
-    marginBottom: 24,
-    letterSpacing: 1,
   },
   previewWrapper: {
     alignItems: "center",
