@@ -161,13 +161,17 @@ export default function SinglePlayerSetupScreen({ navigation }) {
 
   // ─── Layout ───────────────────────────────────────────────────────────────
 
-  // Two columns; tile size fills the screen with padding
   const COLS = 2;
   const PAD = scale(16);
   const GAP = scale(12);
   const tileSize = Math.floor((width - PAD * 2 - GAP * (COLS - 1)) / COLS);
-  // Image takes most of the tile, label sits below
-  const imageH = Math.round(tileSize * 0.62);
+  // Estimate available height for grid rows (subtract header ~72dp + nav bar safe area)
+  const ROWS = 4; // ceil(7/2)
+  const HEADER_H = scale(72);
+  const gridH = height - HEADER_H;
+  const rowH = Math.floor((gridH - GAP * (ROWS - 1)) / ROWS);
+  // Image height: whichever is smaller — 62% of tile width or 72% of row height
+  const imageH = Math.min(Math.round(tileSize * 0.62), Math.round(rowH * 0.72));
 
   if (isLoadingProfile) {
     return (
@@ -233,6 +237,7 @@ export default function SinglePlayerSetupScreen({ navigation }) {
                     styles.tile,
                     {
                       width: tileSize,
+                      height: rowH,
                       borderColor: game.accent + "66",
                       marginLeft: colIdx > 0 ? GAP : 0,
                     },
