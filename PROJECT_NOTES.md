@@ -1121,7 +1121,7 @@ app-wide.
 
 
 > **Fresh full-structural sweep** after the animation work. The v2 doc is fully resolved
-> and is archived alongside this one as `DEEP_REVIEW_v2_archive.md` for reference.
+> and was archived as `DEEP_REVIEW_v2_archive.md` (since deleted — all items resolved).
 >
 > This review covers: bugs + code quality + UX + performance + accessibility +
 > app-store readiness — same wide scope as v2, with full beginner-friendly
@@ -2091,7 +2091,7 @@ If you want a suggested path:
 
 # 📌 Cross-references
 
-- **DEEP_REVIEW_v2_archive.md** — previous review (fully resolved), archived for reference
+- **DEEP_REVIEW_v2_archive.md** — previous review (fully resolved, file deleted)
 - **PROJECT_NOTES.md** — authoritative project state
 - **APP_STORE_REVIEW_NOTES.md** — paste-ready review notes for submission
 - **Animations.md** — animation spec + completed phase notes
