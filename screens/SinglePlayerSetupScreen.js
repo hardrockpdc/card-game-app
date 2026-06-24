@@ -199,12 +199,6 @@ export default function SinglePlayerSetupScreen({ navigation }) {
                     style={styles.tileImage}
                     resizeMode="contain"
                   />
-                  <View style={styles.tileFooter}>
-                    <Text style={styles.tileName}>{game.label}</Text>
-                    <Text style={[styles.tileTag, { color: game.accent }]}>
-                      {game.tag}
-                    </Text>
-                  </View>
                 </TouchableOpacity>
               ))}
             </View>
@@ -250,20 +244,6 @@ const styles = StyleSheet.create({
   tileImage: {
     flex: 1,
     width: "100%",
-  },
-  tileFooter: {
-    paddingHorizontal: scale(10),
-    paddingVertical: scale(8),
-  },
-  tileName: {
-    color: "#ffffff",
-    fontSize: scaleFont(14),
-    fontWeight: "700",
-  },
-  tileTag: {
-    fontSize: scaleFont(11),
-    fontWeight: "600",
-    marginTop: scale(1),
   },
   // ── Blackjack resume overlay ───────────────────────────────────────────────
   resumeOverlay: {
