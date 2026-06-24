@@ -61,6 +61,10 @@ const GAMES = [
   },
 ];
 
+// Decorative background grid line positions (percent of screen w/h)
+const VLINES = [12.5, 25, 37.5, 50, 62.5, 75, 87.5];
+const HLINES = [10, 20, 30, 40, 50, 60, 70, 80, 90];
+
 const BLACKJACK_SAVE_KEY = "@cardnight:save:blackjack";
 const DEFAULT_POKER_VARIANT = "texasHoldem";
 const DEFAULT_RUMMY_VARIANT = "ginRummy";
@@ -145,6 +149,17 @@ export default function SinglePlayerSetupScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.safe}>
+      {/* Subtle grid texture so the background isn't plain. Sits behind the
+          tiles; purely decorative (not touchable / not read by a11y). */}
+      <View style={styles.gridBg} pointerEvents="none">
+        {VLINES.map((left) => (
+          <View key={`v${left}`} style={[styles.vLine, { left: `${left}%` }]} />
+        ))}
+        {HLINES.map((top) => (
+          <View key={`h${top}`} style={[styles.hLine, { top: `${top}%` }]} />
+        ))}
+      </View>
+
       {/* Blackjack resume dialog */}
       {selectedId === "blackjack" && (
         <View style={styles.resumeOverlay}>
@@ -225,6 +240,23 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: "#1a1a2e",
+  },
+  gridBg: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  vLine: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    width: StyleSheet.hairlineWidth,
+    backgroundColor: "rgba(255,255,255,0.05)",
+  },
+  hLine: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: "rgba(255,255,255,0.05)",
   },
   container: {
     flex: 1,
