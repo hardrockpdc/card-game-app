@@ -167,7 +167,7 @@ export default function SinglePlayerSetupScreen({ navigation }) {
   const GAP = scale(12);
   const tileSize = Math.floor((width - PAD * 2 - GAP * (COLS - 1)) / COLS);
   // Image takes most of the tile, label sits below
-  const imageH = Math.round(tileSize * 0.72);
+  const imageH = Math.round(tileSize * 0.62);
 
   if (isLoadingProfile) {
     return (
