@@ -136,10 +136,11 @@ export default function SinglePlayerSetupScreen({ navigation }) {
   // Heights come from flex (each row gets an equal slice of available space),
   // so all 7 tiles always fit on screen regardless of nav header / safe area.
 
-  // Split into rows of 2; last row centred if odd
+  // 7 games + a "Coming Soon" placeholder = 8 tiles, 4 even rows of 2
+  const gridItems = [...GAMES, { id: "comingSoon", comingSoon: true }];
   const rows = [];
-  for (let i = 0; i < GAMES.length; i += COLS) {
-    rows.push(GAMES.slice(i, i + COLS));
+  for (let i = 0; i < gridItems.length; i += COLS) {
+    rows.push(gridItems.slice(i, i + COLS));
   }
 
   return (
@@ -179,28 +180,37 @@ export default function SinglePlayerSetupScreen({ navigation }) {
                 rowIdx < rows.length - 1 && { marginBottom: GAP },
               ]}
             >
-              {row.map((game, colIdx) => (
-                <TouchableOpacity
-                  key={game.id}
-                  style={[
-                    styles.tile,
-                    {
-                      borderColor: game.accent + "66",
-                      marginLeft: colIdx > 0 ? GAP : 0,
-                    },
-                    // Odd last tile: don't stretch full width, keep it half-width
-                    row.length < COLS && styles.tileHalf,
-                  ]}
-                  onPress={() => handleGamePress(game)}
-                  activeOpacity={0.85}
-                >
-                  <Image
-                    source={game.image}
-                    style={styles.tileImage}
-                    resizeMode="contain"
-                  />
-                </TouchableOpacity>
-              ))}
+              {row.map((game, colIdx) =>
+                game.comingSoon ? (
+                  <View
+                    key="comingSoon"
+                    style={[
+                      styles.cell,
+                      { marginLeft: colIdx > 0 ? GAP : 0 },
+                    ]}
+                  >
+                    <View style={[styles.tile, styles.comingSoonTile]}>
+                      <Text style={styles.comingSoonText}>Coming{"\n"}Soon</Text>
+                    </View>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    key={game.id}
+                    style={[
+                      styles.cell,
+                      { marginLeft: colIdx > 0 ? GAP : 0 },
+                    ]}
+                    onPress={() => handleGamePress(game)}
+                    activeOpacity={0.85}
+                  >
+                    <Image
+                      source={game.image}
+                      style={[styles.tile, { borderColor: game.accent + "66" }]}
+                      resizeMode="cover"
+                    />
+                  </TouchableOpacity>
+                ),
+              )}
             </View>
           ))}
         </View>
@@ -229,21 +239,36 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
   },
-  tile: {
+  // Each grid cell fills its share of the row and centers the artwork
+  cell: {
     flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  // The bordered tile is sized to the thumbnail's 3:4 ratio so the border
+  // hugs the artwork (no letterbox gap). Bound by the cell on whichever
+  // dimension is the constraint.
+  tile: {
+    height: "100%",
+    maxWidth: "100%",
+    aspectRatio: 3 / 4,
     backgroundColor: "#0d1424",
     borderRadius: scale(14),
     borderWidth: 1.5,
     overflow: "hidden",
   },
-  // Odd final tile: take only one column's worth of width (left-aligned)
-  tileHalf: {
-    flex: 0,
-    width: "50%",
+  comingSoonTile: {
+    borderColor: "#33405566",
+    borderStyle: "dashed",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  tileImage: {
-    flex: 1,
-    width: "100%",
+  comingSoonText: {
+    color: "#5a6b85",
+    fontSize: scaleFont(15),
+    fontWeight: "700",
+    textAlign: "center",
+    lineHeight: scaleFont(20),
   },
   // ── Blackjack resume overlay ───────────────────────────────────────────────
   resumeOverlay: {
