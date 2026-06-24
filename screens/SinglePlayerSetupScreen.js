@@ -197,7 +197,7 @@ export default function SinglePlayerSetupScreen({ navigation }) {
                   <Image
                     source={game.image}
                     style={styles.tileImage}
-                    resizeMode="cover"
+                    resizeMode="contain"
                   />
                   <View style={styles.tileFooter}>
                     <Text style={styles.tileName}>{game.label}</Text>
