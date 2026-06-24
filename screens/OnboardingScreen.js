@@ -272,7 +272,7 @@ export default function OnboardingScreen({ navigation }) {
               <Text style={styles.skipBtnText}>Skip</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.primaryBtn}
+              style={[styles.primaryBtn, styles.navPrimaryBtn]}
               onPress={() => setStep(2)}
             >
               <Text style={styles.primaryBtnText}>Next →</Text>
@@ -331,7 +331,7 @@ export default function OnboardingScreen({ navigation }) {
           <Text style={styles.skipBtnText}>Skip</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.primaryBtn, isSaving && styles.btnDimmed]}
+          style={[styles.primaryBtn, styles.navPrimaryBtn, isSaving && styles.btnDimmed]}
           onPress={handleFinish}
           disabled={isSaving}
         >
@@ -389,6 +389,9 @@ const styles = StyleSheet.create({
     borderRadius: scale(12),
     paddingVertical: scale(16),
     alignItems: "center",
+  },
+  // In the Skip/Next row, the primary button fills the space beside Skip
+  navPrimaryBtn: {
     flex: 1,
   },
   primaryBtnText: {
