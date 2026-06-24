@@ -228,7 +228,7 @@ export default function App() {
                 <Stack.Screen
                   name="SinglePlayerSetup"
                   component={SinglePlayerSetupScreen}
-                  options={{ title: "Single Player" }}
+                  options={{ title: "Single Player · Choose Game" }}
                 />
                 <Stack.Screen
                   name="HowToPlay"
