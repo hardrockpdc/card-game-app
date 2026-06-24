@@ -1,18 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Image,
-  ActivityIndicator,
-} from "react-native";
+import { View, Text, StyleSheet, Image } from "react-native";
 import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
-import {
-  getCachedProfile,
-  getDisplayName,
-  subscribeProfile,
-} from "../game/profile";
 import { useHasSave } from "../game/useResumePrompt";
 import { clearGame } from "../game/gameSaves";
 import { confirmStartNew } from "../components/GameSetupLayout";
@@ -79,25 +68,9 @@ const DEFAULT_RUMMY_VARIANT = "ginRummy";
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function SinglePlayerSetupScreen({ navigation }) {
-  const [playerName, setPlayerName] = useState("Player");
-  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [selectedId, setSelectedId] = useState(null); // for blackjack resume dialog
 
   const hasBlackjackSave = useHasSave(BLACKJACK_SAVE_KEY);
-
-  useEffect(() => {
-    let isMounted = true;
-    const profile = getCachedProfile();
-    if (isMounted) {
-      setPlayerName(getDisplayName(profile));
-      setIsLoadingProfile(false);
-    }
-    const unsub = subscribeProfile((p) => setPlayerName(getDisplayName(p)));
-    return () => {
-      isMounted = false;
-      unsub();
-    };
-  }, []);
 
   // ─── Navigation handlers ──────────────────────────────────────────────────
 
@@ -163,16 +136,6 @@ export default function SinglePlayerSetupScreen({ navigation }) {
   // Heights come from flex (each row gets an equal slice of available space),
   // so all 7 tiles always fit on screen regardless of nav header / safe area.
 
-  if (isLoadingProfile) {
-    return (
-      <SafeAreaView style={styles.safe}>
-        <View style={styles.loadingWrap}>
-          <ActivityIndicator color="#7fb3ff" size="large" />
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   // Split into rows of 2; last row centred if odd
   const rows = [];
   for (let i = 0; i < GAMES.length; i += COLS) {
@@ -207,9 +170,6 @@ export default function SinglePlayerSetupScreen({ navigation }) {
       )}
 
       <View style={styles.container}>
-        <Text style={styles.header}>Choose a Game</Text>
-        <Text style={styles.subHeader}>Playing as {playerName}</Text>
-
         <View style={styles.grid}>
           {rows.map((row, rowIdx) => (
             <View
@@ -262,27 +222,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#1a1a2e",
   },
-  loadingWrap: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   container: {
     flex: 1,
     paddingHorizontal: scale(16),
-    paddingTop: scale(16),
+    paddingTop: scale(12),
     paddingBottom: scale(8),
-  },
-  header: {
-    color: "#ffffff",
-    fontSize: scaleFont(24),
-    fontWeight: "800",
-    marginBottom: scale(2),
-  },
-  subHeader: {
-    color: "#7fb3ff",
-    fontSize: scaleFont(13),
-    marginBottom: scale(16),
   },
   grid: {
     flex: 1,
