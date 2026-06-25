@@ -10,7 +10,6 @@ import HostSetupScreen from "./screens/HostSetupScreen";
 import JoinScreen from "./screens/JoinScreen";
 import LobbyScreen from "./screens/LobbyScreen";
 import GameScreen from "./screens/GameScreen";
-import ResultsScreen from "./screens/ResultsScreen";
 import SettingsScreen from "./screens/SettingsScreen";
 import GoFishGameScreen from "./screens/GoFishGameScreen";
 import ConquianGameScreen from "./screens/ConquianGameScreen";
@@ -170,12 +169,7 @@ export default function App() {
                   component={GameScreen}
                   options={{ headerShown: false }}
                 />
-                <Stack.Screen
-                  name="Results"
-                  component={ResultsScreen}
-                  options={{ title: "Results" }}
-                />
-                <Stack.Screen
+<Stack.Screen
                   name="Settings"
                   component={SettingsScreen}
                   options={{ title: "Settings" }}

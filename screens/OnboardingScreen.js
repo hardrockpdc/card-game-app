@@ -197,7 +197,7 @@ export default function OnboardingScreen({ navigation }) {
   if (step === 0) {
     return (
       <SafeAreaView style={styles.safe}>
-        <View style={styles.stepContainer}>
+        <ScrollView contentContainerStyle={styles.stepContainer} keyboardShouldPersistTaps="handled">
           <View style={styles.welcomeBlock}>
             <Text style={styles.welcomeTitle}>Welcome to Card Night! 🎴</Text>
             <Text style={styles.welcomeText}>
@@ -228,7 +228,7 @@ export default function OnboardingScreen({ navigation }) {
           >
             <Text style={styles.primaryBtnText}>Next →</Text>
           </TouchableOpacity>
-        </View>
+        </ScrollView>
       </SafeAreaView>
     );
   }
