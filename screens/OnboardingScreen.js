@@ -131,7 +131,7 @@ export default function OnboardingScreen({ navigation }) {
       const asset = result.assets[0];
       const uri = await cropToSquare(asset.uri, asset.width, asset.height);
       setPhotoUri(uri);
-      setPhotoType("uri");
+      setPhotoType("custom");
       setPhotoValue(uri);
       setShowAvatarGrid(false);
     }
@@ -151,7 +151,7 @@ export default function OnboardingScreen({ navigation }) {
       const asset = result.assets[0];
       const uri = await cropToSquare(asset.uri, asset.width, asset.height);
       setPhotoUri(uri);
-      setPhotoType("uri");
+      setPhotoType("custom");
       setPhotoValue(uri);
       setShowAvatarGrid(false);
     }
@@ -167,7 +167,7 @@ export default function OnboardingScreen({ navigation }) {
   // ── Render helpers ───────────────────────────────────────────────────────────
 
   function renderPhotoPreview() {
-    if (photoType === "uri" && photoUri) {
+    if (photoType === "custom" && photoUri) {
       return (
         <Image source={{ uri: photoUri }} style={styles.photoPreview} />
       );
