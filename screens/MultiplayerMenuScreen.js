@@ -100,7 +100,7 @@ export default function MultiplayerMenuScreen({ navigation }) {
                 paddingHorizontal: buttonHorizontal,
               },
             ]}
-            onPress={() => navigation.navigate("HostSetup")}
+            onPress={() => navigation.navigate("MultiplayerGamePicker")}
             accessibilityRole="button"
             accessibilityLabel="Host Local"
             accessibilityHint="Start hosting a game on your Wi-Fi network"

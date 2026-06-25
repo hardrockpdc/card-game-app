@@ -86,7 +86,10 @@ function PokerVariantPickerScreen({ navigation, route }) {
   const saveToLobby = () =>
     navigation.navigate({
       name: "Lobby",
-      params: { selectedPokerVariant: selectedVariant },
+      params: {
+        ...(launchParams && typeof launchParams === "object" ? launchParams : {}),
+        selectedPokerVariant: selectedVariant,
+      },
       merge: true,
     });
 

@@ -6,7 +6,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import HomeScreen from "./screens/HomeScreen";
-import HostSetupScreen from "./screens/HostSetupScreen";
+import MultiplayerGamePickerScreen from "./screens/MultiplayerGamePickerScreen";
 import JoinScreen from "./screens/JoinScreen";
 import LobbyScreen from "./screens/LobbyScreen";
 import GameScreen from "./screens/GameScreen";
@@ -150,9 +150,9 @@ export default function App() {
                   options={{ headerShown: false }}
                 />
                 <Stack.Screen
-                  name="HostSetup"
-                  component={HostSetupScreen}
-                  options={{ title: "Host a Game" }}
+                  name="MultiplayerGamePicker"
+                  component={MultiplayerGamePickerScreen}
+                  options={{ title: "Choose Game" }}
                 />
                 <Stack.Screen
                   name="Join"

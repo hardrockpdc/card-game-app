@@ -10,6 +10,8 @@ import {
 } from "react-native";
 import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import { scale, scaleFont } from "../game/responsive";
+import * as Network from "expo-network";
+import * as Clipboard from "expo-clipboard";
 import {
   setServerListeners,
   broadcastToClients,
@@ -19,6 +21,7 @@ import {
   disconnectFromHost,
   startBroadcasting,
   stopBroadcasting,
+  startServer,
   stopServer,
   getAssignedClientId,
 } from "../game/GameNetwork";
@@ -151,16 +154,27 @@ function parseLobbySelection(value) {
 export default function LobbyScreen({ navigation, route }) {
   const { role, hostName, hostIp, playerName } = route.params || {};
   const isHost = role === "host";
-  const myName = isHost ? hostName || "Host" : playerName || "Player";
+
+  // Host name: prefer route param (set by game picker), else load from profile
+  const [resolvedHostName, setResolvedHostName] = useState(hostName || null);
+  const [displayIp, setDisplayIp] = useState(hostIp || null);
+  const [ipCopied, setIpCopied] = useState(false);
+  const ipCopyTimerRef = useRef(null);
+
+  const myName = isHost
+    ? resolvedHostName || hostName || "Host"
+    : playerName || "Player";
 
   const initialWheelValue = useMemo(() => {
     const incomingPokerVariant = route.params?.selectedPokerVariant;
     const incomingRummyVariant = route.params?.selectedRummyVariant;
     const incomingTone = route.params?.tone;
+    const incomingGameId = route.params?.gameId;
 
     if (incomingPokerVariant) return `poker:${incomingPokerVariant}`;
     if (incomingRummyVariant) return `rummy:${incomingRummyVariant}`;
     if (incomingTone) return `wildRound:${incomingTone}`;
+    if (incomingGameId) return incomingGameId;
     return "conquian";
   }, []);
 
@@ -233,11 +247,37 @@ export default function LobbyScreen({ navigation, route }) {
   // Assigned numeric clientId from host (set via ASSIGNED_ID TCP message)
   const assignedClientIdRef = useRef(null);
 
+  // ─── Host bootstrap (name + IP + server) ─────────────────────────────────
+  useEffect(() => {
+    if (!isHost) return;
+    let mounted = true;
+
+    if (!hostName) {
+      const { loadProfile: lp, getDisplayName: gdn } = require("../game/profile");
+      lp().then((p) => { if (mounted) setResolvedHostName(gdn(p)); });
+    }
+
+    if (!hostIp) {
+      Network.getIpAddressAsync().then((ip) => { if (mounted) setDisplayIp(ip); });
+    }
+
+    startServer();
+
+    return () => { mounted = false; };
+  }, [isHost]);
+
+  // Start broadcasting once we have an IP (may come from params immediately or
+  // from the async fetch in the bootstrap effect above).
+  const broadcastStartedRef = useRef(false);
+  useEffect(() => {
+    if (!isHost || !displayIp || broadcastStartedRef.current) return;
+    broadcastStartedRef.current = true;
+    startBroadcasting(myName, displayIp);
+  }, [isHost, displayIp, myName]);
+
   // ─── HOST setup ────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!isHost) return;
-
-    if (hostIp) startBroadcasting(myName, hostIp);
 
     const existing = getConnectedPlayers();
     if (existing.length > 0) {
@@ -497,6 +537,14 @@ export default function LobbyScreen({ navigation, route }) {
   const canAddAI =
     isHost && selectedGameDef?.hasAI && players.length < maxPlayers;
 
+  async function handleCopyIp() {
+    if (!displayIp) return;
+    await Clipboard.setStringAsync(displayIp);
+    setIpCopied(true);
+    if (ipCopyTimerRef.current) clearTimeout(ipCopyTimerRef.current);
+    ipCopyTimerRef.current = setTimeout(() => setIpCopied(false), 2000);
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Lobby</Text>
@@ -506,6 +554,23 @@ export default function LobbyScreen({ navigation, route }) {
         <Text style={[styles.suit, styles.suitRed]}>♦</Text>
         <Text style={styles.suit}>♣</Text>
       </View>
+
+      {/* IP chip — shown only to the host so others can connect */}
+      {isHost && (
+        <TouchableOpacity
+          style={[styles.ipChip, ipCopied && styles.ipChipCopied]}
+          onPress={handleCopyIp}
+          activeOpacity={0.75}
+          accessibilityRole="button"
+          accessibilityLabel="Copy IP address"
+        >
+          <Text style={styles.ipChipLabel}>📡 Your IP: </Text>
+          <Text style={[styles.ipChipValue, ipCopied && styles.ipChipValueCopied]}>
+            {displayIp || "…"}
+          </Text>
+          {ipCopied && <Text style={styles.ipChipCopiedTag}> ✓ Copied</Text>}
+        </TouchableOpacity>
+      )}
 
       {isHost && (
         <View style={styles.gameSelectorSection}>
@@ -624,6 +689,39 @@ const styles = StyleSheet.create({
     backgroundColor: "#1a1a2e",
     padding: scale(20),
     paddingTop: scale(12),
+  },
+  ipChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "center",
+    backgroundColor: "#16213e",
+    borderRadius: scale(20),
+    borderWidth: 1,
+    borderColor: "#e94560",
+    paddingHorizontal: scale(14),
+    paddingVertical: scale(6),
+    marginBottom: scale(12),
+  },
+  ipChipCopied: {
+    borderColor: "#4caf50",
+  },
+  ipChipLabel: {
+    color: "#c4c4d4",
+    fontSize: scaleFont(12),
+  },
+  ipChipValue: {
+    color: "#e94560",
+    fontSize: scaleFont(12),
+    fontWeight: "bold",
+    letterSpacing: scale(0.5),
+  },
+  ipChipValueCopied: {
+    color: "#4caf50",
+  },
+  ipChipCopiedTag: {
+    color: "#4caf50",
+    fontSize: scaleFont(11),
+    fontWeight: "bold",
   },
   title: {
     fontSize: scaleFont(28),

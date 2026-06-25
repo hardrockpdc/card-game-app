@@ -68,7 +68,10 @@ function RummyVariantPickerScreen({ navigation, route }) {
   const saveToLobby = () =>
     navigation.navigate({
       name: "Lobby",
-      params: { selectedRummyVariant: selectedVariant },
+      params: {
+        ...(launchParams && typeof launchParams === "object" ? launchParams : {}),
+        selectedRummyVariant: selectedVariant,
+      },
       merge: true,
     });
 
