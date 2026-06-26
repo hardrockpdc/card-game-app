@@ -32,7 +32,7 @@
         "backgroundColor": "#1a1a2e"
       },
       "package": "com.pedro.cardgameapp",
-      "versionCode": 2,
+      "versionCode": 3,
       "permissions": [
         "android.permission.NEARBY_WIFI_DEVICES",
         "android.permission.ACCESS_NETWORK_STATE",
