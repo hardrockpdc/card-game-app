@@ -57,7 +57,7 @@ const GAMES = [
     label: "Poker",
     screen: "PokerGame",
     available: true,
-    hasAI: true,
+    hasAI: false,
     minPlayers: 2,
     maxPlayers: 5,
   },
