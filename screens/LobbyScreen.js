@@ -29,7 +29,6 @@ import {
   getRummyVariantPlayerLimits,
   RUMMY_VARIANT_OPTIONS,
 } from "../game/rummy";
-import ScrollWheelPicker from "../components/ScrollWheelPicker";
 import { POKER_VARIANT_OPTIONS } from "../components/PokerVariantWheel";
 import ProfileAvatar from "../components/ProfileAvatar";
 import { loadProfile, subscribeProfile } from "../game/profile";
@@ -575,18 +574,14 @@ export default function LobbyScreen({ navigation, route }) {
       {isHost && (
         <View style={styles.gameSelectorSection}>
           <Text style={styles.sectionLabel}>Game</Text>
-
-          <ScrollWheelPicker
-            options={WHEEL_OPTIONS}
-            value={selectedWheelValue}
-            onChange={setSelectedWheelValue}
-            itemHeight={48}
-            visibleCount={3}
-            accentColor={wheelAccentColor}
-            style={{ marginTop: 0 }}
-            titleFontSize={14}
-            subtitleFontSize={10}
-          />
+          <View style={styles.selectedGameChip}>
+            <Text style={[styles.selectedGameText, { color: wheelAccentColor }]}>
+              {WHEEL_OPTIONS.find((o) => o.value === selectedWheelValue)?.title ?? selectedGameDef?.label}
+              {WHEEL_OPTIONS.find((o) => o.value === selectedWheelValue)?.subtitle
+                ? `  ·  ${WHEEL_OPTIONS.find((o) => o.value === selectedWheelValue).subtitle}`
+                : ""}
+            </Text>
+          </View>
         </View>
       )}
 
@@ -875,5 +870,17 @@ const styles = StyleSheet.create({
   gameSelectorSection: {
     width: "100%",
     marginBottom: scale(10),
+  },
+  selectedGameChip: {
+    backgroundColor: "#16213e",
+    borderRadius: scale(10),
+    borderWidth: 1.5,
+    borderColor: "#334",
+    paddingHorizontal: scale(16),
+    paddingVertical: scale(10),
+  },
+  selectedGameText: {
+    fontSize: scaleFont(15),
+    fontWeight: "700",
   },
 });
