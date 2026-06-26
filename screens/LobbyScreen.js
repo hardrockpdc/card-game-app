@@ -75,7 +75,7 @@ const GAMES = [
     label: "Wild Round",
     screen: "WildRoundGame",
     available: true,
-    hasAI: true,
+    hasAI: false,
     minPlayers: 3,
     maxPlayers: 8,
   },
