@@ -19,18 +19,34 @@ import {
 } from "../game/onlineRoom";
 import { setNetworkMode } from "../game/GameNetwork";
 
-// Per-game labels + player limits for the online lobby. `screen` is set only on
-// games whose online gameplay is wired up; others can still gather in a lobby
-// but Start shows a "coming soon" note (pilot: Go Fish first).
+// Per-game labels + player limits + the game screen each launches into.
 const GAME_INFO = {
   goFish: { label: "Go Fish", min: 2, max: 4, screen: "GoFishGame" },
-  conquian: { label: "Conquián", min: 2, max: 4 },
-  poker: { label: "Poker", min: 2, max: 5 },
-  rummy: { label: "Rummy", min: 2, max: 4 },
-  wildRound: { label: "Wild Round", min: 3, max: 8 },
-  lastCard: { label: "Last Card", min: 2, max: 8 },
-  whoami: { label: "Who Am I?", min: 3, max: 8 },
+  conquian: { label: "Conquián", min: 2, max: 4, screen: "ConquianGame" },
+  poker: { label: "Poker", min: 2, max: 5, screen: "PokerGame" },
+  rummy: { label: "Rummy", min: 2, max: 4, screen: "RummyGame" },
+  wildRound: { label: "Wild Round", min: 3, max: 8, screen: "WildRoundGame" },
+  lastCard: { label: "Last Card", min: 2, max: 8, screen: "LastCardGame" },
+  whoami: { label: "Who Am I?", min: 3, max: 8, screen: "WhoAmIGame" },
 };
+
+// Per-game launch params, mirroring what the local lobby passes. Variant/tone
+// were chosen in the game picker and stored on the room.
+function buildLaunchExtras(room) {
+  switch (room?.gameId) {
+    case "poker":
+      return { variant: room.variant || "texasHoldem" };
+    case "rummy":
+      return {
+        variant: room.variant || "ginRummy",
+        variantId: room.variant || "ginRummy",
+      };
+    case "wildRound":
+      return { tone: room.tone || "family" };
+    default:
+      return {};
+  }
+}
 
 // Convert the players object (keyed by uid) into a stable, sorted array.
 function toPlayerArray(playersObj, myUid) {
@@ -92,6 +108,7 @@ export default function OnlineLobbyScreen({ navigation, route }) {
           myName,
           players: data.gamePlayers,
           assignedClientId: myUid,
+          ...buildLaunchExtras(data),
         });
       }
     });
@@ -152,16 +169,6 @@ export default function OnlineLobbyScreen({ navigation, route }) {
       return;
     }
 
-    // Games without a wired online screen yet (everything except the Go Fish
-    // pilot) just confirm the lobby works.
-    if (!info.screen) {
-      Alert.alert(
-        "Coming soon",
-        `Online ${info.label} is on the way. The lobby and player sync work — gameplay is being wired up game by game.`,
-      );
-      return;
-    }
-
     // Finalize the players array everyone shares. Host is always "host"; each
     // remote player keeps their uid so private hands route correctly.
     const gamePlayers = players.map((p) =>
@@ -175,6 +182,7 @@ export default function OnlineLobbyScreen({ navigation, route }) {
       role: "host",
       myName,
       players: gamePlayers,
+      ...buildLaunchExtras(room),
     });
   }
 
