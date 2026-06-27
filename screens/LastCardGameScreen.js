@@ -282,9 +282,10 @@ export default function LastCardGameScreen({ navigation, route }) {
   }, [phase, winner]);
 
   useEffect(() => {
-    if (phase === "gameOver") {
-      setShowRoundModal(true);
-    }
+    // Open the end-of-game modal on game over; close it again when a fresh game
+    // starts (e.g. the host hit Play Again and a new "playing" state synced in),
+    // otherwise the modal stays up on clients and blocks the restarted game.
+    setShowRoundModal(phase === "gameOver");
   }, [phase]);
 
   // Auto-save after each state update in single-player.
