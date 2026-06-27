@@ -119,7 +119,11 @@ export default function WildRoundGameScreen({ navigation, route }) {
   }, [privateJudgePrompt, gameState?.currentPrompt]);
 
   useEffect(() => {
-    if (!gameState || gameState.phase !== "gameOver") return;
+    if (!gameState || gameState.phase !== "gameOver") {
+      // Dismiss on clients when the host starts a new game.
+      setShowRoundModal(false);
+      return;
+    }
     setShowRoundModal(true);
     if (String(gameState.winner) === myPid) {
       hapticWin(); // rising flourish when you win

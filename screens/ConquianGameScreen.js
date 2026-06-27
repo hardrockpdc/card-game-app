@@ -1050,9 +1050,9 @@ export default function ConquianGameScreen({ navigation, route }) {
   }, [gameState?.phase, gameState?.winner, gameState?.tie]);
 
   useEffect(() => {
-    if (gameState?.phase === "results") {
-      setShowRoundModal(true);
-    }
+    // Tie the modal to the phase so it dismisses on clients when the host
+    // starts a new game (otherwise it stays open and blocks the restart).
+    setShowRoundModal(gameState?.phase === "results");
   }, [gameState?.phase]);
 
   // UX-5: Android hardware back confirmation

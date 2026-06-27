@@ -167,7 +167,11 @@ export default function WhoAmIGameScreen({ navigation, route }) {
 
   // Game-over modal + haptics.
   useEffect(() => {
-    if (gameState?.phase !== "gameOver") return;
+    if (gameState?.phase !== "gameOver") {
+      // Dismiss on clients when the host starts a new game.
+      setShowRoundModal(false);
+      return;
+    }
     setShowRoundModal(true);
     if (String(gameState.winner?.id) === myPid) hapticWin();
     else hapticLose();

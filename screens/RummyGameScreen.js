@@ -683,12 +683,12 @@ export default function RummyGameScreen({ navigation, route }) {
   }
 
   function dispatchAction(moveType, extra = {}, onFail) {
-    const state = fullRef.current;
-    if (!state) {
-      return;
-    }
-
     if (isHost) {
+      // Only the host holds the full authoritative state in fullRef.
+      const state = fullRef.current;
+      if (!state) {
+        return;
+      }
       const next = rummyReducer(state, {
         type: moveType,
         pid: localPlayerIndex,
@@ -703,6 +703,7 @@ export default function RummyGameScreen({ navigation, route }) {
       return;
     }
 
+    // Client never has fullRef — just send the move; the host validates it.
     sendToHost({
       type: "ACTION",
       moveType,
@@ -868,9 +869,9 @@ export default function RummyGameScreen({ navigation, route }) {
       gameState?.phase === "game-over" ||
       gameState?.winner != null ||
       gameState?.tie;
-    if (isOver) {
-      setShowRoundModal(true);
-    }
+    // Tie the modal to the end state so it dismisses on clients when the host
+    // starts a new game (otherwise it stays open and blocks the restart).
+    setShowRoundModal(!!isOver);
   }, [gameState?.phase, gameState?.winner, gameState?.tie]);
 
   useEffect(() => {
