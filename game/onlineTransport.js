@@ -16,6 +16,7 @@ import {
   ref,
   onValue,
   onChildAdded,
+  onChildChanged,
   push,
   set,
   remove,
@@ -31,8 +32,11 @@ let clientListeners = {};
 // Active Firebase unsubscribe functions, cleared on teardown.
 let subs = [];
 
-let broadcastSeq = 0;
-const privateSeq = {}; // uid -> seq
+// Per-message-type sequence numbers. Each message type gets its own slot so
+// different types never overwrite each other (e.g. AVATARS clobbering
+// GAME_STATE); seq forces a change event even on identical consecutive payloads.
+const broadcastSeq = {}; // type -> seq
+const privateSeq = {}; // `${uid}/${type}` -> seq
 
 function db() {
   return getDatabase(getApp());
@@ -54,7 +58,6 @@ function clean(message) {
 
 export function setOnlineConfig(next) {
   config = next;
-  broadcastSeq = 0;
 }
 
 export function onlineGetAssignedClientId() {
@@ -110,31 +113,25 @@ export function onlineSetClientListeners(listeners) {
   log("[onlineTransport] client setListeners; config=", config);
   if (config?.isHost) return;
 
-  // Host → everyone.
-  const unsubBroadcast = onValue(netRef("broadcast"), (snap) => {
+  // Host → everyone. Each message type lives in its own child slot, so a late
+  // client receives the latest of EVERY type on attach (onChildAdded replays
+  // existing children) plus all future updates (onChildChanged).
+  const onChild = (snap) => {
     const val = snap.val();
-    log(
-      "[onlineTransport] client broadcast fire; exists=",
-      snap.exists(),
-      "type=",
-      val?.payload?.type,
-    );
+    log("[onlineTransport] client recv broadcast type=", val?.payload?.type);
     if (val && val.payload) deliverToClient(val.payload);
-  });
-  subs.push(unsubBroadcast);
+  };
+  subs.push(onChildAdded(netRef("broadcast"), onChild));
+  subs.push(onChildChanged(netRef("broadcast"), onChild));
 
-  // Host → me (private hand, etc.).
-  const unsubPrivate = onValue(netRef(`private/${config.uid}`), (snap) => {
+  // Host → me (private hand, etc.) — same per-type slot model.
+  const onPrivateChild = (snap) => {
     const val = snap.val();
-    log(
-      "[onlineTransport] client private fire; exists=",
-      snap.exists(),
-      "type=",
-      val?.payload?.type,
-    );
+    log("[onlineTransport] client recv private type=", val?.payload?.type);
     if (val && val.payload) deliverToClient(val.payload);
-  });
-  subs.push(unsubPrivate);
+  };
+  subs.push(onChildAdded(netRef(`private/${config.uid}`), onPrivateChild));
+  subs.push(onChildChanged(netRef(`private/${config.uid}`), onPrivateChild));
 
   // Room removed (host left / closed) → treat as a disconnect.
   const roomRef = ref(db(), `rooms/${config.code}`);
@@ -159,17 +156,21 @@ function deliverToClient(payload) {
 // ─── Sending ─────────────────────────────────────────────────────────────────
 export function onlineBroadcast(message) {
   if (!config?.isHost) return;
-  log("[onlineTransport] host broadcast write; type=", message?.type, "code=", config?.code);
-  set(netRef("broadcast"), { seq: ++broadcastSeq, payload: clean(message) })
-    .then(() => log("[onlineTransport] host broadcast write OK; type=", message?.type))
-    .catch((err) => warn("[onlineTransport] broadcast failed:", err));
+  const type = message?.type || "MSG";
+  broadcastSeq[type] = (broadcastSeq[type] || 0) + 1;
+  set(netRef(`broadcast/${type}`), {
+    seq: broadcastSeq[type],
+    payload: clean(message),
+  }).catch((err) => warn("[onlineTransport] broadcast failed:", err));
 }
 
 export function onlineSendToClient(clientId, message) {
   if (!config?.isHost) return;
-  privateSeq[clientId] = (privateSeq[clientId] || 0) + 1;
-  set(netRef(`private/${clientId}`), {
-    seq: privateSeq[clientId],
+  const type = message?.type || "MSG";
+  const key = `${clientId}/${type}`;
+  privateSeq[key] = (privateSeq[key] || 0) + 1;
+  set(netRef(`private/${clientId}/${type}`), {
+    seq: privateSeq[key],
     payload: clean(message),
   }).catch((err) => warn("[onlineTransport] sendToClient failed:", err));
 }
