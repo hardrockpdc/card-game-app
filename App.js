@@ -90,6 +90,16 @@ export default function App() {
     initRummyTable();
     initPokerTable();
     initGofishTable();
+
+    // Anonymous Firebase sign-in for online multiplayer. Guarded so a dev build
+    // made before the Firebase native modules were added is a no-op instead of
+    // crashing — it'll start working after the next rebuild.
+    try {
+      const { ensureSignedIn } = require("./game/firebase");
+      ensureSignedIn().catch((err) => warn("Firebase sign-in failed:", err));
+    } catch (err) {
+      warn("Firebase not available (needs rebuild):", err);
+    }
   }, []);
 
   // The app is portrait-first: every screen is designed for portrait except

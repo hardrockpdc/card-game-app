@@ -32,6 +32,7 @@
         "backgroundColor": "#1a1a2e"
       },
       "package": "com.pedro.cardgameapp",
+      "googleServicesFile": "./google-services.json",
       "versionCode": 3,
       "permissions": [
         "android.permission.NEARBY_WIFI_DEVICES",
@@ -55,7 +56,9 @@
     "plugins": [
       "expo-audio",
       "expo-image-picker",
-      "react-native-edge-to-edge"
+      "react-native-edge-to-edge",
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth"
     ],
     "runtimeVersion": {
       "policy": "appVersion"
