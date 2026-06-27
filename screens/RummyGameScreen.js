@@ -572,9 +572,11 @@ export default function RummyGameScreen({ navigation, route }) {
           }
 
           const next = rummyReducer(state, {
+            ...msg,
+            // type/pid must win over the wire envelope (msg.type is "ACTION");
+            // spreading msg first then overriding fixes the move being ignored.
             type: moveType,
             pid: playerIndex,
-            ...msg,
           });
 
           if (next !== state) {
