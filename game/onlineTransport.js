@@ -23,7 +23,7 @@ import {
 } from "@react-native-firebase/database";
 import { getApp } from "@react-native-firebase/app";
 import { getDatabase } from "@react-native-firebase/database";
-import { warn, log } from "./logger";
+import { warn } from "./logger";
 
 let config = null; // { code, uid, isHost }
 let serverListeners = {};
@@ -130,7 +130,6 @@ export function onlineSetClientListeners(listeners) {
   const onChild = (snap) => {
     const val = snap.val();
     const msg = val ? decode(val.payload) : null;
-    log("[onlineTransport] client recv type=", msg?.type);
     if (msg) deliverToClient(msg);
   };
   subs.push(onChildAdded(netRef("broadcast"), onChild));
@@ -164,7 +163,6 @@ function deliverToClient(payload) {
 export function onlineBroadcast(message) {
   if (!config?.isHost) return;
   const type = message?.type || "MSG";
-  log("[onlineTransport] host broadcast type=", type);
   broadcastSeq[type] = (broadcastSeq[type] || 0) + 1;
   set(netRef(`broadcast/${type}`), {
     seq: broadcastSeq[type],

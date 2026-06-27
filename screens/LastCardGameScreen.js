@@ -811,7 +811,19 @@ export default function LastCardGameScreen({ navigation, route }) {
   ]);
 
   function getCurrentState() {
-    return fullRef.current;
+    // Host holds the full authoritative state. The client never does — it only
+    // has the public state (gameState) plus its own hand (myHand), so build a
+    // minimal state good enough for the local tap/turn/playability checks. The
+    // host re-validates every move anyway.
+    if (isHost) return fullRef.current;
+    if (!gameState) return null;
+    return {
+      ...gameState,
+      discardPile: gameState.topCard ? [gameState.topCard] : [],
+      hands: { [myPid]: myHand },
+      gameOver: gameState.gameOver,
+      awaitingColorChoiceBy: gameState.awaitingColorChoiceBy ?? null,
+    };
   }
 
   function onCardTap(card) {
