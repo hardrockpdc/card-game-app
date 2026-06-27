@@ -1308,7 +1308,11 @@ export function rummyReducer(state, action = {}) {
     }
 
     if (!drawnCards.length) {
+      // Deck and discard both exhausted — end the round in a tie. Must set
+      // phase to "game-over" (like the max-turns tie below), otherwise the game
+      // is stuck on the draw step with no way to advance.
       nextState.tie = true;
+      nextState.phase = "game-over";
       nextState.statusMessage = "The deck and discard pile ran out.";
       return nextState;
     }
