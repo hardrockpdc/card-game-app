@@ -130,7 +130,20 @@ export function doAsk(state, fromId, targetId, rank) {
   s = checkWin(s);
   if (s.phase === "results") return { ...s, lastAction };
 
-  if (extraTurn) return { ...s, extraTurn: true, lastAction };
+  if (extraTurn) {
+    // If completing a book emptied the hand, draw from the ocean so the player
+    // can actually take their extra turn (otherwise they're stuck with 0 cards
+    // and nothing to ask for).
+    if (s.hands[fromPid].length === 0 && s.ocean.length > 0) {
+      const [drawn, ...rest] = s.ocean;
+      s = { ...s, ocean: rest, hands: { ...s.hands, [fromPid]: [drawn] } };
+    }
+    // Still empty (ocean was empty too) — can't take the extra turn; pass on.
+    if (s.hands[fromPid].length === 0) {
+      return { ...nextTurn(s), extraTurn: false, lastAction };
+    }
+    return { ...s, extraTurn: true, lastAction };
+  }
   return { ...nextTurn(s), extraTurn: false, lastAction };
 }
 
