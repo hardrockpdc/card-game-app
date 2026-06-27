@@ -157,9 +157,11 @@ export async function updateRoomGame(code, { gameId, variant = null, tone = null
 }
 
 // Host-only: flip the room to "playing" so everyone's lobby advances together.
-export async function startRoomGame(code) {
+// `payload` carries what clients need to launch the same game (the finalized
+// players array and the target game screen).
+export async function startRoomGame(code, payload = {}) {
   try {
-    await update(roomRef(code), { status: "playing" });
+    await update(roomRef(code), { status: "playing", ...payload });
   } catch (err) {
     warn("[onlineRoom] startRoomGame failed:", err);
   }

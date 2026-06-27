@@ -10,6 +10,29 @@ const DISCOVERY_PORT = 7778;
 const BROADCAST_MS = 2000;
 const IS_WEB = Platform.OS === "web";
 
+// ─── Transport switch (local TCP vs Firebase online) ─────────────────────────
+// The game screens call the same functions regardless of transport. When mode
+// is "online" the relevant calls are forwarded to game/onlineTransport.js
+// (Firebase). Default "local" keeps the original TCP/UDP behavior untouched.
+let networkMode = "local";
+let online = null; // lazily-loaded onlineTransport module
+
+export function setNetworkMode(mode, config) {
+  networkMode = mode === "online" ? "online" : "local";
+  if (networkMode === "online") {
+    // Lazy require so local/web play never loads the Firebase transport.
+    online = require("./onlineTransport");
+    online.setOnlineConfig(config);
+    online.onlineResetChannel();
+  } else {
+    online = null;
+  }
+}
+
+export function getNetworkMode() {
+  return networkMode;
+}
+
 // ─── Server state ─────────────────────────────────────────────────────────────
 let server = null;
 const clients = new Map(); // clientId -> socket
@@ -26,6 +49,7 @@ let nextClientId = 1;
 let serverListeners = {};
 
 export function setServerListeners(listeners) {
+  if (networkMode === "online") return online.onlineSetServerListeners(listeners);
   serverListeners = listeners || {};
 }
 
@@ -116,6 +140,11 @@ export function startServer() {
 }
 
 export function stopServer() {
+  if (networkMode === "online") {
+    online.onlineTeardown();
+    setNetworkMode("local");
+    return;
+  }
   if (IS_WEB || !server) return;
   clients.forEach((socket) => socket.destroy());
   clients.clear();
@@ -139,6 +168,7 @@ function safeWrite(socket, data) {
 }
 
 export function broadcastToClients(message) {
+  if (networkMode === "online") return online.onlineBroadcast(message);
   if (IS_WEB) return;
   const data =
     JSON.stringify({ ...message, protocolVersion: PROTOCOL_VERSION }) + "\n";
@@ -146,6 +176,8 @@ export function broadcastToClients(message) {
 }
 
 export function sendToClient(clientId, message) {
+  if (networkMode === "online")
+    return online.onlineSendToClient(clientId, message);
   if (IS_WEB) return;
   safeWrite(
     clients.get(clientId),
@@ -175,6 +207,7 @@ let clientSocket = null;
 let assignedClientId = null;
 
 export function getAssignedClientId() {
+  if (networkMode === "online") return online.onlineGetAssignedClientId();
   if (IS_WEB) return null;
   return assignedClientId;
 }
@@ -184,6 +217,7 @@ export function getAssignedClientId() {
 let clientListeners = {};
 
 export function setClientListeners(listeners) {
+  if (networkMode === "online") return online.onlineSetClientListeners(listeners);
   clientListeners = listeners || {};
 }
 
@@ -258,6 +292,7 @@ export function connectToHost(ip, callbacks) {
 }
 
 export function sendToHost(message) {
+  if (networkMode === "online") return online.onlineSendToHost(message);
   if (IS_WEB) return;
   safeWrite(
     clientSocket,
@@ -266,6 +301,11 @@ export function sendToHost(message) {
 }
 
 export function disconnectFromHost() {
+  if (networkMode === "online") {
+    online.onlineTeardown();
+    setNetworkMode("local");
+    return;
+  }
   if (IS_WEB) {
     clientListeners = {};
     assignedClientId = null;

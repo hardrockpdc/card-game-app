@@ -17,11 +17,13 @@ import {
   leaveRoom,
   startRoomGame,
 } from "../game/onlineRoom";
+import { setNetworkMode } from "../game/GameNetwork";
 
-// Per-game labels + player limits for the online lobby. Kept small and local;
-// the full game definitions live in the per-game screens.
+// Per-game labels + player limits for the online lobby. `screen` is set only on
+// games whose online gameplay is wired up; others can still gather in a lobby
+// but Start shows a "coming soon" note (pilot: Go Fish first).
 const GAME_INFO = {
-  goFish: { label: "Go Fish", min: 2, max: 4 },
+  goFish: { label: "Go Fish", min: 2, max: 4, screen: "GoFishGame" },
   conquian: { label: "Conquián", min: 2, max: 4 },
   poker: { label: "Poker", min: 2, max: 5 },
   rummy: { label: "Rummy", min: 2, max: 4 },
@@ -56,6 +58,7 @@ export default function OnlineLobbyScreen({ navigation, route }) {
   const [copied, setCopied] = useState(false);
   const copyTimerRef = useRef(null);
   const leftRef = useRef(false); // guard so leave-on-unmount doesn't double-fire
+  const launchedRef = useRef(false); // guard so we navigate into the game once
 
   // Subscribe to live room updates.
   useEffect(() => {
@@ -72,10 +75,24 @@ export default function OnlineLobbyScreen({ navigation, route }) {
       }
       setRoom(data);
 
-      // Everyone advances together when the host starts.
-      if (data.status === "playing" && !leftRef.current) {
-        // Phase 6 will route into the actual game screen here.
-        // For now the lobby is the testable milestone.
+      // Clients advance into the game when the host flips status to "playing".
+      // (The host navigates itself in handleStart, so it skips this.)
+      if (
+        data.status === "playing" &&
+        !isHost &&
+        !leftRef.current &&
+        !launchedRef.current &&
+        data.gameScreen &&
+        data.gamePlayers
+      ) {
+        launchedRef.current = true;
+        setNetworkMode("online", { code, uid: myUid, isHost: false });
+        navigation.replace(data.gameScreen, {
+          role: "client",
+          myName,
+          players: data.gamePlayers,
+          assignedClientId: myUid,
+        });
       }
     });
 
@@ -134,12 +151,31 @@ export default function OnlineLobbyScreen({ navigation, route }) {
       );
       return;
     }
-    // Phase 6: wire actual online gameplay. For now confirm the lobby works.
-    startRoomGame(code);
-    Alert.alert(
-      "Lobby ready! 🎉",
-      "Online gameplay sync is the next piece we'll build. The room, codes, and player list all work.",
+
+    // Games without a wired online screen yet (everything except the Go Fish
+    // pilot) just confirm the lobby works.
+    if (!info.screen) {
+      Alert.alert(
+        "Coming soon",
+        `Online ${info.label} is on the way. The lobby and player sync work — gameplay is being wired up game by game.`,
+      );
+      return;
+    }
+
+    // Finalize the players array everyone shares. Host is always "host"; each
+    // remote player keeps their uid so private hands route correctly.
+    const gamePlayers = players.map((p) =>
+      p.isHost ? { id: "host", name: p.name } : { id: p.uid, name: p.name },
     );
+
+    setNetworkMode("online", { code, uid: myUid, isHost: true });
+    launchedRef.current = true;
+    startRoomGame(code, { gameScreen: info.screen, gamePlayers });
+    navigation.replace(info.screen, {
+      role: "host",
+      myName,
+      players: gamePlayers,
+    });
   }
 
   const players = toPlayerArray(room?.players, myUid);
