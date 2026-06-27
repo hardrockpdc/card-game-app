@@ -18,7 +18,6 @@ let networkMode = "local";
 let online = null; // lazily-loaded onlineTransport module
 
 export function setNetworkMode(mode, config) {
-  log("[GameNetwork] setNetworkMode", mode, config);
   networkMode = mode === "online" ? "online" : "local";
   if (networkMode === "online") {
     // Lazy require so local/web play never loads the Firebase transport.

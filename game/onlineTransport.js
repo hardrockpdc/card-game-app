@@ -23,7 +23,7 @@ import {
 } from "@react-native-firebase/database";
 import { getApp } from "@react-native-firebase/app";
 import { getDatabase } from "@react-native-firebase/database";
-import { warn, log } from "./logger";
+import { warn } from "./logger";
 
 let config = null; // { code, uid, isHost }
 let serverListeners = {};
@@ -122,7 +122,6 @@ export function onlineSetServerListeners(listeners) {
 // ─── Client listeners ────────────────────────────────────────────────────────
 export function onlineSetClientListeners(listeners) {
   clientListeners = listeners || {};
-  log("[onlineTransport] client setListeners; config=", config);
   if (config?.isHost) return;
 
   // Host → everyone. Each message type lives in its own child slot, so a late
