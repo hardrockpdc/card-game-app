@@ -518,8 +518,15 @@ export default function LastCardGameScreen({ navigation, route }) {
       s.players.find((p) => p.id === playerId)?.name ?? "Player";
 
     if (!result.drawnCard) {
-      setStatusMsg(`${playerName} cannot draw any more cards.`);
-      return resolveIfNeeded(result.state);
+      // Deck and discard are exhausted and the player has nothing playable —
+      // pass the turn so the game can't freeze on a player who can neither
+      // play nor draw.
+      setStatusMsg(`${playerName} can't draw — no cards left. Turn passes.`);
+      const passed = {
+        ...result.state,
+        currentTurn: getNextPlayer(result.state),
+      };
+      return resolveIfNeeded(passed);
     }
 
     const drawCount =

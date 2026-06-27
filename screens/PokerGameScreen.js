@@ -433,18 +433,22 @@ function doRaise(state, raiseAmount) {
     const pps = newPS[String(p.id)];
     if (!pps.folded && !pps.allIn) newToAct.push(idx);
   }
-  return {
+  const s = {
     ...state,
     playerStates: newPS,
     pot: state.pot + toAdd,
     currentBet: actualBet,
     minRaise: raiseAmount,
     toAct: newToAct,
-    currentPlayerIndex: newToAct[0] ?? myIdx,
     lastAction: isAllIn
       ? `${name} is all-in!`
       : `${name} raises to ${actualBet}`,
   };
+  // If nobody else can act (everyone else folded or all-in), this raise closes
+  // the round — advance instead of freezing with an empty toAct. Matches the
+  // guard in doFold/doCheck/doCall.
+  if (newToAct.length === 0) return advanceBettingRound(s);
+  return { ...s, currentPlayerIndex: newToAct[0] };
 }
 
 function toPublic(state) {

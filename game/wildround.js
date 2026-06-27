@@ -70,13 +70,28 @@ export function pickWinner(state, winningCardId) {
   const winSub = state.submissions.find((s) => s.cardId === winningCardId);
   if (!winSub) throw new Error("Card not in submissions");
 
-  const deckPool = [...state.answerDeck];
+  let deckPool = [...state.answerDeck];
+
+  // Draw `count` answers, refilling from a fresh shuffled deck if we run dry.
+  // Answer cards are reusable, so regenerating keeps long games (e.g. 8 players)
+  // from stalling when a player's hand would otherwise shrink to zero and they
+  // could never submit again.
+  const drawAnswers = (count) => {
+    const out = [];
+    for (let k = 0; k < count; k++) {
+      if (deckPool.length === 0) {
+        deckPool = shuffle(createDeck(state.tone).answers);
+      }
+      out.push(deckPool.shift());
+    }
+    return out;
+  };
 
   const players = state.players.map((p) => {
     const sub = state.submissions.find((s) => s.playerId === String(p.id));
     if (!sub) return p; // judge — hand unchanged
     const trimmed = p.hand.filter((c) => c.id !== sub.cardId);
-    const drawn = deckPool.splice(0, 10 - trimmed.length); // refill to 10
+    const drawn = drawAnswers(10 - trimmed.length); // refill to 10
     return {
       ...p,
       score: String(p.id) === winSub.playerId ? p.score + 1 : p.score,
