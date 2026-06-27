@@ -27,7 +27,7 @@ const GAME_INFO = {
   rummy: { label: "Rummy", min: 2, max: 4, screen: "RummyGame" },
   wildRound: { label: "Wild Round", min: 3, max: 8, screen: "WildRoundGame" },
   lastCard: { label: "Last Card", min: 2, max: 8, screen: "LastCardGame" },
-  whoami: { label: "Who Am I?", min: 3, max: 8, screen: "WhoAmIGame" },
+  whoami: { label: "Who Am I?", min: 2, max: 8, screen: "WhoAmIGame" },
 };
 
 // Per-game launch params, mirroring what the local lobby passes. Variant/tone

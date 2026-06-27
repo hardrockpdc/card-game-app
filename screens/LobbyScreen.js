@@ -94,7 +94,7 @@ const GAMES = [
     screen: "WhoAmIGame",
     available: true,
     hasAI: false,
-    minPlayers: 3,
+    minPlayers: 2,
     maxPlayers: 8,
   },
 ];
