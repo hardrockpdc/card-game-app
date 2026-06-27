@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "226149704239",
+    "project_id": "card-night",
+    "storage_bucket": "card-night.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:226149704239:android:d2f92bae13f187c64b1cda",
+        "android_client_info": {
+          "package_name": "com.pedro.cardgameapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD5di3Bs3m3heDfoPcNyV3Wv9OIKwafqtU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
