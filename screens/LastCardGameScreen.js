@@ -376,7 +376,9 @@ export default function LastCardGameScreen({ navigation, route }) {
     setMyHand(next.hands[myPid] ?? []);
     setWinner(next.winner ?? null);
     setPhase(
-      next.awaitingColorChoiceBy
+      // Only the player who owes the color choice sees the picker — otherwise
+      // the host pops it up too when a client plays a wild.
+      next.awaitingColorChoiceBy && String(next.awaitingColorChoiceBy) === String(myPid)
         ? "colorPicker"
         : next.gameOver
           ? "gameOver"
