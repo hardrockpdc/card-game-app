@@ -177,6 +177,9 @@ function initDeal(
         ? (prevChips[String(p.id)] ?? startingChips)
         : startingChips,
       bet: 0,
+      // Total chips committed to the pot across the WHOLE hand (all rounds).
+      // `bet` resets each round; `committed` does not — it's what side pots need.
+      committed: 0,
       folded: false,
       allIn: false,
     };
@@ -250,10 +253,11 @@ function checkOneLeft(state, newPS) {
 }
 
 function advanceBettingRound(state) {
-  // Reset bets for new round
+  // Reset bets for new round, folding each player's round bet into their
+  // running total committed to the pot (used for side-pot math at showdown).
   const newPS = {};
   for (const [pid, ps] of Object.entries(state.playerStates))
-    newPS[pid] = { ...ps, bet: 0 };
+    newPS[pid] = { ...ps, bet: 0, committed: (ps.committed || 0) + (ps.bet || 0) };
 
   let nextPhase,
     newDeck = [...state.deck],
@@ -309,42 +313,99 @@ function advanceBettingRound(state) {
   };
 }
 
+// Build layered side pots from each player's total contribution. Folded players
+// still contribute their chips to the pot(s) but can't win them. Returns
+// [{ amount, eligible: [pid,...] }], smallest all-in layer first.
+function buildSidePots(state) {
+  const contrib = {};
+  for (const p of state.players) {
+    const ps = state.playerStates[String(p.id)];
+    contrib[String(p.id)] = (ps.committed || 0) + (ps.bet || 0);
+  }
+
+  const pots = [];
+  // Peel off the smallest remaining contribution level each pass.
+  while (true) {
+    const positive = Object.entries(contrib).filter(([, c]) => c > 0);
+    if (positive.length === 0) break;
+    const level = Math.min(...positive.map(([, c]) => c));
+
+    let amount = 0;
+    const contributors = [];
+    for (const [pid, c] of Object.entries(contrib)) {
+      if (c > 0) {
+        amount += level;
+        contrib[pid] = c - level;
+        contributors.push(pid);
+      }
+    }
+    const eligible = contributors.filter(
+      (pid) => !state.playerStates[pid].folded,
+    );
+    if (amount > 0) pots.push({ amount, eligible, contributors, level });
+  }
+  return pots;
+}
+
 function doShowdown(state) {
-  const active = state.players.filter(
-    (p) => !state.playerStates[String(p.id)].folded,
-  );
+  // Score every player still in the hand.
   const handDescriptions = {};
   const scores = {};
-  for (const p of active) {
+  for (const p of state.players) {
     const pid = String(p.id);
+    if (state.playerStates[pid].folded) continue;
     const score = bestHand(state.hands[pid] || [], state.communityCards);
     handDescriptions[pid] = score.name;
     scores[pid] = score;
   }
-  let bestScore = null;
-  for (const p of active) {
-    const s = scores[String(p.id)];
-    if (!bestScore || cmpScore(s, bestScore) > 0) bestScore = s;
-  }
-  const winners = active.filter(
-    (p) => cmpScore(scores[String(p.id)], bestScore) === 0,
-  );
-  const share = Math.floor(state.pot / winners.length);
+
   const newPS = { ...state.playerStates };
-  for (const w of winners) {
-    const wid = String(w.id);
-    newPS[wid] = { ...newPS[wid], chips: newPS[wid].chips + share };
+  const winningsByPid = {};
+
+  // Award each side pot to the best eligible (non-folded) hand in it.
+  for (const pot of buildSidePots(state)) {
+    let best = null;
+    for (const pid of pot.eligible) {
+      const s = scores[pid];
+      if (s && (!best || cmpScore(s, best) > 0)) best = s;
+    }
+    if (!best) {
+      // No eligible (non-folded) winner for this layer — these are uncalled
+      // chips from a folded over-bettor. Return them to the contributors.
+      for (const pid of pot.contributors) {
+        newPS[pid] = { ...newPS[pid], chips: newPS[pid].chips + pot.level };
+      }
+      continue;
+    }
+    const potWinners = pot.eligible.filter(
+      (pid) => scores[pid] && cmpScore(scores[pid], best) === 0,
+    );
+    const share = Math.floor(pot.amount / potWinners.length);
+    let remainder = pot.amount - share * potWinners.length;
+    for (const pid of potWinners) {
+      // Distribute any odd chip(s) one at a time to the earliest winners.
+      const extra = remainder > 0 ? 1 : 0;
+      if (remainder > 0) remainder -= 1;
+      const add = share + extra;
+      newPS[pid] = { ...newPS[pid], chips: newPS[pid].chips + add };
+      winningsByPid[pid] = (winningsByPid[pid] || 0) + add;
+    }
   }
+
+  // Winners for display = everyone who actually won chips from any pot.
+  const winners = state.players.filter((p) => winningsByPid[String(p.id)] > 0);
+
   return {
     ...state,
     phase: "showdown",
     playerStates: newPS,
-    winner: winners[0],
+    winner: winners[0] || state.players[0],
     handResult: {
       type: "showdown",
       winners,
       handDescriptions,
       hands: state.hands,
+      winningsByPid,
     },
   };
 }
