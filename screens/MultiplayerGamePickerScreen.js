@@ -11,6 +11,7 @@ import {
 import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import * as Network from "expo-network";
 import { loadProfile, getDisplayName } from "../game/profile";
+import { createRoom } from "../game/onlineRoom";
 import { scale, scaleFont } from "../game/responsive";
 
 const COLS = 2;
@@ -71,12 +72,18 @@ const HLINES = [10, 20, 30, 40, 50, 60, 70, 80, 90];
 const DEFAULT_POKER_VARIANT = "texasHoldem";
 const DEFAULT_RUMMY_VARIANT = "ginRummy";
 
-export default function MultiplayerGamePickerScreen({ navigation }) {
+export default function MultiplayerGamePickerScreen({ navigation, route }) {
+  // mode "local" (default) = same-WiFi TCP play; "online" = Firebase rooms.
+  const isOnline = route?.params?.mode === "online";
+
   const [hostName, setHostName] = useState(null);
   const [hostIp, setHostIp] = useState(null);
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     loadProfile().then((p) => setHostName(getDisplayName(p)));
+    // Online play doesn't need the local IP, but it's cheap to fetch and keeps
+    // the local path unchanged.
     Network.getIpAddressAsync().then(setHostIp);
   }, []);
 
@@ -89,9 +96,65 @@ export default function MultiplayerGamePickerScreen({ navigation }) {
     });
   }
 
+  // Online: create a Firebase room for the chosen game, then open the online
+  // lobby. Variant selection for online is a follow-up; defaults for now.
+  async function hostOnline({ gameId, variant = null, tone = null }) {
+    if (creating) return;
+    setCreating(true);
+    const result = await createRoom({
+      gameId,
+      variant,
+      tone,
+      hostName: hostName || "Host",
+    });
+    setCreating(false);
+    if (!result) {
+      Alert.alert("Couldn't create room", "Please check your connection and try again.");
+      return;
+    }
+    navigation.replace("OnlineLobby", {
+      code: result.code,
+      isHost: true,
+      myName: hostName || "Host",
+    });
+  }
+
   function handleGamePress(game) {
-    if (!hostName || !hostIp) {
+    if (!hostName || (!isOnline && !hostIp)) {
       // Still loading — shouldn't happen in practice (fetch is fast)
+      return;
+    }
+
+    // Wild Round always prompts for tone first, in both modes.
+    if (game.id === "wildRound") {
+      Alert.alert("Wild Round Mode", "Choose the type of prompts:", [
+        {
+          text: "Family 🧒",
+          onPress: () =>
+            isOnline
+              ? hostOnline({ gameId: "wildRound", tone: "family" })
+              : navigateToLobby({ tone: "family" }),
+        },
+        {
+          text: "Mature 🔞",
+          onPress: () =>
+            isOnline
+              ? hostOnline({ gameId: "wildRound", tone: "mature" })
+              : navigateToLobby({ tone: "mature" }),
+        },
+        { text: "Cancel", style: "cancel" },
+      ]);
+      return;
+    }
+
+    if (isOnline) {
+      const variant =
+        game.id === "poker"
+          ? DEFAULT_POKER_VARIANT
+          : game.id === "rummy"
+            ? DEFAULT_RUMMY_VARIANT
+            : null;
+      hostOnline({ gameId: game.id, variant });
       return;
     }
 
@@ -130,19 +193,6 @@ export default function MultiplayerGamePickerScreen({ navigation }) {
           },
         });
         break;
-      case "wildRound":
-        Alert.alert("Wild Round Mode", "Choose the type of prompts:", [
-          {
-            text: "Family 🧒",
-            onPress: () => navigateToLobby({ tone: "family" }),
-          },
-          {
-            text: "Mature 🔞",
-            onPress: () => navigateToLobby({ tone: "mature" }),
-          },
-          { text: "Cancel", style: "cancel" },
-        ]);
-        break;
     }
   }
 
@@ -153,7 +203,7 @@ export default function MultiplayerGamePickerScreen({ navigation }) {
     rows.push(gridItems.slice(i, i + COLS));
   }
 
-  const loading = !hostName || !hostIp;
+  const loading = !hostName || (!isOnline && !hostIp) || creating;
 
   return (
     <SafeAreaView style={styles.safe}>

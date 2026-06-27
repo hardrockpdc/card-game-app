@@ -30,7 +30,7 @@ export default function MultiplayerMenuScreen({ navigation }) {
             Multiplayer
           </Text>
           <Text style={[styles.subtitle, { fontSize: subtitleSize }]}>
-            Local play is ready — online mode coming in a future update
+            Play with friends on the same Wi-Fi, or online with a room code
           </Text>
 
           <View style={styles.suitRow}>
@@ -42,54 +42,44 @@ export default function MultiplayerMenuScreen({ navigation }) {
 
           <TouchableOpacity
             style={[
-              styles.disabledButton,
+              styles.primaryButton,
               {
                 paddingVertical: buttonVertical,
                 paddingHorizontal: buttonHorizontal,
               },
             ]}
-            disabled
+            onPress={() =>
+              navigation.navigate("MultiplayerGamePicker", { mode: "online" })
+            }
             accessibilityRole="button"
-            accessibilityLabel="Host Online (not available yet)"
-            accessibilityState={{ disabled: true }}
+            accessibilityLabel="Host Online"
+            accessibilityHint="Start an online game others can join with a code"
           >
-            <View style={styles.buttonTextRow}>
-              <Text
-                style={[
-                  styles.disabledButtonText,
-                  { fontSize: buttonTextSize },
-                ]}
-              >
-                🔒  Host Online
-              </Text>
-              <Text style={styles.comingSoon}>Not available yet</Text>
-            </View>
+            <Text
+              style={[styles.primaryButtonText, { fontSize: buttonTextSize }]}
+            >
+              🌐  Host Online
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[
-              styles.disabledButton,
+              styles.secondaryButton,
               {
                 paddingVertical: buttonVertical,
                 paddingHorizontal: buttonHorizontal,
               },
             ]}
-            disabled
+            onPress={() => navigation.navigate("JoinOnline")}
             accessibilityRole="button"
-            accessibilityLabel="Join Online (not available yet)"
-            accessibilityState={{ disabled: true }}
+            accessibilityLabel="Join Online"
+            accessibilityHint="Join an online game using a room code"
           >
-            <View style={styles.buttonTextRow}>
-              <Text
-                style={[
-                  styles.disabledButtonText,
-                  { fontSize: buttonTextSize },
-                ]}
-              >
-                🔒  Join Online
-              </Text>
-              <Text style={styles.comingSoon}>Not available yet</Text>
-            </View>
+            <Text
+              style={[styles.secondaryButtonText, { fontSize: buttonTextSize }]}
+            >
+              🔑  Join Online
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity

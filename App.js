@@ -7,6 +7,8 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import HomeScreen from "./screens/HomeScreen";
 import MultiplayerGamePickerScreen from "./screens/MultiplayerGamePickerScreen";
+import JoinOnlineScreen from "./screens/JoinOnlineScreen";
+import OnlineLobbyScreen from "./screens/OnlineLobbyScreen";
 import JoinScreen from "./screens/JoinScreen";
 import LobbyScreen from "./screens/LobbyScreen";
 import GameScreen from "./screens/GameScreen";
@@ -163,6 +165,16 @@ export default function App() {
                   name="MultiplayerGamePicker"
                   component={MultiplayerGamePickerScreen}
                   options={{ title: "Choose Game" }}
+                />
+                <Stack.Screen
+                  name="JoinOnline"
+                  component={JoinOnlineScreen}
+                  options={{ title: "Join Online" }}
+                />
+                <Stack.Screen
+                  name="OnlineLobby"
+                  component={OnlineLobbyScreen}
+                  options={{ title: "Online Lobby", headerBackVisible: false }}
                 />
                 <Stack.Screen
                   name="Join"
