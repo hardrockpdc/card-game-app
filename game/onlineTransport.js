@@ -22,7 +22,7 @@ import {
 } from "@react-native-firebase/database";
 import { getApp } from "@react-native-firebase/app";
 import { getDatabase } from "@react-native-firebase/database";
-import { warn } from "./logger";
+import { warn, log } from "./logger";
 
 let config = null; // { code, uid, isHost }
 let serverListeners = {};
@@ -107,11 +107,18 @@ export function onlineSetServerListeners(listeners) {
 // ─── Client listeners ────────────────────────────────────────────────────────
 export function onlineSetClientListeners(listeners) {
   clientListeners = listeners || {};
+  log("[onlineTransport] client setListeners; config=", config);
   if (config?.isHost) return;
 
   // Host → everyone.
   const unsubBroadcast = onValue(netRef("broadcast"), (snap) => {
     const val = snap.val();
+    log(
+      "[onlineTransport] client broadcast fire; exists=",
+      snap.exists(),
+      "type=",
+      val?.payload?.type,
+    );
     if (val && val.payload) deliverToClient(val.payload);
   });
   subs.push(unsubBroadcast);
@@ -119,6 +126,12 @@ export function onlineSetClientListeners(listeners) {
   // Host → me (private hand, etc.).
   const unsubPrivate = onValue(netRef(`private/${config.uid}`), (snap) => {
     const val = snap.val();
+    log(
+      "[onlineTransport] client private fire; exists=",
+      snap.exists(),
+      "type=",
+      val?.payload?.type,
+    );
     if (val && val.payload) deliverToClient(val.payload);
   });
   subs.push(unsubPrivate);
@@ -146,9 +159,10 @@ function deliverToClient(payload) {
 // ─── Sending ─────────────────────────────────────────────────────────────────
 export function onlineBroadcast(message) {
   if (!config?.isHost) return;
-  set(netRef("broadcast"), { seq: ++broadcastSeq, payload: clean(message) }).catch(
-    (err) => warn("[onlineTransport] broadcast failed:", err),
-  );
+  log("[onlineTransport] host broadcast write; type=", message?.type, "code=", config?.code);
+  set(netRef("broadcast"), { seq: ++broadcastSeq, payload: clean(message) })
+    .then(() => log("[onlineTransport] host broadcast write OK; type=", message?.type))
+    .catch((err) => warn("[onlineTransport] broadcast failed:", err));
 }
 
 export function onlineSendToClient(clientId, message) {
