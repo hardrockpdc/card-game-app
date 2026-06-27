@@ -41,6 +41,17 @@ function netRef(path) {
   return ref(db(), `rooms/${config.code}/net/${path}`);
 }
 
+// Firebase rejects any value containing `undefined` and throws away the whole
+// write. The local TCP transport uses JSON.stringify, which silently drops
+// undefined fields — so we mirror that here to keep messages compatible.
+function clean(message) {
+  try {
+    return JSON.parse(JSON.stringify(message ?? null));
+  } catch (_) {
+    return null;
+  }
+}
+
 export function setOnlineConfig(next) {
   config = next;
   broadcastSeq = 0;
@@ -135,7 +146,7 @@ function deliverToClient(payload) {
 // ─── Sending ─────────────────────────────────────────────────────────────────
 export function onlineBroadcast(message) {
   if (!config?.isHost) return;
-  set(netRef("broadcast"), { seq: ++broadcastSeq, payload: message }).catch(
+  set(netRef("broadcast"), { seq: ++broadcastSeq, payload: clean(message) }).catch(
     (err) => warn("[onlineTransport] broadcast failed:", err),
   );
 }
@@ -145,13 +156,13 @@ export function onlineSendToClient(clientId, message) {
   privateSeq[clientId] = (privateSeq[clientId] || 0) + 1;
   set(netRef(`private/${clientId}`), {
     seq: privateSeq[clientId],
-    payload: message,
+    payload: clean(message),
   }).catch((err) => warn("[onlineTransport] sendToClient failed:", err));
 }
 
 export function onlineSendToHost(message) {
   if (config?.isHost) return;
-  push(netRef("toHost"), { sender: config.uid, payload: message }).catch(
+  push(netRef("toHost"), { sender: config.uid, payload: clean(message) }).catch(
     (err) => warn("[onlineTransport] sendToHost failed:", err),
   );
 }
