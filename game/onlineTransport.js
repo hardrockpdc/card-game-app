@@ -45,12 +45,23 @@ function netRef(path) {
   return ref(db(), `rooms/${config.code}/net/${path}`);
 }
 
-// Firebase rejects any value containing `undefined` and throws away the whole
-// write. The local TCP transport uses JSON.stringify, which silently drops
-// undefined fields — so we mirror that here to keep messages compatible.
-function clean(message) {
+// Store each message as an opaque JSON STRING rather than a nested Firebase
+// object. This avoids two RTDB gotchas that the local TCP transport (which uses
+// JSON over the wire) never hits:
+//   1. Firebase rejects values containing `undefined`.
+//   2. Firebase silently drops empty arrays/objects (e.g. books:{}, history:[]),
+//      which come back as `undefined` and crash renders.
+// JSON.stringify mirrors the TCP behavior exactly and round-trips faithfully.
+function encode(message) {
   try {
-    return JSON.parse(JSON.stringify(message ?? null));
+    return JSON.stringify(message ?? null);
+  } catch (_) {
+    return "null";
+  }
+}
+function decode(str) {
+  try {
+    return typeof str === "string" ? JSON.parse(str) : null;
   } catch (_) {
     return null;
   }
@@ -74,9 +85,10 @@ export function onlineSetServerListeners(listeners) {
   const toHost = netRef("toHost");
   const unsubQueue = onChildAdded(toHost, (snap) => {
     const val = snap.val();
-    if (val && val.payload) {
+    const msg = val ? decode(val.payload) : null;
+    if (msg) {
       try {
-        serverListeners.onMessage?.(val.payload, val.sender);
+        serverListeners.onMessage?.(msg, val.sender);
       } catch (err) {
         warn("[onlineTransport] host onMessage threw:", err);
       }
@@ -118,20 +130,15 @@ export function onlineSetClientListeners(listeners) {
   // existing children) plus all future updates (onChildChanged).
   const onChild = (snap) => {
     const val = snap.val();
-    log("[onlineTransport] client recv broadcast type=", val?.payload?.type);
-    if (val && val.payload) deliverToClient(val.payload);
+    const msg = val ? decode(val.payload) : null;
+    if (msg) deliverToClient(msg);
   };
   subs.push(onChildAdded(netRef("broadcast"), onChild));
   subs.push(onChildChanged(netRef("broadcast"), onChild));
 
   // Host → me (private hand, etc.) — same per-type slot model.
-  const onPrivateChild = (snap) => {
-    const val = snap.val();
-    log("[onlineTransport] client recv private type=", val?.payload?.type);
-    if (val && val.payload) deliverToClient(val.payload);
-  };
-  subs.push(onChildAdded(netRef(`private/${config.uid}`), onPrivateChild));
-  subs.push(onChildChanged(netRef(`private/${config.uid}`), onPrivateChild));
+  subs.push(onChildAdded(netRef(`private/${config.uid}`), onChild));
+  subs.push(onChildChanged(netRef(`private/${config.uid}`), onChild));
 
   // Room removed (host left / closed) → treat as a disconnect.
   const roomRef = ref(db(), `rooms/${config.code}`);
@@ -160,7 +167,7 @@ export function onlineBroadcast(message) {
   broadcastSeq[type] = (broadcastSeq[type] || 0) + 1;
   set(netRef(`broadcast/${type}`), {
     seq: broadcastSeq[type],
-    payload: clean(message),
+    payload: encode(message),
   }).catch((err) => warn("[onlineTransport] broadcast failed:", err));
 }
 
@@ -171,13 +178,13 @@ export function onlineSendToClient(clientId, message) {
   privateSeq[key] = (privateSeq[key] || 0) + 1;
   set(netRef(`private/${clientId}/${type}`), {
     seq: privateSeq[key],
-    payload: clean(message),
+    payload: encode(message),
   }).catch((err) => warn("[onlineTransport] sendToClient failed:", err));
 }
 
 export function onlineSendToHost(message) {
   if (config?.isHost) return;
-  push(netRef("toHost"), { sender: config.uid, payload: clean(message) }).catch(
+  push(netRef("toHost"), { sender: config.uid, payload: encode(message) }).catch(
     (err) => warn("[onlineTransport] sendToHost failed:", err),
   );
 }
