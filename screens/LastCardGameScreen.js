@@ -772,7 +772,21 @@ export default function LastCardGameScreen({ navigation, route }) {
               return "colorPicker";
             return "playing";
           });
-          if (shouldShowColorPicker) setStatusMsg("Choose a color");
+          // Update the status text from the synced state, otherwise the client
+          // is stuck showing the initial "Dealing..." forever.
+          if (shouldShowColorPicker) {
+            setStatusMsg("Choose a color");
+          } else if (msg.gameOver) {
+            const w = msg.players?.find((p) => String(p.id) === String(msg.winner));
+            setStatusMsg(`${w?.name ?? "Player"} wins!`);
+          } else if (String(msg.currentTurn) === String(myPid)) {
+            setStatusMsg("Your turn — tap a card to play");
+          } else {
+            const cur = msg.players?.find(
+              (p) => String(p.id) === String(msg.currentTurn),
+            );
+            setStatusMsg(`${cur?.name ?? "Player"}'s turn...`);
+          }
         }
         if (msg.type === "PRIVATE_HAND") {
           setMyHand(msg.hand ?? []);
