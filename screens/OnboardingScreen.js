@@ -117,11 +117,8 @@ export default function OnboardingScreen({ navigation }) {
   // ── Photo helpers ────────────────────────────────────────────────────────────
 
   async function handlePickFromLibrary() {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permission needed", "Allow photo library access to pick a photo.");
-      return;
-    }
+    // Uses the Android system photo picker — no media-library permission needed
+    // (avoids READ_MEDIA_IMAGES, which Google Play flags for non-gallery apps).
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,

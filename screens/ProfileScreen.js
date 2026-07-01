@@ -200,24 +200,9 @@ export default function ProfileScreen({ navigation, route }) {
     }
 
     try {
-      const permissionResult =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-      if (!permissionResult.granted) {
-        if (permissionResult.canAskAgain === false) {
-          Alert.alert(
-            "Photo access required",
-            "Photo library access is required. Please enable it in your device Settings > Apps > Card Night > Permissions.",
-          );
-        } else {
-          Alert.alert(
-            "Photo permission needed",
-            "Please allow access to your photo library to choose a picture.",
-          );
-        }
-        return;
-      }
-
+      // Uses the Android system photo picker — no media-library permission
+      // needed (avoids READ_MEDIA_IMAGES, which Google Play flags for
+      // non-gallery apps).
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ["images"],
         allowsEditing: false,
