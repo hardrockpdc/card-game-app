@@ -55,7 +55,7 @@ const GAMES = [
   {
     id: "lastCard",
     label: "Last Card",
-    tag: "UNO-style",
+    tag: "Color match",
     accent: "#e94560",
     image: require("../assets/images/thumb_lastcard.jpg"),
   },

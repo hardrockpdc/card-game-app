@@ -739,7 +739,8 @@ function GameIllustration({
       <View style={styles.illuWrap}>
         <Text style={styles.illuLabel}>Match the top card</Text>
         <Text style={styles.illuHint}>
-          Last Card is like a color/number matching Uno-style game.
+          Last Card is a color- and number-matching game — match the top card,
+          then use action cards to shake up the turn order.
         </Text>
         <View style={styles.lastcardThumbWrap}>
           <Image
