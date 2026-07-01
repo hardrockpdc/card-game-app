@@ -24,16 +24,17 @@ export default function AboutScreen({ navigation }) {
         <Text style={styles.version}>Version {VERSION}</Text>
 
         <Text style={styles.description}>
-          A local multiplayer card game collection for friends and family. Play
-          Blackjack, Rummy, Go Fish, Poker, Solitaire, Conquián, Last Card, and
-          Wild Round — all offline, no internet required.
+          A card game collection for friends and family. Play Blackjack, Rummy,
+          Go Fish, Poker, Solitaire, Conquián, Last Card, Wild Round, and Who
+          Am I? — solo, with friends on the same Wi-Fi, or online with a room
+          code.
         </Text>
 
         <View style={styles.divider} />
 
         <View style={styles.row}>
           <Text style={styles.rowLabel}>Created by</Text>
-          <Text style={styles.rowValue}>Pedro</Text>
+          <Text style={styles.rowValue}>TwistedMetl</Text>
         </View>
         <View style={styles.row}>
           <Text style={styles.rowLabel}>Built with</Text>
@@ -41,7 +42,7 @@ export default function AboutScreen({ navigation }) {
         </View>
         <View style={styles.row}>
           <Text style={styles.rowLabel}>Copyright</Text>
-          <Text style={styles.rowValue}>© {YEAR} Pedro</Text>
+          <Text style={styles.rowValue}>© {YEAR} TwistedMetl</Text>
         </View>
 
         <View style={styles.divider} />
