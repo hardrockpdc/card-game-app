@@ -33,7 +33,7 @@
       },
       "package": "com.pedro.cardgameapp",
       "googleServicesFile": "./google-services.json",
-      "versionCode": 5,
+      "versionCode": 6,
       "permissions": [
         "android.permission.NEARBY_WIFI_DEVICES",
         "android.permission.ACCESS_NETWORK_STATE",
@@ -61,7 +61,8 @@
       "expo-image-picker",
       "react-native-edge-to-edge",
       "@react-native-firebase/app",
-      "@react-native-firebase/auth"
+      "@react-native-firebase/auth",
+      "./plugins/withoutMediaPermissions"
     ],
     "runtimeVersion": {
       "policy": "appVersion"
