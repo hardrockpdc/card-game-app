@@ -33,7 +33,7 @@
       },
       "package": "com.pedro.cardgameapp",
       "googleServicesFile": "./google-services.json",
-      "versionCode": 3,
+      "versionCode": 4,
       "permissions": [
         "android.permission.NEARBY_WIFI_DEVICES",
         "android.permission.ACCESS_NETWORK_STATE",
