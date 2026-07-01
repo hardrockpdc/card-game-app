@@ -85,11 +85,11 @@ This is a family-friendly card game. Keep all content, copy, and assets appropri
 
 - **Stack:** React Native 0.81.5, Expo SDK 54, React 19.1.0. JavaScript. Dev build via expo-dev-client.
 - **Distribution:** Android-only (Google Play). Privacy policy must be hosted for Play submission. Cross-platform code stays intact regardless.
-- **9 games across 9 game screens**: Blackjack (single-player; the separate multiplayer Blackjack screen was removed 2026-06-18), Solitaire (Klondike/Spider/etc.), Conquián, Rummy, Go Fish, Poker, Last Card, Wild Round, Who Am I? (multiplayer party game, no cards — added 2026-06-18→20).
+- **8 games across 8 game screens**: Blackjack (single-player; the separate multiplayer Blackjack screen was removed 2026-06-18), Solitaire (Klondike/Spider/etc.), Conquián, Rummy, Go Fish, Poker, Last Card, Who Am I? (multiplayer party game, no cards — added 2026-06-18→20). (Wild Round — a Cards-Against-Humanity-style party game — was removed 2026-07-01 to keep Card Night family-friendly; its Mature deck forced an adults-only content rating. Code preserved in git history for a possible standalone adults-only app; `WILDROUND_SPEC.md` retained.)
 - **Key files:**
   - `App.js` — root; provider nesting; navigation stack
   - `components/Card.js` — the card render + animation engine (flip via `animateReveal`, deal via `animateDeal`+`dealDelay`)
-  - `game/conquian.js`, `game/rummy.js`, `game/solitaire.js`, `game/poker.js`, `game/gofish.js`, `game/lastCard.js`, `game/wildround.js`, `game/whoami.js`, `game/deck.js` — pure game logic (no React)
+  - `game/conquian.js`, `game/rummy.js`, `game/solitaire.js`, `game/poker.js`, `game/gofish.js`, `game/lastCard.js`, `game/whoami.js`, `game/deck.js` — pure game logic (no React)
   - `game/GameNetwork.js` — local TCP/UDP multiplayer
   - `game/tableThemes.js` — per-game table colors; `game/tablePalette.js` + per-game wrappers (`rummyTheme.js`, `pokerTheme.js`, `gofishTheme.js`, `lastCardTheme.js`) for switchable felt palettes
   - `game/haptics.js` + `components/Haptic.js` — haptic feedback (expo-haptics; native, needs a dev build)

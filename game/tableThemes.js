@@ -6,7 +6,6 @@ export const TABLE_THEMES = {
   conquian: { table: "#0B1320", accent: "#7fb3ff" },
   gofish: { table: "#0D6E8C", accent: "#A8E6FF" },
   lastcard: { table: "#1a1a2e", accent: "#e94560" },
-  wildround: { table: "#1a1a2e", accent: "#e94560" },
   whoami: { table: "#241432", accent: "#c792ea" },
 };
 

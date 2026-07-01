@@ -25,7 +25,6 @@ const GAME_INFO = {
   conquian: { label: "Conquián", min: 2, max: 4, screen: "ConquianGame" },
   poker: { label: "Poker", min: 2, max: 5, screen: "PokerGame" },
   rummy: { label: "Rummy", min: 2, max: 4, screen: "RummyGame" },
-  wildRound: { label: "Wild Round", min: 3, max: 8, screen: "WildRoundGame" },
   lastCard: { label: "Last Card", min: 2, max: 8, screen: "LastCardGame" },
   whoami: { label: "Who Am I?", min: 2, max: 8, screen: "WhoAmIGame" },
 };
@@ -41,8 +40,6 @@ function buildLaunchExtras(room) {
         variant: room.variant || "ginRummy",
         variantId: room.variant || "ginRummy",
       };
-    case "wildRound":
-      return { tone: room.tone || "family" };
     default:
       return {};
   }

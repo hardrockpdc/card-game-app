@@ -44,13 +44,6 @@ const GAMES = [
     image: require("../assets/images/thumb_rummy.jpg"),
   },
   {
-    id: "wildRound",
-    label: "Wild Round",
-    accent: "#77aef7",
-    emoji: "🎲",
-    emojiColor: "#0d2a4e",
-  },
-  {
     id: "lastCard",
     label: "Last Card",
     accent: "#e94560",
@@ -125,28 +118,6 @@ export default function MultiplayerGamePickerScreen({ navigation, route }) {
       return;
     }
 
-    // Wild Round always prompts for tone first, in both modes.
-    if (game.id === "wildRound") {
-      Alert.alert("Wild Round Mode", "Choose the type of prompts:", [
-        {
-          text: "Family 🧒",
-          onPress: () =>
-            isOnline
-              ? hostOnline({ gameId: "wildRound", tone: "family" })
-              : navigateToLobby({ tone: "family" }),
-        },
-        {
-          text: "Mature 🔞",
-          onPress: () =>
-            isOnline
-              ? hostOnline({ gameId: "wildRound", tone: "mature" })
-              : navigateToLobby({ tone: "mature" }),
-        },
-        { text: "Cancel", style: "cancel" },
-      ]);
-      return;
-    }
-
     if (isOnline) {
       const variant =
         game.id === "poker"
@@ -197,7 +168,7 @@ export default function MultiplayerGamePickerScreen({ navigation, route }) {
   }
 
   // 7 games + 1 "more coming" = 4 even rows
-  const gridItems = [...GAMES, { id: "comingSoon", comingSoon: true }];
+  const gridItems = [...GAMES];
   const rows = [];
   for (let i = 0; i < gridItems.length; i += COLS) {
     rows.push(gridItems.slice(i, i + COLS));

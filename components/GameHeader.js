@@ -14,7 +14,6 @@ const KICKER_LABELS = {
   rummy: "RUMMY",
   solitaire: "SOLITAIRE",
   lastcard: "LAST CARD",
-  wildround: "WILD ROUND",
   whoami: "WHO AM I?",
 };
 

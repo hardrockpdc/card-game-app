@@ -25,9 +25,8 @@ export default function AboutScreen({ navigation }) {
 
         <Text style={styles.description}>
           A card game collection for friends and family. Play Blackjack, Rummy,
-          Go Fish, Poker, Solitaire, Conquián, Last Card, Wild Round, and Who
-          Am I? — solo, with friends on the same Wi-Fi, or online with a room
-          code.
+          Go Fish, Poker, Solitaire, Conquián, Last Card, and Who Am I? — solo,
+          with friends on the same Wi-Fi, or online with a room code.
         </Text>
 
         <View style={styles.divider} />

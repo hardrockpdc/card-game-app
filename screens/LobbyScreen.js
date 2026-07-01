@@ -71,15 +71,6 @@ const GAMES = [
     maxPlayers: 4,
   },
   {
-    id: "wildRound",
-    label: "Wild Round",
-    screen: "WildRoundGame",
-    available: true,
-    hasAI: false,
-    minPlayers: 3,
-    maxPlayers: 8,
-  },
-  {
     id: "lastCard",
     label: "Last Card",
     screen: "LastCardGame",
@@ -119,8 +110,6 @@ const WHEEL_OPTIONS = [
     subtitle: v.label,
   })),
 
-  { value: "wildRound:family", title: "Wild Round", subtitle: "Family 🧒" },
-  { value: "wildRound:mature", title: "Wild Round", subtitle: "Mature 🔞" },
 
   { value: "lastCard", title: "Last Card" },
 
@@ -139,12 +128,6 @@ function parseLobbySelection(value) {
     return {
       gameId: "rummy",
       rummyVariant: safe.split(":")[1] || DEFAULT_RUMMY_VARIANT,
-    };
-  }
-  if (safe.startsWith("wildRound:")) {
-    return {
-      gameId: "wildRound",
-      tone: safe.split(":")[1] === "mature" ? "mature" : "family",
     };
   }
   return { gameId: safe };
@@ -167,12 +150,10 @@ export default function LobbyScreen({ navigation, route }) {
   const initialWheelValue = useMemo(() => {
     const incomingPokerVariant = route.params?.selectedPokerVariant;
     const incomingRummyVariant = route.params?.selectedRummyVariant;
-    const incomingTone = route.params?.tone;
     const incomingGameId = route.params?.gameId;
 
     if (incomingPokerVariant) return `poker:${incomingPokerVariant}`;
     if (incomingRummyVariant) return `rummy:${incomingRummyVariant}`;
-    if (incomingTone) return `wildRound:${incomingTone}`;
     if (incomingGameId) return incomingGameId;
     return "conquian";
   }, []);
@@ -212,8 +193,6 @@ export default function LobbyScreen({ navigation, route }) {
     parsedSelection.gameId === "rummy"
       ? parsedSelection.rummyVariant || DEFAULT_RUMMY_VARIANT
       : undefined;
-  const tone =
-    parsedSelection.gameId === "wildRound" ? parsedSelection.tone : undefined;
 
   const selectedGameDef = GAMES.find((g) => g.id === selectedGame) || GAMES[0];
 
@@ -236,9 +215,7 @@ export default function LobbyScreen({ navigation, route }) {
       ? "#C1121F"
       : selectedGame === "rummy"
         ? "#E94560"
-        : selectedGame === "wildRound"
-          ? "#77AEF7"
-          : "#E94560";
+        : "#E94560";
 
   // Ref so server-listener closures always see the latest AI list
   const aiPlayersRef = useRef([]);
@@ -495,7 +472,6 @@ export default function LobbyScreen({ navigation, route }) {
       return;
     }
 
-    const extra = selectedGame === "wildRound" ? { tone } : {};
     const pokerExtra =
       selectedGame === "poker"
         ? {
@@ -517,7 +493,6 @@ export default function LobbyScreen({ navigation, route }) {
       type: "START_GAME",
       players,
       gameType: selectedGame,
-      ...extra,
       ...pokerExtra,
       ...rummyExtra,
     });
@@ -526,7 +501,6 @@ export default function LobbyScreen({ navigation, route }) {
       role: "host",
       myName,
       players,
-      ...extra,
       ...pokerExtra,
       ...rummyExtra,
     });

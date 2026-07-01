@@ -24,7 +24,6 @@ import SolitaireGameScreen from "./screens/SolitaireGameScreen";
 import RummyVariantPickerScreen from "./screens/RummyVariantPickerScreen";
 import RummyGameScreen from "./screens/RummyGameScreen";
 import HowToPlayScreen from "./screens/HowToPlayScreen";
-import WildRoundGameScreen from "./screens/WildRoundGameScreen";
 import WhoAmIGameScreen from "./screens/WhoAmIGameScreen";
 import LastCardGameScreen from "./screens/LastCardGameScreen";
 import GameSetupScreen from "./screens/GameSetupScreen";
@@ -250,11 +249,6 @@ export default function App() {
                   name="HowToPlay"
                   component={HowToPlayScreen}
                   options={{ title: "How to Play" }}
-                />
-                <Stack.Screen
-                  name="WildRoundGame"
-                  component={WildRoundGameScreen}
-                  options={{ headerShown: false }}
                 />
                 <Stack.Screen
                   name="WhoAmIGame"

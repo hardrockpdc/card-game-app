@@ -36,8 +36,8 @@ const GAMES = [
     accent: "#1565c0",
     thumb: GAME_THUMBS.goFish,
   },
-  // No dedicated thumb available for Conquián/Wild Round in /assets/images,
-  // so Conquián uses card illustrations, Wild Round uses a text “prompt/answer” illustration.
+  // No dedicated thumb available for Conquián in /assets/images, so it uses
+  // card illustrations instead.
   { id: "conquian", label: "Conquián", accent: "#6a1b9a", thumb: null },
   { id: "poker", label: "Poker", accent: "#e94560", thumb: GAME_THUMBS.poker },
   { id: "rummy", label: "Rummy", accent: "#e94560", thumb: GAME_THUMBS.rummy },
@@ -53,7 +53,6 @@ const GAMES = [
     accent: "#e94560",
     thumb: GAME_THUMBS.lastcard,
   },
-  { id: "wildround", label: "Wild Round", accent: "#6a1b9a", thumb: null },
 ];
 
 // "In the App" — how to actually operate each game on screen (the taps, drags,
@@ -153,23 +152,13 @@ const IN_APP_CONTROLS = {
       text: "Play a wild, then choose the next color.",
     },
   ],
-  wildround: [
-    {
-      title: "Answer the prompt",
-      text: "Each round shows a prompt. Tap a card from your hand, then tap Submit.",
-    },
-    {
-      title: "Judging",
-      text: "One player is the judge each round and picks the best answer to win.",
-    },
-  ],
 };
 
 // Annotated screenshots for the "In the App" section, keyed by game id. Each
 // game maps to an array of shots; a shot is { source, caption?, markers } where
 // each marker { x, y, label } draws a numbered dot at x/y percentages of the
 // image and a matching numbered legend row below. Games with shots show these
-// instead of the text controls; games without (e.g. wildround) fall back to the
+// instead of the text controls; games without shots fall back to the
 // IN_APP_CONTROLS text. x/y were eyeballed from the screenshots — easy to nudge.
 const IN_APP_SHOTS = {
   blackjack: [
@@ -483,36 +472,6 @@ const LASTCARD = {
   ],
 };
 
-const WILDROUND = {
-  goal: "Win by being the judge that selects the funniest answers (first to 10 points).",
-  steps: [
-    {
-      title: "Setup (each game / new round)",
-      text: "Each player gets 10 answer cards. A judge is chosen, then rotates.",
-    },
-    {
-      title: "Judge skip phase",
-      text: "Only the judge sees the prompt. Judge can KEEP it or SKIP once to draw a new prompt.",
-    },
-    {
-      title: "Submission phase",
-      text: "Everyone else taps an answer card, then taps Submit. Round waits until all submissions are in.",
-    },
-    {
-      title: "Judge picks winner",
-      text: "Judge swipes through anonymous submissions and taps the winner.",
-    },
-    {
-      title: "Reveal phase",
-      text: "Winning answer is shown with the submitter name. Winner scores +1 point.",
-    },
-    {
-      title: "Next round",
-      text: "Cards go to discard, players redraw back up to 10, and the next judge is chosen.",
-    },
-  ],
-};
-
 function StepRow({ index, title, text, accent }) {
   return (
     <View style={styles.stepRow}>
@@ -756,31 +715,7 @@ function GameIllustration({
     );
   }
 
-  // wildround
-  return (
-    <View style={styles.illuWrap}>
-      <Text style={styles.illuLabel}>Prompt + answers</Text>
-      <View style={styles.wildPromptBox}>
-        <Text style={styles.wildPromptLabel}>PROMPT</Text>
-        <Text style={styles.wildPromptText}>Why am I crying right now?</Text>
-      </View>
-      <View style={styles.wildAnswersRow}>
-        <View style={styles.wildAnswerCard}>
-          <Text style={styles.wildAnswerText}>
-            A surprise birthday cake on fire
-          </Text>
-        </View>
-        <View style={styles.wildAnswerCard}>
-          <Text style={styles.wildAnswerText}>
-            The Wi‑Fi router is judging me
-          </Text>
-        </View>
-      </View>
-      <Text style={styles.illuHint}>
-        Judge picks the funniest answer to score +1 point.
-      </Text>
-    </View>
-  );
+  return null;
 }
 
 export default function HowToPlayScreen({ navigation, route }) {
@@ -997,11 +932,8 @@ export default function HowToPlayScreen({ navigation, route }) {
       };
     }
 
-    if (gameId === "lastcard")
-      return { goal: LASTCARD.goal, steps: LASTCARD.steps };
-
-    // wildround
-    return { goal: WILDROUND.goal, steps: WILDROUND.steps };
+    // lastcard (also the default fallback)
+    return { goal: LASTCARD.goal, steps: LASTCARD.steps };
   }, [gameId, pokerVariantId, rummyVariantId, solitaireVariantId]);
 
   return (
