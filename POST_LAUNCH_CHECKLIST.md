@@ -46,6 +46,10 @@ actual installed-from-Play build:
       Yes.
 - [ ] **Online variant selection** for Poker/Rummy (currently defaults to Texas
       Hold'em / Gin Rummy in online mode).
+- [ ] **Poker AI is too weak** — folds far too often, making single-player Poker
+      trivial and unsatisfying (noticed 2026-07-01). Improve the AI's betting
+      logic (call/raise more with reasonable hands). Also why the "win an all-in"
+      achievement was cut — outcomes vs this AI are too easy to game.
 
 ## Build recipe (reminder)
 ```

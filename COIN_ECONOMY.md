@@ -47,15 +47,41 @@ equal to the whole rest of the week combined) as the streak payoff. Loops back t
 Day 1 after Day 7. 2,000/week at a perfect streak. Miss a day → reset to Day 1
 (and lose the run at the jackpot).
 
-### Earn — achievements (one-time)
-| Achievement | Reward |
-|---|---|
-| First win | 250 |
-| Win 10 games total | 500 |
-| Win 50 games total | 1,500 |
-| Win 100 games total | 3,000 |
-| Win every game at least once | 1,000 |
-| 7-day login streak | 1,000 |
+### Earn — achievements (one-time, ~15,100 total pool)
+Avoid outcome-based achievements that can be farmed against weak AI or via
+multiplayer collusion (e.g. "win an all-in" was cut for this reason). Prefer
+participation, cumulative, and luck/solo-skill milestones.
+
+**Getting Started**
+| Welcome! — set up profile (name + avatar) | 100 |
+| First Win — win any game | 250 |
+| Going Live — play your first online game | 250 |
+
+**Winning (cumulative)**
+| Getting the Hang of It — win 10 games total | 500 |
+| Seasoned Player — win 50 games total | 1,500 |
+| Card Master — win 100 games total | 3,000 |
+| Well-Rounded — win every game at least once | 1,000 |
+
+**Multiplayer**
+| Host with the Most — host your first online game | 250 |
+| Party Animal — win 25 multiplayer games | 1,500 |
+
+**Loyalty**
+| Regular — 7-day login streak | 1,000 |
+| Devoted — 30-day login streak | 3,000 |
+
+**Collector**
+| Fresh Look — unlock your first cosmetic | 250 |
+| Fashionista — unlock all card decks | 2,000 |
+
+**Flair (not farmable)**
+| Natural — get dealt a blackjack | 250 |
+| Clean Sweep — win a Solitaire game | 250 |
+
+Trackability: `recordWin` already logs per-game + total wins. Two need a small
+addition — a **multiplayer-specific win counter** (wins aren't tagged solo vs MP
+yet) and the **login-streak counter** (the daily-bonus system creates it anyway).
 
 ### Costs — card decks (Classic + Neon free)
 | Deck | Price |
