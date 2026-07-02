@@ -5,7 +5,7 @@ purchase of coins, no pay-to-win, no loot boxes. This keeps the family-friendly
 rating intact and never drifts toward the casino/gambling category.
 
 ## Principles (the guardrails)
-- **Cosmetic only.** Coins buy looks (decks, felts, avatars), never gameplay
+- **Cosmetic only.** Coins buy looks (decks, felts, profile frames), never gameplay
   advantages — especially in multiplayer, where advantages would be unfair.
 - **Earned only.** Coins come from playing, not from a credit card. (The planned
   freemium unlock — paying once for online play — stays SEPARATE from coins.)
@@ -15,7 +15,11 @@ rating intact and never drifts toward the casino/gambling category.
 ## The loop
 - **Earn:** game wins (already: +500 for some wins), a **daily bonus / streak**,
   and **achievements**.
-- **Spend:** unlock **card decks** → then **table felts** → then **avatars/frames**.
+- **Spend:** unlock **card decks** → then **table felts** → then **profile frames**.
+
+Note: profile pictures themselves are NOT a sink — players already get any
+camera-roll photo or a preset emoji avatar for free. Frames (decorative borders
+that layer *around* the existing photo/emoji/initial) are the profile cosmetic.
 
 ## Economy numbers (starting values — all tunable)
 
@@ -95,7 +99,11 @@ yet) and the **login-streak counter** (the daily-bonus system creates it anyway)
 
 ### Costs — other cosmetics
 - **Table felts:** 2,000 each (flat).
-- **Avatars / frames (later):** 250–500 each.
+- **Profile frames (later):** ~1,000 each. Decorative borders (gold ring, neon
+  glow, suit-themed, etc.) rendered around the existing `ProfileAvatar` — works
+  the same whether the player uses a photo, an emoji avatar, or their initial.
+  Some frames can be **rank-exclusive** (earned by rank, not buyable) for extra
+  prestige — see Player Ranks.
 
 ### Pacing sanity
 - **Day one (solo player):** starts with 2 free decks (Classic, Neon). 1,000
@@ -110,7 +118,8 @@ yet) and the **login-streak counter** (the daily-bonus system creates it anyway)
 1. **Card decks** ← first, best ROI (art already exists: classic, neon, cowboy,
    girly, wizards, gothic, pirate).
 2. **Table felt themes** (per-game palettes already exist).
-3. **Premium avatars / profile frames.**
+3. **Profile frames** (decorative borders around the profile pic — not the pic
+   itself, which is already free).
 4. Later: **multiplayer emotes** (send 👍/😂 in online games).
 
 ---
@@ -175,8 +184,9 @@ Example ladder (tune numbers freely):
 
 - Show the rank on the **Profile** screen and next to the player's name in the
   **multiplayer lobby** (bragging rights).
-- Optional: reaching a new rank **gifts a free cosmetic** (a deck or felt) as a
-  milestone reward — ties the earn/spend loop together.
+- Optional: reaching a new rank **unlocks a rank-exclusive profile frame** (only
+  obtainable by hitting that rank, never buyable) — a visible status symbol that
+  ties the earn loop to the ranks. Could also gift a deck/felt as a bonus.
 - Implementation: a small pure helper `getRank(lifetimeEarned)` returning
   `{ name, icon, threshold, next }`; render it on Profile + Lobby. No new
   persistence needed (derived from `getLifetimeEarned()`). Pure JS, no rebuild.
@@ -184,4 +194,4 @@ Example ladder (tune numbers freely):
 ## Suggested timing
 Not part of the current review (v8). Build as **v9**, ideally bundled with the
 daily-bonus (the earn side) so the loop ships complete: earn daily → spend on
-decks. Table felts and avatars follow the same pattern once decks are proven.
+decks. Table felts and profile frames follow the same pattern once decks are proven.
