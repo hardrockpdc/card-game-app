@@ -57,22 +57,24 @@ Loops back to Day 1 after Day 7. ~2,400/week at a perfect streak.
 ### Costs — card decks (Classic + Neon free)
 | Deck | Price |
 |------|-------|
-| Cowboy | 2,000 |
-| Girly | 2,000 |
-| Wizards | 2,500 |
-| Gothic | 2,500 |
+| Cowboy | 3,000 |
+| Girly | 3,000 |
+| Wizards | 3,000 |
+| Gothic | 3,000 |
 | Pirate | 3,000 |
-(Own-all-decks total: 12,000.)
+(Flat 3,000 each. Own-all-decks total: 15,000.)
 
 ### Costs — other cosmetics
-- **Table felts:** ~1,000 each.
+- **Table felts:** 2,000 each (flat).
 - **Avatars / frames (later):** 250–500 each.
 
 ### Pacing sanity
-- **Day one (solo player):** 1,000 start + 250 first-win + 100 daily + ~3 solo
-  wins ≈ 1,800 → can unlock a felt or save toward Cowboy. Slower but never locked
-  out (dailies + achievements carry solo players).
-- **Multiplayer player:** ~2× faster → full deck set in a couple weeks.
+- **Day one (solo player):** starts with 2 free decks (Classic, Neon). 1,000
+  start + 250 first-win + 100 daily + ~3 solo wins ≈ 1,800 → nearly enough for a
+  first felt (2,000) within a day or two. Slower but never locked out (dailies +
+  achievements carry solo players).
+- **Multiplayer player:** ~2× faster → a deck (3,000) in a few days, full set in
+  a few weeks.
 - **Ranks:** Card Shark (5,000 lifetime) ≈ ~1 week of regular play.
 
 ## Sinks, in build order
@@ -92,7 +94,7 @@ selectable. `game/wallet.js` has `getCoins/subtractCoins/getLifetimeEarned`.
 
 **Data model:**
 - Add `price` to each theme in `cardTheme.js` (e.g. `classic: { ..., price: 0 }`).
-  Free-by-default: `classic` (and maybe `neon`) = 0; others = e.g. 750–2000 coins.
+  Free-by-default: `classic` + `neon` = 0; other decks = 3,000 each (felts 2,000).
 - Add `unlockedThemes: ["classic"]` to the profile (`DEFAULT_PROFILE` +
   `normalizeProfile` — default to the price-0 themes so existing users keep
   access). This is the owned list.
