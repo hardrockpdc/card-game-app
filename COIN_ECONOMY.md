@@ -41,11 +41,11 @@ get replaced by the values above.)*
 ### Earn — daily bonus (7-day streak, resets if a day is missed)
 | Day | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
 |-----|---|---|---|---|---|---|---|
-| Coins | 100 | 125 | 150 | 175 | 200 | 250 | 2,000 |
-Small daily nudges (days 1–6 total exactly 1,000) with a big Day-7 jackpot
-(2,000 — more than the whole rest of the week combined) as the streak payoff.
-Loops back to Day 1 after Day 7. 3,000/week at a perfect streak. Miss a day →
-reset to Day 1 (and lose the run at the jackpot).
+| Coins | 100 | 125 | 150 | 175 | 200 | 250 | 1,000 |
+Small daily nudges (days 1–6 total exactly 1,000) with a Day-7 jackpot (1,000 —
+equal to the whole rest of the week combined) as the streak payoff. Loops back to
+Day 1 after Day 7. 2,000/week at a perfect streak. Miss a day → reset to Day 1
+(and lose the run at the jackpot).
 
 ### Earn — achievements (one-time)
 | Achievement | Reward |
