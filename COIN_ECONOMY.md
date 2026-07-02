@@ -41,10 +41,11 @@ get replaced by the values above.)*
 ### Earn — daily bonus (7-day streak, resets if a day is missed)
 | Day | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
 |-----|---|---|---|---|---|---|---|
-| Coins | 50 | 75 | 100 | 125 | 150 | 200 | 1,000 |
-Small daily nudges (days 1–6 total 700) with a big Day-7 jackpot (1,000) as the
-streak payoff. Loops back to Day 1 after Day 7. ~1,700/week at a perfect streak.
-Miss a day → reset to Day 1 (and lose the run at the jackpot).
+| Coins | 100 | 125 | 150 | 175 | 200 | 250 | 2,000 |
+Small daily nudges (days 1–6 total exactly 1,000) with a big Day-7 jackpot
+(2,000 — more than the whole rest of the week combined) as the streak payoff.
+Loops back to Day 1 after Day 7. 3,000/week at a perfect streak. Miss a day →
+reset to Day 1 (and lose the run at the jackpot).
 
 ### Earn — achievements (one-time)
 | Achievement | Reward |
@@ -72,7 +73,7 @@ Miss a day → reset to Day 1 (and lose the run at the jackpot).
 
 ### Pacing sanity
 - **Day one (solo player):** starts with 2 free decks (Classic, Neon). 1,000
-  start + 250 first-win + 50 daily + ~3 solo wins ≈ 1,750 → nearly enough for a
+  start + 250 first-win + 100 daily + ~3 solo wins ≈ 1,800 → nearly enough for a
   first felt (2,000) within a day or two. Slower but never locked out (dailies +
   achievements carry solo players).
 - **Multiplayer player:** ~2× faster → a deck (3,000) in a few days, full set in
