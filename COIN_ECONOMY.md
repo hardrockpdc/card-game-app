@@ -17,6 +17,64 @@ rating intact and never drifts toward the casino/gambling category.
   and **achievements**.
 - **Spend:** unlock **card decks** → then **table felts** → then **avatars/frames**.
 
+## Economy numbers (starting values — all tunable)
+
+**Starting balance:** 1,000 coins (existing).
+**Free decks (never cost coins):** Classic, Neon. All other decks are earned.
+
+### Earn — per win (single-player pays less than multiplayer)
+Principle: multiplayer ≈ 2–2.5× single-player, to reward social play and stop
+easy coin-farming vs the AI.
+
+| Game | Single-player (vs AI) | Multiplayer |
+|------|----------------------|-------------|
+| Go Fish, Last Card (quick) | 100 | 250 |
+| Conquián, Rummy (medium) | 150 | 350 |
+| Poker (longer) | 200 | 500 |
+| Solitaire (solo only) | 150 | — |
+| Blackjack (solo only) | bet-based (keep existing 2× / 2.5×) | — |
+| Who Am I? (multiplayer only) | — | 300 |
+
+*(Current code pays a flat 500 for Go Fish / Last Card / Conquián / Poker — those
+get replaced by the values above.)*
+
+### Earn — daily bonus (7-day streak, resets if a day is missed)
+| Day | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
+|-----|---|---|---|---|---|---|---|
+| Coins | 100 | 150 | 200 | 300 | 400 | 500 | 750 |
+Loops back to Day 1 after Day 7. ~2,400/week at a perfect streak.
+
+### Earn — achievements (one-time)
+| Achievement | Reward |
+|---|---|
+| First win | 250 |
+| Win 10 games total | 500 |
+| Win 50 games total | 1,500 |
+| Win 100 games total | 3,000 |
+| Win every game at least once | 1,000 |
+| 7-day login streak | 1,000 |
+
+### Costs — card decks (Classic + Neon free)
+| Deck | Price |
+|------|-------|
+| Cowboy | 2,000 |
+| Girly | 2,000 |
+| Wizards | 2,500 |
+| Gothic | 2,500 |
+| Pirate | 3,000 |
+(Own-all-decks total: 12,000.)
+
+### Costs — other cosmetics
+- **Table felts:** ~1,000 each.
+- **Avatars / frames (later):** 250–500 each.
+
+### Pacing sanity
+- **Day one (solo player):** 1,000 start + 250 first-win + 100 daily + ~3 solo
+  wins ≈ 1,800 → can unlock a felt or save toward Cowboy. Slower but never locked
+  out (dailies + achievements carry solo players).
+- **Multiplayer player:** ~2× faster → full deck set in a couple weeks.
+- **Ranks:** Card Shark (5,000 lifetime) ≈ ~1 week of regular play.
+
 ## Sinks, in build order
 1. **Card decks** ← first, best ROI (art already exists: classic, neon, cowboy,
    girly, wizards, gothic, pirate).
