@@ -64,6 +64,34 @@ persistence) already exists.
 
 ---
 
+## Player Ranks (status progression)
+
+A rank ladder players climb by playing — pure status/prestige, no gameplay
+advantage (stays fair in multiplayer + family-friendly).
+
+**Key design choice: rank is based on LIFETIME coins earned, not current
+balance** — so spending coins on cosmetics never demotes you. Two separate
+numbers: current balance = what you spend; lifetime earned = your rank. The
+wallet already exposes `getLifetimeEarned()`, so the data is there.
+
+Example ladder (tune numbers freely):
+
+| Rank | Lifetime earned |
+|------|-----------------|
+| 🃏 Rookie | 0 |
+| ♠ Card Shark | 5,000 |
+| 🎩 High Roller | 20,000 |
+| 👑 Ace | 50,000 |
+| 🌟 Legend | 100,000 |
+
+- Show the rank on the **Profile** screen and next to the player's name in the
+  **multiplayer lobby** (bragging rights).
+- Optional: reaching a new rank **gifts a free cosmetic** (a deck or felt) as a
+  milestone reward — ties the earn/spend loop together.
+- Implementation: a small pure helper `getRank(lifetimeEarned)` returning
+  `{ name, icon, threshold, next }`; render it on Profile + Lobby. No new
+  persistence needed (derived from `getLifetimeEarned()`). Pure JS, no rebuild.
+
 ## Suggested timing
 Not part of the current review (v8). Build as **v9**, ideally bundled with the
 daily-bonus (the earn side) so the loop ships complete: earn daily → spend on
