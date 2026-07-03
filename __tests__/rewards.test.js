@@ -1,4 +1,4 @@
-import { getWinReward } from "../game/rewards";
+import { getWinReward, getMemoryReward } from "../game/rewards";
 
 describe("getWinReward", () => {
   test("multiplayer pays more than single-player", () => {
@@ -20,5 +20,18 @@ describe("getWinReward", () => {
   test("unknown game returns 0", () => {
     expect(getWinReward("nope", false)).toBe(0);
     expect(getWinReward(undefined, true)).toBe(0);
+  });
+});
+
+describe("getMemoryReward", () => {
+  test("pays more for harder boards", () => {
+    expect(getMemoryReward("easy")).toBe(50);
+    expect(getMemoryReward("medium")).toBe(75);
+    expect(getMemoryReward("hard")).toBe(100);
+  });
+
+  test("unknown difficulty returns 0", () => {
+    expect(getMemoryReward("bogus")).toBe(0);
+    expect(getMemoryReward(undefined)).toBe(0);
   });
 });

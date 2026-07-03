@@ -11,7 +11,6 @@ const REWARDS = {
   rummy: { sp: 150, mp: 350 },
   poker: { sp: 200, mp: 500 },
   solitaire: { sp: 150, mp: null },
-  memory: { sp: 100, mp: null }, // solo-only concentration game
   whoami: { sp: null, mp: 300 },
 };
 
@@ -22,4 +21,12 @@ export function getWinReward(gameId, isMultiplayer) {
   if (!entry) return 0;
   const value = isMultiplayer ? entry.mp : entry.sp;
   return typeof value === "number" ? value : 0;
+}
+
+// Memory Match is solo-only and pays by board difficulty (bigger board = more
+// coins), so it uses this tiered helper instead of the flat REWARDS table.
+const MEMORY_REWARDS = { easy: 50, medium: 75, hard: 100 };
+
+export function getMemoryReward(difficulty) {
+  return MEMORY_REWARDS[difficulty] || 0;
 }

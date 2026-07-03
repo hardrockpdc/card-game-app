@@ -10,7 +10,7 @@ import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import Card from "../components/Card";
 import { DIFFICULTIES, createGame, flip, clearMismatch } from "../game/memory";
 import { addCoins } from "../game/wallet";
-import { getWinReward } from "../game/rewards";
+import { getMemoryReward } from "../game/rewards";
 import { recordWin } from "../game/profile";
 import { hapticWin, hapticSelection } from "../game/haptics";
 import { scale, scaleFont } from "../game/responsive";
@@ -38,7 +38,7 @@ export default function MemoryGameScreen({ navigation, route }) {
   useEffect(() => {
     if (game.status === "won" && !coinRewarded.current) {
       coinRewarded.current = true;
-      const reward = getWinReward("memory", false);
+      const reward = getMemoryReward(difficulty);
       addCoins(reward).then(() => setCoinsEarned(reward));
       recordWin("memory");
       hapticWin();
