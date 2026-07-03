@@ -410,8 +410,10 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   confirmThumb: {
+    // Explicit width AND height (3:4) — not aspectRatio, which RN's Image can
+    // ignore in favor of the source's intrinsic (huge) size.
     width: scale(96),
-    aspectRatio: 3 / 4,
+    height: scale(128),
     borderRadius: scale(10),
     marginBottom: scale(4),
   },
