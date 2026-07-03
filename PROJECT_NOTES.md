@@ -204,7 +204,7 @@ card-game-app/
 │   ├── HowToPlayScreen.js         (rules reference screen)
 │   ├── ResultsScreen.js           (real implementation — winner headline, scoreboard, Play Again / Back to Menu)
 │   ├── AboutScreen.js             (app name, version from app.json, credits, copyright, Privacy Policy link)
-│   ├── StatsScreen.js             (Total Wins + Lifetime Coins summary; per-game win table, green on wins > 0. NOTE: table is missing a "Who Am I?" row — its wins don't show)
+│   ├── StatsScreen.js             (Total Wins + Lifetime Coins summary; per-game win table incl. Who Am I?, green on wins > 0)
 │   └── SettingsScreen.js          (placeholder — "More settings coming soon"; link removed from HomeScreen)
 ├── App.js                         (navigation stack — all screens registered)
 ├── app.json                       (bundle ID: com.pedro.cardgameapp, EAS projectId)

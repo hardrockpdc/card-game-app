@@ -19,6 +19,7 @@ const GAME_LABELS = {
   rummy: "Rummy",
   conquian: "Conquián",
   poker: "Poker",
+  whoami: "Who Am I?",
 };
 
 export default function StatsScreen({ navigation }) {
