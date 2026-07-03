@@ -178,8 +178,7 @@ export default function MemoryGameScreen({ navigation, route }) {
         continueLabel="Play Again"
         onContinue={restart}
         showLeave
-        leaveLabel="Back to Games"
-        onLeave={() => navigation.navigate("SinglePlayerSetup")}
+        onLeave={() => navigation.navigate("Home")}
       />
     </SafeAreaView>
   );
