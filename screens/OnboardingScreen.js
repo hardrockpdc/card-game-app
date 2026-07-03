@@ -52,12 +52,17 @@ async function cropToSquare(uri, width, height) {
   return result.uri;
 }
 
-const STEPS = ["name", "photo", "cardStyle"];
+// Onboarding flow: welcome intro → name → photo → card style → game info → Home.
+const APP_ICON = require("../assets/icon.png");
+
+// Game roster grouped by mode, shown on the post-setup info screen.
+const SOLO_GAMES = ["Blackjack", "Solitaire", "Go Fish", "Rummy", "Conquián", "Poker", "Last Card"];
+const MP_GAMES = ["Go Fish", "Rummy", "Conquián", "Poker", "Last Card", "Who Am I?"];
 
 export default function OnboardingScreen({ navigation }) {
   const { width, height } = useWindowDimensions();
 
-  const [step, setStep] = useState(0); // 0=name, 1=photo, 2=cardStyle
+  const [step, setStep] = useState(0); // 0=welcome, 1=name, 2=photo, 3=cardStyle, 4=gameInfo
   const [profile, setProfile] = useState(null);
   const [nameDraft, setNameDraft] = useState("");
   const [photoUri, setPhotoUri] = useState(null);
@@ -87,9 +92,10 @@ export default function OnboardingScreen({ navigation }) {
       Alert.alert("Enter your name", "Please type a name to continue.");
       return;
     }
-    setStep(1);
+    setStep(2);
   }
 
+  // Save profile + theme, then advance to the game-info screen (not Home yet).
   async function handleFinish() {
     setIsSaving(true);
     try {
@@ -106,12 +112,16 @@ export default function OnboardingScreen({ navigation }) {
       setTheme(key);
       await updateProfile({ cardTheme: key });
 
-      navigation.reset({ index: 0, routes: [{ name: "Home" }] });
+      setStep(4);
     } catch {
       Alert.alert("Error", "Something went wrong. Please try again.");
     } finally {
       setIsSaving(false);
     }
+  }
+
+  function handleEnterApp() {
+    navigation.reset({ index: 0, routes: [{ name: "Home" }] });
   }
 
   // ── Photo helpers ────────────────────────────────────────────────────────────
@@ -194,15 +204,32 @@ export default function OnboardingScreen({ navigation }) {
   if (step === 0) {
     return (
       <SafeAreaView style={styles.safe}>
-        <ScrollView contentContainerStyle={styles.stepContainer} keyboardShouldPersistTaps="handled">
-          <View style={styles.welcomeBlock}>
-            <Text style={styles.welcomeTitle}>Welcome to Card Night! 🎴</Text>
-            <Text style={styles.welcomeText}>
-              Your home for classic card games — play solo against the computer
-              or gather friends for multiplayer. Let's set up your profile.
-            </Text>
-          </View>
+        <ScrollView
+          contentContainerStyle={[styles.stepContainer, styles.welcomeContainer]}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Image source={APP_ICON} style={styles.welcomeIcon} resizeMode="contain" />
+          <Text style={styles.welcomeTitle}>Welcome to Card Night!</Text>
+          <Text style={styles.welcomeText}>
+            Your home for classic card games — play solo against the computer
+            or gather friends for multiplayer. Let's set up your profile.
+          </Text>
 
+          <TouchableOpacity
+            style={[styles.primaryBtn, styles.welcomeBtn]}
+            onPress={() => setStep(1)}
+          >
+            <Text style={styles.primaryBtnText}>Get Started →</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  if (step === 1) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <ScrollView contentContainerStyle={styles.stepContainer} keyboardShouldPersistTaps="handled">
           <Text style={styles.stepLabel}>STEP 1 OF 3</Text>
           <Text style={styles.title}>What's your name?</Text>
           <Text style={styles.subtitle}>This is how you'll appear in games.</Text>
@@ -230,7 +257,7 @@ export default function OnboardingScreen({ navigation }) {
     );
   }
 
-  if (step === 1) {
+  if (step === 2) {
     return (
       <SafeAreaView style={styles.safe}>
         <ScrollView contentContainerStyle={styles.stepContainer} keyboardShouldPersistTaps="handled">
@@ -273,12 +300,12 @@ export default function OnboardingScreen({ navigation }) {
           )}
 
           <View style={styles.navRow}>
-            <TouchableOpacity style={styles.skipBtn} onPress={() => setStep(2)}>
+            <TouchableOpacity style={styles.skipBtn} onPress={() => setStep(3)}>
               <Text style={styles.skipBtnText}>Skip</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.primaryBtn, styles.navPrimaryBtn]}
-              onPress={() => setStep(2)}
+              onPress={() => setStep(3)}
             >
               <Text style={styles.primaryBtnText}>Next →</Text>
             </TouchableOpacity>
@@ -288,8 +315,9 @@ export default function OnboardingScreen({ navigation }) {
     );
   }
 
-  // Step 2: Card style
-  return (
+  // Step 3: Card style
+  if (step === 3) {
+    return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.cardStepHeader}>
         <Text style={styles.stepLabel}>STEP 3 OF 3</Text>
@@ -340,10 +368,41 @@ export default function OnboardingScreen({ navigation }) {
           disabled={isSaving}
         >
           <Text style={styles.primaryBtnText}>
-            {isSaving ? "Saving…" : "Let's Play! 🎉"}
+            {isSaving ? "Saving…" : "Next →"}
           </Text>
         </TouchableOpacity>
       </View>
+    </SafeAreaView>
+    );
+  }
+
+  // Step 4: Game info (after profile setup) — what you can play, by mode.
+  return (
+    <SafeAreaView style={styles.safe}>
+      <ScrollView contentContainerStyle={styles.stepContainer} keyboardShouldPersistTaps="handled">
+        <Text style={styles.title}>You're all set! 🎉</Text>
+        <Text style={styles.subtitle}>Here's what you can play.</Text>
+
+        <View style={styles.modeCard}>
+          <Text style={styles.modeTitle}>🧑‍💻 Solo vs. the computer</Text>
+          <Text style={styles.modeGames}>{SOLO_GAMES.join(" · ")}</Text>
+        </View>
+
+        <View style={styles.modeCard}>
+          <Text style={styles.modeTitle}>👥 With friends (multiplayer)</Text>
+          <Text style={styles.modeGames}>{MP_GAMES.join(" · ")}</Text>
+          <Text style={styles.modeHint}>
+            Play on the same network or online with a room code.
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.primaryBtn, styles.welcomeBtn]}
+          onPress={handleEnterApp}
+        >
+          <Text style={styles.primaryBtnText}>Let's Play! 🎉</Text>
+        </TouchableOpacity>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -359,19 +418,56 @@ const styles = StyleSheet.create({
     paddingTop: scale(32),
     paddingBottom: scale(24),
   },
-  welcomeBlock: {
-    marginBottom: scale(32),
+  welcomeContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  welcomeIcon: {
+    width: scale(120),
+    height: scale(120),
+    borderRadius: scale(28),
+    marginBottom: scale(28),
   },
   welcomeTitle: {
     color: "#ffffff",
-    fontSize: scaleFont(26),
+    fontSize: scaleFont(28),
     fontWeight: "800",
-    marginBottom: scale(10),
+    marginBottom: scale(12),
+    textAlign: "center",
   },
   welcomeText: {
     color: "#aab",
     fontSize: scaleFont(15),
     lineHeight: scaleFont(22),
+    textAlign: "center",
+  },
+  welcomeBtn: {
+    alignSelf: "stretch",
+    marginTop: scale(36),
+  },
+  modeCard: {
+    backgroundColor: "#16213e",
+    borderWidth: 1,
+    borderColor: "#334",
+    borderRadius: scale(14),
+    padding: scale(18),
+    marginBottom: scale(16),
+  },
+  modeTitle: {
+    color: "#ffffff",
+    fontSize: scaleFont(17),
+    fontWeight: "700",
+    marginBottom: scale(8),
+  },
+  modeGames: {
+    color: "#c4c4d4",
+    fontSize: scaleFont(15),
+    lineHeight: scaleFont(23),
+  },
+  modeHint: {
+    color: "#7fb3ff",
+    fontSize: scaleFont(13),
+    marginTop: scale(10),
   },
   stepLabel: {
     color: "#7fb3ff",
