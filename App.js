@@ -26,6 +26,7 @@ import RummyGameScreen from "./screens/RummyGameScreen";
 import HowToPlayScreen from "./screens/HowToPlayScreen";
 import WhoAmIGameScreen from "./screens/WhoAmIGameScreen";
 import LastCardGameScreen from "./screens/LastCardGameScreen";
+import MemoryGameScreen from "./screens/MemoryGameScreen";
 import GameSetupScreen from "./screens/GameSetupScreen";
 import GoFishPickerScreen from "./screens/GoFishPickerScreen";
 import CardThemeScreen from "./screens/CardThemeScreen";
@@ -246,6 +247,11 @@ export default function App() {
                   name="SinglePlayerSetup"
                   component={SinglePlayerSetupScreen}
                   options={{ title: "Single Player · Choose Game" }}
+                />
+                <Stack.Screen
+                  name="MemoryGame"
+                  component={MemoryGameScreen}
+                  options={{ title: "Memory Match" }}
                 />
                 <Stack.Screen
                   name="HowToPlay"

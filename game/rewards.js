@@ -11,6 +11,7 @@ const REWARDS = {
   rummy: { sp: 150, mp: 350 },
   poker: { sp: 200, mp: 500 },
   solitaire: { sp: 150, mp: null },
+  memory: { sp: 100, mp: null }, // solo-only concentration game
   whoami: { sp: null, mp: 300 },
 };
 

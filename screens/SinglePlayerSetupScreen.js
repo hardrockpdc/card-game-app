@@ -59,6 +59,15 @@ const GAMES = [
     accent: "#e94560",
     image: require("../assets/images/thumb_lastcard.jpg"),
   },
+  {
+    // No artwork yet — rendered as a styled placeholder tile (see `placeholder`).
+    id: "memory",
+    label: "Memory Match",
+    tag: "Find pairs",
+    accent: "#7c6cff",
+    placeholder: true,
+    icon: "🧠",
+  },
 ];
 
 // Decorative background grid line positions (percent of screen w/h)
@@ -137,6 +146,9 @@ export default function SinglePlayerSetupScreen({ navigation }) {
           hasDifficulty: true,
         });
         return;
+      case "memory":
+        navigation.navigate("MemoryGame");
+        return;
       default:
         navigation.navigate("Game");
     }
@@ -196,11 +208,17 @@ export default function SinglePlayerSetupScreen({ navigation }) {
       {pendingGame && (
         <View style={styles.resumeOverlay}>
           <View style={styles.resumeCard}>
-            <Image
-              source={pendingGame.image}
-              style={styles.confirmThumb}
-              resizeMode="cover"
-            />
+            {pendingGame.placeholder ? (
+              <View style={[styles.confirmThumb, styles.placeholderThumb]}>
+                <Text style={styles.placeholderThumbIcon}>{pendingGame.icon}</Text>
+              </View>
+            ) : (
+              <Image
+                source={pendingGame.image}
+                style={styles.confirmThumb}
+                resizeMode="cover"
+              />
+            )}
             <Text style={styles.resumeTitle}>{pendingGame.label}</Text>
             <Text style={styles.resumeBody}>Ready to play?</Text>
             <TouchableOpacity
@@ -288,21 +306,41 @@ export default function SinglePlayerSetupScreen({ navigation }) {
                     onPress={() => onTilePress(game)}
                     activeOpacity={0.85}
                   >
-                    <Image
-                      source={game.image}
-                      style={[
-                        styles.tile,
-                        tileSize,
-                        {
-                          borderColor:
-                            pendingGame?.id === game.id
-                              ? game.accent
-                              : game.accent + "66",
-                          borderWidth: pendingGame?.id === game.id ? 3 : 1.5,
-                        },
-                      ]}
-                      resizeMode="cover"
-                    />
+                    {game.placeholder ? (
+                      <View
+                        style={[
+                          styles.tile,
+                          styles.placeholderTile,
+                          tileSize,
+                          {
+                            borderColor:
+                              pendingGame?.id === game.id
+                                ? game.accent
+                                : game.accent + "66",
+                            borderWidth: pendingGame?.id === game.id ? 3 : 1.5,
+                          },
+                        ]}
+                      >
+                        <Text style={styles.placeholderIcon}>{game.icon}</Text>
+                        <Text style={styles.placeholderLabel}>{game.label}</Text>
+                      </View>
+                    ) : (
+                      <Image
+                        source={game.image}
+                        style={[
+                          styles.tile,
+                          tileSize,
+                          {
+                            borderColor:
+                              pendingGame?.id === game.id
+                                ? game.accent
+                                : game.accent + "66",
+                            borderWidth: pendingGame?.id === game.id ? 3 : 1.5,
+                          },
+                        ]}
+                        resizeMode="cover"
+                      />
+                    )}
                   </TouchableOpacity>
                 ),
               )}
@@ -365,6 +403,32 @@ const styles = StyleSheet.create({
     borderRadius: scale(14),
     borderWidth: 1.5,
     overflow: "hidden",
+  },
+  placeholderTile: {
+    backgroundColor: "#211d3a",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: scale(8),
+  },
+  placeholderIcon: {
+    fontSize: scaleFont(40),
+    marginBottom: scale(8),
+  },
+  placeholderLabel: {
+    color: "#d7d2ff",
+    fontSize: scaleFont(15),
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  placeholderThumb: {
+    backgroundColor: "#211d3a",
+    borderWidth: 1.5,
+    borderColor: "#7c6cff66",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  placeholderThumbIcon: {
+    fontSize: scaleFont(44),
   },
   comingSoonTile: {
     borderColor: "#33405566",

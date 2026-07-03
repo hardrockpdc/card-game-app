@@ -141,6 +141,7 @@ card-game-app/
 │   ├── conquian.js                (Conquián game logic — pure functions)
 │   ├── whoami.js                  (Who Am I? game logic — pure functions; + test bots)
 │   ├── lastCard.js                (Last Card game logic — pure functions)
+│   ├── memory.js                  (Memory Match game logic — pure functions; Easy/Medium/Hard)
 │   ├── lastCardImages.js          (109-image LastCard require map — extracted from the screen, CQ-5)
 │   ├── gofish.js                  (Go Fish game logic — pure functions; extracted from the screen 2026-06-02)
 │   ├── poker.js                  (Poker variant logic — Texas Hold'em, Omaha, Five Card Draw, Seven Card Stud)
@@ -190,6 +191,7 @@ card-game-app/
 │   ├── ConquianSetupScreen.js     (Conquián setup screen — registered route "ConquianSetup")
 │   ├── WhoAmIGameScreen.js        (Who Am I? — multiplayer party game, no cards; the app's 9th game, added 2026-06-18→20)
 │   ├── LastCardGameScreen.js      (Last Card — single + multiplayer)
+│   ├── MemoryGameScreen.js        (Memory Match — single-player; flip to find identical pairs; added 2026-07-03)
 │   ├── SinglePlayerSetupScreen.js (single-player game + AI picker; Wild Round removed from carousel)
 │   ├── MultiplayerMenuScreen.js   (Host Online/Join Online + Host Local/Join Local — all functional)
 │   ├── MultiplayerGamePickerScreen.js (online: pick a game before opening the lobby — mirrors single-player)
@@ -412,6 +414,7 @@ both explicitly for LAN-only play.
 - Last Card (single + multiplayer, 2-8 players, AI single difficulty)
 - Solitaire (single-player only, Klondike / Spider / FreeCell / Pyramid / TriPeaks)
 - Who Am I? (multiplayer party game, no cards; first to 3 round-wins — added 2026-06-18→20)
+- Memory Match (single-player concentration; flip to find identical pairs; Easy/Medium/Hard — added 2026-07-03)
 
 **Visual assets update:** Cards now use neon image assets in `assets/cards/` (replaced procedural drawing).
 

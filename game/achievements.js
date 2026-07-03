@@ -16,7 +16,7 @@ import { THEMES_LIST, getThemePrice } from "./cardTheme";
 const KEY_EVENTS = "@cardnight:ach:events"; // { onlinePlayed, onlineHosted, mpWins, blackjackDealt }
 const KEY_CLAIMED = "@cardnight:ach:claimed"; // JSON array of claimed achievement ids
 
-// The 8 games that count toward "Well-Rounded" (match the recordWin ids).
+// The games that count toward "Well-Rounded" (match the recordWin ids).
 const ALL_GAME_IDS = [
   "blackjack",
   "solitaire",
@@ -26,6 +26,7 @@ const ALL_GAME_IDS = [
   "poker",
   "lastcard",
   "whoami",
+  "memory",
 ];
 
 // Paid card decks, for "Fashionista" (own them all).

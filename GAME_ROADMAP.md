@@ -33,7 +33,7 @@ Effort: **S** = small, **M** = moderate, **L** = larger.
 ## B. Easy / kids card games (quick wins, youngest players)
 - **War** (S) — 2 players, trivially simple, perfect for little kids.
 - **Old Maid** (S) — simple, kid-friendly, complements Go Fish.
-- **Memory / Concentration** (S) — flip-and-match; solo or head-to-head.
+- ✅ **Memory / Concentration** (S) — flip-and-match. **DONE 2026-07-03** (single-player: `game/memory.js` + `screens/MemoryGameScreen.js`, Easy/Medium/Hard). Head-to-head MP not built.
 
 ## C. Dice games (new category — very family-friendly)
 - **Five Dice** (Yahtzee-style) (M) — roll/hold/score; solo + MP. Strong, broad
