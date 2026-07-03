@@ -1455,7 +1455,7 @@ export default function ConquianGameScreen({ navigation, route }) {
           {tie ? "It's a Tie!" : iWon ? "You Win!" : `${winner?.name} Wins!`}
         </Text>
         {iWon && isSinglePlayer && coinsEarned > 0 && (
-          <Text style={styles.resultsCoins}>+{coinsEarned} coins!</Text>
+          <Text style={styles.resultsCoins}>+{coinsEarned} 🪙</Text>
         )}
 
         <View style={styles.scoreBoard}>
@@ -1500,11 +1500,6 @@ export default function ConquianGameScreen({ navigation, route }) {
               : iWon
                 ? "🏆 You Win!"
                 : `👑 ${winner?.name} Wins!`
-          }
-          message={
-            iWon && isSinglePlayer && coinsEarned > 0
-              ? `+${coinsEarned} coins!`
-              : ""
           }
           showContinue={isHost}
           showLeave

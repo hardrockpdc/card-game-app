@@ -2126,7 +2126,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
     <EndOfRoundModal
       visible={showRoundModal}
       title="🏆 You Won!"
-      message={coinsEarned > 0 ? `+${coinsEarned} coins!` : ""}
+      coins={coinsEarned}
       showContinue
       showLeave
       isGameOver

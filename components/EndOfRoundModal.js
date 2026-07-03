@@ -3,10 +3,15 @@ import { Modal, StyleSheet, Text, View } from "react-native";
 import { scale, scaleFont } from "../game/responsive";
 import { HapticPressable as Pressable } from "./Haptic";
 
+// Shared end-of-round / results modal used by every game so they all look
+// identical: dark navy card, bold title, optional subtitle, an optional gold
+// coin badge, a green primary action, and neutral outlined secondary actions.
+// (Standardized to the Memory Match window on 2026-07-03.)
 export default function EndOfRoundModal({
   visible,
   title,
   message,
+  coins, // optional: shows a gold "+N 🪙" badge when > 0
   showAdjustBet,
   showContinue,
   showLeave,
@@ -14,7 +19,7 @@ export default function EndOfRoundModal({
   onAdjustBet,
   onLeave,
   leaveLabel,
-  tableColor,
+  tableColor, // accepted for backward compat; no longer themes the card
   isGameOver,
   continueLabel,
 }) {
@@ -26,17 +31,12 @@ export default function EndOfRoundModal({
       statusBarTranslucent
     >
       <View style={styles.overlay}>
-        <View
-          style={[styles.box, tableColor ? { borderColor: tableColor } : null]}
-        >
-          <View
-            style={[
-              styles.accentBar,
-              { backgroundColor: tableColor ?? "#243042" },
-            ]}
-          />
+        <View style={styles.box}>
           <Text style={styles.title}>{title}</Text>
           {!!message && <Text style={styles.message}>{message}</Text>}
+          {coins > 0 && (
+            <Text style={styles.coins}>+{coins.toLocaleString()} 🪙</Text>
+          )}
 
           <View style={styles.buttonCol}>
             {showContinue && (
@@ -66,12 +66,12 @@ export default function EndOfRoundModal({
             {showLeave && (
               <Pressable
                 style={({ pressed }) => [
-                  styles.leaveBtn,
+                  styles.secondaryBtn,
                   pressed && styles.btnPressed,
                 ]}
                 onPress={onLeave}
               >
-                <Text style={styles.leaveBtnText}>
+                <Text style={styles.secondaryBtnText}>
                   {leaveLabel ?? "Main Menu"}
                 </Text>
               </Pressable>
@@ -86,7 +86,7 @@ export default function EndOfRoundModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.65)",
+    backgroundColor: "rgba(0,0,0,0.7)",
     alignItems: "center",
     justifyContent: "center",
     padding: scale(24),
@@ -94,71 +94,57 @@ const styles = StyleSheet.create({
   box: {
     width: "100%",
     maxWidth: scale(360),
-    backgroundColor: "#141c28",
-    borderRadius: scale(22),
-    borderWidth: 1.5,
-    borderColor: "#243042",
+    backgroundColor: "#16213e",
+    borderRadius: scale(16),
     padding: scale(24),
     alignItems: "center",
-    gap: scale(8),
-  },
-  accentBar: {
-    width: "45%",
-    height: scale(6),
-    borderRadius: scale(3),
-    alignSelf: "center",
+    gap: scale(12),
   },
   title: {
-    color: "#f5f7fb",
-    fontSize: scaleFont(28),
-    fontWeight: "900",
+    color: "#ffffff",
+    fontSize: scaleFont(24),
+    fontWeight: "800",
     textAlign: "center",
   },
   message: {
-    color: "#a8b5c8",
-    fontSize: scaleFont(16),
+    color: "#c4c4d4",
+    fontSize: scaleFont(15),
     textAlign: "center",
-    lineHeight: scale(22),
+    lineHeight: scaleFont(22),
+  },
+  coins: {
+    color: "#ffd700",
+    fontSize: scaleFont(20),
+    fontWeight: "800",
+    textAlign: "center",
   },
   buttonCol: {
     width: "100%",
-    gap: scale(10),
-    marginTop: scale(8),
+    gap: scale(12),
+    marginTop: scale(4),
   },
   primaryBtn: {
-    backgroundColor: "#7fb3ff",
-    borderRadius: scale(14),
-    paddingVertical: scale(20),
+    backgroundColor: "#2e9e54",
+    borderRadius: scale(10),
+    paddingVertical: scale(14),
     alignItems: "center",
   },
   primaryBtnText: {
-    color: "#08111f",
-    fontSize: scaleFont(15),
-    fontWeight: "900",
+    color: "#ffffff",
+    fontSize: scaleFont(16),
+    fontWeight: "700",
   },
   secondaryBtn: {
-    borderRadius: scale(14),
+    borderRadius: scale(10),
     borderWidth: 1.5,
-    borderColor: "#2c3750",
-    paddingVertical: scale(18),
+    borderColor: "#334",
+    paddingVertical: scale(14),
     alignItems: "center",
   },
   secondaryBtnText: {
-    color: "#c8d8f0",
-    fontSize: scaleFont(13),
-    fontWeight: "700",
-  },
-  leaveBtn: {
-    borderRadius: scale(14),
-    borderWidth: 1.5,
-    borderColor: "#5a2020",
-    paddingVertical: scale(18),
-    alignItems: "center",
-  },
-  leaveBtnText: {
-    color: "#c07070",
-    fontSize: scaleFont(13),
-    fontWeight: "700",
+    color: "#c4c4d4",
+    fontSize: scaleFont(16),
+    fontWeight: "600",
   },
   btnPressed: {
     opacity: 0.8,

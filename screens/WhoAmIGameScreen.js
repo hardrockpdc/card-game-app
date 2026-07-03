@@ -534,9 +534,9 @@ export default function WhoAmIGameScreen({ navigation, route }) {
         visible={showRoundModal}
         title={winnerName}
         message={
-          (gameState?.lastSecret ? `The word was “${gameState.lastSecret}”` : "") +
-          (coinsEarned > 0 ? `\n+${coinsEarned} 🪙 added to your wallet!` : "")
+          gameState?.lastSecret ? `The word was “${gameState.lastSecret}”` : ""
         }
+        coins={coinsEarned}
         showContinue={isHost}
         showLeave
         isGameOver

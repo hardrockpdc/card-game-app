@@ -627,7 +627,7 @@ export default function GoFishGameScreen({ navigation, route }) {
       <EndOfRoundModal
         visible={showRoundModal}
         title={`🏆 ${winner?.name ?? "Game Over"}!`}
-        message={coinsEarned > 0 ? `+${coinsEarned} coins!` : ""}
+        coins={coinsEarned}
         showContinue={isHost}
         showLeave
         onContinue={() => {

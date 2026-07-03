@@ -8,6 +8,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import Card from "../components/Card";
+import EndOfRoundModal from "../components/EndOfRoundModal";
 import { DIFFICULTIES, createGame, flip, clearMismatch } from "../game/memory";
 import { addCoins } from "../game/wallet";
 import { getMemoryReward } from "../game/rewards";
@@ -167,29 +168,19 @@ export default function MemoryGameScreen({ navigation, route }) {
         )}
       </View>
 
-      {/* Win overlay */}
-      {game.status === "won" && (
-        <View style={styles.overlay}>
-          <View style={styles.winCard}>
-            <Text style={styles.winTitle}>You Win! 🎉</Text>
-            <Text style={styles.winBody}>
-              Cleared {game.pairs} pairs in {game.moves} moves.
-            </Text>
-            {coinsEarned > 0 && (
-              <Text style={styles.winCoins}>+{coinsEarned.toLocaleString()} 🪙</Text>
-            )}
-            <TouchableOpacity style={styles.winBtn} onPress={restart}>
-              <Text style={styles.winBtnText}>Play Again</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.winBtnSecondary}
-              onPress={() => navigation.navigate("SinglePlayerSetup")}
-            >
-              <Text style={styles.winBtnSecondaryText}>Back to Games</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
+      {/* Win modal — shared component, standardized across all games */}
+      <EndOfRoundModal
+        visible={game.status === "won"}
+        title="You Win! 🎉"
+        message={`Cleared ${game.pairs} pairs in ${game.moves} moves.`}
+        coins={coinsEarned}
+        showContinue
+        continueLabel="Play Again"
+        onContinue={restart}
+        showLeave
+        leaveLabel="Back to Games"
+        onLeave={() => navigation.navigate("SinglePlayerSetup")}
+      />
     </SafeAreaView>
   );
 }
@@ -239,65 +230,5 @@ const styles = StyleSheet.create({
   },
   matchedCard: {
     opacity: 0.4,
-  },
-  // ── Win overlay ──────────────────────────────────────────────────────────────
-  overlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.7)",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 10,
-  },
-  winCard: {
-    backgroundColor: "#16213e",
-    borderRadius: scale(16),
-    padding: scale(24),
-    width: "80%",
-    alignItems: "center",
-    gap: scale(12),
-  },
-  winTitle: {
-    color: "#ffffff",
-    fontSize: scaleFont(24),
-    fontWeight: "800",
-  },
-  winBody: {
-    color: "#c4c4d4",
-    fontSize: scaleFont(15),
-    textAlign: "center",
-  },
-  winCoins: {
-    color: "#ffd700",
-    fontSize: scaleFont(20),
-    fontWeight: "800",
-  },
-  winBtn: {
-    backgroundColor: "#2e9e54",
-    borderRadius: scale(10),
-    paddingVertical: scale(14),
-    width: "100%",
-    alignItems: "center",
-  },
-  winBtnText: {
-    color: "#fff",
-    fontSize: scaleFont(16),
-    fontWeight: "700",
-  },
-  winBtnSecondary: {
-    borderWidth: 1.5,
-    borderColor: "#334",
-    borderRadius: scale(10),
-    paddingVertical: scale(14),
-    width: "100%",
-    alignItems: "center",
-  },
-  winBtnSecondaryText: {
-    color: "#c4c4d4",
-    fontSize: scaleFont(16),
-    fontWeight: "600",
   },
 });

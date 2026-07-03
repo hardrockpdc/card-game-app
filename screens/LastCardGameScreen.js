@@ -1306,11 +1306,7 @@ export default function LastCardGameScreen({ navigation, route }) {
               : `${(gameState?.players ?? []).find((p) => p.id === winner)?.name ?? "Player"} wins!`
             : "Game Over"
         }
-        message={
-          isSinglePlayer && winner === myPid && coinsEarned > 0
-            ? `+${coinsEarned} coins!`
-            : ""
-        }
+        coins={isSinglePlayer && winner === myPid ? coinsEarned : 0}
         showContinue={isHost}
         showLeave
         isGameOver

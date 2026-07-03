@@ -921,7 +921,7 @@ export default function RummyGameScreen({ navigation, route }) {
           {isSinglePlayer &&
             gameState.winner === localPlayerIndex &&
             coinsEarned > 0 && (
-              <Text style={styles.coinsEarnedText}>+{coinsEarned} coins!</Text>
+              <Text style={styles.coinsEarnedText}>+{coinsEarned} 🪙</Text>
             )}
 
           <View style={styles.resultsCard}>
@@ -944,13 +944,6 @@ export default function RummyGameScreen({ navigation, route }) {
           <EndOfRoundModal
             visible={showRoundModal}
             title={gameState.tie ? "🤝 It's a Tie!" : `🏆 ${winnerName} wins!`}
-            message={
-              isSinglePlayer &&
-              gameState.winner === localPlayerIndex &&
-              coinsEarned > 0
-                ? `+${coinsEarned} coins!`
-                : ""
-            }
             showContinue={isHost}
             showLeave
             isGameOver
