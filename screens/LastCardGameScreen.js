@@ -40,6 +40,7 @@ import {
 } from "../game/GameNetwork";
 import { scale, scaleFont } from "../game/responsive";
 import { addCoins } from "../game/wallet";
+import { getWinReward } from "../game/rewards";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import { recordWin } from "../game/profile";
 import { getTableTheme } from "../game/tableThemes";
@@ -265,7 +266,8 @@ export default function LastCardGameScreen({ navigation, route }) {
     if (isWon && !coinRewardedRef.current) {
       coinRewardedRef.current = true;
       clearGame(SAVE_KEY_LASTCARD);
-      addCoins(500).then(() => setCoinsEarned(500));
+      const reward = getWinReward("lastcard", !isSinglePlayer);
+      addCoins(reward).then(() => setCoinsEarned(reward));
       recordWin("lastcard");
     }
     // Win/lose buzz, once per finished game.

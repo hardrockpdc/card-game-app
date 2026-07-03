@@ -10,6 +10,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import { createDeck, shuffleDeck } from "../game/deck";
 import { addCoins } from "../game/wallet";
+import { getWinReward } from "../game/rewards";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import { recordWin } from "../game/profile";
 import { hapticWin, hapticLose } from "../game/haptics";
@@ -46,7 +47,9 @@ const BG = getTableTheme("poker").table;
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const STARTING_CHIPS = 500;
-const POKER_WIN_REWARD = 500; // flat coins for winning a single-player tournament
+// Coins for winning a single-player tournament (MP poker rewards TBD — the win
+// is only detected in the isSinglePlayer branch today).
+const POKER_WIN_REWARD = getWinReward("poker", false);
 const SMALL_BLIND = 10;
 const BIG_BLIND = 20;
 

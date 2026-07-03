@@ -30,6 +30,7 @@ import { scale, scaleFont } from "../game/responsive";
 import ProfileAvatar from "../components/ProfileAvatar";
 import useMultiplayerAvatars from "../components/useMultiplayerAvatars";
 import { addCoins } from "../game/wallet";
+import { getWinReward } from "../game/rewards";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import { recordWin } from "../game/profile";
 import { hapticWin, hapticLose } from "../game/haptics";
@@ -846,7 +847,8 @@ export default function RummyGameScreen({ navigation, route }) {
       gameState.winner === localPlayerIndex;
     if (isWon && !coinRewardedRef.current) {
       coinRewardedRef.current = true;
-      addCoins(500).then(() => setCoinsEarned(500));
+      const reward = getWinReward("rummy", !isSinglePlayer);
+      addCoins(reward).then(() => setCoinsEarned(reward));
       recordWin("rummy");
     }
     // Win/lose buzz, once per finished game (a tie stays silent).

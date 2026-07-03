@@ -16,6 +16,7 @@ import {
   sortHand,
 } from "../game/gofish";
 import { addCoins } from "../game/wallet";
+import { getWinReward } from "../game/rewards";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import { recordWin } from "../game/profile";
 import { getTableTheme } from "../game/tableThemes";
@@ -311,7 +312,8 @@ export default function GoFishGameScreen({ navigation, route }) {
       gameState?.phase === "results" && gameState?.winner?.id === "host";
     if (isWon && !coinRewardedRef.current) {
       coinRewardedRef.current = true;
-      addCoins(500).then(() => setCoinsEarned(500));
+      const reward = getWinReward("gofish", !isSinglePlayer);
+      addCoins(reward).then(() => setCoinsEarned(reward));
       recordWin("gofish");
     }
     // Win/lose buzz, once per finished game.

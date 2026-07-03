@@ -210,6 +210,10 @@ decks. Table felts and profile frames follow the same pattern once decks are pro
 - ✅ **Player ranks** — `game/ranks.js` (`getRank`/`getRankProgress` off lifetime
   earned). Shown on the Profile wallet card with a progress bar. Tests in
   `__tests__/ranks.test.js`. Still TODO: show rank next to names in the online lobby.
-- ⏳ **Win-reward standardization** — code still pays a flat 500 for several wins;
-  the tiered SP/MP values above aren't wired yet.
+- ✅ **Win-reward standardization** — `game/rewards.js` (`getWinReward(gameId,
+  isMultiplayer)`) replaces the flat 500. Wired into Go Fish / Last Card /
+  Conquián / Rummy / Poker / Solitaire. Solitaire dropped 250 → 150 to match the
+  table. Tests in `__tests__/rewards.test.js`. Notes: MP Poker isn't wired yet
+  (win is only detected in the SP branch today); Who Am I? still awards no coins
+  (no win-detection hook there yet — would pay MP 300 once added).
 - ⏳ **Table felts shop**, **profile frames**, **achievements** — not started.

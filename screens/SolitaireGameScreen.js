@@ -42,6 +42,7 @@ import {
   undoAction,
 } from "../game/solitaire";
 import { addCoins } from "../game/wallet";
+import { getWinReward } from "../game/rewards";
 import { recordWin } from "../game/profile";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import { getTableTheme } from "../game/tableThemes";
@@ -579,7 +580,8 @@ export default function SolitaireGameScreen({ navigation, route }) {
   useEffect(() => {
     if (state.status === "won" && !coinRewardedRef.current) {
       coinRewardedRef.current = true;
-      addCoins(250).then(() => setCoinsEarned(250));
+      const reward = getWinReward("solitaire", false);
+      addCoins(reward).then(() => setCoinsEarned(reward));
       recordWin("solitaire");
       hapticWin();
     }
