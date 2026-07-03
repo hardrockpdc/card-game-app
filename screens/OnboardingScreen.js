@@ -396,6 +396,10 @@ export default function OnboardingScreen({ navigation }) {
           </Text>
         </View>
 
+        <Text style={styles.comingSoon}>
+          ✨ New games are added regularly — check back for more!
+        </Text>
+
         <TouchableOpacity
           style={[styles.primaryBtn, styles.welcomeBtn]}
           onPress={handleEnterApp}
@@ -468,6 +472,13 @@ const styles = StyleSheet.create({
     color: "#7fb3ff",
     fontSize: scaleFont(13),
     marginTop: scale(10),
+  },
+  comingSoon: {
+    color: "#aab",
+    fontSize: scaleFont(14),
+    textAlign: "center",
+    marginTop: scale(4),
+    marginBottom: scale(8),
   },
   stepLabel: {
     color: "#7fb3ff",
