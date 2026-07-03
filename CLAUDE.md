@@ -90,10 +90,12 @@ This is a family-friendly card game. Keep all content, copy, and assets appropri
   - `App.js` — root; provider nesting; navigation stack
   - `components/Card.js` — the card render + animation engine (flip via `animateReveal`, deal via `animateDeal`+`dealDelay`)
   - `game/conquian.js`, `game/rummy.js`, `game/solitaire.js`, `game/poker.js`, `game/gofish.js`, `game/lastCard.js`, `game/whoami.js`, `game/deck.js` — pure game logic (no React)
-  - `game/GameNetwork.js` — local TCP/UDP multiplayer
+  - `game/GameNetwork.js` — multiplayer transport façade; `setNetworkMode("local"|"online")` delegates to local TCP/UDP or Firebase. `game/onlineTransport.js` (Firebase relay: broadcast/private/toHost channels), `game/onlineRoom.js` (room-code lobby lifecycle), `game/firebase.js` (anonymous auth + RTDB). Online-only data lives under `rooms/*`; see `database.rules.json`.
   - `game/tableThemes.js` — per-game table colors; `game/tablePalette.js` + per-game wrappers (`rummyTheme.js`, `pokerTheme.js`, `gofishTheme.js`, `lastCardTheme.js`) for switchable felt palettes
+  - **Coin economy (all local AsyncStorage — never in Firebase):** `game/wallet.js` (balance + lifetime earned), `game/rewards.js` (tiered per-game/SP-vs-MP win payouts), `game/dailyBonus.js` (7-day streak), `game/ranks.js` (rank ladder off lifetime earned), `game/achievements.js` (15 one-time rewards + event counters), and the cosmetic sinks: card decks (`game/cardTheme.js` `price`/`isThemeUnlocked`), table felts (`game/feltShop.js`), profile frames (`game/frames.js`). Owned items + `activeFrame` persist on the profile (`game/profile.js`). Shop/UI: `screens/CardThemeScreen.js`, `screens/FramesScreen.js`, `components/TableThemePicker.js` (shared felt picker), `components/DailyBonusModal.js`, `screens/AchievementsScreen.js`. `checkAndClaim()` runs on Home focus. See `COIN_ECONOMY.md`.
   - `game/haptics.js` + `components/Haptic.js` — haptic feedback (expo-haptics; native, needs a dev build)
   - `game/avatarTransmit.js` + `components/useMultiplayerAvatars.js` — exchange profile pics across multiplayer at game start
+  - `components/ProfileAvatar.js` — unified avatar render (photo/emoji/initial) + active profile frame ring
   - `components/ReconnectOverlay.js` — mid-game drop pause/countdown (Go Fish pilot; PAUSE/RESUME messages)
   - `components/useSolitaireDrag.js`, `components/useConquianMeldDrag.js` — gesture-handler drag hooks
   - `screens/*GameScreen.js` — per-game screens
@@ -102,7 +104,10 @@ This is a family-friendly card game. Keep all content, copy, and assets appropri
   - Auto-save effects throttled to one write / 3s via a `lastSaveRef`.
   - Accent color `#7fb3ff` blue (error text stays `#e94560` red).
   - Responsive sizing via `scale()` / `scaleFont()` from `game/responsive.js`.
-- **Reference docs in repo:** `PROJECT_NOTES.md` is the canonical doc — as of 2026-06-04 it absorbed the open-issues/review tracker (was `DEEP_REVIEW.md`), the responsive-layout/orientation architecture (was `RESPONSIVE_LAYOUT_PLAN.md`), and build/release status (was `EAS_REBUILD_PENDING.md`); see its top index. Still separate: `Animations.md` (animation spec), per-game specs (`CONQUIAN_SPEC.md`, `LASTCARD_SPEC.md`, `WILDROUND_SPEC.md`), `APP_STORE_REVIEW_NOTES.md`, `README.md`.
+  - Cosmetic unlocks share one pattern: a `price` on the item + an `isXUnlocked(id, owned, active)` helper (free if price 0, or owned, or currently active/grandfathered) + an unlock-confirm that `subtractCoins` then persists the owned list on the profile. Applies to decks, felts, and frames alike.
+  - Coin awards go through `wallet.addCoins` (bumps balance AND lifetime earned → rank); spends go through `subtractCoins` (balance only). `resetCoins` wipes both (full "start over", including rank).
+- **Coin economy (built 2026-07-01→03):** cosmetic-only, earned-only — no real-money coin purchases, no loot boxes, no pay-to-win (keeps the family-friendly rating). Earn: tiered win payouts (MP ≈ 2–2.5× SP), a daily-bonus streak, and 15 achievements. Spend: card decks (3,000), table felts (2,000), profile frames (1,000). Ranks are pure prestige off lifetime earned. Full design + build status in `COIN_ECONOMY.md`. Separate future idea: a one-time paid unlock for online play (kept SEPARATE from coins).
+- **Reference docs in repo:** `PROJECT_NOTES.md` is the canonical doc — as of 2026-06-04 it absorbed the open-issues/review tracker (was `DEEP_REVIEW.md`), the responsive-layout/orientation architecture (was `RESPONSIVE_LAYOUT_PLAN.md`), and build/release status (was `EAS_REBUILD_PENDING.md`); see its top index. Still separate: `Animations.md` (animation spec), per-game specs (`CONQUIAN_SPEC.md`, `LASTCARD_SPEC.md`, `WILDROUND_SPEC.md`), `APP_STORE_REVIEW_NOTES.md`, `README.md`, `COIN_ECONOMY.md` (economy design + build status), `POST_LAUNCH_CHECKLIST.md` (pre-public items incl. Firebase-rules deploy), `GAME_ROADMAP.md`, `IOS_SETUP.md`. Firebase security rules live in `database.rules.json` (`firebase.json` points the CLI at it) — written + committed but must be DEPLOYED in the console before public launch.
 
 ---
 

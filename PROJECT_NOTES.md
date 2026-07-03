@@ -15,9 +15,9 @@
 
 ## 🎯 The Vision
 
-A cross-platform React Native mobile app for playing card games with friends and family. Works **completely offline** via local WiFi/hotspot (phones connect directly to each other — no internet needed). Each player uses their own phone (private hand). Up to 8+ players per game.
+A cross-platform React Native mobile app for playing card games with friends and family. Each player uses their own phone (private hand). Up to 8+ players per game. Two multiplayer modes: **local** (phones connect directly over Wi-Fi/hotspot — no internet needed) and **online** (Firebase room codes — play from anywhere), plus single-player vs AI.
 
-**Important principle:** Offline play is core to the app, not a nice-to-have. Airplane / no-WiFi scenarios covered via phone hotspot.
+**Important principle:** Offline/local play is core to the app, not a nice-to-have — airplane / no-WiFi scenarios are covered via phone hotspot. Online play (added 2026-06) is additive and never removes the local path.
 
 ## 👤 About You (Pedro)
 
@@ -80,13 +80,15 @@ A cross-platform React Native mobile app for playing card games with friends and
   - Visual polish, animations, sounds
   - Manual hand-sort with `react-native-draggable-flatlist`
   - Multi-language (English + Spanish)
-- 🔜 **Phase 6: Publish** — Google Play + App Store
+- ✅ **Online Multiplayer (Firebase, 2026-06):** play from anywhere (not just local Wi-Fi) via room codes. `game/GameNetwork.js` became a transport façade — `setNetworkMode("local"|"online")` delegates to the local TCP/UDP stack or Firebase (`game/onlineTransport.js` relay, `game/onlineRoom.js` lobby, `game/firebase.js` anonymous auth + RTDB). Working for Go Fish, Last Card, Conquián, Rummy, Who Am I?, Poker. Firebase stores only `rooms/*`; hardened rules in `database.rules.json` (⚠️ must be DEPLOYED before public — see `POST_LAUNCH_CHECKLIST.md`). **MP Poker end-game is still unimplemented** (no last-player-standing winner/results in MP; parked).
+- ✅ **Coin Economy (cosmetic-only, 2026-07-01→03):** full earn+spend loop. Earn: tiered win payouts (`game/rewards.js`, MP ≈ 2–2.5× SP), daily-bonus streak (`game/dailyBonus.js`), 15 achievements (`game/achievements.js`). Spend: card decks (3,000), table felts (2,000), profile frames (1,000). Ranks (`game/ranks.js`) off lifetime earned. All local (AsyncStorage), never in Firebase, no real-money/loot-boxes/pay-to-win. Design + build status: `COIN_ECONOMY.md`.
+- 🔜 **Phase 6: Publish** — Google Play (v8 approved for closed testing) + App Store (see `IOS_SETUP.md`)
 
 ## 🛠️ Tech Stack
 
 - **Framework:** React Native + Expo (custom dev build, NOT Expo Go)
 - **Navigation:** React Navigation (native-stack)
-- **Networking:** `react-native-tcp-socket` (port 7777) + `react-native-udp` (port 7778 discovery) + `expo-network`
+- **Networking:** *Local* — `react-native-tcp-socket` (port 7777) + `react-native-udp` (port 7778 discovery) + `expo-network`. *Online* — `@react-native-firebase/app` + `/auth` (anonymous) + `/database` (Realtime Database room codes). `GameNetwork.js` picks the transport via `setNetworkMode`.
 - **Build system:** EAS Build (Expo's cloud build service)
   - ⚠️ **EAS is the ONLY working build path on Pedro's machine.** There is no local Android toolchain — `adb` is not on PATH and the Android SDK isn't set up, so `npx expo run:android` fails with "No Android connected device found" and can never install a native build. The dev client on the phone always comes from EAS.
   - **Native-module changes** (anything in `app.json` plugins, or a dep with a native side like `react-native-edge-to-edge`, `react-native-tcp-socket`, async-storage, etc.) only take effect after a fresh EAS build is installed: `eas build --profile development --platform android`, then install the printed APK on the phone, then `npx expo start --dev-client`.
@@ -112,15 +114,16 @@ card-game-app/
 │   ├── GameMenu.js                (pure item-list renderer + MenuDivider — no modal; handles: divider/sound/restart/howto/theme/quit/generic)
 │   ├── GameMenuButton.js          (Modal-panel ☰ menu used by Solitaire's landscape board)
 │   ├── StatsStrip.js              (single-row live-stats strip below GameHeader, accent from getTableTheme; opt-in `stacked`)
-│   ├── TableThemePicker.js        (reusable felt-palette picker overlay — Rummy/Poker/Go Fish)
-│   ├── CardThemePicker.js         (card-theme picker overlay)
+│   ├── TableThemePicker.js        (shared felt-palette picker — Go Fish/Poker/Rummy/Last Card; gates coin-locked felts)
+│   ├── CardThemePicker.js         (card-theme picker overlay — gates coin-locked decks)
+│   ├── DailyBonusModal.js         (daily-bonus streak popup — auto-surfaced from Home)
 │   ├── TutorialOverlay.js         (first-time tutorial modal — slide carousel, AsyncStorage seen-tracking, Skip/Got It)
 │   ├── EndOfRoundModal.js         (reusable round-end modal — title, message, Continue/AdjustBet/Leave buttons, tableColor border tint)
 │   ├── YourTurnBanner.js          (animated "your turn" banner — used by Last Card)
 │   ├── useYourTurnBanner.js       (hook backing YourTurnBanner)
 │   ├── ReconnectOverlay.js        (mid-game drop pause/countdown — Go Fish pilot)
 │   ├── HowToShot.js               (annotated gameplay screenshot — image + numbered dots + legend, used by HowToPlayScreen)
-│   ├── ProfileAvatar.js           (avatar/photo/initial renderer)
+│   ├── ProfileAvatar.js           (avatar/photo/initial renderer + active profile-frame ring)
 │   ├── useMultiplayerAvatars.js   (hook — exchanges profile pics across multiplayer at game start)
 │   ├── useSolitaireDrag.js        (gesture-handler drag hook for Solitaire)
 │   ├── useConquianMeldDrag.js     (gesture-handler drag hook for Conquián melds)
@@ -136,7 +139,6 @@ card-game-app/
 │   ├── cardTheme.js               (module singleton — 386 static requires across 7 themes; setTheme/getTheme/subscribe/getCardImage/...)
 │   ├── ThemeContext.js            (React context wrapping cardTheme.js — single listener, shared across all Cards)
 │   ├── conquian.js                (Conquián game logic — pure functions)
-│   ├── wildround.js               (Wild Round game logic — pure functions)
 │   ├── whoami.js                  (Who Am I? game logic — pure functions; + test bots)
 │   ├── lastCard.js                (Last Card game logic — pure functions)
 │   ├── lastCardImages.js          (109-image LastCard require map — extracted from the screen, CQ-5)
@@ -144,9 +146,17 @@ card-game-app/
 │   ├── poker.js                  (Poker variant logic — Texas Hold'em, Omaha, Five Card Draw, Seven Card Stud)
 │   ├── solitaire.js               (Solitaire game logic — Klondike, Spider, FreeCell, Pyramid, TriPeaks; getLegalTargets/getHint)
 │   ├── rummy.js                   (Rummy game logic — Gin Rummy, Rummy 500, Indian Rummy, Canasta)
-│   ├── wildroundCards.json        (100 prompts + 300 answers — Phase E complete)
-│   ├── GameNetwork.js             (TCP server/client + UDP discovery)
+│   ├── GameNetwork.js             (transport façade — setNetworkMode local↔online; local = TCP/UDP)
+│   ├── firebase.js                (Firebase anonymous auth + RTDB helpers — online multiplayer)
+│   ├── onlineRoom.js              (online room-code lobby lifecycle — create/join/subscribe/leave/start)
+│   ├── onlineTransport.js         (Firebase relay — broadcast/private/toHost channels; JSON-string payloads)
 │   ├── wallet.js                  (coin balance + lifetime earnings — plain AsyncStorage, local-only)
+│   ├── rewards.js                 (getWinReward — tiered per-game SP/MP win payouts)
+│   ├── dailyBonus.js              (7-day login-streak bonus — 100..250 + 1000 jackpot)
+│   ├── ranks.js                   (rank ladder off lifetime earned — Rookie→Legend)
+│   ├── achievements.js            (15 one-time achievements + event counters + checkAndClaim)
+│   ├── feltShop.js                (table-felt price/unlock helpers — decks-style gating)
+│   ├── frames.js                  (profile-frame catalog — CSS-only rings, price/unlock/ring-style)
 │   ├── gameSaves.js               (saveGame/loadGame/clearGame/hasSave — AsyncStorage, JSON, SAVE_VERSION-validated)
 │   ├── useResumePrompt.js         (custom hook — the "Game in Progress?" save/resume Alert pattern)
 │   ├── useLayoutMode.js           (wide/tall/balanced hook off useWindowDimensions — responsive sizing)
@@ -154,7 +164,7 @@ card-game-app/
 │   ├── haptics.js                 (initHaptics/haptic — expo-haptics wrapper; graceful no-op if unavailable)
 │   ├── avatars.js                 (emoji preset avatar list/helpers)
 │   ├── avatarTransmit.js          (encode/decode avatars for multiplayer — emoji pass-through, photos → 120px JPEG base64)
-│   ├── profile.js                 (loadProfile, saveProfile, subscribeProfile, getDisplayName, recordWin — AsyncStorage)
+│   ├── profile.js                 (loadProfile, saveProfile, subscribeProfile, getDisplayName, recordWin, + cosmetic ownership: unlockedThemes/unlockedFelts/unlockedFrames/activeFrame — AsyncStorage)
 │   ├── responsive.js              (scale(), scaleFont() — BASE_WIDTH 390, clamped factors)
 │   ├── sounds.js                  (initSounds/playSound/getMuted/setMuted — expo-audio; preloads 4 sounds on app start; graceful no-op if unavailable)
 │   ├── tablePalette.js            (createTablePalette factory — switchable felt palettes, reuses LAST_CARD_TABLES)
@@ -178,27 +188,39 @@ card-game-app/
 │   ├── SolitaireGameScreen.js      (Solitaire — single-player only)
 │   ├── ConquianGameScreen.js      (Conquián — single + multiplayer)
 │   ├── ConquianSetupScreen.js     (Conquián setup screen — registered route "ConquianSetup")
-│   ├── WildRoundGameScreen.js     (Wild Round — single + multiplayer)
 │   ├── WhoAmIGameScreen.js        (Who Am I? — multiplayer party game, no cards; the app's 9th game, added 2026-06-18→20)
 │   ├── LastCardGameScreen.js      (Last Card — single + multiplayer)
 │   ├── SinglePlayerSetupScreen.js (single-player game + AI picker; Wild Round removed from carousel)
-│   ├── MultiplayerMenuScreen.js   (Host Online/Join Online = Coming Soon; Host Local/Join Local = functional)
+│   ├── MultiplayerMenuScreen.js   (Host Online/Join Online + Host Local/Join Local — all functional)
+│   ├── MultiplayerGamePickerScreen.js (online: pick a game before opening the lobby — mirrors single-player)
+│   ├── OnlineLobbyScreen.js       (online room lobby — room code, live players, host Start; records online-play/host achievements)
+│   ├── JoinOnlineScreen.js        (enter a 4-char room code to join an online game)
 │   ├── RummyGameScreen.js         (Rummy — single + multiplayer)
 │   ├── RummyVariantPickerScreen.js (tap-select Rummy variant picker; also launches Conquián)
-│   ├── ProfileScreen.js           (name, avatar/photo picker, card theme link; More section → Stats + About)
-│   ├── CardThemeScreen.js         (full-screen theme swiper — Ace of Spades preview, "Use This Theme")
+│   ├── ProfileScreen.js           (name, avatar/photo picker, card-theme + profile-frame links, coins + rank; More → Stats/Achievements/About)
+│   ├── CardThemeScreen.js         (full-screen deck swiper — preview, coin balance, unlock/apply)
+│   ├── FramesScreen.js            (profile-frame shop — grid previewed on your own avatar, unlock/wear)
+│   ├── AchievementsScreen.js      (trophy room — grouped achievements, claims on focus)
 │   ├── HowToPlayScreen.js         (rules reference screen)
 │   ├── ResultsScreen.js           (real implementation — winner headline, scoreboard, Play Again / Back to Menu)
 │   ├── AboutScreen.js             (app name, version from app.json, credits, copyright, Privacy Policy link)
-│   ├── StatsScreen.js             (Total Wins + Lifetime Coins summary; per-game win table, green on wins > 0)
+│   ├── StatsScreen.js             (Total Wins + Lifetime Coins summary; per-game win table, green on wins > 0. NOTE: table is missing a "Who Am I?" row — its wins don't show)
 │   └── SettingsScreen.js          (placeholder — "More settings coming soon"; link removed from HomeScreen)
 ├── App.js                         (navigation stack — all screens registered)
 ├── app.json                       (bundle ID: com.pedro.cardgameapp, EAS projectId)
 ├── eas.json                       (development/preview/production build profiles)
+├── google-services.json           (Firebase Android config — used by @react-native-firebase)
+├── firebase.json                  (points the Firebase CLI at database.rules.json)
+├── database.rules.json            (RTDB security rules for rooms/* — ⚠️ deploy before public launch)
+├── plugins/withoutMediaPermissions.js (Expo config plugin — strips READ_MEDIA_* from the manifest)
 ├── package.json
 ├── PROJECT_NOTES.md               (this file)
+├── COIN_ECONOMY.md                (coin-economy design + build status)
+├── POST_LAUNCH_CHECKLIST.md       (pre-public items incl. Firebase-rules deploy)
+├── GAME_ROADMAP.md                (future game ideas)
+├── IOS_SETUP.md                   (iOS / App Store checklist)
 ├── CONQUIAN_SPEC.md               (Conquián complete spec)
-└── WILDROUND_SPEC.md              (Wild Round complete spec)
+└── WILDROUND_SPEC.md              (Wild Round complete spec — game removed 2026-07-01, spec kept for a possible standalone app)
 ```
 
 ## 📦 Dependencies
@@ -261,7 +283,7 @@ sharp: ^0.34.5                             (used by scripts/compress-cards.js)
 - Cards use PNG image assets (see Card Themes below)
 - Hidden/face-down card uses each theme's `card_back.png`
 - Game screens use standardized `GameHeader` + `StatsStrip` + ☰ menu
-  pattern across all 9 games
+  pattern across all 8 games (Wild Round, the former 9th, was removed 2026-07-01)
 
 ## 🃏 Card Themes
 
@@ -303,10 +325,17 @@ balance.
   for one player's coin total to affect another player's experience.
 - Cheating your own coin balance in a local card game has zero impact on
   anyone else.
+- The 2026-07 additions keep this property: **ranks** (`game/ranks.js`) and
+  **achievements** (`game/achievements.js`) are derived from local lifetime
+  earnings / local stats and are shown only to yourself — they do NOT compare
+  totals across players, so the caveat below isn't triggered yet. (Rank next to
+  names in the online lobby is a deferred idea; if built, it'd expose a
+  tamperable local number to others — see below.)
 
 **What must change before adding a leaderboard:**
-This MUST be addressed before shipping any feature that compares coin totals
-across players (leaderboard, achievements, ranked play). Two viable paths:
+This MUST be addressed before shipping any feature that compares coin/rank totals
+across players (leaderboard, ranked play, showing another player's rank). Two
+viable paths:
 
 1. **Signed/encrypted local storage** — use a library like
    `react-native-encrypted-storage` to store coins under device-level
