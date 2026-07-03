@@ -19,6 +19,7 @@ import YourTurnBanner from "../components/YourTurnBanner";
 import useYourTurnBanner from "../components/useYourTurnBanner";
 import EndOfRoundModal from "../components/EndOfRoundModal";
 import TutorialOverlay, { hasSeen } from "../components/TutorialOverlay";
+import TableThemePicker from "../components/TableThemePicker";
 import { getTableTheme } from "../game/tableThemes";
 import {
   RUMMY_TABLES,
@@ -1305,69 +1306,17 @@ export default function RummyGameScreen({ navigation, route }) {
         </View>
       </View>
 
-      {showTablePicker ? (
-        <View style={styles.tableOverlay}>
-          <Text style={styles.tableOverlayTitle}>Table Theme</Text>
-          <View style={styles.tableSwatchGrid}>
-            {RUMMY_TABLES.map((t) => {
-              const selected = t.id === tableId;
-              return (
-                <Pressable
-                  key={t.id}
-                  onPress={() => {
-                    setRummyTable(t.id);
-                    setTableId(t.id);
-                    setShowTablePicker(false);
-                  }}
-                  style={[
-                    styles.tableSwatch,
-                    {
-                      backgroundColor: t.felt,
-                      borderColor: selected ? t.accent : t.feltBorder,
-                    },
-                  ]}
-                  accessibilityRole="button"
-                  accessibilityLabel={t.name}
-                >
-                  <View style={styles.tableSwatchDots}>
-                    <View
-                      style={[styles.tableSwatchDot, { backgroundColor: t.rail }]}
-                    />
-                    <View
-                      style={[styles.tableSwatchDot, { backgroundColor: t.panel }]}
-                    />
-                    <View
-                      style={[
-                        styles.tableSwatchDot,
-                        { backgroundColor: t.accent },
-                      ]}
-                    />
-                  </View>
-                  <Text style={[styles.tableSwatchName, { color: t.text }]}>
-                    {t.name}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.tableSwatchCheck,
-                      { color: selected ? t.accent : "transparent" },
-                    ]}
-                  >
-                    ✓ Selected
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-          <Pressable
-            style={styles.tableCloseBtn}
-            onPress={() => setShowTablePicker(false)}
-            accessibilityRole="button"
-            accessibilityLabel="Close"
-          >
-            <Text style={styles.tableCloseText}>Close</Text>
-          </Pressable>
-        </View>
-      ) : null}
+      <TableThemePicker
+        visible={showTablePicker}
+        tables={RUMMY_TABLES}
+        currentId={tableId}
+        onPick={(id) => {
+          setRummyTable(id);
+          setTableId(id);
+          setShowTablePicker(false);
+        }}
+        onClose={() => setShowTablePicker(false)}
+      />
 
       <Toast message={toastMessage} revision={toastRevision} />
       <TutorialOverlay

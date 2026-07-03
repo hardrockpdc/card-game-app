@@ -10,9 +10,10 @@ const DEFAULT_PROFILE = {
   cardTheme: "classic",
   stats: {},
   // Coin-unlocked cosmetics the player owns. Free items aren't listed here —
-  // they're always available (see isThemeUnlocked). Extend with unlockedFelts /
-  // unlockedFrames as those shops are added.
+  // they're always available (see isThemeUnlocked / isFeltUnlocked). Extend with
+  // unlockedFrames as that shop is added.
   unlockedThemes: [],
+  unlockedFelts: [],
 };
 
 let cachedProfile = null;
@@ -58,6 +59,9 @@ function normalizeProfile(profile) {
         : {},
     unlockedThemes: Array.isArray(safeProfile.unlockedThemes)
       ? safeProfile.unlockedThemes.filter((t) => typeof t === "string")
+      : [],
+    unlockedFelts: Array.isArray(safeProfile.unlockedFelts)
+      ? safeProfile.unlockedFelts.filter((t) => typeof t === "string")
       : [],
   };
 }

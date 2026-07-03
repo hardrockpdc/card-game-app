@@ -216,4 +216,14 @@ decks. Table felts and profile frames follow the same pattern once decks are pro
   table. Tests in `__tests__/rewards.test.js`. Notes: MP Poker isn't wired yet
   (win is only detected in the SP branch today); Who Am I? still awards no coins
   (no win-detection hook there yet — would pay MP 300 once added).
-- ⏳ **Table felts shop**, **profile frames**, **achievements** — not started.
+- ✅ **Table felts shop** — refactored Rummy + Last Card off their bespoke
+  inline pickers onto the shared `components/TableThemePicker.js` (now Go Fish /
+  Poker / Rummy / Last Card all use it), then gated once there. Added 3 premium
+  felts (Crimson Royale / Royal Purple / Rose Gold) at 2,000 each; the 3 starters
+  (Indigo / Green / Teal) stay free. `game/feltShop.js` (`getFeltPrice`/
+  `isFeltUnlocked`), `game/lastCardTheme.js` (+`price`, +3 palettes),
+  `game/profile.js` (`unlockedFelts`). Unlocks are GLOBAL (own once, use in every
+  game). Tests in `__tests__/feltShop.test.js`. Note: the old inline-picker
+  StyleSheet entries in RummyGameScreen/LastCardGameScreen are now dead but left
+  in place (harmless) — clean up in a later pass.
+- ⏳ **Profile frames**, **achievements** — not started.

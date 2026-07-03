@@ -61,6 +61,7 @@ import {
 import { LC } from "../game/lastCardImages";
 import ProfileAvatar from "../components/ProfileAvatar";
 import useMultiplayerAvatars from "../components/useMultiplayerAvatars";
+import TableThemePicker from "../components/TableThemePicker";
 
 const SAVE_KEY_LASTCARD = "@cardnight:save:lastcard";
 
@@ -1280,75 +1281,17 @@ export default function LastCardGameScreen({ navigation, route }) {
         </View>
       )}
 
-      {showTablePicker && (
-        <View style={styles.overlay}>
-          <Text style={styles.overlayTitle}>Table Theme</Text>
-          <View style={styles.tableSwatchGrid}>
-            {LAST_CARD_TABLES.map((t) => {
-              const selected = t.id === tableId;
-              return (
-                <TouchableOpacity
-                  key={t.id}
-                  style={[
-                    styles.tableSwatch,
-                    {
-                      backgroundColor: t.felt,
-                      borderColor: selected ? t.accent : t.feltBorder,
-                    },
-                  ]}
-                  onPress={() => {
-                    setLastCardTable(t.id);
-                    setTableId(t.id);
-                    setShowTablePicker(false);
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel={t.name}
-                >
-                  <View style={styles.tableSwatchDots}>
-                    <View
-                      style={[
-                        styles.tableSwatchDot,
-                        { backgroundColor: t.rail },
-                      ]}
-                    />
-                    <View
-                      style={[
-                        styles.tableSwatchDot,
-                        { backgroundColor: t.panel },
-                      ]}
-                    />
-                    <View
-                      style={[
-                        styles.tableSwatchDot,
-                        { backgroundColor: t.accent },
-                      ]}
-                    />
-                  </View>
-                  <Text style={[styles.tableSwatchName, { color: t.text }]}>
-                    {t.name}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.tableSwatchCheck,
-                      { color: selected ? t.accent : "transparent" },
-                    ]}
-                  >
-                    ✓ Selected
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-          <TouchableOpacity
-            style={styles.tableCloseBtn}
-            onPress={() => setShowTablePicker(false)}
-            accessibilityRole="button"
-            accessibilityLabel="Close"
-          >
-            <Text style={styles.tableCloseText}>Close</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      <TableThemePicker
+        visible={showTablePicker}
+        tables={LAST_CARD_TABLES}
+        currentId={tableId}
+        onPick={(id) => {
+          setLastCardTable(id);
+          setTableId(id);
+          setShowTablePicker(false);
+        }}
+        onClose={() => setShowTablePicker(false)}
+      />
 
       <YourTurnBanner visible={showYourTurnBanner} />
 

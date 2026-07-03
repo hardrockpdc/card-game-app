@@ -19,11 +19,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 //   accentBg    tinted fill behind the active seat
 //   text        primary text on the table
 //   textDim     dim labels (DRAW, names, direction)
+//   price       coins to unlock (0 = free starter felt); see game/feltShop.js
 
 export const LAST_CARD_TABLES = [
   {
     id: "indigo",
     name: "Indigo Night",
+    price: 0,
     rail: "#110f1c",
     felt: "#241a3a",
     feltBorder: "#3d2f5c",
@@ -40,6 +42,7 @@ export const LAST_CARD_TABLES = [
   {
     id: "green",
     name: "Green Felt",
+    price: 0,
     rail: "#0c1410",
     felt: "#1b3a2e",
     feltBorder: "#2f5c47",
@@ -56,6 +59,7 @@ export const LAST_CARD_TABLES = [
   {
     id: "teal",
     name: "Teal Modern",
+    price: 0,
     rail: "#08161e",
     felt: "#123040",
     feltBorder: "#1f586e",
@@ -68,6 +72,57 @@ export const LAST_CARD_TABLES = [
     onAccent: "#062029",
     text: "#eef6f9",
     textDim: "#93a8b0",
+  },
+  {
+    id: "crimson",
+    name: "Crimson Royale",
+    price: 2000,
+    rail: "#160a0c",
+    felt: "#3a1720",
+    feltBorder: "#5c2833",
+    panel: "#301419",
+    panelBorder: "#452028",
+    status: "#220e12",
+    tray: "#1a0d10",
+    accent: "#ffcf6b",
+    accentBg: "#3a2410",
+    onAccent: "#1c1405",
+    text: "#f9eef0",
+    textDim: "#b89aa0",
+  },
+  {
+    id: "royal",
+    name: "Royal Purple",
+    price: 2000,
+    rail: "#0f0a1a",
+    felt: "#281a44",
+    feltBorder: "#432f6e",
+    panel: "#1f1636",
+    panelBorder: "#2f2350",
+    status: "#160f28",
+    tray: "#120d20",
+    accent: "#c9a6ff",
+    accentBg: "#2c2050",
+    onAccent: "#140a29",
+    text: "#f1ecfb",
+    textDim: "#a79ac0",
+  },
+  {
+    id: "rosegold",
+    name: "Rose Gold",
+    price: 2000,
+    rail: "#1a1210",
+    felt: "#3d2a28",
+    feltBorder: "#6e4a44",
+    panel: "#301f1d",
+    panelBorder: "#452b28",
+    status: "#221514",
+    tray: "#1a100e",
+    accent: "#ffb3a0",
+    accentBg: "#3a2420",
+    onAccent: "#241009",
+    text: "#f9eeec",
+    textDim: "#c0a29a",
   },
 ];
 
