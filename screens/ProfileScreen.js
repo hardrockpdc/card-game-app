@@ -23,7 +23,12 @@ import {
   hasProfileName,
   subscribeProfile,
 } from "../game/profile";
-import { getCoins, resetCoins as resetWalletCoins } from "../game/wallet";
+import {
+  getCoins,
+  getLifetimeEarned,
+  resetCoins as resetWalletCoins,
+} from "../game/wallet";
+import { getRank, getRankProgress } from "../game/ranks";
 import { warn } from "../game/logger";
 import { scale, scaleFont } from "../game/responsive";
 import { AVATAR_CHOICES, getAvatarChoice } from "../game/avatars";
@@ -74,12 +79,14 @@ export default function ProfileScreen({ navigation, route }) {
   const [showPhotoActions, setShowPhotoActions] = useState(false);
   const [showAvatarGrid, setShowAvatarGrid] = useState(false);
   const [coins, setCoins] = useState(null);
+  const [lifetimeEarned, setLifetimeEarned] = useState(null);
 
-  // Refresh coin balance every time this screen comes into focus.
-  // useFocusEffect fires on mount AND whenever you navigate back to this screen.
+  // Refresh coin balance + lifetime (rank) every time this screen comes into
+  // focus. useFocusEffect fires on mount AND whenever you navigate back here.
   useFocusEffect(
     useCallback(() => {
       getCoins().then(setCoins);
+      getLifetimeEarned().then(setLifetimeEarned);
     }, []),
   );
 
@@ -95,6 +102,7 @@ export default function ProfileScreen({ navigation, route }) {
           onPress: async () => {
             await resetWalletCoins();
             setCoins(1000);
+            setLifetimeEarned(0);
           },
         },
       ],
@@ -475,6 +483,37 @@ export default function ProfileScreen({ navigation, route }) {
                 <Text style={styles.resetBtnText}>Reset to 1000</Text>
               </TouchableOpacity>
             </View>
+
+            {lifetimeEarned !== null &&
+              (() => {
+                const rank = getRank(lifetimeEarned);
+                const progress = getRankProgress(lifetimeEarned);
+                return (
+                  <View style={styles.rankBlock}>
+                    <View style={styles.rankRow}>
+                      <Text style={styles.rankName}>
+                        {rank.icon} {rank.name}
+                      </Text>
+                      <Text style={styles.rankLifetime}>
+                        {lifetimeEarned.toLocaleString()} earned
+                      </Text>
+                    </View>
+                    <View style={styles.rankBarTrack}>
+                      <View
+                        style={[
+                          styles.rankBarFill,
+                          { width: `${Math.round(progress * 100)}%` },
+                        ]}
+                      />
+                    </View>
+                    <Text style={styles.rankHint}>
+                      {rank.next
+                        ? `${(rank.next.threshold - lifetimeEarned).toLocaleString()} more to ${rank.next.icon} ${rank.next.name}`
+                        : "Top rank reached — Legend! 🌟"}
+                    </Text>
+                  </View>
+                );
+              })()}
           </View>
 
           <View style={styles.statsCard}>
@@ -756,6 +795,43 @@ const styles = StyleSheet.create({
     color: "#e94560",
     fontWeight: "bold",
     fontSize: scaleFont(14),
+  },
+  rankBlock: {
+    marginTop: scale(16),
+    borderTopWidth: 1,
+    borderTopColor: "#22223a",
+    paddingTop: scale(14),
+  },
+  rankRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: scale(8),
+  },
+  rankName: {
+    color: "#ffd479",
+    fontSize: scaleFont(17),
+    fontWeight: "bold",
+  },
+  rankLifetime: {
+    color: "#9090a8",
+    fontSize: scaleFont(13),
+  },
+  rankBarTrack: {
+    height: scale(8),
+    borderRadius: scale(4),
+    backgroundColor: "#0d1b2a",
+    overflow: "hidden",
+  },
+  rankBarFill: {
+    height: "100%",
+    borderRadius: scale(4),
+    backgroundColor: "#7fb3ff",
+  },
+  rankHint: {
+    color: "#c4c4d4",
+    fontSize: scaleFont(12),
+    marginTop: scale(6),
   },
   statsCard: {
     backgroundColor: "#16213e",

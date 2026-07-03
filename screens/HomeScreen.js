@@ -19,7 +19,9 @@ import {
   subscribeProfile,
 } from "../game/profile";
 import { getCoins } from "../game/wallet";
+import { getDailyStatus } from "../game/dailyBonus";
 import ProfileAvatar from "../components/ProfileAvatar";
+import DailyBonusModal from "../components/DailyBonusModal";
 
 const PROFILE_WELCOME_MESSAGE =
   "Welcome! Set up your profile (you can change anything later)";
@@ -42,10 +44,23 @@ export default function HomeScreen({ navigation }) {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [coins, setCoins] = useState(null);
   const [profile, setProfile] = useState(null);
+  const [dailyClaimDay, setDailyClaimDay] = useState(null);
+  const [showDailyBonus, setShowDailyBonus] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
-      getCoins().then(setCoins);
+      let active = true;
+      getCoins().then((c) => active && setCoins(c));
+      // Auto-surface the daily bonus if it's available today.
+      getDailyStatus().then((status) => {
+        if (active && status.canClaim) {
+          setDailyClaimDay(status.claimDay);
+          setShowDailyBonus(true);
+        }
+      });
+      return () => {
+        active = false;
+      };
     }, []),
   );
 
@@ -269,6 +284,15 @@ export default function HomeScreen({ navigation }) {
           </View>
         </View>
       </ScrollView>
+
+      <DailyBonusModal
+        visible={showDailyBonus}
+        claimDay={dailyClaimDay}
+        onClose={() => setShowDailyBonus(false)}
+        onClaimed={(result) => {
+          if (result?.newBalance != null) setCoins(result.newBalance);
+        }}
+      />
     </SafeAreaView>
   );
 }

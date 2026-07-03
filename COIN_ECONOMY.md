@@ -195,3 +195,21 @@ Example ladder (tune numbers freely):
 Not part of the current review (v8). Build as **v9**, ideally bundled with the
 daily-bonus (the earn side) so the loop ships complete: earn daily → spend on
 decks. Table felts and profile frames follow the same pattern once decks are proven.
+
+---
+
+## Build status (v9 in progress)
+
+- ✅ **Card deck unlocks** — `game/cardTheme.js` (prices + `isThemeUnlocked`),
+  `game/profile.js` (`unlockedThemes`), `CardThemeScreen.js` + `CardThemePicker.js`
+  (unlock flow, locked-deck gating). Free: Classic, Neon. Others 3,000. Pure JS.
+- ✅ **Daily bonus** — `game/dailyBonus.js` (7-day streak, 100/125/150/175/200/250
+  + 1,000 jackpot; resets on a missed day; tracks consecutive/best streak for the
+  loyalty achievements). UI: `components/DailyBonusModal.js`, auto-surfaced from
+  `HomeScreen.js` on focus when claimable. Tests in `__tests__/dailyBonus.test.js`.
+- ✅ **Player ranks** — `game/ranks.js` (`getRank`/`getRankProgress` off lifetime
+  earned). Shown on the Profile wallet card with a progress bar. Tests in
+  `__tests__/ranks.test.js`. Still TODO: show rank next to names in the online lobby.
+- ⏳ **Win-reward standardization** — code still pays a flat 500 for several wins;
+  the tiered SP/MP values above aren't wired yet.
+- ⏳ **Table felts shop**, **profile frames**, **achievements** — not started.
