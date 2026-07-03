@@ -73,10 +73,28 @@ const DEFAULT_RUMMY_VARIANT = "ginRummy";
 
 export default function SinglePlayerSetupScreen({ navigation }) {
   const [selectedId, setSelectedId] = useState(null); // for blackjack resume dialog
+  const [pendingGame, setPendingGame] = useState(null); // "Play this game?" confirm
 
   const hasBlackjackSave = useHasSave(BLACKJACK_SAVE_KEY);
 
   // ─── Navigation handlers ──────────────────────────────────────────────────
+
+  // A tap opens a confirm step first (guards against accidental taps while
+  // swiping the grid). Blackjack-with-a-save skips straight to its own resume
+  // dialog, which already offers a Cancel.
+  function onTilePress(game) {
+    if (game.id === "blackjack" && hasBlackjackSave) {
+      setSelectedId("blackjack");
+      return;
+    }
+    setPendingGame(game);
+  }
+
+  function confirmPendingPlay() {
+    const game = pendingGame;
+    setPendingGame(null);
+    if (game) handleGamePress(game);
+  }
 
   function handleGamePress(game) {
     switch (game.id) {
@@ -160,6 +178,33 @@ export default function SinglePlayerSetupScreen({ navigation }) {
         ))}
       </View>
 
+      {/* "Play this game?" confirm — guards accidental taps while swiping */}
+      {pendingGame && (
+        <View style={styles.resumeOverlay}>
+          <View style={styles.resumeCard}>
+            <Image
+              source={pendingGame.image}
+              style={styles.confirmThumb}
+              resizeMode="cover"
+            />
+            <Text style={styles.resumeTitle}>{pendingGame.label}</Text>
+            <Text style={styles.resumeBody}>Ready to play?</Text>
+            <TouchableOpacity
+              style={[styles.resumeBtn, { backgroundColor: pendingGame.accent }]}
+              onPress={confirmPendingPlay}
+            >
+              <Text style={styles.resumeBtnText}>Play</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.resumeCancel}
+              onPress={() => setPendingGame(null)}
+            >
+              <Text style={styles.resumeCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
       {/* Blackjack resume dialog */}
       {selectedId === "blackjack" && (
         <View style={styles.resumeOverlay}>
@@ -215,12 +260,21 @@ export default function SinglePlayerSetupScreen({ navigation }) {
                       styles.cell,
                       { marginLeft: colIdx > 0 ? GAP : 0 },
                     ]}
-                    onPress={() => handleGamePress(game)}
+                    onPress={() => onTilePress(game)}
                     activeOpacity={0.85}
                   >
                     <Image
                       source={game.image}
-                      style={[styles.tile, { borderColor: game.accent + "66" }]}
+                      style={[
+                        styles.tile,
+                        {
+                          borderColor:
+                            pendingGame?.id === game.id
+                              ? game.accent
+                              : game.accent + "66",
+                          borderWidth: pendingGame?.id === game.id ? 3 : 1.5,
+                        },
+                      ]}
                       resizeMode="cover"
                     />
                   </TouchableOpacity>
@@ -331,6 +385,12 @@ const styles = StyleSheet.create({
     color: "#c4c4d4",
     fontSize: scaleFont(14),
     textAlign: "center",
+  },
+  confirmThumb: {
+    width: scale(96),
+    aspectRatio: 3 / 4,
+    borderRadius: scale(10),
+    marginBottom: scale(4),
   },
   resumeBtn: {
     backgroundColor: "#e94560",
