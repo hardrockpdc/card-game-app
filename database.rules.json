@@ -1,16 +1,11 @@
 {
-  "//": "Realtime Database security rules for Card Night online multiplayer.",
-  "//readme": "Firebase only stores rooms/* (lobbies + in-game message relay). Coins, profile, stats and achievements are LOCAL to each device (AsyncStorage) and never touch Firebase. Deploy via Firebase console -> Realtime Database -> Rules (paste + Publish) or `firebase deploy --only database`. Auth is anonymous (see game/firebase.js), so `auth != null` mainly ties every write to a stable uid, which is what powers the host/player ownership checks below.",
   "rules": {
     ".read": false,
     ".write": false,
 
     "rooms": {
       "$code": {
-        "//": "Any signed-in device may READ a room: joiners must read it to check status before joining, and clients read net/* to receive game state. The 4-char room code is the shared secret. No personal data lives here beyond chosen display names.",
         ".read": "auth != null",
-
-        "//write": "Create: the writer must make themselves the host. After that: only the host may write room-level fields (settings, status, teardown). Player-slot and net writes are granted by the deeper rules below (rules only ADD access down the tree).",
         ".write": "auth != null && ( (!data.exists() && newData.child('host').val() === auth.uid) || (data.exists() && !newData.exists() && data.child('host').val() === auth.uid) || (data.exists() && newData.exists() && data.child('host').val() === auth.uid && newData.child('host').val() === auth.uid) )",
 
         "host": { ".validate": "newData.isString() && newData.val().length <= 128" },
@@ -19,7 +14,6 @@
 
         "players": {
           "$uid": {
-            "//write": "A player may create/remove ONLY their own slot (join/leave/onDisconnect). The host may also remove any slot (handled via the room-level host write). No one can write someone else's slot.",
             ".write": "auth != null && ( $uid === auth.uid || root.child('rooms').child($code).child('host').val() === auth.uid )",
             "name": { ".validate": "newData.isString() && newData.val().length <= 24" },
             "isHost": { ".validate": "newData.isBoolean()" },
@@ -29,14 +23,12 @@
 
         "net": {
           "broadcast": {
-            "//write": "Host -> everyone. Only the host may write the broadcast channel.",
             ".write": "auth != null && root.child('rooms').child($code).child('host').val() === auth.uid",
             "$type": {
               "payload": { ".validate": "newData.isString() && newData.val().length <= 500000" }
             }
           },
           "private": {
-            "//write": "Host -> one client. Only the host may write private channels.",
             ".write": "auth != null && root.child('rooms').child($code).child('host').val() === auth.uid",
             "$uid": {
               "$type": {
@@ -45,7 +37,6 @@
             }
           },
           "toHost": {
-            "//write": "Client -> host queue. Only a device that is actually a player in this room may push. The host drains (deletes) entries via the room-level host write.",
             ".write": "auth != null && root.child('rooms').child($code).child('players').child(auth.uid).exists()",
             "$pushId": {
               "sender": { ".validate": "newData.isString() && newData.val().length <= 128" },

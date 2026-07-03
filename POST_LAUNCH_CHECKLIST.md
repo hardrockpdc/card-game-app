@@ -39,10 +39,12 @@ actual installed-from-Play build:
         3. Re-test online multiplayer end-to-end afterward (host + join + play):
            the rules restrict writes, so a mistake would surface as failed
            joins/moves. See the checklist below.
-      What the rules enforce: auth required; only the host controls room settings +
-      the host→client channels; players can edit only their own slot; only room
-      members can message the host. (Fine to leave test mode for CLOSED testing;
-      NOT fine for public.)
+      NOTE: `database.rules.json` is kept **comment-free on purpose** — the console
+      Rules editor errors ("Line 2: Expected 'rules' property") if the top level is
+      anything but a single `rules` key. Do NOT re-add `"//"` comment keys.
+      Also confirm **Anonymous** sign-in is enabled (Authentication → Sign-in
+      method) — the rules require `auth != null`, so nothing works without it.
+      Full rule-by-rule explanation lives in `DATABASE_RULES.md`.
 - [ ] **Each upload needs a higher versionCode** — next build is 9, then 10, etc.
       (bump `app.json` → android.versionCode before every `eas build`).
 
