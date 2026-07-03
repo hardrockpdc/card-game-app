@@ -147,7 +147,7 @@ export default function SinglePlayerSetupScreen({ navigation }) {
         });
         return;
       case "memory":
-        navigation.navigate("MemoryGame");
+        navigation.navigate("MemoryDifficultyPicker");
         return;
       default:
         navigation.navigate("Game");

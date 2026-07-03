@@ -191,6 +191,7 @@ card-game-app/
 │   ├── ConquianSetupScreen.js     (Conquián setup screen — registered route "ConquianSetup")
 │   ├── WhoAmIGameScreen.js        (Who Am I? — multiplayer party game, no cards; the app's 9th game, added 2026-06-18→20)
 │   ├── LastCardGameScreen.js      (Last Card — single + multiplayer)
+│   ├── MemoryDifficultyPickerScreen.js (Memory Match — Easy/Medium/Hard picker shown before the board)
 │   ├── MemoryGameScreen.js        (Memory Match — single-player; flip to find identical pairs; added 2026-07-03)
 │   ├── SinglePlayerSetupScreen.js (single-player game + AI picker; Wild Round removed from carousel)
 │   ├── MultiplayerMenuScreen.js   (Host Online/Join Online + Host Local/Join Local — all functional)

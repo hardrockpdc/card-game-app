@@ -8,13 +8,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import Card from "../components/Card";
-import {
-  DIFFICULTIES,
-  DIFFICULTY_ORDER,
-  createGame,
-  flip,
-  clearMismatch,
-} from "../game/memory";
+import { DIFFICULTIES, createGame, flip, clearMismatch } from "../game/memory";
 import { addCoins } from "../game/wallet";
 import { getWinReward } from "../game/rewards";
 import { recordWin } from "../game/profile";
@@ -27,11 +21,13 @@ const CARD_BASE_W = 78; // 70 + margin
 const CARD_BASE_H = 108; // 100 + margin
 const MISMATCH_DELAY = 850; // ms a mismatched pair stays visible before flipping back
 
-export default function MemoryGameScreen({ navigation }) {
+export default function MemoryGameScreen({ navigation, route }) {
   const { width } = useWindowDimensions();
 
-  const [difficulty, setDifficulty] = useState("medium");
-  const [game, setGame] = useState(() => createGame("medium"));
+  // Difficulty is chosen on the picker screen before we get here.
+  const difficulty = route?.params?.difficulty || "medium";
+
+  const [game, setGame] = useState(() => createGame(difficulty));
   const [gridSize, setGridSize] = useState(null); // measured play area
   const [coinsEarned, setCoinsEarned] = useState(0);
 
@@ -56,15 +52,15 @@ export default function MemoryGameScreen({ navigation }) {
     };
   }, []);
 
-  function startGame(diff) {
+  // Re-deal a fresh board at the same difficulty (used by "Play Again").
+  function restart() {
     if (mismatchTimer.current) {
       clearTimeout(mismatchTimer.current);
       mismatchTimer.current = null;
     }
     coinRewarded.current = false;
     setCoinsEarned(0);
-    setDifficulty(diff);
-    setGame(createGame(diff));
+    setGame(createGame(difficulty));
   }
 
   function onCardPress(index) {
@@ -106,31 +102,12 @@ export default function MemoryGameScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.safe} edges={["bottom"]}>
-      {/* Header: difficulty + progress */}
+      {/* Header: difficulty label + progress (no tappable controls here so a
+          stray tap during play can't restart the game) */}
       <View style={styles.header}>
-        <View style={styles.difficultyRow}>
-          {DIFFICULTY_ORDER.map((diff) => (
-            <TouchableOpacity
-              key={diff}
-              style={[
-                styles.diffBtn,
-                difficulty === diff && styles.diffBtnActive,
-              ]}
-              onPress={() => startGame(diff)}
-            >
-              <Text
-                style={[
-                  styles.diffBtnText,
-                  difficulty === diff && styles.diffBtnTextActive,
-                ]}
-              >
-                {DIFFICULTIES[diff].label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
         <View style={styles.statsRow}>
           <Text style={styles.statText}>Moves: {game.moves}</Text>
+          <Text style={styles.difficultyLabel}>{DIFFICULTIES[difficulty].label}</Text>
           <Text style={styles.statText}>
             Pairs: {game.matched}/{game.pairs}
           </Text>
@@ -201,15 +178,12 @@ export default function MemoryGameScreen({ navigation }) {
             {coinsEarned > 0 && (
               <Text style={styles.winCoins}>+{coinsEarned.toLocaleString()} 🪙</Text>
             )}
-            <TouchableOpacity
-              style={styles.winBtn}
-              onPress={() => startGame(difficulty)}
-            >
+            <TouchableOpacity style={styles.winBtn} onPress={restart}>
               <Text style={styles.winBtnText}>Play Again</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.winBtnSecondary}
-              onPress={() => navigation.goBack()}
+              onPress={() => navigation.navigate("SinglePlayerSetup")}
             >
               <Text style={styles.winBtnSecondaryText}>Back to Games</Text>
             </TouchableOpacity>
@@ -230,40 +204,21 @@ const styles = StyleSheet.create({
     paddingTop: scale(10),
     paddingBottom: scale(6),
   },
-  difficultyRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: scale(8),
-  },
-  diffBtn: {
-    paddingVertical: scale(8),
-    paddingHorizontal: scale(18),
-    borderRadius: 999,
-    borderWidth: 1.5,
-    borderColor: "#334",
-  },
-  diffBtnActive: {
-    backgroundColor: "#7fb3ff",
-    borderColor: "#7fb3ff",
-  },
-  diffBtnText: {
-    color: "#c4c4d4",
-    fontSize: scaleFont(14),
-    fontWeight: "700",
-  },
-  diffBtnTextActive: {
-    color: "#08111f",
-  },
   statsRow: {
     flexDirection: "row",
+    alignItems: "center",
     justifyContent: "space-between",
-    marginTop: scale(10),
     paddingHorizontal: scale(4),
   },
   statText: {
     color: "#c4c4d4",
     fontSize: scaleFont(15),
     fontWeight: "600",
+  },
+  difficultyLabel: {
+    color: "#7fb3ff",
+    fontSize: scaleFont(15),
+    fontWeight: "800",
   },
   gridArea: {
     flex: 1,
