@@ -28,9 +28,21 @@ actual installed-from-Play build:
 ---
 
 ## Known open items (do BEFORE a public production launch)
-- [ ] **Firebase security rules** — still wide-open "test mode". Lock them down
-      so players can only read/write their own room. This is the most important
-      pre-public item. (Fine for closed testing; NOT fine for public.)
+- [ ] **Firebase security rules** — hardened rules are written and committed at
+      `database.rules.json` (only stores `rooms/*`; coins/profile/achievements are
+      local, never in Firebase). **They are NOT live until you deploy them** to the
+      Firebase console. Do this before public launch:
+        1. Firebase console → your project → Realtime Database → **Rules** tab.
+        2. Replace the wide-open test rules with the contents of
+           `database.rules.json`, then **Publish**. (Or, with the Firebase CLI:
+           `firebase deploy --only database` — `firebase.json` points at the file.)
+        3. Re-test online multiplayer end-to-end afterward (host + join + play):
+           the rules restrict writes, so a mistake would surface as failed
+           joins/moves. See the checklist below.
+      What the rules enforce: auth required; only the host controls room settings +
+      the host→client channels; players can edit only their own slot; only room
+      members can message the host. (Fine to leave test mode for CLOSED testing;
+      NOT fine for public.)
 - [ ] **Each upload needs a higher versionCode** — next build is 9, then 10, etc.
       (bump `app.json` → android.versionCode before every `eas build`).
 
