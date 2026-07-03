@@ -77,10 +77,10 @@ const FLOATERS = [
   { char: "♥", left: "88%", top: "84%", size: scale(28), color: SUIT_RED, dur: 4400, delay: 1100, drift: scale(24), opacity: 0.45 },
 ];
 
-// Animated backdrop for the welcome step. Its own component so its hooks live
-// here (mounted only on step 0) rather than becoming step-conditional in the
-// parent. Honors reduce-motion by leaving the glyphs static (CLAUDE.md 2.4).
-function WelcomeBackground() {
+// Animated backdrop shared by every onboarding step. Its own component so its
+// hooks live here (re-mounts per step) rather than becoming step-conditional in
+// the parent. Honors reduce-motion by leaving the glyphs static (CLAUDE.md 2.4).
+function OnboardingBackground() {
   const animsRef = useRef(FLOATERS.map(() => new Animated.Value(0))).current;
 
   useEffect(() => {
@@ -277,7 +277,7 @@ export default function OnboardingScreen({ navigation }) {
   if (step === 0) {
     return (
       <SafeAreaView style={styles.safe}>
-        <WelcomeBackground />
+        <OnboardingBackground />
         <ScrollView
           contentContainerStyle={[styles.stepContainer, styles.welcomeContainer]}
           keyboardShouldPersistTaps="handled"
@@ -303,6 +303,7 @@ export default function OnboardingScreen({ navigation }) {
   if (step === 1) {
     return (
       <SafeAreaView style={styles.safe}>
+        <OnboardingBackground />
         <ScrollView contentContainerStyle={styles.stepContainer} keyboardShouldPersistTaps="handled">
           <Text style={styles.stepLabel}>STEP 1 OF 3</Text>
           <Text style={styles.title}>What's your name?</Text>
@@ -334,6 +335,7 @@ export default function OnboardingScreen({ navigation }) {
   if (step === 2) {
     return (
       <SafeAreaView style={styles.safe}>
+        <OnboardingBackground />
         <ScrollView contentContainerStyle={styles.stepContainer} keyboardShouldPersistTaps="handled">
           <Text style={styles.stepLabel}>STEP 2 OF 3</Text>
           <Text style={styles.title}>Add a profile photo</Text>
@@ -393,6 +395,7 @@ export default function OnboardingScreen({ navigation }) {
   if (step === 3) {
     return (
     <SafeAreaView style={styles.safe}>
+      <OnboardingBackground />
       <View style={styles.cardStepHeader}>
         <Text style={styles.stepLabel}>STEP 3 OF 3</Text>
         <Text style={styles.title}>Choose your card style</Text>
@@ -453,6 +456,7 @@ export default function OnboardingScreen({ navigation }) {
   // Step 4: Game info (after profile setup) — what you can play, by mode.
   return (
     <SafeAreaView style={styles.safe}>
+      <OnboardingBackground />
       <ScrollView contentContainerStyle={styles.stepContainer} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>You're all set! 🎉</Text>
         <Text style={styles.subtitle}>Here's what you can play.</Text>
