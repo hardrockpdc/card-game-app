@@ -15,6 +15,11 @@ module.exports = {
   setupFiles: ["<rootDir>/jest.setup.js"],
   // Only look for tests we wrote; never descend into node_modules or native dirs.
   testMatch: ["<rootDir>/__tests__/**/*.test.js"],
+  // Static image assets (png/jpg/…) can't be parsed by Jest — map them to a stub
+  // so modules that require card art (game/cardTheme.js) are importable in tests.
+  moduleNameMapper: {
+    "\\.(png|jpe?g|gif|webp|svg)$": "<rootDir>/__mocks__/fileMock.js",
+  },
   transform: {
     "^.+\\.js$": [
       "babel-jest",

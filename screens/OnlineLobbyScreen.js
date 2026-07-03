@@ -18,6 +18,7 @@ import {
   startRoomGame,
 } from "../game/onlineRoom";
 import { setNetworkMode } from "../game/GameNetwork";
+import { recordAchievementEvent } from "../game/achievements";
 
 // Per-game labels + player limits + the game screen each launches into.
 const GAME_INFO = {
@@ -100,6 +101,7 @@ export default function OnlineLobbyScreen({ navigation, route }) {
       ) {
         launchedRef.current = true;
         setNetworkMode("online", { code, uid: myUid, isHost: false });
+        recordAchievementEvent("onlinePlayed");
         navigation.replace(data.gameScreen, {
           role: "client",
           myName,
@@ -174,6 +176,7 @@ export default function OnlineLobbyScreen({ navigation, route }) {
 
     setNetworkMode("online", { code, uid: myUid, isHost: true });
     launchedRef.current = true;
+    recordAchievementEvent("onlineHosted"); // implies onlinePlayed
     startRoomGame(code, { gameScreen: info.screen, gamePlayers });
     navigation.replace(info.screen, {
       role: "host",

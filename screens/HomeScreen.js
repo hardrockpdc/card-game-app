@@ -20,6 +20,7 @@ import {
 } from "../game/profile";
 import { getCoins } from "../game/wallet";
 import { getDailyStatus } from "../game/dailyBonus";
+import { checkAndClaim } from "../game/achievements";
 import ProfileAvatar from "../components/ProfileAvatar";
 import DailyBonusModal from "../components/DailyBonusModal";
 
@@ -50,7 +51,24 @@ export default function HomeScreen({ navigation }) {
   useFocusEffect(
     useCallback(() => {
       let active = true;
-      getCoins().then((c) => active && setCoins(c));
+      // Sweep up any achievements earned since we were last here (e.g. right
+      // after finishing a game), award their coins, then refresh the balance and
+      // celebrate anything new.
+      (async () => {
+        const newly = await checkAndClaim();
+        if (!active) return;
+        const c = await getCoins();
+        if (active) setCoins(c);
+        if (active && newly.length > 0) {
+          const lines = newly
+            .map((a) => `${a.icon} ${a.name}  +${a.reward.toLocaleString()} 🪙`)
+            .join("\n");
+          Alert.alert(
+            newly.length === 1 ? "Achievement Unlocked!" : "Achievements Unlocked!",
+            lines,
+          );
+        }
+      })();
       // Auto-surface the daily bonus if it's available today.
       getDailyStatus().then((status) => {
         if (active && status.canClaim) {

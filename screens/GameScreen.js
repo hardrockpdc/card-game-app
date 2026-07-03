@@ -18,6 +18,7 @@ import { scale, scaleFont } from "../game/responsive";
 import { getCoins, addCoins, subtractCoins } from "../game/wallet";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import { recordWin } from "../game/profile";
+import { recordAchievementEvent } from "../game/achievements";
 import TutorialOverlay, { hasSeen } from "../components/TutorialOverlay";
 import EndOfRoundModal from "../components/EndOfRoundModal";
 import StatsStrip from "../components/StatsStrip";
@@ -312,6 +313,7 @@ export default function GameScreen({ navigation, route }) {
       setResult(bjResult);
       setGameStatus("finished");
       resolveHandPayout(bjResult, "", false, false, true);
+      recordAchievementEvent("blackjackDealt"); // "Natural" achievement
     }
   }
 
@@ -462,6 +464,7 @@ export default function GameScreen({ navigation, route }) {
       setResult(bjResult);
       setGameStatus("finished");
       resolveHandPayout(bjResult, "", false, false, true);
+      recordAchievementEvent("blackjackDealt"); // "Natural" achievement
     }
   }
 

@@ -42,6 +42,7 @@ import { hapticWin, hapticLose } from "../game/haptics";
 import { addCoins } from "../game/wallet";
 import { getWinReward } from "../game/rewards";
 import { recordWin } from "../game/profile";
+import { recordAchievementEvent } from "../game/achievements";
 
 const TARGET_WINS = 3;
 const theme = getTableTheme("whoami");
@@ -190,6 +191,7 @@ export default function WhoAmIGameScreen({ navigation, route }) {
         const reward = getWinReward("whoami", true);
         addCoins(reward).then(() => setCoinsEarned(reward));
         recordWin("whoami");
+        recordAchievementEvent("win", { isMultiplayer: true });
       }
     } else hapticLose();
   }, [gameState?.phase]);

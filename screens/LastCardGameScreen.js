@@ -41,6 +41,7 @@ import {
 import { scale, scaleFont } from "../game/responsive";
 import { addCoins } from "../game/wallet";
 import { getWinReward } from "../game/rewards";
+import { recordAchievementEvent } from "../game/achievements";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import { recordWin } from "../game/profile";
 import { getTableTheme } from "../game/tableThemes";
@@ -270,6 +271,7 @@ export default function LastCardGameScreen({ navigation, route }) {
       const reward = getWinReward("lastcard", !isSinglePlayer);
       addCoins(reward).then(() => setCoinsEarned(reward));
       recordWin("lastcard");
+      recordAchievementEvent("win", { isMultiplayer: !isSinglePlayer });
     }
     // Win/lose buzz, once per finished game.
     if (phase === "gameOver" && !outcomeBuzzedRef.current) {

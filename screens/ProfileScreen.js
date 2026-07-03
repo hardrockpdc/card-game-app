@@ -528,6 +528,15 @@ export default function ProfileScreen({ navigation, route }) {
               <Text style={styles.moreRowArrow}>›</Text>
             </TouchableOpacity>
             <TouchableOpacity
+              style={styles.moreRow}
+              onPress={() => navigation.navigate("Achievements")}
+              accessibilityRole="button"
+              accessibilityLabel="Achievements"
+            >
+              <Text style={styles.moreRowText}>🏆 Achievements</Text>
+              <Text style={styles.moreRowArrow}>›</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
               style={[styles.moreRow, styles.moreRowLast]}
               onPress={() => navigation.navigate("About")}
               accessibilityRole="button"

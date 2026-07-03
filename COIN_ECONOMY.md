@@ -236,4 +236,15 @@ decks. Table felts and profile frames follow the same pattern once decks are pro
   broadcasts a winner → each device rewards its own player if it won → results
   screen keyed on `myPid` instead of the literal `"host"`. Needs 2-device testing
   to a knockout. Deferred pending a decision — this is a feature, not a gap.
-- ⏳ **Profile frames**, **achievements** — not started.
+- ✅ **Achievements** — all 15 from the design, in `game/achievements.js`
+  (`ACHIEVEMENTS`, `checkAndClaim`, `listAchievements`, `recordAchievementEvent`).
+  Most conditions derive from existing data (profile stats, login streak, cosmetic
+  unlocks); 4 need small event counters that the screens now bump: online-played
+  + online-hosted (OnlineLobbyScreen), MP-win counter (all MP win sites), and
+  blackjack-dealt (GameScreen). New `screens/AchievementsScreen.js` (trophy room,
+  linked from Profile → More). `checkAndClaim()` runs on Home focus — awards coins
+  for anything newly earned and pops an "Achievement Unlocked!" alert. Rewards feed
+  lifetime earned, so achievements also raise your rank. Tests in
+  `__tests__/achievements.test.js`. (Also added a Jest asset-mock so modules that
+  require card art are testable — `__mocks__/fileMock.js` + jest moduleNameMapper.)
+- ⏳ **Profile frames** — the last cosmetic sink, not started.

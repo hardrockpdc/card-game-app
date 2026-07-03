@@ -32,6 +32,7 @@ import ProfileAvatar from "../components/ProfileAvatar";
 import useMultiplayerAvatars from "../components/useMultiplayerAvatars";
 import { addCoins } from "../game/wallet";
 import { getWinReward } from "../game/rewards";
+import { recordAchievementEvent } from "../game/achievements";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import { recordWin } from "../game/profile";
 import { hapticWin, hapticLose } from "../game/haptics";
@@ -851,6 +852,7 @@ export default function RummyGameScreen({ navigation, route }) {
       const reward = getWinReward("rummy", !isSinglePlayer);
       addCoins(reward).then(() => setCoinsEarned(reward));
       recordWin("rummy");
+      recordAchievementEvent("win", { isMultiplayer: !isSinglePlayer });
     }
     // Win/lose buzz, once per finished game (a tie stays silent).
     if (

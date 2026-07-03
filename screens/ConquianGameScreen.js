@@ -49,6 +49,7 @@ import ProfileAvatar from "../components/ProfileAvatar";
 import useMultiplayerAvatars from "../components/useMultiplayerAvatars";
 import { addCoins } from "../game/wallet";
 import { getWinReward } from "../game/rewards";
+import { recordAchievementEvent } from "../game/achievements";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import { recordWin } from "../game/profile";
 import { hapticWin, hapticLose } from "../game/haptics";
@@ -1033,6 +1034,7 @@ export default function ConquianGameScreen({ navigation, route }) {
       const reward = getWinReward("conquian", !isSinglePlayer);
       addCoins(reward).then(() => setCoinsEarned(reward));
       recordWin("conquian");
+      recordAchievementEvent("win", { isMultiplayer: !isSinglePlayer });
     }
     // Win/lose buzz, once per finished game (a tie stays silent).
     if (
