@@ -74,6 +74,7 @@ const DEFAULT_RUMMY_VARIANT = "ginRummy";
 export default function SinglePlayerSetupScreen({ navigation }) {
   const [selectedId, setSelectedId] = useState(null); // for blackjack resume dialog
   const [pendingGame, setPendingGame] = useState(null); // "Play this game?" confirm
+  const [gridSize, setGridSize] = useState(null); // measured grid area, for tile sizing
 
   const hasBlackjackSave = useHasSave(BLACKJACK_SAVE_KEY);
 
@@ -155,8 +156,6 @@ export default function SinglePlayerSetupScreen({ navigation }) {
 
   const COLS = 2;
   const GAP = scale(12);
-  // Heights come from flex (each row gets an equal slice of available space),
-  // so all 7 tiles always fit on screen regardless of nav header / safe area.
 
   // 7 games + a "Coming Soon" placeholder = 8 tiles, 4 even rows of 2
   const gridItems = [...GAMES, { id: "comingSoon", comingSoon: true }];
@@ -164,6 +163,21 @@ export default function SinglePlayerSetupScreen({ navigation }) {
   for (let i = 0; i < gridItems.length; i += COLS) {
     rows.push(gridItems.slice(i, i + COLS));
   }
+
+  // Deterministic tile sizing: measure the grid area (onLayout) then compute an
+  // exact px size that fits a 3:4 tile in each cell. This replaces a fragile
+  // flex + height:"100%" + aspectRatio combo that could collapse on some devices
+  // (the Image then fell back to its full pixel size — one giant tile).
+  const ROWS = rows.length;
+  let tileW = 0;
+  let tileH = 0;
+  if (gridSize && gridSize.width > 0 && gridSize.height > 0) {
+    const cellW = (gridSize.width - GAP * (COLS - 1)) / COLS;
+    const cellH = (gridSize.height - GAP * (ROWS - 1)) / ROWS;
+    tileW = Math.min(cellW, cellH * (3 / 4)); // bound by tighter dimension
+    tileH = tileW * (4 / 3);
+  }
+  const tileSize = { width: tileW, height: tileH };
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -231,12 +245,23 @@ export default function SinglePlayerSetupScreen({ navigation }) {
       )}
 
       <View style={styles.container}>
-        <View style={styles.grid}>
+        <View
+          style={styles.grid}
+          onLayout={(e) => {
+            const { width, height } = e.nativeEvent.layout;
+            setGridSize((prev) =>
+              prev && prev.width === width && prev.height === height
+                ? prev
+                : { width, height },
+            );
+          }}
+        >
           {rows.map((row, rowIdx) => (
             <View
               key={rowIdx}
               style={[
                 styles.row,
+                { height: tileH },
                 rowIdx < rows.length - 1 && { marginBottom: GAP },
               ]}
             >
@@ -249,7 +274,7 @@ export default function SinglePlayerSetupScreen({ navigation }) {
                       { marginLeft: colIdx > 0 ? GAP : 0 },
                     ]}
                   >
-                    <View style={[styles.tile, styles.comingSoonTile]}>
+                    <View style={[styles.tile, styles.comingSoonTile, tileSize]}>
                       <Text style={styles.comingSoonText}>Coming{"\n"}Soon</Text>
                     </View>
                   </View>
@@ -267,6 +292,7 @@ export default function SinglePlayerSetupScreen({ navigation }) {
                       source={game.image}
                       style={[
                         styles.tile,
+                        tileSize,
                         {
                           borderColor:
                             pendingGame?.id === game.id
@@ -320,9 +346,9 @@ const styles = StyleSheet.create({
   },
   grid: {
     flex: 1,
+    justifyContent: "center", // absorb any vertical slack (tiles are fixed-size)
   },
   row: {
-    flex: 1,
     flexDirection: "row",
   },
   // Each grid cell fills its share of the row and centers the artwork
@@ -331,13 +357,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  // The bordered tile is sized to the thumbnail's 3:4 ratio so the border
-  // hugs the artwork (no letterbox gap). Bound by the cell on whichever
-  // dimension is the constraint.
+  // The bordered tile. Its width/height are supplied at render time (computed
+  // from the measured grid area) so it can never collapse to the image's
+  // intrinsic size. 3:4 ratio is enforced by that computation, not aspectRatio.
   tile: {
-    height: "100%",
-    maxWidth: "100%",
-    aspectRatio: 3 / 4,
     backgroundColor: "#0d1424",
     borderRadius: scale(14),
     borderWidth: 1.5,
