@@ -16,17 +16,33 @@ const SUIT_KEY = {
 // Note: actual asset folder names differ from the logical IDs for the
 // girly/wizards themes (on-disk names use the card_images_ prefix).
 
+// `price` is the coin cost to unlock a deck. 0 = free (owned by everyone).
 const THEMES = {
-  classic: { name: "Classic", folder: "card_images_classic" },
-  neon: { name: "Neon", folder: "cards" },
-  cowboy: { name: "Cowboy", folder: "cards_cowboy" },
-  girly: { name: "Girly", folder: "card_images_girly" },
-  wizards: { name: "Wizards", folder: "card_images_wizards" },
-  gothic: { name: "Gothic", folder: "card_images_gothic" },
-  pirate: { name: "Pirate", folder: "card_images_pirate" },
+  classic: { name: "Classic", folder: "card_images_classic", price: 0 },
+  neon: { name: "Neon", folder: "cards", price: 0 },
+  cowboy: { name: "Cowboy", folder: "cards_cowboy", price: 3000 },
+  girly: { name: "Girly", folder: "card_images_girly", price: 3000 },
+  wizards: { name: "Wizards", folder: "card_images_wizards", price: 3000 },
+  gothic: { name: "Gothic", folder: "card_images_gothic", price: 3000 },
+  pirate: { name: "Pirate", folder: "card_images_pirate", price: 3000 },
 };
 
 export const THEMES_LIST = Object.entries(THEMES);
+
+// Coin cost to unlock a deck (0 = free).
+export function getThemePrice(id) {
+  return THEMES[id]?.price ?? 0;
+}
+
+// A deck is available to use if it's free, already purchased, or currently the
+// player's active deck (grandfathering — nobody loses the deck they're using).
+export function isThemeUnlocked(id, unlockedThemes, activeTheme) {
+  return (
+    getThemePrice(id) === 0 ||
+    (Array.isArray(unlockedThemes) && unlockedThemes.includes(id)) ||
+    id === activeTheme
+  );
+}
 
 // ─── Image maps (static requires, one block per theme) ────────────────────────
 

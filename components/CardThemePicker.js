@@ -16,8 +16,9 @@ import {
   getTheme,
   setTheme,
   subscribe,
+  isThemeUnlocked,
 } from "../game/cardTheme";
-import { updateProfile } from "../game/profile";
+import { updateProfile, loadProfile, subscribeProfile } from "../game/profile";
 
 // In-game popup for changing the (global) card-art theme — mirrors the Table
 // Theme picker's tap-to-apply feel, but shows real card previews since a theme
@@ -26,12 +27,27 @@ import { updateProfile } from "../game/profile";
 // open it without leaving the table.
 export default function CardThemePicker({ visible, onClose }) {
   const [active, setActive] = useState(getTheme());
+  const [unlockedThemes, setUnlockedThemes] = useState([]);
 
   // Stay in sync if the theme changes elsewhere (e.g. the full Card Theme
   // screen reached from Profile).
   useEffect(() => subscribe((id) => setActive(id)), []);
 
+  // Owned decks, so locked ones can't be selected here (unlock happens in the
+  // full Card Deck screen).
+  useEffect(() => {
+    let mounted = true;
+    loadProfile().then((p) => mounted && setUnlockedThemes(p.unlockedThemes || []));
+    const unsub = subscribeProfile((p) => setUnlockedThemes(p.unlockedThemes || []));
+    return () => {
+      mounted = false;
+      unsub();
+    };
+  }, []);
+
   function pick(key) {
+    // Locked decks aren't selectable here — unlock them in the Card Deck screen.
+    if (!isThemeUnlocked(key, unlockedThemes, active)) return;
     setTheme(key);
     setActive(key);
     updateProfile({ cardTheme: key }).catch(() => {});
@@ -59,23 +75,30 @@ export default function CardThemePicker({ visible, onClose }) {
           >
             {THEMES_LIST.map(([key], idx) => {
               const selected = key === active;
+              const locked = !isThemeUnlocked(key, unlockedThemes, active);
               return (
                 <TouchableOpacity
                   key={key}
                   style={[styles.card, selected && styles.cardSelected]}
                   onPress={() => pick(key)}
+                  disabled={locked}
                   accessibilityRole="button"
-                  accessibilityLabel={`Card style ${idx + 1}`}
-                  accessibilityState={{ selected }}
+                  accessibilityLabel={`Card style ${idx + 1}${locked ? " (locked)" : ""}`}
+                  accessibilityState={{ selected, disabled: locked }}
                 >
                   <Image
                     source={getThemePreviewImage(key)}
-                    style={styles.cardImg}
+                    style={[styles.cardImg, locked && styles.cardImgLocked]}
                     resizeMode="contain"
                   />
                   {selected && (
                     <View style={styles.check}>
                       <Text style={styles.checkText}>✓</Text>
+                    </View>
+                  )}
+                  {locked && (
+                    <View style={styles.lockPill}>
+                      <Text style={styles.lockPillText}>🔒</Text>
                     </View>
                   )}
                 </TouchableOpacity>
@@ -147,6 +170,25 @@ const styles = StyleSheet.create({
     width: scale(78),
     height: scale(109), // ~5:7
     borderRadius: scale(8),
+  },
+  cardImgLocked: {
+    opacity: 0.35,
+  },
+  lockPill: {
+    position: "absolute",
+    top: scale(2),
+    left: scale(2),
+    width: scale(22),
+    height: scale(22),
+    borderRadius: scale(11),
+    backgroundColor: "rgba(0,0,0,0.6)",
+    borderWidth: 1,
+    borderColor: "#ffd479",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  lockPillText: {
+    fontSize: scaleFont(11),
   },
   check: {
     position: "absolute",

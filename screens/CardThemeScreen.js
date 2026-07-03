@@ -5,6 +5,7 @@ import {
   Image,
   FlatList,
   StyleSheet,
+  Alert,
   useWindowDimensions,
 } from "react-native";
 import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
@@ -15,8 +16,15 @@ import {
   setTheme,
   getTheme,
   subscribe,
+  getThemePrice,
+  isThemeUnlocked,
 } from "../game/cardTheme";
-import { updateProfile } from "../game/profile";
+import {
+  updateProfile,
+  loadProfile,
+  subscribeProfile,
+} from "../game/profile";
+import { getCoins, subtractCoins } from "../game/wallet";
 
 export default function CardThemeScreen() {
   const { width, height } = useWindowDimensions();
@@ -29,12 +37,28 @@ export default function CardThemeScreen() {
     ),
   );
   const [confirmed, setConfirmed] = useState(false);
+  const [coins, setCoins] = useState(0);
+  const [unlockedThemes, setUnlockedThemes] = useState([]);
 
   const flatListRef = useRef(null);
   const confirmTimer = useRef(null);
 
   // Stay in sync if another screen changes the theme
   useEffect(() => subscribe((id) => setActiveTheme(id)), []);
+
+  // Load coin balance + owned decks; keep owned decks in sync with the profile.
+  useEffect(() => {
+    let mounted = true;
+    getCoins().then((c) => mounted && setCoins(c));
+    loadProfile().then((p) => mounted && setUnlockedThemes(p.unlockedThemes || []));
+    const unsub = subscribeProfile((p) =>
+      setUnlockedThemes(p.unlockedThemes || []),
+    );
+    return () => {
+      mounted = false;
+      unsub();
+    };
+  }, []);
 
   // Clean up timer on unmount
   useEffect(
@@ -44,14 +68,48 @@ export default function CardThemeScreen() {
     [],
   );
 
-  function handleApply() {
-    const [key] = THEMES_LIST[currentIndex];
+  function applyTheme(key) {
     setTheme(key);
     updateProfile({ cardTheme: key }).catch(() => {});
     setActiveTheme(key);
     setConfirmed(true);
     if (confirmTimer.current) clearTimeout(confirmTimer.current);
     confirmTimer.current = setTimeout(() => setConfirmed(false), 1800);
+  }
+
+  function handleApply() {
+    const [key] = THEMES_LIST[currentIndex];
+    applyTheme(key);
+  }
+
+  async function handleUnlock() {
+    const [key, theme] = THEMES_LIST[currentIndex];
+    const price = getThemePrice(key);
+    if (coins < price) {
+      Alert.alert(
+        "Not enough coins",
+        `The ${theme.name} deck costs ${price.toLocaleString()} coins. Win more games to earn coins!`,
+      );
+      return;
+    }
+    Alert.alert(
+      "Unlock deck?",
+      `Unlock the ${theme.name} deck for ${price.toLocaleString()} coins?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Unlock",
+          onPress: async () => {
+            const newBalance = await subtractCoins(price);
+            setCoins(newBalance);
+            const nextUnlocked = [...unlockedThemes, key];
+            setUnlockedThemes(nextUnlocked);
+            await updateProfile({ unlockedThemes: nextUnlocked }).catch(() => {});
+            applyTheme(key); // unlock + apply in one step
+          },
+        },
+      ],
+    );
   }
 
   const onViewableItemsChanged = useCallback(({ viewableItems }) => {
@@ -68,15 +126,27 @@ export default function CardThemeScreen() {
 
   const currentKey = THEMES_LIST[currentIndex]?.[0];
   const isCurrentActive = currentKey === activeTheme;
+  const currentPrice = getThemePrice(currentKey);
+  const currentUnlocked = isThemeUnlocked(
+    currentKey,
+    unlockedThemes,
+    activeTheme,
+  );
 
   function buttonLabel() {
-    if (confirmed) return "Theme applied! ✓";
-    if (isCurrentActive) return "Active Theme";
-    return "Use This Theme";
+    if (confirmed) return "Deck applied! ✓";
+    if (!currentUnlocked) return `🔒 Unlock — ${currentPrice.toLocaleString()} 🪙`;
+    if (isCurrentActive) return "Active Deck";
+    return "Use This Deck";
   }
 
   return (
     <SafeAreaView style={styles.safe}>
+      {/* Coin balance */}
+      <View style={styles.coinHeader}>
+        <Text style={styles.coinText}>🪙 {coins.toLocaleString()}</Text>
+      </View>
+
       {/* Swipeable pages */}
       <FlatList
         ref={flatListRef}
@@ -93,27 +163,39 @@ export default function CardThemeScreen() {
           offset: width * index,
           index,
         })}
-        renderItem={({ item: [key] }) => (
-          <View style={[styles.page, { width }]}>
-            <View style={styles.previewWrapper}>
-              <Image
-                source={getThemePreviewImage(key)}
-                style={[
-                  styles.previewCard,
-                  { width: previewWidth, height: previewHeight },
-                ]}
-                resizeMode="contain"
-              />
-              {activeTheme === key && (
-                <View style={styles.activeBadge}>
-                  <Text style={styles.activeBadgeText}>✓ Active</Text>
-                </View>
-              )}
-            </View>
+        renderItem={({ item: [key, theme] }) => {
+          const unlocked = isThemeUnlocked(key, unlockedThemes, activeTheme);
+          const price = getThemePrice(key);
+          return (
+            <View style={[styles.page, { width }]}>
+              <View style={styles.previewWrapper}>
+                <Image
+                  source={getThemePreviewImage(key)}
+                  style={[
+                    styles.previewCard,
+                    { width: previewWidth, height: previewHeight },
+                    !unlocked && styles.previewLocked,
+                  ]}
+                  resizeMode="contain"
+                />
+                {activeTheme === key && (
+                  <View style={styles.activeBadge}>
+                    <Text style={styles.activeBadgeText}>✓ Active</Text>
+                  </View>
+                )}
+                {!unlocked && (
+                  <View style={styles.lockBadge}>
+                    <Text style={styles.lockBadgeText}>
+                      🔒 {price.toLocaleString()} 🪙
+                    </Text>
+                  </View>
+                )}
+              </View>
 
-            <Text style={styles.swipeHint}>← swipe to browse →</Text>
-          </View>
-        )}
+              <Text style={styles.swipeHint}>← swipe to browse →</Text>
+            </View>
+          );
+        }}
       />
 
       {/* Dot indicators */}
@@ -131,11 +213,15 @@ export default function CardThemeScreen() {
         <TouchableOpacity
           style={[
             styles.applyBtn,
-            isCurrentActive && !confirmed && styles.applyBtnDimmed,
+            !currentUnlocked && styles.unlockBtn,
+            currentUnlocked &&
+              isCurrentActive &&
+              !confirmed &&
+              styles.applyBtnDimmed,
             confirmed && styles.applyBtnConfirmed,
           ]}
-          onPress={handleApply}
-          disabled={isCurrentActive && !confirmed}
+          onPress={currentUnlocked ? handleApply : handleUnlock}
+          disabled={currentUnlocked && isCurrentActive && !confirmed}
         >
           <Text
             style={[
@@ -157,6 +243,37 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: "#1a1a2e",
+  },
+  coinHeader: {
+    alignItems: "flex-end",
+    paddingHorizontal: 24,
+    paddingTop: 8,
+  },
+  coinText: {
+    color: "#ffd479",
+    fontSize: 17,
+    fontWeight: "bold",
+  },
+  previewLocked: {
+    opacity: 0.4,
+  },
+  lockBadge: {
+    position: "absolute",
+    top: -14,
+    backgroundColor: "#2a2a3d",
+    borderWidth: 1.5,
+    borderColor: "#ffd479",
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  lockBadgeText: {
+    color: "#ffd479",
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+  unlockBtn: {
+    backgroundColor: "#ffd479",
   },
   page: {
     flex: 1,
