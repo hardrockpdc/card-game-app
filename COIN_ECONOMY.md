@@ -224,6 +224,16 @@ decks. Table felts and profile frames follow the same pattern once decks are pro
   `isFeltUnlocked`), `game/lastCardTheme.js` (+`price`, +3 palettes),
   `game/profile.js` (`unlockedFelts`). Unlocks are GLOBAL (own once, use in every
   game). Tests in `__tests__/feltShop.test.js`. Note: the old inline-picker
-  StyleSheet entries in RummyGameScreen/LastCardGameScreen are now dead but left
-  in place (harmless) — clean up in a later pass.
+  StyleSheet entries in RummyGameScreen/LastCardGameScreen were removed (the
+  shared picker owns those styles now).
+- ✅ **Who Am I? win reward** — wired (MP-only, 300 coins to the winning device,
+  once per game; shown in the game-over modal). `WhoAmIGameScreen.js`.
+- ⚠️ **MP Poker reward — blocked, bigger than a reward wiring.** MP Poker has NO
+  tournament-end handling at all: `tournamentWinner` is only ever set in the
+  single-player branch, so in multiplayer the game just stops once players are
+  knocked down to <2 (no results screen, no winner broadcast). Awarding coins
+  requires first building MP end-game: host detects the last player standing →
+  broadcasts a winner → each device rewards its own player if it won → results
+  screen keyed on `myPid` instead of the literal `"host"`. Needs 2-device testing
+  to a knockout. Deferred pending a decision — this is a feature, not a gap.
 - ⏳ **Profile frames**, **achievements** — not started.

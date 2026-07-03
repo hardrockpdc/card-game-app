@@ -39,6 +39,9 @@ import {
 import { scale, scaleFont } from "../game/responsive";
 import { getTableTheme } from "../game/tableThemes";
 import { hapticWin, hapticLose } from "../game/haptics";
+import { addCoins } from "../game/wallet";
+import { getWinReward } from "../game/rewards";
+import { recordWin } from "../game/profile";
 
 const TARGET_WINS = 3;
 const theme = getTableTheme("whoami");
@@ -66,6 +69,8 @@ export default function WhoAmIGameScreen({ navigation, route }) {
   const [noticeWinnerId, setNoticeWinnerId] = useState(null);
   const [noticeWinnerName, setNoticeWinnerName] = useState("");
   const [noticeOn, setNoticeOn] = useState(false);
+  const [coinsEarned, setCoinsEarned] = useState(0);
+  const coinRewardedRef = useRef(false);
   const prevRoundRef = useRef(null);
   const noticeTimerRef = useRef(null);
   const noticeOpacity = useRef(new Animated.Value(0)).current;
@@ -168,13 +173,25 @@ export default function WhoAmIGameScreen({ navigation, route }) {
   // Game-over modal + haptics.
   useEffect(() => {
     if (gameState?.phase !== "gameOver") {
-      // Dismiss on clients when the host starts a new game.
+      // Dismiss on clients when the host starts a new game, and arm the reward
+      // again for the next finished game.
       setShowRoundModal(false);
+      coinRewardedRef.current = false;
+      setCoinsEarned(0);
       return;
     }
     setShowRoundModal(true);
-    if (String(gameState.winner?.id) === myPid) hapticWin();
-    else hapticLose();
+    const iWon = String(gameState.winner?.id) === myPid;
+    if (iWon) {
+      hapticWin();
+      // Who Am I? is multiplayer-only; reward the winning device once.
+      if (!coinRewardedRef.current) {
+        coinRewardedRef.current = true;
+        const reward = getWinReward("whoami", true);
+        addCoins(reward).then(() => setCoinsEarned(reward));
+        recordWin("whoami");
+      }
+    } else hapticLose();
   }, [gameState?.phase]);
 
   useEffect(() => {
@@ -515,7 +532,8 @@ export default function WhoAmIGameScreen({ navigation, route }) {
         visible={showRoundModal}
         title={winnerName}
         message={
-          gameState?.lastSecret ? `The word was “${gameState.lastSecret}”` : ""
+          (gameState?.lastSecret ? `The word was “${gameState.lastSecret}”` : "") +
+          (coinsEarned > 0 ? `\n+${coinsEarned} 🪙 added to your wallet!` : "")
         }
         showContinue={isHost}
         showLeave

@@ -1444,69 +1444,7 @@ const styles = StyleSheet.create({
     borderTopColor: "#2a3650",
   },
 
-  // ── Table Theme picker overlay (mirrors Last Card) ──
-  tableOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.88)",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 16,
-    zIndex: 100,
-    paddingHorizontal: 32,
-  },
-  tableOverlayTitle: {
-    color: "#fff",
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 8,
-  },
-  tableSwatchGrid: {
-    width: "100%",
-    gap: 12,
-  },
-  tableSwatch: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    borderRadius: 16,
-    borderWidth: 2,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-  },
-  tableSwatchDots: {
-    flexDirection: "row",
-    gap: 5,
-  },
-  tableSwatchDot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.25)",
-  },
-  tableSwatchName: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  tableSwatchCheck: {
-    fontSize: 12,
-    fontWeight: "800",
-  },
-  tableCloseBtn: {
-    marginTop: 4,
-    paddingVertical: 12,
-    paddingHorizontal: 40,
-    borderRadius: 12,
-    backgroundColor: "#16213e",
-    borderWidth: 1.5,
-    borderColor: "#334",
-  },
-  tableCloseText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "800",
-  },
+  // (Table Theme picker styles now live in components/TableThemePicker.js.)
 
   // ── Table layout ──
   seatRow: {

@@ -1590,51 +1590,5 @@ const styles = StyleSheet.create({
     fontSize: scaleFont(18),
     fontWeight: "bold",
   },
-  tableSwatchGrid: {
-    width: "100%",
-    gap: scale(12),
-  },
-  tableSwatch: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: scale(12),
-    borderRadius: scale(16),
-    borderWidth: 2,
-    paddingVertical: scale(14),
-    paddingHorizontal: scale(16),
-  },
-  tableSwatchDots: {
-    flexDirection: "row",
-    gap: scale(5),
-  },
-  tableSwatchDot: {
-    width: scale(16),
-    height: scale(16),
-    borderRadius: scale(8),
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.25)",
-  },
-  tableSwatchName: {
-    flex: 1,
-    fontSize: scaleFont(16),
-    fontWeight: "800",
-  },
-  tableSwatchCheck: {
-    fontSize: scaleFont(12),
-    fontWeight: "800",
-  },
-  tableCloseBtn: {
-    marginTop: scale(4),
-    paddingVertical: scale(12),
-    paddingHorizontal: scale(40),
-    borderRadius: scale(12),
-    backgroundColor: "#16213e",
-    borderWidth: 1.5,
-    borderColor: "#334",
-  },
-  tableCloseText: {
-    color: "#fff",
-    fontSize: scaleFont(16),
-    fontWeight: "bold",
-  },
+  // (Table Theme picker styles now live in components/TableThemePicker.js.)
 });
