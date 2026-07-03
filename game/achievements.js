@@ -149,6 +149,7 @@ async function buildContext() {
 
   const unlockedThemes = profile.unlockedThemes || [];
   const unlockedFelts = profile.unlockedFelts || [];
+  const unlockedFrames = profile.unlockedFrames || [];
   const allDecksUnlocked =
     PAID_DECK_IDS.length > 0 &&
     PAID_DECK_IDS.every((id) => unlockedThemes.includes(id));
@@ -160,7 +161,8 @@ async function buildContext() {
     winsByGame,
     allGamesWon,
     bestStreak,
-    cosmeticsUnlocked: unlockedThemes.length + unlockedFelts.length,
+    cosmeticsUnlocked:
+      unlockedThemes.length + unlockedFelts.length + unlockedFrames.length,
     allDecksUnlocked,
     onlinePlayed: events.onlinePlayed,
     onlineHosted: events.onlineHosted,

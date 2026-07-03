@@ -34,6 +34,7 @@ import ProfileScreen from "./screens/ProfileScreen";
 import AboutScreen from "./screens/AboutScreen";
 import StatsScreen from "./screens/StatsScreen";
 import AchievementsScreen from "./screens/AchievementsScreen";
+import FramesScreen from "./screens/FramesScreen";
 import OnboardingScreen from "./screens/OnboardingScreen";
 import { loadProfile, hasProfileName } from "./game/profile";
 import { setTheme } from "./game/cardTheme";
@@ -300,6 +301,11 @@ export default function App() {
                   name="Achievements"
                   component={AchievementsScreen}
                   options={{ title: "Achievements" }}
+                />
+                <Stack.Screen
+                  name="Frames"
+                  component={FramesScreen}
+                  options={{ title: "Profile Frames" }}
                 />
               </Stack.Navigator>
             </NavigationContainer>

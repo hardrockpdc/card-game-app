@@ -14,6 +14,9 @@ const DEFAULT_PROFILE = {
   // unlockedFrames as that shop is added.
   unlockedThemes: [],
   unlockedFelts: [],
+  unlockedFrames: [],
+  // The profile frame currently worn (decorative ring around the avatar).
+  activeFrame: "none",
 };
 
 let cachedProfile = null;
@@ -63,6 +66,13 @@ function normalizeProfile(profile) {
     unlockedFelts: Array.isArray(safeProfile.unlockedFelts)
       ? safeProfile.unlockedFelts.filter((t) => typeof t === "string")
       : [],
+    unlockedFrames: Array.isArray(safeProfile.unlockedFrames)
+      ? safeProfile.unlockedFrames.filter((t) => typeof t === "string")
+      : [],
+    activeFrame:
+      typeof safeProfile.activeFrame === "string" && safeProfile.activeFrame.trim()
+        ? safeProfile.activeFrame.trim()
+        : "none",
   };
 }
 

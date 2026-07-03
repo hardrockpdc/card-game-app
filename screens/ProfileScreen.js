@@ -468,6 +468,26 @@ export default function ProfileScreen({ navigation, route }) {
             </View>
           </View>
 
+          <View style={styles.themeCard}>
+            <Text style={styles.sectionLabel}>Profile Frame</Text>
+            <View style={styles.themeRow}>
+              <View style={styles.themeInfo}>
+                <Text style={styles.themeName}>Avatar Frame</Text>
+                <Text style={styles.themeHint}>
+                  A decorative ring around your avatar
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.themeBtn}
+                onPress={() => navigation.navigate("Frames")}
+                accessibilityRole="button"
+                accessibilityLabel="Change profile frame"
+              >
+                <Text style={styles.themeBtnText}>Open</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
           <View style={styles.walletCard}>
             <Text style={styles.sectionLabel}>Coins</Text>
             <View style={styles.walletRow}>

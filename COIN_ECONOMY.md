@@ -247,4 +247,18 @@ decks. Table felts and profile frames follow the same pattern once decks are pro
   lifetime earned, so achievements also raise your rank. Tests in
   `__tests__/achievements.test.js`. (Also added a Jest asset-mock so modules that
   require card art are testable — `__mocks__/fileMock.js` + jest moduleNameMapper.)
-- ⏳ **Profile frames** — the last cosmetic sink, not started.
+- ✅ **Profile frames** — the last cosmetic sink. `game/frames.js` (CSS-only
+  rings, no image assets: `getFrame`/`getFramePrice`/`isFrameUnlocked`/
+  `getFrameRingStyle`). Free "None" + 6 frames (Gold / Neon / Ruby / Emerald /
+  Royal / Rose) at 1,000 each. `ProfileAvatar` draws the active ring around any
+  avatar type (photo/emoji/initial); `profile.activeFrame` + `unlockedFrames`
+  persist it. New `screens/FramesScreen.js` (grid shop previewing frames on your
+  own avatar), linked from Profile. Shows on the Home hero avatar + shop preview.
+  Frame unlocks also count toward the "Fresh Look" achievement. Tests in
+  `__tests__/frames.test.js`. Note: the large photo in the Profile *editor* does
+  not show the frame (it's the edit control); rank-exclusive frames were left as a
+  future option. Other players' frames aren't transmitted in multiplayer yet.
+
+**Coin economy is now feature-complete on the earn+spend loop.** Remaining
+non-economy follow-ups: MP Poker end-game (see the poker note above), and the
+Firebase security-rules lockdown before public launch.
