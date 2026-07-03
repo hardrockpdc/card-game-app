@@ -74,6 +74,26 @@ describe("claimDailyBonus", () => {
     expect(await getBestStreak()).toBe(3);
   });
 
+  test("consecutive streak keeps climbing PAST day 7 (regression)", async () => {
+    // Claim 10 days in a row across the Day-7→Day-1 reward loop. The loyalty
+    // counter must not reset when the 1..7 reward cycle loops back.
+    for (let i = 0; i < 10; i++) {
+      const day = String(3 + i).padStart(2, "0");
+      const r = await claimDailyBonus(d(`2026-07-${day}`));
+      expect(r.consecutive).toBe(i + 1);
+    }
+    expect(await getBestStreak()).toBe(10);
+  });
+
+  test("a second claim the same day is refused (no double-award)", async () => {
+    await setCoins(0);
+    const a = await claimDailyBonus(d("2026-07-03"));
+    const b = await claimDailyBonus(d("2026-07-03"));
+    expect(a.claimed).toBe(true);
+    expect(b.claimed).toBe(false);
+    expect(await getCoins()).toBe(DAILY_REWARDS[0]); // charged exactly once
+  });
+
   test("days 1-6 total exactly 1000, week totals 2000", () => {
     const week = DAILY_REWARDS.reduce((a, b) => a + b, 0);
     const firstSix = DAILY_REWARDS.slice(0, 6).reduce((a, b) => a + b, 0);

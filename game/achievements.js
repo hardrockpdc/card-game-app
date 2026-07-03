@@ -191,25 +191,31 @@ export async function listAchievements() {
 // awarded so the caller can celebrate. Safe to call often — idempotent once an
 // achievement is claimed.
 export async function checkAndClaim() {
-  const ctx = await buildContext();
-  const claimed = await getClaimed();
-  const claimedSet = new Set(claimed);
+  // Run through the same queue as the event writes so this read-modify-write of
+  // the claimed set is serialized — two overlapping calls (e.g. Home focus +
+  // Achievements focus) can't both award the same achievement before either
+  // persists.
+  return enqueue(async () => {
+    const ctx = await buildContext();
+    const claimed = await getClaimed();
+    const claimedSet = new Set(claimed);
 
-  const newlyClaimed = [];
-  for (const a of ACHIEVEMENTS) {
-    if (!claimedSet.has(a.id) && a.check(ctx)) {
-      await addCoins(a.reward);
-      claimedSet.add(a.id);
-      newlyClaimed.push({ id: a.id, name: a.name, icon: a.icon, reward: a.reward });
+    const newlyClaimed = [];
+    for (const a of ACHIEVEMENTS) {
+      if (!claimedSet.has(a.id) && a.check(ctx)) {
+        await addCoins(a.reward);
+        claimedSet.add(a.id);
+        newlyClaimed.push({ id: a.id, name: a.name, icon: a.icon, reward: a.reward });
+      }
     }
-  }
 
-  if (newlyClaimed.length > 0) {
-    try {
-      await AsyncStorage.setItem(KEY_CLAIMED, JSON.stringify([...claimedSet]));
-    } catch {
-      // best-effort
+    if (newlyClaimed.length > 0) {
+      try {
+        await AsyncStorage.setItem(KEY_CLAIMED, JSON.stringify([...claimedSet]));
+      } catch {
+        // best-effort
+      }
     }
-  }
-  return newlyClaimed;
+    return newlyClaimed;
+  });
 }

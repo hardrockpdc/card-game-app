@@ -1,6 +1,15 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { addCoins } from "./wallet";
 
+// Serialize claims so a fast double-tap (two claimDailyBonus calls before the
+// first persists) can't both pass the canClaim check and double-award. Same
+// pattern as game/wallet.js.
+let claimQueue = Promise.resolve();
+function enqueue(fn) {
+  claimQueue = claimQueue.then(fn, fn);
+  return claimQueue;
+}
+
 // Daily login bonus with a 7-day streak. Days 1–6 total exactly 1,000; Day 7 is
 // a 1,000 jackpot (equal to the rest of the week combined) → 2,000/week at a
 // perfect streak. Miss a day → the streak resets to Day 1. After Day 7 it loops
@@ -49,7 +58,13 @@ export async function getDailyStatus(now = new Date()) {
 
     if (!lastClaim) {
       // Never claimed → today would be Day 1.
-      return { canClaim: true, claimDay: 1, streakDay: 0, alreadyClaimedToday: false };
+      return {
+        canClaim: true,
+        claimDay: 1,
+        streakDay: 0,
+        alreadyClaimedToday: false,
+        wasConsecutive: false,
+      };
     }
 
     const gap = dayDiff(lastClaim, today);
@@ -61,60 +76,84 @@ export async function getDailyStatus(now = new Date()) {
         claimDay: lastDay || 1,
         streakDay: lastDay,
         alreadyClaimedToday: true,
+        wasConsecutive: false,
       };
     }
 
     if (gap === 1) {
-      // Consecutive day → advance, looping 7 → 1.
+      // Consecutive day → advance, looping 7 → 1. `wasConsecutive` is the TRUE
+      // gap-based flag (not the 1..7 cycle position) so the loyalty streak keeps
+      // climbing across the Day-7→Day-1 loop.
       const nextDay = lastDay >= 7 ? 1 : lastDay + 1;
-      return { canClaim: true, claimDay: nextDay, streakDay: lastDay, alreadyClaimedToday: false };
+      return {
+        canClaim: true,
+        claimDay: nextDay,
+        streakDay: lastDay,
+        alreadyClaimedToday: false,
+        wasConsecutive: true,
+      };
     }
 
     // Missed one or more days → streak resets to Day 1.
-    return { canClaim: true, claimDay: 1, streakDay: lastDay, alreadyClaimedToday: false };
+    return {
+      canClaim: true,
+      claimDay: 1,
+      streakDay: lastDay,
+      alreadyClaimedToday: false,
+      wasConsecutive: false,
+    };
   } catch {
-    return { canClaim: false, claimDay: 1, streakDay: 0, alreadyClaimedToday: false };
+    return {
+      canClaim: false,
+      claimDay: 1,
+      streakDay: 0,
+      alreadyClaimedToday: false,
+      wasConsecutive: false,
+    };
   }
 }
 
 // Claim today's bonus if available. Returns { claimed, day, amount, newBalance,
 // streakDay }. If already claimed today, returns { claimed: false }.
 export async function claimDailyBonus(now = new Date()) {
-  const status = await getDailyStatus(now);
-  if (!status.canClaim) {
-    return { claimed: false, day: status.claimDay, amount: 0, streakDay: status.streakDay };
-  }
-
-  const day = status.claimDay;
-  const amount = DAILY_REWARDS[day - 1] || 0;
-  const newBalance = await addCoins(amount);
-
-  const today = todayKey(now);
-  await AsyncStorage.setItem(KEY_LAST_CLAIM, today);
-  await AsyncStorage.setItem(KEY_STREAK_DAY, String(day));
-
-  // Track total consecutive days (not the 1..7 cycle) for the loyalty
-  // achievements (7-day / 30-day login streak). A continuation is a claim on a
-  // day other than a fresh Day-1 restart.
-  let consecutive = 1;
-  try {
-    const isContinuation = status.claimDay !== 1;
-    if (isContinuation) {
-      const prev = parseInt(await AsyncStorage.getItem(KEY_CONSECUTIVE), 10);
-      consecutive = (Number.isFinite(prev) && prev >= 0 ? prev : 0) + 1;
+  return enqueue(async () => {
+    // Re-read status INSIDE the queue so a second queued claim sees the first
+    // one's write and bails as already-claimed.
+    const status = await getDailyStatus(now);
+    if (!status.canClaim) {
+      return { claimed: false, day: status.claimDay, amount: 0, streakDay: status.streakDay };
     }
-    await AsyncStorage.setItem(KEY_CONSECUTIVE, String(consecutive));
 
-    const prevBest = parseInt(await AsyncStorage.getItem(KEY_BEST_STREAK), 10);
-    const best = Number.isFinite(prevBest) && prevBest >= 0 ? prevBest : 0;
-    if (consecutive > best) {
-      await AsyncStorage.setItem(KEY_BEST_STREAK, String(consecutive));
+    const day = status.claimDay;
+    const amount = DAILY_REWARDS[day - 1] || 0;
+    const newBalance = await addCoins(amount);
+
+    const today = todayKey(now);
+    await AsyncStorage.setItem(KEY_LAST_CLAIM, today);
+    await AsyncStorage.setItem(KEY_STREAK_DAY, String(day));
+
+    // Track total consecutive days (not the 1..7 cycle) for the loyalty
+    // achievements (7-/30-day login streak). Use the TRUE gap-based
+    // `wasConsecutive` flag so the count survives the Day-7→Day-1 reward loop.
+    let consecutive = 1;
+    try {
+      if (status.wasConsecutive) {
+        const prev = parseInt(await AsyncStorage.getItem(KEY_CONSECUTIVE), 10);
+        consecutive = (Number.isFinite(prev) && prev >= 0 ? prev : 0) + 1;
+      }
+      await AsyncStorage.setItem(KEY_CONSECUTIVE, String(consecutive));
+
+      const prevBest = parseInt(await AsyncStorage.getItem(KEY_BEST_STREAK), 10);
+      const best = Number.isFinite(prevBest) && prevBest >= 0 ? prevBest : 0;
+      if (consecutive > best) {
+        await AsyncStorage.setItem(KEY_BEST_STREAK, String(consecutive));
+      }
+    } catch {
+      // Streak tracking is best-effort; never block the coin award.
     }
-  } catch {
-    // Streak tracking is best-effort; never block the coin award.
-  }
 
-  return { claimed: true, day, amount, newBalance, streakDay: day, consecutive };
+    return { claimed: true, day, amount, newBalance, streakDay: day, consecutive };
+  });
 }
 
 export async function getBestStreak() {
