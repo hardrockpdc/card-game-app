@@ -169,11 +169,10 @@ export default function SinglePlayerSetupScreen({ navigation }) {
   const COLS = 2;
   const GAP = scale(12);
 
-  // 7 games + a "Coming Soon" placeholder = 8 tiles, 4 even rows of 2
-  const gridItems = [...GAMES, { id: "comingSoon", comingSoon: true }];
+  // 8 games = 8 tiles, 4 even rows of 2
   const rows = [];
-  for (let i = 0; i < gridItems.length; i += COLS) {
-    rows.push(gridItems.slice(i, i + COLS));
+  for (let i = 0; i < GAMES.length; i += COLS) {
+    rows.push(GAMES.slice(i, i + COLS));
   }
 
   // Deterministic tile sizing: measure the grid area (onLayout) then compute an
@@ -283,20 +282,7 @@ export default function SinglePlayerSetupScreen({ navigation }) {
                 rowIdx < rows.length - 1 && { marginBottom: GAP },
               ]}
             >
-              {row.map((game, colIdx) =>
-                game.comingSoon ? (
-                  <View
-                    key="comingSoon"
-                    style={[
-                      styles.cell,
-                      { marginLeft: colIdx > 0 ? GAP : 0 },
-                    ]}
-                  >
-                    <View style={[styles.tile, styles.comingSoonTile, tileSize]}>
-                      <Text style={styles.comingSoonText}>Coming{"\n"}Soon</Text>
-                    </View>
-                  </View>
-                ) : (
+              {row.map((game, colIdx) => (
                   <TouchableOpacity
                     key={game.id}
                     style={[
@@ -342,8 +328,7 @@ export default function SinglePlayerSetupScreen({ navigation }) {
                       />
                     )}
                   </TouchableOpacity>
-                ),
-              )}
+                ))}
             </View>
           ))}
         </View>
@@ -429,19 +414,6 @@ const styles = StyleSheet.create({
   },
   placeholderThumbIcon: {
     fontSize: scaleFont(44),
-  },
-  comingSoonTile: {
-    borderColor: "#33405566",
-    borderStyle: "dashed",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  comingSoonText: {
-    color: "#5a6b85",
-    fontSize: scaleFont(15),
-    fontWeight: "700",
-    textAlign: "center",
-    lineHeight: scaleFont(20),
   },
   // ── Blackjack resume overlay ───────────────────────────────────────────────
   resumeOverlay: {
