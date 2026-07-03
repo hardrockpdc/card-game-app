@@ -86,7 +86,7 @@ export default function ProfileScreen({ navigation, route }) {
   async function handleResetCoins() {
     Alert.alert(
       "Reset Coins?",
-      "This will reset your coin balance back to 1000. Are you sure?",
+      "This resets your coin balance to 1000 and clears your lifetime earned coins — your rank will reset too. This can't be undone. Are you sure?",
       [
         { text: "Cancel", style: "cancel" },
         {
