@@ -23,6 +23,7 @@ import { getDailyStatus } from "../game/dailyBonus";
 import { checkAndClaim } from "../game/achievements";
 import ProfileAvatar from "../components/ProfileAvatar";
 import DailyBonusModal from "../components/DailyBonusModal";
+import SuitBackground from "../components/SuitBackground";
 
 const PROFILE_WELCOME_MESSAGE =
   "Welcome! Set up your profile (you can change anything later)";
@@ -147,7 +148,9 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <SuitBackground />
       <ScrollView
+        style={styles.scroll}
         contentContainerStyle={[
           styles.container,
           { padding: containerPadding },
@@ -320,9 +323,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#1a1a2e",
   },
+  scroll: {
+    backgroundColor: "transparent",
+  },
   container: {
     flexGrow: 1,
-    backgroundColor: "#1a1a2e",
     alignItems: "center",
     justifyContent: "center",
   },

@@ -8,8 +8,6 @@ import {
   FlatList,
   ScrollView,
   Alert,
-  Animated,
-  AccessibilityInfo,
   useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -32,6 +30,7 @@ import {
 import { updateProfile } from "../game/profile";
 import { AVATAR_CHOICES } from "../game/avatars";
 import { scale, scaleFont } from "../game/responsive";
+import SuitBackground from "../components/SuitBackground";
 
 async function cropToSquare(uri, width, height) {
   const side = Math.min(width || 0, height || 0);
@@ -60,77 +59,6 @@ const APP_ICON = require("../assets/icon.png");
 // Game roster grouped by mode, shown on the post-setup info screen.
 const SOLO_GAMES = ["Blackjack", "Solitaire", "Go Fish", "Rummy", "Conquián", "Poker", "Last Card"];
 const MP_GAMES = ["Go Fish", "Rummy", "Conquián", "Poker", "Last Card", "Who Am I?"];
-
-// Subtle drifting card-suit glyphs behind the welcome content. Muted tints so
-// they read as texture on the dark background, not decoration competing with
-// the copy. Reds for hearts/diamonds, blues for spades/clubs.
-const SUIT_RED = "#5e3a4a";
-const SUIT_BLUE = "#33436b";
-const FLOATERS = [
-  { char: "♠", left: "8%", top: "10%", size: scale(52), color: SUIT_BLUE, dur: 4200, delay: 0, drift: -scale(34), opacity: 0.55 },
-  { char: "♥", left: "72%", top: "14%", size: scale(40), color: SUIT_RED, dur: 5200, delay: 600, drift: scale(30), opacity: 0.5 },
-  { char: "♦", left: "24%", top: "30%", size: scale(30), color: SUIT_RED, dur: 4600, delay: 1200, drift: -scale(26), opacity: 0.45 },
-  { char: "♣", left: "84%", top: "42%", size: scale(46), color: SUIT_BLUE, dur: 5600, delay: 400, drift: scale(36), opacity: 0.5 },
-  { char: "♦", left: "12%", top: "60%", size: scale(44), color: SUIT_RED, dur: 4800, delay: 900, drift: scale(32), opacity: 0.5 },
-  { char: "♠", left: "68%", top: "70%", size: scale(34), color: SUIT_BLUE, dur: 5000, delay: 1500, drift: -scale(30), opacity: 0.45 },
-  { char: "♣", left: "40%", top: "82%", size: scale(50), color: SUIT_BLUE, dur: 5400, delay: 200, drift: -scale(38), opacity: 0.5 },
-  { char: "♥", left: "88%", top: "84%", size: scale(28), color: SUIT_RED, dur: 4400, delay: 1100, drift: scale(24), opacity: 0.45 },
-];
-
-// Animated backdrop shared by every onboarding step. Its own component so its
-// hooks live here (re-mounts per step) rather than becoming step-conditional in
-// the parent. Honors reduce-motion by leaving the glyphs static (CLAUDE.md 2.4).
-function OnboardingBackground() {
-  const animsRef = useRef(FLOATERS.map(() => new Animated.Value(0))).current;
-
-  useEffect(() => {
-    let mounted = true;
-    const loops = [];
-    AccessibilityInfo.isReduceMotionEnabled().then((reduced) => {
-      if (!mounted || reduced) return; // reduced motion → leave values at 0 (static)
-      animsRef.forEach((val, i) => {
-        const f = FLOATERS[i];
-        const loop = Animated.loop(
-          Animated.sequence([
-            Animated.timing(val, { toValue: 1, duration: f.dur, delay: f.delay, useNativeDriver: true }),
-            Animated.timing(val, { toValue: 0, duration: f.dur, useNativeDriver: true }),
-          ]),
-        );
-        loops.push(loop);
-        loop.start();
-      });
-    });
-    return () => {
-      mounted = false;
-      loops.forEach((l) => l.stop());
-      animsRef.forEach((v) => v.stopAnimation());
-    };
-  }, [animsRef]);
-
-  return (
-    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-      {FLOATERS.map((f, i) => {
-        const val = animsRef[i];
-        const translateY = val.interpolate({ inputRange: [0, 1], outputRange: [0, f.drift] });
-        const opacity = val.interpolate({
-          inputRange: [0, 0.5, 1],
-          outputRange: [f.opacity * 0.55, f.opacity, f.opacity * 0.55],
-        });
-        return (
-          <Animated.Text
-            key={i}
-            style={[
-              styles.floater,
-              { left: f.left, top: f.top, fontSize: f.size, color: f.color, opacity, transform: [{ translateY }] },
-            ]}
-          >
-            {f.char}
-          </Animated.Text>
-        );
-      })}
-    </View>
-  );
-}
 
 export default function OnboardingScreen({ navigation }) {
   const { width, height } = useWindowDimensions();
@@ -277,7 +205,7 @@ export default function OnboardingScreen({ navigation }) {
   if (step === 0) {
     return (
       <SafeAreaView style={styles.safe}>
-        <OnboardingBackground />
+        <SuitBackground />
         <ScrollView
           contentContainerStyle={[styles.stepContainer, styles.welcomeContainer]}
           keyboardShouldPersistTaps="handled"
@@ -303,7 +231,7 @@ export default function OnboardingScreen({ navigation }) {
   if (step === 1) {
     return (
       <SafeAreaView style={styles.safe}>
-        <OnboardingBackground />
+        <SuitBackground />
         <ScrollView contentContainerStyle={styles.stepContainer} keyboardShouldPersistTaps="handled">
           <Text style={styles.stepLabel}>STEP 1 OF 3</Text>
           <Text style={styles.title}>What's your name?</Text>
@@ -335,7 +263,7 @@ export default function OnboardingScreen({ navigation }) {
   if (step === 2) {
     return (
       <SafeAreaView style={styles.safe}>
-        <OnboardingBackground />
+        <SuitBackground />
         <ScrollView contentContainerStyle={styles.stepContainer} keyboardShouldPersistTaps="handled">
           <Text style={styles.stepLabel}>STEP 2 OF 3</Text>
           <Text style={styles.title}>Add a profile photo</Text>
@@ -395,7 +323,7 @@ export default function OnboardingScreen({ navigation }) {
   if (step === 3) {
     return (
     <SafeAreaView style={styles.safe}>
-      <OnboardingBackground />
+      <SuitBackground />
       <View style={styles.cardStepHeader}>
         <Text style={styles.stepLabel}>STEP 3 OF 3</Text>
         <Text style={styles.title}>Choose your card style</Text>
@@ -456,7 +384,7 @@ export default function OnboardingScreen({ navigation }) {
   // Step 4: Game info (after profile setup) — what you can play, by mode.
   return (
     <SafeAreaView style={styles.safe}>
-      <OnboardingBackground />
+      <SuitBackground />
       <ScrollView contentContainerStyle={styles.stepContainer} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>You're all set! 🎉</Text>
         <Text style={styles.subtitle}>Here's what you can play.</Text>
@@ -503,10 +431,6 @@ const styles = StyleSheet.create({
   welcomeContainer: {
     justifyContent: "center",
     alignItems: "center",
-  },
-  floater: {
-    position: "absolute",
-    fontWeight: "700",
   },
   welcomeIcon: {
     width: scale(120),
