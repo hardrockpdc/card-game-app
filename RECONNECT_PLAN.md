@@ -1,6 +1,13 @@
 # Online Reconnect Plan — surviving app backgrounding
 
-**Status:** PLAN for review (not built yet). Written 2026-07-04.
+**Status:** Phase 1 IN PROGRESS (2026-07-04). Built so far: the shared infra
+(`onlineTransport.onClientJoined`-on-reappear + `onlineGetRoomCode`,
+`onlineRoom.rejoinRoom`), the shared hook `components/useOnlineReconnect.js`, and
+wiring in **Last Card** (host pause/resume, client foreground rejoin, action
+gating, overlay). PAUSE uses a single boolean message (not PAUSE/RESUME types) to
+avoid a replay race. **Remaining:** device-test on 2 phones, then adopt the hook
+in Go Fish (replaces its half-built inline version), Conquián, Rummy, Poker,
+Who Am I?. Phase 2 (host survival) not started.
 
 ## The problem
 Switching away from the app (to read a message, etc.) drops you from an online

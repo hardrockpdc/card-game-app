@@ -75,6 +75,12 @@ export function onlineGetAssignedClientId() {
   return config?.uid ?? null;
 }
 
+// The room code for the active online session, or null in local mode. Used by
+// the reconnect hook to re-add our player slot after a background drop.
+export function onlineGetRoomCode() {
+  return config?.code ?? null;
+}
+
 // ─── Host listeners ──────────────────────────────────────────────────────────
 export function onlineSetServerListeners(listeners) {
   serverListeners = listeners || {};
@@ -110,6 +116,16 @@ export function onlineSetServerListeners(listeners) {
             serverListeners.onClientLeft?.({ id: uid });
           } catch (err) {
             warn("[onlineTransport] onClientLeft threw:", err);
+          }
+        }
+      }
+      // A uid REappearing means a dropped player reconnected (rejoinRoom).
+      for (const uid of now) {
+        if (!known.includes(uid)) {
+          try {
+            serverListeners.onClientJoined?.({ id: uid });
+          } catch (err) {
+            warn("[onlineTransport] onClientJoined threw:", err);
           }
         }
       }

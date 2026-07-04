@@ -131,6 +131,36 @@ export async function joinRoom(code, { playerName }) {
   }
 }
 
+// Re-adds our player slot to a room that's already "playing" — used to reconnect
+// after the app was backgrounded (the server's onDisconnect removed our slot).
+// Unlike joinRoom, this skips the "waiting" gate, but ONLY lets a device that
+// was part of the finalized roster (gamePlayers) back in, so randoms can't inject
+// themselves mid-game. Re-arms onDisconnect. Returns { code, uid } or { error }.
+export async function rejoinRoom(code) {
+  const uid = getUid() || (await ensureSignedIn());
+  if (!uid) return { error: "Not signed in." };
+
+  const cleanCode = String(code || "").trim().toUpperCase();
+  try {
+    const snap = await get(roomRef(cleanCode));
+    if (!snap.exists()) return { error: "Room closed." };
+    const room = snap.val();
+
+    const roster = Array.isArray(room.gamePlayers) ? room.gamePlayers : [];
+    const mine = roster.find((p) => String(p?.id) === String(uid));
+    if (!mine) return { error: "You're not in this game." };
+
+    const playerRef = ref(db(), `rooms/${cleanCode}/players/${uid}`);
+    await set(playerRef, { name: mine.name || "Player", isHost: false });
+    onDisconnect(playerRef).remove();
+
+    return { code: cleanCode, uid };
+  } catch (err) {
+    warn("[onlineRoom] rejoinRoom failed:", err);
+    return { error: "Could not reconnect." };
+  }
+}
+
 // Listens to a room's live state. Calls cb(room) on every change, or cb(null)
 // if the room is deleted (host left / closed). Returns an unsubscribe function.
 export function subscribeToRoom(code, cb) {

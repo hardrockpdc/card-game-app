@@ -15,6 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import GameHeader from "../components/GameHeader";
 import EndOfRoundModal from "../components/EndOfRoundModal";
 import YourTurnBanner from "../components/YourTurnBanner";
+import useOnlineReconnect from "../components/useOnlineReconnect";
 import {
   COLORS,
   createDeck,
@@ -244,6 +245,35 @@ export default function LastCardGameScreen({ navigation, route }) {
   const outcomeBuzzedRef = useRef(false); // fire win/lose haptic once per game
   const lastSaveRef = useRef(0); // BUG-4: auto-save throttle (once / 3s)
 
+  // Mid-game reconnect: pause when a remote player drops, resume when they return.
+  const reconnect = useOnlineReconnect({
+    role,
+    getPlayerName: (id) =>
+      stateRef.current?.players.find((p) => String(p.id) === String(id))?.name ??
+      "A player",
+    isRealPlayer: (id) => {
+      const p = stateRef.current?.players.find((x) => String(x.id) === String(id));
+      return !!p && !p.isAI && String(p.id) !== MY_ID;
+    },
+    broadcast: broadcastToClients,
+    resendState: () => broadcastState(stateRef.current),
+    onGraceExpired: (name) => {
+      stopServer();
+      Alert.alert(
+        "Player left",
+        `${name} didn't reconnect in time. The game has ended.`,
+        [{ text: "OK", onPress: () => navigation.navigate("Home") }],
+      );
+    },
+    onHostEnded: (name) => {
+      Alert.alert(
+        "Game ended",
+        `${name} left and didn't reconnect in time.`,
+        [{ text: "OK", onPress: () => navigation.navigate("Home") }],
+      );
+    },
+  });
+
   // Keep the table palette in sync (loaded at app start; may change via the
   // in-game Table Colour picker).
   useEffect(() => {
@@ -447,6 +477,7 @@ export default function LastCardGameScreen({ navigation, route }) {
 
   function handleTurn(s) {
     if (!s || !mountedRef.current) return;
+    if (reconnect.pausedRef.current) return; // frozen while a player reconnects
     if (phaseRef.current === "colorPicker") return;
 
     const winnerId = checkWin(s);
@@ -687,12 +718,11 @@ export default function LastCardGameScreen({ navigation, route }) {
 
     if (!isSinglePlayer) {
       setServerListeners({
-        onClientJoined: () => {},
-        onClientLeft: ({ id }) => {
-          setStatusMsg(`Player ${id} left the game.`);
-        },
+        onClientJoined: ({ id }) => reconnect.hostHandleClientJoined(id),
+        onClientLeft: ({ id }) => reconnect.hostHandleClientLeft(id),
         onMessage: (msg, clientId) => {
           if (handleHostMessage(msg, clientId)) return;
+          if (reconnect.pausedRef.current) return; // ignore actions while paused
           const s = fullRef.current;
           if (!s || s.gameOver) return;
           const pid = String(clientId);
@@ -762,6 +792,7 @@ export default function LastCardGameScreen({ navigation, route }) {
     if (isHost) return;
     setClientListeners({
       onMessage: (msg) => {
+        if (reconnect.clientHandleMessage(msg)) return;
         if (handleClientMessage(msg)) return;
         if (msg.type === "GAME_STATE") {
           const shouldShowColorPicker =
@@ -835,6 +866,7 @@ export default function LastCardGameScreen({ navigation, route }) {
   }
 
   function onCardTap(card) {
+    if (reconnect.pausedRef.current) return;
     const s = getCurrentState();
     if (!s || s.gameOver) return;
     if (phaseRef.current === "colorPicker") return;
@@ -880,6 +912,7 @@ export default function LastCardGameScreen({ navigation, route }) {
   }
 
   function onDeckTap() {
+    if (reconnect.pausedRef.current) return;
     const s = getCurrentState();
     if (!s || s.gameOver) return;
     if (phaseRef.current === "colorPicker") return;
@@ -908,6 +941,7 @@ export default function LastCardGameScreen({ navigation, route }) {
   }
 
   function onColorPick(color) {
+    if (reconnect.pausedRef.current) return;
     const s = getCurrentState();
     const pending = pendingWildRef.current;
     if (!s || !pending || s.gameOver) return;
@@ -1317,6 +1351,8 @@ export default function LastCardGameScreen({ navigation, route }) {
         onLeave={handleQuit}
         tableColor={pal.felt}
       />
+
+      {reconnect.overlay}
     </SafeAreaView>
   );
 }
