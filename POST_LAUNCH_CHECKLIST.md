@@ -28,10 +28,12 @@ actual installed-from-Play build:
 ---
 
 ## Known open items (do BEFORE a public production launch)
-- [ ] **Firebase security rules** — hardened rules are written and committed at
-      `database.rules.json` (only stores `rooms/*`; coins/profile/achievements are
-      local, never in Firebase). **They are NOT live until you deploy them** to the
-      Firebase console. Do this before public launch:
+- [x] **Firebase security rules — DEPLOYED 2026-07-04** (published in the console).
+      Hardened rules at `database.rules.json` (only stores `rooms/*`;
+      coins/profile/achievements are local, never in Firebase).
+      **Still to confirm:** re-test online MP end-to-end (host + join + play) so a
+      rule mistake would surface as a failed join/move. Original deploy steps kept
+      below for reference:
         1. Firebase console → your project → Realtime Database → **Rules** tab.
         2. Replace the wide-open test rules with the contents of
            `database.rules.json`, then **Publish**. (Or, with the Firebase CLI:
