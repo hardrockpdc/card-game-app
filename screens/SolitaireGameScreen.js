@@ -42,7 +42,7 @@ import {
   tapAction,
   undoAction,
 } from "../game/solitaire";
-import { getCardBackImage } from "../game/cardTheme";
+import { getCardBackImage, getCardImage } from "../game/cardTheme";
 import { addCoins } from "../game/wallet";
 import { getWinReward } from "../game/rewards";
 import { recordWin } from "../game/profile";
@@ -515,6 +515,21 @@ export default function SolitaireGameScreen({ navigation, route }) {
   // P1: Cached reduced-motion preference. Read once on mount, updated on change.
   const reduceMotionRef = useRef(false);
 
+  // Stock→waste deal animation (Klondike, landscape): a card slides from the
+  // stock into the waste while flipping from the deck back to its face.
+  const dealGhostAnim = useRef({
+    x: new Animated.Value(0),
+    y: new Animated.Value(0),
+    flip: new Animated.Value(0),
+  }).current;
+  const [dealGhost, setDealGhost] = useState(null); // { card, from, to } | null
+  const railRef = useRef(null); // coordinate origin for the ghost
+  const stockWrapRef = useRef(null);
+  const wasteWrapRef = useRef(null);
+  const prevWasteLenRef = useRef(state.waste.length);
+  const prevStockLenRef = useRef(state.stock.length);
+  const dealTokenRef = useRef(0); // guards against a stale animation clearing a newer one
+
   // BUG-4: Unified mount effect — always check for a saved game first,
   // regardless of resumeFromSave. Prevents hot-reload from clobbering
   // an in-progress game with a fresh deal.
@@ -557,6 +572,78 @@ export default function SolitaireGameScreen({ navigation, route }) {
       sub?.remove?.();
     };
   }, []);
+
+  // Detect a stock→waste draw (waste +1, stock -1) and animate the drawn card
+  // sliding from the stock into the waste. Klondike + landscape only for now.
+  useEffect(() => {
+    const prevWaste = prevWasteLenRef.current;
+    const prevStock = prevStockLenRef.current;
+    prevWasteLenRef.current = state.waste.length;
+    prevStockLenRef.current = state.stock.length;
+
+    if (state.variantId !== "klondike" || !isLandscape) return;
+    if (reduceMotionRef.current) return;
+    const isDraw =
+      state.waste.length === prevWaste + 1 &&
+      state.stock.length === prevStock - 1;
+    if (!isDraw) return;
+    const drawn = getTopCard(state.waste);
+    if (drawn) animateDeal(drawn);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.waste.length, state.stock.length]);
+
+  function animateDeal(card) {
+    const rail = railRef.current;
+    const sw = stockWrapRef.current;
+    const ww = wasteWrapRef.current;
+    if (!rail?.measureInWindow || !sw?.measureInWindow || !ww?.measureInWindow) {
+      return; // can't measure → skip the animation, no harm
+    }
+    // Absolute children of the rail sit inside its border+padding, so offset the
+    // window-relative positions by that inset (rightRail: borderWidth 1 + padding 6).
+    const RAIL_INSET = 7;
+    rail.measureInWindow((rx, ry) => {
+      sw.measureInWindow((sx, sy, swW, swH) => {
+        ww.measureInWindow((wx, wy, wwW, wwH) => {
+          const from = { x: sx - rx - RAIL_INSET, y: sy - ry - RAIL_INSET };
+          const to = {
+            x: wx - rx - RAIL_INSET,
+            y: wy - ry - RAIL_INSET,
+            w: wwW,
+            h: wwH,
+          };
+          const token = ++dealTokenRef.current;
+          dealGhostAnim.x.setValue(from.x);
+          dealGhostAnim.y.setValue(from.y);
+          dealGhostAnim.flip.setValue(0);
+          setDealGhost({ card, to });
+          Animated.parallel([
+            Animated.timing(dealGhostAnim.x, {
+              toValue: to.x,
+              duration: 280,
+              easing: Easing.out(Easing.quad),
+              useNativeDriver: true,
+            }),
+            Animated.timing(dealGhostAnim.y, {
+              toValue: to.y,
+              duration: 280,
+              easing: Easing.out(Easing.quad),
+              useNativeDriver: true,
+            }),
+            Animated.timing(dealGhostAnim.flip, {
+              toValue: 1,
+              duration: 280,
+              easing: Easing.linear,
+              useNativeDriver: true,
+            }),
+          ]).start(() => {
+            // Only clear if a newer deal hasn't started in the meantime.
+            if (dealTokenRef.current === token) setDealGhost(null);
+          });
+        });
+      });
+    });
+  }
 
   // P4: Cleanup any pending Spider animation timers on unmount so we don't
   // leak setTimeout callbacks if the user navigates away mid-animation.
@@ -972,6 +1059,11 @@ export default function SolitaireGameScreen({ navigation, route }) {
 
   const renderKlondike = () => {
     const wasteTop = getTopCard(state.waste);
+    // While a deal is flying in, keep showing the PREVIOUS top card so the drawn
+    // card doesn't pop into the waste before the animation lands.
+    const displayWasteTop = dealGhost
+      ? state.waste[state.waste.length - 2] ?? null
+      : wasteTop;
 
     const stockSlot = (
       <StockSlot
@@ -985,7 +1077,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
 
     const wasteSlot = (
       <CardSlot
-        card={wasteTop}
+        card={displayWasteTop}
         label="Waste"
         sizeScale={slotScale}
         onPress={() => dispatch(tapAction({ type: "waste" }))}
@@ -1158,14 +1250,14 @@ export default function SolitaireGameScreen({ navigation, route }) {
             {columns}
           </View>
 
-          <View style={styles.rightRail}>
+          <View style={styles.rightRail} ref={railRef} collapsable={false}>
             <View style={styles.landscapeHeaderRight}>
               <StatsStrip gameId="solitaire" items={statsItems} bare stacked />
               <GameMenuButton menuItems={menuItems} />
             </View>
             <View style={styles.railSlotRow}>
-              {stockSlot}
-              {wasteSlot}
+              <View ref={stockWrapRef} collapsable={false}>{stockSlot}</View>
+              <View ref={wasteWrapRef} collapsable={false}>{wasteSlot}</View>
             </View>
             <View style={[styles.railSlotRow, styles.railFoundationsTop]}>
               {foundationSlots[0]}
@@ -1175,6 +1267,59 @@ export default function SolitaireGameScreen({ navigation, route }) {
               {foundationSlots[2]}
               {foundationSlots[3]}
             </View>
+
+            {dealGhost && (
+              <Animated.View
+                pointerEvents="none"
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  top: 0,
+                  width: dealGhost.to.w,
+                  height: dealGhost.to.h,
+                  zIndex: 30,
+                  transform: [
+                    { translateX: dealGhostAnim.x },
+                    { translateY: dealGhostAnim.y },
+                    {
+                      scaleX: dealGhostAnim.flip.interpolate({
+                        inputRange: [0, 0.5, 1],
+                        outputRange: [1, 0, 1],
+                      }),
+                    },
+                  ],
+                }}
+              >
+                <Animated.Image
+                  source={getCardBackImage()}
+                  resizeMode="cover"
+                  style={{
+                    position: "absolute",
+                    width: "100%",
+                    height: "100%",
+                    borderRadius: 14,
+                    opacity: dealGhostAnim.flip.interpolate({
+                      inputRange: [0, 0.49, 0.5, 1],
+                      outputRange: [1, 1, 0, 0],
+                    }),
+                  }}
+                />
+                <Animated.Image
+                  source={getCardImage(dealGhost.card.rankLabel, dealGhost.card.symbol)}
+                  resizeMode="cover"
+                  style={{
+                    position: "absolute",
+                    width: "100%",
+                    height: "100%",
+                    borderRadius: 14,
+                    opacity: dealGhostAnim.flip.interpolate({
+                      inputRange: [0, 0.5, 0.51, 1],
+                      outputRange: [0, 0, 1, 1],
+                    }),
+                  }}
+                />
+              </Animated.View>
+            )}
           </View>
         </View>
       );
