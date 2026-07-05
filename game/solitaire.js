@@ -1874,9 +1874,9 @@ export function getLegalTargets(state, source) {
 }
 
 // ── One-tap auto-move (build variants: Klondike / FreeCell / Spider) ──────────
-// Tapping a card sends it to a legal spot automatically, preferring to build on
-// a tableau (keep cards in play), then a foundation, then an empty column, then
-// a free cell. Manual placement is still available by dragging.
+// Tapping a card sends it to a legal spot automatically, preferring a foundation
+// (progress toward winning), then a tableau build, then an empty column, then a
+// free cell. Manual placement is still available by dragging.
 
 // Turn a tapped element into a move SOURCE, or null if it isn't a movable card.
 function tapSourceFor(state, target) {
@@ -1903,10 +1903,11 @@ function tapSourceFor(state, target) {
 
 // Lower number = higher preference.
 function autoMovePriority(state, target) {
+  if (target.type === "foundation") return 1;
   if (target.type === "tableau") {
-    return (state.tableau?.[target.index] || []).length > 0 ? 1 : 3;
+    // Build onto a card before dropping onto an empty column.
+    return (state.tableau?.[target.index] || []).length > 0 ? 2 : 3;
   }
-  if (target.type === "foundation") return 2;
   if (target.type === "freecell") return 4;
   return 5;
 }

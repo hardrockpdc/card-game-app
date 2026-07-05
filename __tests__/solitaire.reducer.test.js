@@ -89,9 +89,9 @@ describe("autoMoveAction (one-tap auto-move)", () => {
     expect(viaAuto.moves).toBe(s.moves + 1);
   });
 
-  test("prefers a tableau build over a foundation (tableau-first)", () => {
+  test("prefers a foundation over a tableau build (foundation-first)", () => {
     // A red 6 sitting alone; it can go to a foundation (on the 5♦) OR build on a
-    // black 7. Auto-move must choose the tableau build.
+    // black 7. Auto-move must choose the foundation.
     // Card factory using WORD suits (isRed checks "hearts"/"diamonds").
     const c = (rank, suit) => ({
       rank,
@@ -132,8 +132,8 @@ describe("autoMoveAction (one-tap auto-move)", () => {
     };
     const source = { type: "tableau", index: 0, cardIndex: 0 };
     const dest = getAutoMoveTarget(s, source);
-    expect(dest.type).toBe("tableau");
-    expect(dest.index).toBe(1);
+    expect(dest.type).toBe("foundation");
+    expect(dest.index).toBe(0);
   });
 
   test("stock tap still deals", () => {
