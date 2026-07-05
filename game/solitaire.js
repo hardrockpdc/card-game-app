@@ -62,6 +62,7 @@ export const SPIDER_MODE_OPTIONS = [1, 2, 4].map((suitCount) => ({
 export const SOLITAIRE_ACTIONS = {
   NEW_GAME: "solitaire/newGame",
   TAP: "solitaire/tap",
+  AUTO_MOVE: "solitaire/autoMove",
   MOVE: "solitaire/move",
   SET_SPIDER_MODE: "solitaire/setSpiderMode",
   UNDO: "solitaire/undo",
@@ -78,6 +79,16 @@ export function newGameAction(variantId, options = {}) {
 export function tapAction(target) {
   return {
     type: SOLITAIRE_ACTIONS.TAP,
+    target,
+  };
+}
+
+// One-tap auto-move: in the build variants (Klondike/FreeCell/Spider) a tap on a
+// card sends it to the best legal spot automatically. Falls back to a normal tap
+// for stock deals and the match variants. Used by the screen for card taps.
+export function autoMoveAction(target) {
+  return {
+    type: SOLITAIRE_ACTIONS.AUTO_MOVE,
     target,
   };
 }
@@ -1774,6 +1785,25 @@ export function solitaireReducer(state, action) {
       return { ...afterPlace, selected: null, history };
     }
 
+    case SOLITAIRE_ACTIONS.AUTO_MOVE: {
+      // One-tap auto-move for build variants: send the tapped card to the best
+      // legal spot (tableau-first). Anything else (stock deals, empty columns,
+      // and the match variants) falls back to the normal tap. Uses moveAction,
+      // which keeps the validated MOVE path + single undo-history entry.
+      const t = action.target;
+      if (
+        ["klondike", "freecell", "spider"].includes(state.variantId) &&
+        t?.type !== "stock"
+      ) {
+        const source = tapSourceFor(state, t);
+        if (source) {
+          const dest = getAutoMoveTarget(state, source);
+          return dest ? solitaireReducer(state, moveAction(source, dest)) : state;
+        }
+      }
+      return solitaireReducer(state, tapAction(t));
+    }
+
     case SOLITAIRE_ACTIONS.TAP: {
       let nextState = state;
 
@@ -1841,6 +1871,53 @@ export function getLegalTargets(state, source) {
     const result = solitaireReducer(state, moveAction(source, target));
     return result.moves !== state.moves || result.pairs !== state.pairs;
   });
+}
+
+// ── One-tap auto-move (build variants: Klondike / FreeCell / Spider) ──────────
+// Tapping a card sends it to a legal spot automatically, preferring to build on
+// a tableau (keep cards in play), then a foundation, then an empty column, then
+// a free cell. Manual placement is still available by dragging.
+
+// Turn a tapped element into a move SOURCE, or null if it isn't a movable card.
+function tapSourceFor(state, target) {
+  if (!target) return null;
+  if (target.type === "tableau") {
+    const pile = state.tableau?.[target.index] || [];
+    const cardIndex =
+      typeof target.cardIndex === "number"
+        ? target.cardIndex
+        : pile.findIndex((c) => c.faceUp);
+    if (cardIndex < 0 || !pile[cardIndex]?.faceUp) return null;
+    return { type: "tableau", index: target.index, cardIndex };
+  }
+  if (target.type === "waste") {
+    return topCard(state.waste) ? { type: "waste" } : null;
+  }
+  if (target.type === "freecell") {
+    return state.freecells?.[target.index]
+      ? { type: "freecell", index: target.index }
+      : null;
+  }
+  return null; // foundation / empty column are not auto-move sources
+}
+
+// Lower number = higher preference.
+function autoMovePriority(state, target) {
+  if (target.type === "tableau") {
+    return (state.tableau?.[target.index] || []).length > 0 ? 1 : 3;
+  }
+  if (target.type === "foundation") return 2;
+  if (target.type === "freecell") return 4;
+  return 5;
+}
+
+// The best legal destination for `source`, or null if it can't move.
+export function getAutoMoveTarget(state, source) {
+  const targets = getLegalTargets(state, source);
+  if (!targets.length) return null;
+  return targets
+    .slice()
+    .sort((a, b) => autoMovePriority(state, a) - autoMovePriority(state, b))[0];
 }
 
 // A stable signature of the playable board, so two states can be compared to

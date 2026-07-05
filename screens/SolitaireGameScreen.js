@@ -39,7 +39,7 @@ import {
   getVariantOption,
   newGameAction,
   solitaireReducer,
-  tapAction,
+  autoMoveAction,
   undoAction,
 } from "../game/solitaire";
 import { getCardBackImage, getCardImage } from "../game/cardTheme";
@@ -1132,7 +1132,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
       <StockSlot
         count={state.stock.length}
         emptyLabel="↻"
-        onPress={() => dispatch(tapAction({ type: "stock" }))}
+        onPress={() => dispatch(autoMoveAction({ type: "stock" }))}
         hinted={hint?.source?.type === "stock"}
         style={{ width: slotW, height: slotH }}
       />
@@ -1143,7 +1143,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
         card={displayWasteTop}
         label="Waste"
         sizeScale={slotScale}
-        onPress={() => dispatch(tapAction({ type: "waste" }))}
+        onPress={() => dispatch(autoMoveAction({ type: "waste" }))}
         selected={sameTarget(state.selected, { type: "waste" })}
         hinted={hint?.source?.type === "waste"}
         dragGesture={
@@ -1171,7 +1171,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
           card={top}
           label={`F${index + 1}`}
           sizeScale={slotScale}
-          onPress={() => dispatch(tapAction({ type: "foundation", index }))}
+          onPress={() => dispatch(autoMoveAction({ type: "foundation", index }))}
           selected={selected}
           containerRef={
             dragEnabled
@@ -1223,7 +1223,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
               />
               <Pressable
                 onPress={() =>
-                  dispatch(tapAction({ type: "tableau", index: pileIndex }))
+                  dispatch(autoMoveAction({ type: "tableau", index: pileIndex }))
                 }
                 style={({ pressed }) => [
                   styles.emptyColumnSlot,
@@ -1273,7 +1273,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                 label=""
                 animateReveal={true}
                 sizeScale={tabCardScale}
-                onPress={() => dispatch(tapAction(source))}
+                onPress={() => dispatch(autoMoveAction(source))}
                 selected={selected}
                 hinted={isHintSourceTableau(hint, pileIndex, cardIndex)}
                 disabled={!card.faceUp}
@@ -1418,7 +1418,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
             <Pressable
               onPress={() =>
                 dispatch(
-                  tapAction({
+                  autoMoveAction({
                     type: "tableau",
                     index: pileIndex,
                     cardIndex: 0,
@@ -1467,7 +1467,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                 label=""
                 animateReveal={true}
                 sizeScale={isLandscape ? tabCardScale : undefined}
-                onPress={() => dispatch(tapAction(source))}
+                onPress={() => dispatch(autoMoveAction(source))}
                 selected={selected}
                 hinted={isHintSourceTableau(hint, pileIndex, cardIndex)}
                 disabled={!card.faceUp}
@@ -1538,7 +1538,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
               <StockSlot
                 count={state.stock.length}
                 emptyLabel="No deal"
-                onPress={() => dispatch(tapAction({ type: "stock" }))}
+                onPress={() => dispatch(autoMoveAction({ type: "stock" }))}
                 hinted={hint?.source?.type === "stock"}
                 style={{ width: slotW, height: Math.round(slotW * 1.05) }}
               />
@@ -1567,7 +1567,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
           <StockSlot
             count={state.stock.length}
             emptyLabel="No deal"
-            onPress={() => dispatch(tapAction({ type: "stock" }))}
+            onPress={() => dispatch(autoMoveAction({ type: "stock" }))}
             hinted={hint?.source?.type === "stock"}
           />
 
@@ -1616,7 +1616,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
           card={card}
           label={`Free ${index + 1}`}
           sizeScale={isLandscape ? slotScale : undefined}
-          onPress={() => dispatch(tapAction({ type: "freecell", index }))}
+          onPress={() => dispatch(autoMoveAction({ type: "freecell", index }))}
           selected={selected}
           hinted={isHintFreecell(hint, index)}
           dragGesture={
@@ -1657,7 +1657,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
           card={top}
           label={`F${index + 1}`}
           sizeScale={isLandscape ? slotScale : undefined}
-          onPress={() => dispatch(tapAction({ type: "foundation", index }))}
+          onPress={() => dispatch(autoMoveAction({ type: "foundation", index }))}
           selected={selected}
           containerRef={
             dragEnabled
@@ -1704,7 +1704,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
               />
               <Pressable
                 onPress={() =>
-                  dispatch(tapAction({ type: "tableau", index: pileIndex }))
+                  dispatch(autoMoveAction({ type: "tableau", index: pileIndex }))
                 }
                 style={({ pressed }) => [
                   styles.emptyColumnSlot,
@@ -1749,7 +1749,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                 label=""
                 animateReveal={true}
                 sizeScale={isLandscape ? tabCardScale : undefined}
-                onPress={() => dispatch(tapAction(source))}
+                onPress={() => dispatch(autoMoveAction(source))}
                 selected={selected}
                 hinted={isHintSourceTableau(hint, pileIndex, cardIndex)}
                 dragGesture={
@@ -1918,7 +1918,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                         sizeScale={pcScale}
                         onPress={() =>
                           dispatch(
-                            tapAction({
+                            autoMoveAction({
                               type: "pyramid",
                               row: rowIndex,
                               col: colIndex,
@@ -1952,7 +1952,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                 <StockSlot
                   count={state.stock.length}
                   emptyLabel="↻"
-                  onPress={() => dispatch(tapAction({ type: "stock" }))}
+                  onPress={() => dispatch(autoMoveAction({ type: "stock" }))}
                   hinted={hint?.source?.type === "stock"}
                   style={{ width: slotW, height: slotH }}
                 />
@@ -1962,7 +1962,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                   card={displayWasteTop}
                   label="Waste"
                   sizeScale={slotScale}
-                  onPress={() => dispatch(tapAction({ type: "waste" }))}
+                  onPress={() => dispatch(autoMoveAction({ type: "waste" }))}
                   selected={sameTarget(state.selected, { type: "waste" })}
                   hinted={hint?.target?.type === "waste"}
                   style={{
@@ -1993,14 +1993,14 @@ export default function SolitaireGameScreen({ navigation, route }) {
           <StockSlot
             count={state.stock.length}
             emptyLabel="↻"
-            onPress={() => dispatch(tapAction({ type: "stock" }))}
+            onPress={() => dispatch(autoMoveAction({ type: "stock" }))}
             hinted={hint?.source?.type === "stock"}
           />
 
           <CardSlot
             card={wasteTop}
             label="Waste"
-            onPress={() => dispatch(tapAction({ type: "waste" }))}
+            onPress={() => dispatch(autoMoveAction({ type: "waste" }))}
             selected={sameTarget(state.selected, { type: "waste" })}
             hinted={hint?.target?.type === "waste"}
             style={styles.slotCard}
@@ -2047,7 +2047,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                       animateReveal={true}
                       onPress={() =>
                         dispatch(
-                          tapAction({
+                          autoMoveAction({
                             type: "pyramid",
                             row: rowIndex,
                             col: colIndex,
@@ -2155,7 +2155,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                         sizeScale={pcScale}
                         onPress={() =>
                           dispatch(
-                            tapAction({
+                            autoMoveAction({
                               type: "tripeaks",
                               row: rowIndex,
                               col: colIndex,
@@ -2189,7 +2189,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                 <StockSlot
                   count={state.stock.length}
                   emptyLabel="↻"
-                  onPress={() => dispatch(tapAction({ type: "stock" }))}
+                  onPress={() => dispatch(autoMoveAction({ type: "stock" }))}
                   hinted={hint?.source?.type === "stock"}
                   style={{ width: slotW, height: slotH }}
                 />
@@ -2199,7 +2199,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                   card={displayWasteTop}
                   label="Waste"
                   sizeScale={slotScale}
-                  onPress={() => dispatch(tapAction({ type: "waste" }))}
+                  onPress={() => dispatch(autoMoveAction({ type: "waste" }))}
                   selected={sameTarget(state.selected, { type: "waste" })}
                   hinted={hint?.target?.type === "waste"}
                   style={{
@@ -2230,14 +2230,14 @@ export default function SolitaireGameScreen({ navigation, route }) {
           <StockSlot
             count={state.stock.length}
             emptyLabel="↻"
-            onPress={() => dispatch(tapAction({ type: "stock" }))}
+            onPress={() => dispatch(autoMoveAction({ type: "stock" }))}
             hinted={hint?.source?.type === "stock"}
           />
 
           <CardSlot
             card={wasteTop}
             label="Waste"
-            onPress={() => dispatch(tapAction({ type: "waste" }))}
+            onPress={() => dispatch(autoMoveAction({ type: "waste" }))}
             selected={sameTarget(state.selected, { type: "waste" })}
             hinted={hint?.target?.type === "waste"}
             style={styles.slotCard}
@@ -2284,7 +2284,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                       animateReveal={true}
                       onPress={() =>
                         dispatch(
-                          tapAction({
+                          autoMoveAction({
                             type: "tripeaks",
                             row: rowIndex,
                             col: colIndex,

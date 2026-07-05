@@ -5,6 +5,8 @@ import {
   undoAction,
   setSpiderModeAction,
   tapAction,
+  autoMoveAction,
+  getAutoMoveTarget,
   moveAction,
   getLegalTargets,
   getHint,
@@ -57,6 +59,106 @@ describe("moveAction (drag-and-drop)", () => {
     expect(res.selected).toBeNull();
     expect(res.tableau).toEqual(base.tableau);
     expect(res.moves).toBe(base.moves);
+  });
+});
+
+describe("autoMoveAction (one-tap auto-move)", () => {
+  // Find a face-up tableau top card that has at least one legal auto-move target.
+  function findMovableTop(s) {
+    for (let i = 0; i < s.tableau.length; i += 1) {
+      const pile = s.tableau[i];
+      if (!pile.length) continue;
+      const idx = pile.length - 1;
+      if (!pile[idx].faceUp) continue;
+      const cand = { type: "tableau", index: i, cardIndex: idx };
+      if (getAutoMoveTarget(s, cand)) return cand;
+    }
+    return null;
+  }
+
+  test("tapping a card matches a MOVE to its auto-target", () => {
+    const s = createSolitaireState("klondike");
+    const source = findMovableTop(s);
+    if (!source) return; // this shuffle had no immediate tap move — skip
+    const dest = getAutoMoveTarget(s, source);
+    const viaAuto = solitaireReducer(s, autoMoveAction(source));
+    const viaMove = solitaireReducer(s, moveAction(source, dest));
+    expect(viaAuto.tableau).toEqual(viaMove.tableau);
+    expect(viaAuto.foundations).toEqual(viaMove.foundations);
+    expect(viaAuto.moves).toBe(viaMove.moves);
+    expect(viaAuto.moves).toBe(s.moves + 1);
+  });
+
+  test("prefers a tableau build over a foundation (tableau-first)", () => {
+    // A red 6 sitting alone; it can go to a foundation (on the 5♦) OR build on a
+    // black 7. Auto-move must choose the tableau build.
+    // Card factory using WORD suits (isRed checks "hearts"/"diamonds").
+    const c = (rank, suit) => ({
+      rank,
+      suit,
+      faceUp: true,
+      rankLabel: String(rank),
+      id: `${rank}-${suit}`,
+    });
+    const s = {
+      variantId: "klondike",
+      status: "playing",
+      moves: 0,
+      selected: null,
+      stock: [],
+      waste: [],
+      freecells: [],
+      foundations: [
+        [
+          c(1, "diamonds"),
+          c(2, "diamonds"),
+          c(3, "diamonds"),
+          c(4, "diamonds"),
+          c(5, "diamonds"),
+        ],
+        [],
+        [],
+        [],
+      ],
+      tableau: [
+        [c(6, "diamonds")], // the movable card (red 6, fits foundation on 5♦)
+        [c(7, "spades")], // a legal tableau build target (black 7)
+        [],
+        [],
+        [],
+        [],
+        [],
+      ],
+    };
+    const source = { type: "tableau", index: 0, cardIndex: 0 };
+    const dest = getAutoMoveTarget(s, source);
+    expect(dest.type).toBe("tableau");
+    expect(dest.index).toBe(1);
+  });
+
+  test("stock tap still deals", () => {
+    const s = createSolitaireState("klondike");
+    const res = solitaireReducer(s, autoMoveAction({ type: "stock" }));
+    expect(res.waste.length).toBe(s.waste.length + 1);
+    expect(res.stock.length).toBe(s.stock.length - 1);
+  });
+
+  test("a card with no legal target is a no-op", () => {
+    const s = createSolitaireState("klondike");
+    // The bottom card of a column is face-down → not movable.
+    const res = solitaireReducer(
+      s,
+      autoMoveAction({ type: "tableau", index: 6, cardIndex: 0 }),
+    );
+    expect(res.moves).toBe(s.moves);
+    expect(res.tableau).toEqual(s.tableau);
+  });
+
+  test("match variants are unaffected (falls back to a normal tap)", () => {
+    const s = createSolitaireState("pyramid");
+    const viaAuto = solitaireReducer(s, autoMoveAction({ type: "stock" }));
+    const viaTap = solitaireReducer(s, tapAction({ type: "stock" }));
+    expect(viaAuto).toEqual(viaTap);
   });
 });
 
