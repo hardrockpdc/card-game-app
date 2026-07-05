@@ -522,8 +522,8 @@ export default function SolitaireGameScreen({ navigation, route }) {
     y: new Animated.Value(0),
     flip: new Animated.Value(0),
   }).current;
-  const [dealGhost, setDealGhost] = useState(null); // { card, from, to } | null
-  const railRef = useRef(null); // coordinate origin for the ghost
+  const [dealGhost, setDealGhost] = useState(null); // { card, to } | null
+  const dealOriginRef = useRef(null); // zero-size anchor = ghost coordinate origin
   const stockWrapRef = useRef(null);
   const wasteWrapRef = useRef(null);
   const prevWasteLenRef = useRef(state.waste.length);
@@ -581,7 +581,8 @@ export default function SolitaireGameScreen({ navigation, route }) {
     prevWasteLenRef.current = state.waste.length;
     prevStockLenRef.current = state.stock.length;
 
-    if (state.variantId !== "klondike" || !isLandscape) return;
+    if (!["klondike", "pyramid", "tripeaks"].includes(state.variantId)) return;
+    if (!isLandscape) return;
     if (reduceMotionRef.current) return;
     const isDraw =
       state.waste.length === prevWaste + 1 &&
@@ -593,25 +594,20 @@ export default function SolitaireGameScreen({ navigation, route }) {
   }, [state.waste.length, state.stock.length]);
 
   function animateDeal(card) {
-    const rail = railRef.current;
+    const anchor = dealOriginRef.current;
     const sw = stockWrapRef.current;
     const ww = wasteWrapRef.current;
-    if (!rail?.measureInWindow || !sw?.measureInWindow || !ww?.measureInWindow) {
+    if (!anchor?.measureInWindow || !sw?.measureInWindow || !ww?.measureInWindow) {
       return; // can't measure → skip the animation, no harm
     }
-    // Absolute children of the rail sit inside its border+padding, so offset the
-    // window-relative positions by that inset (rightRail: borderWidth 1 + padding 6).
-    const RAIL_INSET = 7;
-    rail.measureInWindow((rx, ry) => {
-      sw.measureInWindow((sx, sy, swW, swH) => {
+    // The anchor is an absolute (0,0) view in the SAME container as the ghost, so
+    // positions measured against it need no border/padding correction — works for
+    // any variant's rail.
+    anchor.measureInWindow((ax, ay) => {
+      sw.measureInWindow((sx, sy) => {
         ww.measureInWindow((wx, wy, wwW, wwH) => {
-          const from = { x: sx - rx - RAIL_INSET, y: sy - ry - RAIL_INSET };
-          const to = {
-            x: wx - rx - RAIL_INSET,
-            y: wy - ry - RAIL_INSET,
-            w: wwW,
-            h: wwH,
-          };
+          const from = { x: sx - ax, y: sy - ay };
+          const to = { x: wx - ax, y: wy - ay, w: wwW, h: wwH };
           const token = ++dealTokenRef.current;
           dealGhostAnim.x.setValue(from.x);
           dealGhostAnim.y.setValue(from.y);
@@ -644,6 +640,73 @@ export default function SolitaireGameScreen({ navigation, route }) {
       });
     });
   }
+
+  // The flying deal card + its coordinate anchor. Dropped into whichever
+  // variant's rail is active (Klondike/Pyramid/TriPeaks) via {dealLayer}; only
+  // one renders at a time, so the single anchor/ghost is reused.
+  const dealGhostOverlay = dealGhost ? (
+    <Animated.View
+      pointerEvents="none"
+      style={{
+        position: "absolute",
+        left: 0,
+        top: 0,
+        width: dealGhost.to.w,
+        height: dealGhost.to.h,
+        zIndex: 30,
+        transform: [
+          { translateX: dealGhostAnim.x },
+          { translateY: dealGhostAnim.y },
+          {
+            scaleX: dealGhostAnim.flip.interpolate({
+              inputRange: [0, 0.5, 1],
+              outputRange: [1, 0, 1],
+            }),
+          },
+        ],
+      }}
+    >
+      <Animated.Image
+        source={getCardBackImage()}
+        resizeMode="cover"
+        style={{
+          position: "absolute",
+          width: "100%",
+          height: "100%",
+          borderRadius: 14,
+          opacity: dealGhostAnim.flip.interpolate({
+            inputRange: [0, 0.49, 0.5, 1],
+            outputRange: [1, 1, 0, 0],
+          }),
+        }}
+      />
+      <Animated.Image
+        source={getCardImage(dealGhost.card.rankLabel, dealGhost.card.symbol)}
+        resizeMode="cover"
+        style={{
+          position: "absolute",
+          width: "100%",
+          height: "100%",
+          borderRadius: 14,
+          opacity: dealGhostAnim.flip.interpolate({
+            inputRange: [0, 0.5, 0.51, 1],
+            outputRange: [0, 0, 1, 1],
+          }),
+        }}
+      />
+    </Animated.View>
+  ) : null;
+
+  const dealLayer = (
+    <>
+      <View
+        ref={dealOriginRef}
+        pointerEvents="none"
+        style={styles.dealAnchor}
+      />
+      {dealGhostOverlay}
+    </>
+  );
 
   // P4: Cleanup any pending Spider animation timers on unmount so we don't
   // leak setTimeout callbacks if the user navigates away mid-animation.
@@ -1250,7 +1313,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
             {columns}
           </View>
 
-          <View style={styles.rightRail} ref={railRef} collapsable={false}>
+          <View style={styles.rightRail}>
             <View style={styles.landscapeHeaderRight}>
               <StatsStrip gameId="solitaire" items={statsItems} bare stacked />
               <GameMenuButton menuItems={menuItems} />
@@ -1267,59 +1330,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
               {foundationSlots[2]}
               {foundationSlots[3]}
             </View>
-
-            {dealGhost && (
-              <Animated.View
-                pointerEvents="none"
-                style={{
-                  position: "absolute",
-                  left: 0,
-                  top: 0,
-                  width: dealGhost.to.w,
-                  height: dealGhost.to.h,
-                  zIndex: 30,
-                  transform: [
-                    { translateX: dealGhostAnim.x },
-                    { translateY: dealGhostAnim.y },
-                    {
-                      scaleX: dealGhostAnim.flip.interpolate({
-                        inputRange: [0, 0.5, 1],
-                        outputRange: [1, 0, 1],
-                      }),
-                    },
-                  ],
-                }}
-              >
-                <Animated.Image
-                  source={getCardBackImage()}
-                  resizeMode="cover"
-                  style={{
-                    position: "absolute",
-                    width: "100%",
-                    height: "100%",
-                    borderRadius: 14,
-                    opacity: dealGhostAnim.flip.interpolate({
-                      inputRange: [0, 0.49, 0.5, 1],
-                      outputRange: [1, 1, 0, 0],
-                    }),
-                  }}
-                />
-                <Animated.Image
-                  source={getCardImage(dealGhost.card.rankLabel, dealGhost.card.symbol)}
-                  resizeMode="cover"
-                  style={{
-                    position: "absolute",
-                    width: "100%",
-                    height: "100%",
-                    borderRadius: 14,
-                    opacity: dealGhostAnim.flip.interpolate({
-                      inputRange: [0, 0.5, 0.51, 1],
-                      outputRange: [0, 0, 1, 1],
-                    }),
-                  }}
-                />
-              </Animated.View>
-            )}
+            {dealLayer}
           </View>
         </View>
       );
@@ -1830,6 +1841,9 @@ export default function SolitaireGameScreen({ navigation, route }) {
 
   const renderPyramid = () => {
     const wasteTop = getTopCard(state.waste);
+    const displayWasteTop = dealGhost
+      ? state.waste[state.waste.length - 2] ?? null
+      : wasteTop;
     const cleared = state.pyramidRows
       ? state.pyramidRows.reduce(
           (sum, row) =>
@@ -1934,27 +1948,31 @@ export default function SolitaireGameScreen({ navigation, route }) {
               <GameMenuButton menuItems={menuItems} />
             </View>
             <View style={styles.railSlotRow}>
-              <StockSlot
-                count={state.stock.length}
-                emptyLabel="↻"
-                onPress={() => dispatch(tapAction({ type: "stock" }))}
-                hinted={hint?.source?.type === "stock"}
-                style={{ width: slotW, height: slotH }}
-              />
-              <CardSlot
-                card={wasteTop}
-                label="Waste"
-                sizeScale={slotScale}
-                onPress={() => dispatch(tapAction({ type: "waste" }))}
-                selected={sameTarget(state.selected, { type: "waste" })}
-                hinted={hint?.target?.type === "waste"}
-                style={{
-                  width: slotW,
-                  height: slotH,
-                  minWidth: slotW,
-                  minHeight: slotH,
-                }}
-              />
+              <View ref={stockWrapRef} collapsable={false}>
+                <StockSlot
+                  count={state.stock.length}
+                  emptyLabel="↻"
+                  onPress={() => dispatch(tapAction({ type: "stock" }))}
+                  hinted={hint?.source?.type === "stock"}
+                  style={{ width: slotW, height: slotH }}
+                />
+              </View>
+              <View ref={wasteWrapRef} collapsable={false}>
+                <CardSlot
+                  card={displayWasteTop}
+                  label="Waste"
+                  sizeScale={slotScale}
+                  onPress={() => dispatch(tapAction({ type: "waste" }))}
+                  selected={sameTarget(state.selected, { type: "waste" })}
+                  hinted={hint?.target?.type === "waste"}
+                  style={{
+                    width: slotW,
+                    height: slotH,
+                    minWidth: slotW,
+                    minHeight: slotH,
+                  }}
+                />
+              </View>
             </View>
             <View style={[styles.railSlotRow, styles.railFoundationsTop]}>
               <View style={styles.metaPill}>
@@ -1962,6 +1980,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                 <Text style={styles.metaPillValue}>{cleared}/28</Text>
               </View>
             </View>
+            {dealLayer}
           </View>
         </View>
       );
@@ -2052,6 +2071,9 @@ export default function SolitaireGameScreen({ navigation, route }) {
 
   const renderTriPeaks = () => {
     const wasteTop = getTopCard(state.waste);
+    const displayWasteTop = dealGhost
+      ? state.waste[state.waste.length - 2] ?? null
+      : wasteTop;
     const cleared = state.boardRows
       ? state.boardRows.reduce(
           (sum, row) =>
@@ -2163,27 +2185,31 @@ export default function SolitaireGameScreen({ navigation, route }) {
               <GameMenuButton menuItems={menuItems} />
             </View>
             <View style={styles.railSlotRow}>
-              <StockSlot
-                count={state.stock.length}
-                emptyLabel="↻"
-                onPress={() => dispatch(tapAction({ type: "stock" }))}
-                hinted={hint?.source?.type === "stock"}
-                style={{ width: slotW, height: slotH }}
-              />
-              <CardSlot
-                card={wasteTop}
-                label="Waste"
-                sizeScale={slotScale}
-                onPress={() => dispatch(tapAction({ type: "waste" }))}
-                selected={sameTarget(state.selected, { type: "waste" })}
-                hinted={hint?.target?.type === "waste"}
-                style={{
-                  width: slotW,
-                  height: slotH,
-                  minWidth: slotW,
-                  minHeight: slotH,
-                }}
-              />
+              <View ref={stockWrapRef} collapsable={false}>
+                <StockSlot
+                  count={state.stock.length}
+                  emptyLabel="↻"
+                  onPress={() => dispatch(tapAction({ type: "stock" }))}
+                  hinted={hint?.source?.type === "stock"}
+                  style={{ width: slotW, height: slotH }}
+                />
+              </View>
+              <View ref={wasteWrapRef} collapsable={false}>
+                <CardSlot
+                  card={displayWasteTop}
+                  label="Waste"
+                  sizeScale={slotScale}
+                  onPress={() => dispatch(tapAction({ type: "waste" }))}
+                  selected={sameTarget(state.selected, { type: "waste" })}
+                  hinted={hint?.target?.type === "waste"}
+                  style={{
+                    width: slotW,
+                    height: slotH,
+                    minWidth: slotW,
+                    minHeight: slotH,
+                  }}
+                />
+              </View>
             </View>
             <View style={[styles.railSlotRow, styles.railFoundationsTop]}>
               <View style={styles.metaPill}>
@@ -2191,6 +2217,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                 <Text style={styles.metaPillValue}>{cleared}/28</Text>
               </View>
             </View>
+            {dealLayer}
           </View>
         </View>
       );
@@ -2496,6 +2523,14 @@ const styles = StyleSheet.create({
   stockBack: {
     width: "100%",
     height: "100%",
+  },
+  // Zero-size anchor marking the deal ghost's (0,0) origin inside a rail.
+  dealAnchor: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    width: 0,
+    height: 0,
   },
   stockLabel: {
     color: "#d9e3f3",
