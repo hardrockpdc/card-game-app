@@ -7,6 +7,8 @@ import {
   tapAction,
   autoMoveAction,
   getAutoMoveTarget,
+  canAutoComplete,
+  nextFoundationMove,
   moveAction,
   getLegalTargets,
   getHint,
@@ -159,6 +161,74 @@ describe("autoMoveAction (one-tap auto-move)", () => {
     const viaAuto = solitaireReducer(s, autoMoveAction({ type: "stock" }));
     const viaTap = solitaireReducer(s, tapAction({ type: "stock" }));
     expect(viaAuto).toEqual(viaTap);
+  });
+});
+
+describe("auto-complete (Klondike/FreeCell)", () => {
+  const card = (rank, suit) => ({
+    rank,
+    suit,
+    faceUp: true,
+    rankLabel: String(rank),
+    id: `${rank}-${suit}`,
+  });
+  const SUITS = ["spades", "hearts", "diamonds", "clubs"];
+  const foundationUpTo = (rank, suit) => {
+    const pile = [];
+    for (let r = 1; r <= rank; r += 1) pile.push(card(r, suit));
+    return pile;
+  };
+  // A→Q on every foundation (48 cards) + the 4 Kings sitting as tableau tops.
+  const almostWon = () => ({
+    variantId: "klondike",
+    status: "playing",
+    moves: 0,
+    selected: null,
+    stock: [],
+    waste: [],
+    freecells: [],
+    foundations: SUITS.map((s) => foundationUpTo(12, s)),
+    tableau: [
+      [card(13, "spades")],
+      [card(13, "hearts")],
+      [card(13, "diamonds")],
+      [card(13, "clubs")],
+      [],
+      [],
+      [],
+    ],
+  });
+
+  test("canAutoComplete is true when only foundation moves remain", () => {
+    expect(canAutoComplete(almostWon())).toBe(true);
+  });
+
+  test("nextFoundationMove returns an accessible card that fits a foundation", () => {
+    const m = nextFoundationMove(almostWon());
+    expect(m).not.toBeNull();
+    expect(m.target.type).toBe("foundation");
+  });
+
+  test("applying the moves greedily reaches a win", () => {
+    let sim = almostWon();
+    let guard = 0;
+    while (sim.status === "playing" && guard++ < 60) {
+      const m = nextFoundationMove(sim);
+      if (!m) break;
+      sim = solitaireReducer(sim, moveAction(m.source, m.target));
+    }
+    expect(sim.status).toBe("won");
+  });
+
+  test("false while a face-down card is still buried", () => {
+    const s = almostWon();
+    s.tableau[4] = [{ ...card(5, "spades"), faceUp: false }, card(4, "hearts")];
+    expect(canAutoComplete(s)).toBe(false);
+  });
+
+  test("false for match variants", () => {
+    expect(canAutoComplete(createSolitaireState("pyramid"))).toBe(false);
+    expect(canAutoComplete(createSolitaireState("tripeaks"))).toBe(false);
   });
 });
 

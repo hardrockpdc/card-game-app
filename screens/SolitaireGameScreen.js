@@ -40,6 +40,9 @@ import {
   newGameAction,
   solitaireReducer,
   autoMoveAction,
+  moveAction,
+  canAutoComplete,
+  nextFoundationMove,
   undoAction,
 } from "../game/solitaire";
 import { getCardBackImage, getCardImage } from "../game/cardTheme";
@@ -529,6 +532,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
   const prevWasteLenRef = useRef(state.waste.length);
   const prevStockLenRef = useRef(state.stock.length);
   const dealTokenRef = useRef(0); // guards against a stale animation clearing a newer one
+  const [autoCompleting, setAutoCompleting] = useState(false); // auto-finish in progress
 
   // BUG-4: Unified mount effect — always check for a saved game first,
   // regardless of resumeFromSave. Prevents hot-reload from clobbering
@@ -592,6 +596,34 @@ export default function SolitaireGameScreen({ navigation, route }) {
     if (drawn) animateDeal(drawn);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.waste.length, state.stock.length]);
+
+  // Auto-finish: once every card is face-up and only foundation moves remain
+  // (Klondike/FreeCell), the game completes itself.
+  useEffect(() => {
+    if (!autoCompleting && state.status === "playing" && canAutoComplete(state)) {
+      setAutoCompleting(true);
+    }
+  }, [state, autoCompleting]);
+
+  // Drive the auto-finish: send one card to a foundation, then let the re-render
+  // schedule the next, until the game is won or nothing is left to play.
+  useEffect(() => {
+    if (!autoCompleting) return undefined;
+    if (state.status !== "playing") {
+      setAutoCompleting(false);
+      return undefined;
+    }
+    const move = nextFoundationMove(state);
+    if (!move) {
+      setAutoCompleting(false);
+      return undefined;
+    }
+    const t = setTimeout(
+      () => dispatch(moveAction(move.source, move.target)),
+      reduceMotionRef.current ? 0 : 180,
+    );
+    return () => clearTimeout(t);
+  }, [autoCompleting, state]);
 
   function animateDeal(card) {
     const anchor = dealOriginRef.current;

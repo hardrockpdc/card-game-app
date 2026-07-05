@@ -1921,6 +1921,66 @@ export function getAutoMoveTarget(state, source) {
     .sort((a, b) => autoMovePriority(state, a) - autoMovePriority(state, b))[0];
 }
 
+// ── Auto-complete (Klondike / FreeCell) ──────────────────────────────────────
+// When every card is face-up and all that's left is sending them to the
+// foundations, the game finishes itself.
+
+// The next single card that can go straight up to a foundation from an
+// accessible spot (waste top, a free cell, or a tableau top), or null.
+export function nextFoundationMove(state) {
+  const foundationFor = (card) => {
+    if (!card) return -1;
+    for (let f = 0; f < (state.foundations || []).length; f += 1) {
+      if (canPlaceOnFoundation(card, state.foundations[f])) return f;
+    }
+    return -1;
+  };
+  let f = foundationFor(topCard(state.waste));
+  if (f >= 0) {
+    return { source: { type: "waste" }, target: { type: "foundation", index: f } };
+  }
+  for (let i = 0; i < (state.freecells || []).length; i += 1) {
+    f = foundationFor(state.freecells[i]);
+    if (f >= 0) {
+      return {
+        source: { type: "freecell", index: i },
+        target: { type: "foundation", index: f },
+      };
+    }
+  }
+  for (let i = 0; i < (state.tableau || []).length; i += 1) {
+    const pile = state.tableau[i];
+    if (!pile || !pile.length) continue;
+    f = foundationFor(pile[pile.length - 1]);
+    if (f >= 0) {
+      return {
+        source: { type: "tableau", index: i, cardIndex: pile.length - 1 },
+        target: { type: "foundation", index: f },
+      };
+    }
+  }
+  return null;
+}
+
+// True when the game can be finished purely by sending accessible cards to the
+// foundations (nothing left to reorganize). Verified by simulating the greedy
+// fill, so it only ever fires when it genuinely completes. Klondike/FreeCell.
+export function canAutoComplete(state) {
+  if (!state || state.status !== "playing") return false;
+  if (!["klondike", "freecell"].includes(state.variantId)) return false;
+  // Cheap gate: a face-down tableau card means there's still digging to do.
+  if ((state.tableau || []).some((p) => p.some((c) => !c.faceUp))) return false;
+
+  let sim = state;
+  let guard = 0;
+  while (sim.status === "playing" && guard++ < 200) {
+    const m = nextFoundationMove(sim);
+    if (!m) break;
+    sim = solitaireReducer(sim, moveAction(m.source, m.target));
+  }
+  return sim.status === "won";
+}
+
 // A stable signature of the playable board, so two states can be compared to
 // tell whether a candidate move would just undo the previous one.
 function boardSignature(s) {
