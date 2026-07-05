@@ -1968,6 +1968,11 @@ export function nextFoundationMove(state) {
 export function canAutoComplete(state) {
   if (!state || state.status !== "playing") return false;
   if (!["klondike", "freecell"].includes(state.variantId)) return false;
+  // Only when every card is on the tableau (Klondike): stock AND waste empty.
+  // FreeCell has neither, so this is a no-op there.
+  if ((state.stock || []).length > 0 || (state.waste || []).length > 0) {
+    return false;
+  }
   // Cheap gate: a face-down tableau card means there's still digging to do.
   if ((state.tableau || []).some((p) => p.some((c) => !c.faceUp))) return false;
 

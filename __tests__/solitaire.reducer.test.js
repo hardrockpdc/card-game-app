@@ -226,6 +226,18 @@ describe("auto-complete (Klondike/FreeCell)", () => {
     expect(canAutoComplete(s)).toBe(false);
   });
 
+  test("false while cards remain in the stock or waste", () => {
+    const withStock = almostWon();
+    withStock.stock = [card(13, "spades")];
+    withStock.tableau[0] = [];
+    expect(canAutoComplete(withStock)).toBe(false);
+
+    const withWaste = almostWon();
+    withWaste.waste = [card(13, "hearts")];
+    withWaste.tableau[1] = [];
+    expect(canAutoComplete(withWaste)).toBe(false);
+  });
+
   test("false for match variants", () => {
     expect(canAutoComplete(createSolitaireState("pyramid"))).toBe(false);
     expect(canAutoComplete(createSolitaireState("tripeaks"))).toBe(false);
