@@ -12,6 +12,7 @@ import {
   AccessibilityInfo,
   BackHandler,
   Easing,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -41,6 +42,7 @@ import {
   tapAction,
   undoAction,
 } from "../game/solitaire";
+import { getCardBackImage } from "../game/cardTheme";
 import { addCoins } from "../game/wallet";
 import { getWinReward } from "../game/rewards";
 import { recordWin } from "../game/profile";
@@ -229,28 +231,48 @@ function CardSlot({
   );
 }
 
-function StockSlot({ label, onPress, disabled = false, style, hinted = false }) {
+// Stock pile. When it holds cards we show the deck's card back (matching the
+// active theme); when empty we show the redeal/no-deal indicator. The card count
+// stays in the accessibility label for screen readers.
+function StockSlot({
+  count = 0,
+  emptyLabel,
+  onPress,
+  disabled = false,
+  style,
+  hinted = false,
+}) {
+  const hasCards = count > 0;
   return (
     <Pressable
       onPress={disabled ? undefined : onPress}
       style={({ pressed }) => [
         styles.stockSlot,
+        hasCards && styles.stockSlotFilled,
         style,
         hinted && styles.cardTouchHint,
         pressed && !disabled && styles.cardTouchPressed,
       ]}
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={hasCards ? `Stock, ${count} cards` : emptyLabel}
       accessibilityState={{ disabled }}
     >
-      <Text
-        style={styles.stockLabel}
-        numberOfLines={2}
-        adjustsFontSizeToFit
-        minimumFontScale={0.6}
-      >
-        {label}
-      </Text>
+      {hasCards ? (
+        <Image
+          source={getCardBackImage()}
+          style={styles.stockBack}
+          resizeMode="cover"
+        />
+      ) : (
+        <Text
+          style={styles.stockLabel}
+          numberOfLines={2}
+          adjustsFontSizeToFit
+          minimumFontScale={0.6}
+        >
+          {emptyLabel}
+        </Text>
+      )}
     </Pressable>
   );
 }
@@ -953,7 +975,8 @@ export default function SolitaireGameScreen({ navigation, route }) {
 
     const stockSlot = (
       <StockSlot
-        label={state.stock.length > 0 ? `Stock ${state.stock.length}` : "↻"}
+        count={state.stock.length}
+        emptyLabel="↻"
         onPress={() => dispatch(tapAction({ type: "stock" }))}
         hinted={hint?.source?.type === "stock"}
         style={{ width: slotW, height: slotH }}
@@ -1357,11 +1380,8 @@ export default function SolitaireGameScreen({ navigation, route }) {
             </View>
             <View style={styles.railSlotRow}>
               <StockSlot
-                label={
-                  state.stock.length > 0
-                    ? `Deal ${state.stock.length}`
-                    : "No deal"
-                }
+                count={state.stock.length}
+                emptyLabel="No deal"
                 onPress={() => dispatch(tapAction({ type: "stock" }))}
                 hinted={hint?.source?.type === "stock"}
                 style={{ width: slotW, height: Math.round(slotW * 1.05) }}
@@ -1389,9 +1409,8 @@ export default function SolitaireGameScreen({ navigation, route }) {
       <View style={styles.boardCard}>
         <View style={styles.topRow}>
           <StockSlot
-            label={
-              state.stock.length > 0 ? `Deal ${state.stock.length}` : "No deal"
-            }
+            count={state.stock.length}
+            emptyLabel="No deal"
             onPress={() => dispatch(tapAction({ type: "stock" }))}
             hinted={hint?.source?.type === "stock"}
           />
@@ -1771,9 +1790,8 @@ export default function SolitaireGameScreen({ navigation, route }) {
             </View>
             <View style={styles.railSlotRow}>
               <StockSlot
-                label={
-                  state.stock.length > 0 ? `Stock ${state.stock.length}` : "↻"
-                }
+                count={state.stock.length}
+                emptyLabel="↻"
                 onPress={() => dispatch(tapAction({ type: "stock" }))}
                 hinted={hint?.source?.type === "stock"}
                 style={{ width: slotW, height: slotH }}
@@ -1809,7 +1827,8 @@ export default function SolitaireGameScreen({ navigation, route }) {
       <View style={styles.boardCard}>
         <View style={styles.topRow}>
           <StockSlot
-            label={state.stock.length > 0 ? `Stock ${state.stock.length}` : "↻"}
+            count={state.stock.length}
+            emptyLabel="↻"
             onPress={() => dispatch(tapAction({ type: "stock" }))}
             hinted={hint?.source?.type === "stock"}
           />
@@ -2000,9 +2019,8 @@ export default function SolitaireGameScreen({ navigation, route }) {
             </View>
             <View style={styles.railSlotRow}>
               <StockSlot
-                label={
-                  state.stock.length > 0 ? `Stock ${state.stock.length}` : "↻"
-                }
+                count={state.stock.length}
+                emptyLabel="↻"
                 onPress={() => dispatch(tapAction({ type: "stock" }))}
                 hinted={hint?.source?.type === "stock"}
                 style={{ width: slotW, height: slotH }}
@@ -2038,7 +2056,8 @@ export default function SolitaireGameScreen({ navigation, route }) {
       <View style={styles.boardCard}>
         <View style={styles.topRow}>
           <StockSlot
-            label={state.stock.length > 0 ? `Stock ${state.stock.length}` : "↻"}
+            count={state.stock.length}
+            emptyLabel="↻"
             onPress={() => dispatch(tapAction({ type: "stock" }))}
             hinted={hint?.source?.type === "stock"}
           />
@@ -2323,6 +2342,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 6,
+  },
+  // When showing the card back, drop the padding and clip to the rounded corners.
+  stockSlotFilled: {
+    paddingHorizontal: 0,
+    overflow: "hidden",
+  },
+  stockBack: {
+    width: "100%",
+    height: "100%",
   },
   stockLabel: {
     color: "#d9e3f3",
