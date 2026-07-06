@@ -2417,15 +2417,6 @@ export default function SolitaireGameScreen({ navigation, route }) {
               <GameMenuButton menuItems={menuItems} />
             </View>
             <View style={styles.railSlotRow}>
-              <View ref={stockWrapRef} collapsable={false}>
-                <StockSlot
-                  count={state.stock.length}
-                  emptyLabel="↻"
-                  onPress={() => onCardTap({ type: "stock" })}
-                  hinted={hint?.source?.type === "stock"}
-                  style={{ width: slotW, height: slotH }}
-                />
-              </View>
               <View ref={wasteWrapRef} collapsable={false}>
                 <CardSlot
                   card={displayWasteTop}
@@ -2440,6 +2431,15 @@ export default function SolitaireGameScreen({ navigation, route }) {
                     minWidth: slotW,
                     minHeight: slotH,
                   }}
+                />
+              </View>
+              <View ref={stockWrapRef} collapsable={false}>
+                <StockSlot
+                  count={state.stock.length}
+                  emptyLabel="↻"
+                  onPress={() => onCardTap({ type: "stock" })}
+                  hinted={hint?.source?.type === "stock"}
+                  style={{ width: slotW, height: slotH }}
                 />
               </View>
             </View>
@@ -2655,15 +2655,6 @@ export default function SolitaireGameScreen({ navigation, route }) {
               <GameMenuButton menuItems={menuItems} />
             </View>
             <View style={styles.railSlotRow}>
-              <View ref={stockWrapRef} collapsable={false}>
-                <StockSlot
-                  count={state.stock.length}
-                  emptyLabel="↻"
-                  onPress={() => onCardTap({ type: "stock" })}
-                  hinted={hint?.source?.type === "stock"}
-                  style={{ width: slotW, height: slotH }}
-                />
-              </View>
               <View ref={wasteWrapRef} collapsable={false}>
                 <CardSlot
                   card={displayWasteTop}
@@ -2678,6 +2669,15 @@ export default function SolitaireGameScreen({ navigation, route }) {
                     minWidth: slotW,
                     minHeight: slotH,
                   }}
+                />
+              </View>
+              <View ref={stockWrapRef} collapsable={false}>
+                <StockSlot
+                  count={state.stock.length}
+                  emptyLabel="↻"
+                  onPress={() => onCardTap({ type: "stock" })}
+                  hinted={hint?.source?.type === "stock"}
+                  style={{ width: slotW, height: slotH }}
                 />
               </View>
             </View>
