@@ -1552,6 +1552,22 @@ export default function SolitaireGameScreen({ navigation, route }) {
     { label: "Time", value: formatTime(elapsed), accent: false },
   ];
 
+  // Always-visible Hint button (the menu item is easy to miss for new players).
+  const hintButton = (
+    <Pressable
+      onPress={showHint}
+      style={({ pressed }) => [
+        styles.hintButton,
+        pressed && styles.hintButtonPressed,
+      ]}
+      accessibilityRole="button"
+      accessibilityLabel="Hint"
+    >
+      <Text style={styles.hintButtonIcon}>💡</Text>
+      <Text style={styles.hintButtonText}>Hint</Text>
+    </Pressable>
+  );
+
   const renderKlondike = () => {
     const wasteTop = getTopCard(state.waste);
     // While a deal is flying in, keep showing the PREVIOUS top card so the drawn
@@ -1761,6 +1777,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
           <View style={styles.rightRail}>
             <View style={styles.landscapeHeaderRight}>
               <StatsStrip gameId="solitaire" items={statsItems} bare stacked />
+              {hintButton}
               <GameMenuButton menuItems={menuItems} />
             </View>
             <View style={styles.railSlotRow}>
@@ -1984,6 +2001,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
           <View style={[styles.rightRail, { zIndex: 1 }]}>
             <View style={styles.landscapeHeaderRight}>
               <StatsStrip gameId="solitaire" items={statsItems} bare stacked />
+              {hintButton}
               <GameMenuButton menuItems={menuItems} />
             </View>
             <View style={styles.railSlotRow}>
@@ -2256,6 +2274,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
           <View style={styles.rightRail}>
             <View style={styles.landscapeHeaderRight}>
               <StatsStrip gameId="solitaire" items={statsItems} bare stacked />
+              {hintButton}
               <GameMenuButton menuItems={menuItems} />
             </View>
             <View style={styles.railSlotRow}>
@@ -2409,6 +2428,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
           <View style={styles.rightRail}>
             <View style={styles.landscapeHeaderRight}>
               <StatsStrip gameId="solitaire" items={statsItems} bare stacked />
+              {hintButton}
               <GameMenuButton menuItems={menuItems} />
             </View>
             <View style={styles.railSlotRow}>
@@ -2647,6 +2667,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
           <View style={styles.rightRail}>
             <View style={styles.landscapeHeaderRight}>
               <StatsStrip gameId="solitaire" items={statsItems} bare stacked />
+              {hintButton}
               <GameMenuButton menuItems={menuItems} />
             </View>
             <View style={styles.railSlotRow}>
@@ -2968,6 +2989,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: scale(10),
     flexWrap: "wrap",
+  },
+  hintButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: "rgba(255, 204, 102, 0.15)",
+    borderWidth: 1.5,
+    borderColor: "#FFCC66",
+  },
+  hintButtonPressed: {
+    opacity: 0.7,
+  },
+  hintButtonIcon: {
+    fontSize: 14,
+  },
+  hintButtonText: {
+    color: "#FFCC66",
+    fontSize: 13,
+    fontWeight: "800",
   },
   stockSlot: {
     width: 70,
