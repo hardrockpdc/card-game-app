@@ -534,6 +534,15 @@ export default function SolitaireGameScreen({ navigation, route }) {
   const dealTokenRef = useRef(0); // guards against a stale animation clearing a newer one
   const [autoCompleting, setAutoCompleting] = useState(false); // auto-finish in progress
 
+  // Auto-finish "fly to foundation" animation.
+  const boardAnchorRef = useRef(null); // board-level coordinate origin for the fly
+  const columnRefs = useRef([]); // measure a tableau column (source approximation)
+  const foundationRefs = useRef([]); // measure a foundation slot (destination)
+  const flyingRef = useRef(false); // guards the loop while a card is mid-flight
+  const flyProgress = useRef(new Animated.Value(0)).current; // 0→1 over the flight
+  const [flyGhost, setFlyGhost] = useState(null); // { card, w, h, from/to, startScale }
+  const [flyingCardId, setFlyingCardId] = useState(null); // source card hidden mid-flight
+
   // BUG-4: Unified mount effect — always check for a saved game first,
   // regardless of resumeFromSave. Prevents hot-reload from clobbering
   // an in-progress game with a fresh deal.
@@ -605,25 +614,22 @@ export default function SolitaireGameScreen({ navigation, route }) {
     }
   }, [state, autoCompleting]);
 
-  // Drive the auto-finish: send one card to a foundation, then let the re-render
-  // schedule the next, until the game is won or nothing is left to play.
+  // Drive the auto-finish: fly one card to a foundation; when it lands the move
+  // is applied, the re-render fires this again, until the game is won.
   useEffect(() => {
-    if (!autoCompleting) return undefined;
+    if (!autoCompleting || flyingRef.current) return;
     if (state.status !== "playing") {
       setAutoCompleting(false);
-      return undefined;
+      return;
     }
     const move = nextFoundationMove(state);
     if (!move) {
       setAutoCompleting(false);
-      return undefined;
+      return;
     }
-    const t = setTimeout(
-      () => dispatch(moveAction(move.source, move.target)),
-      reduceMotionRef.current ? 0 : 180,
-    );
-    return () => clearTimeout(t);
-  }, [autoCompleting, state]);
+    flyToFoundation(move);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoCompleting, state, flyGhost]);
 
   function animateDeal(card) {
     const anchor = dealOriginRef.current;
@@ -737,6 +743,125 @@ export default function SolitaireGameScreen({ navigation, route }) {
         style={styles.dealAnchor}
       />
       {dealGhostOverlay}
+    </>
+  );
+
+  // Fly one auto-finish card from its source to a foundation. Measures the source
+  // (a tableau column's bottom, or the waste) and the target foundation relative
+  // to a board anchor, animates a ghost between them, then applies the move when
+  // it lands (so the card is never shown in two places). Falls back to an instant
+  // move if anything can't be measured or reduce-motion is on.
+  function flyToFoundation(move) {
+    flyingRef.current = true;
+    const finish = () => {
+      dispatch(moveAction(move.source, move.target));
+      setFlyGhost(null);
+      setFlyingCardId(null);
+      flyingRef.current = false;
+    };
+
+    const src = move.source;
+    let card = null;
+    let srcNode = null;
+    let fromColumn = false;
+    if (src.type === "tableau") {
+      card = (state.tableau[src.index] || [])[src.cardIndex];
+      srcNode = columnRefs.current[src.index];
+      fromColumn = true;
+    } else if (src.type === "waste") {
+      card = getTopCard(state.waste);
+      srcNode = wasteWrapRef.current;
+    }
+
+    const anchor = boardAnchorRef.current;
+    const foundNode = foundationRefs.current[move.target.index];
+    if (
+      reduceMotionRef.current ||
+      !card ||
+      !anchor?.measureInWindow ||
+      !srcNode?.measureInWindow ||
+      !foundNode?.measureInWindow
+    ) {
+      setTimeout(finish, reduceMotionRef.current ? 20 : 70);
+      return;
+    }
+
+    anchor.measureInWindow((ax, ay) => {
+      foundNode.measureInWindow((fx, fy, fw, fh) => {
+        srcNode.measureInWindow((sx, sy, sw, sh) => {
+          const fromX = sx - ax;
+          // A column's node spans the whole cascade; the moving card is its
+          // bottom card, ~one card-height up from the column's bottom edge.
+          const fromY = (fromColumn ? sy + sh - tabCardH : sy) - ay;
+          setFlyingCardId(card.id);
+          setFlyGhost({
+            card,
+            w: fw,
+            h: fh,
+            fromX,
+            fromY,
+            toX: fx - ax,
+            toY: fy - ay,
+            startScale: fw > 0 ? Math.min(1, tabCardW / fw) : 1, // grow into the slot
+          });
+          flyProgress.setValue(0);
+          Animated.timing(flyProgress, {
+            toValue: 1,
+            duration: 200,
+            easing: Easing.out(Easing.quad),
+            useNativeDriver: true,
+          }).start(finish);
+        });
+      });
+    });
+  }
+
+  const flyLayer = (
+    <>
+      <View
+        ref={boardAnchorRef}
+        pointerEvents="none"
+        style={styles.dealAnchor}
+      />
+      {flyGhost && (
+        <Animated.View
+          pointerEvents="none"
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            width: flyGhost.w,
+            height: flyGhost.h,
+            zIndex: 50,
+            transform: [
+              {
+                translateX: flyProgress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [flyGhost.fromX, flyGhost.toX],
+                }),
+              },
+              {
+                translateY: flyProgress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [flyGhost.fromY, flyGhost.toY],
+                }),
+              },
+              {
+                scale: flyProgress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [flyGhost.startScale, 1],
+                }),
+              },
+            ],
+          }}
+        >
+          <Image
+            source={getCardImage(flyGhost.card.rankLabel, flyGhost.card.symbol)}
+            resizeMode="cover"
+            style={{ width: "100%", height: "100%", borderRadius: 14 }}
+          />
+        </Animated.View>
+      )}
     </>
   );
 
@@ -1205,11 +1330,12 @@ export default function SolitaireGameScreen({ navigation, route }) {
           sizeScale={slotScale}
           onPress={() => dispatch(autoMoveAction({ type: "foundation", index }))}
           selected={selected}
-          containerRef={
-            dragEnabled
-              ? registerZone(`f-${index}`, { type: "foundation", index })
-              : undefined
-          }
+          containerRef={(node) => {
+            foundationRefs.current[index] = node;
+            if (dragEnabled) {
+              registerZone(`f-${index}`, { type: "foundation", index })(node);
+            }
+          }}
           highlighted={
             dragEnabled && isLegalTarget({ type: "foundation", index })
           }
@@ -1231,14 +1357,15 @@ export default function SolitaireGameScreen({ navigation, route }) {
       return (
         <View
           key={`klondike-${pileIndex}`}
-          ref={
-            dragEnabled
-              ? registerZone(`t-${pileIndex}`, {
-                  type: "tableau",
-                  index: pileIndex,
-                })
-              : undefined
-          }
+          ref={(node) => {
+            columnRefs.current[pileIndex] = node;
+            if (dragEnabled) {
+              registerZone(`t-${pileIndex}`, {
+                type: "tableau",
+                index: pileIndex,
+              })(node);
+            }
+          }}
           style={[
             styles.tableauColumn,
             colHighlighted && styles.tableauColumnHighlighted,
@@ -1314,7 +1441,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                     ? makeDragGesture(source)
                     : undefined
                 }
-                hidden={hidden}
+                hidden={hidden || card.id === flyingCardId}
                 style={[
                   styles.stackCard,
                   cardIndex > 0 && { marginTop: margins[cardIndex] },
@@ -1333,6 +1460,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
         <View
           style={[styles.boardCard, styles.boardCardFill, styles.boardCardRow]}
         >
+          {flyLayer}
           <View
             style={[styles.tableauRow, styles.tableauRowFill]}
             onLayout={(e) => {
@@ -1423,14 +1551,15 @@ export default function SolitaireGameScreen({ navigation, route }) {
       return (
         <View
           key={`spider-${pileIndex}`}
-          ref={
-            dragEnabled
-              ? registerZone(`t-${pileIndex}`, {
-                  type: "tableau",
-                  index: pileIndex,
-                })
-              : undefined
-          }
+          ref={(node) => {
+            columnRefs.current[pileIndex] = node;
+            if (dragEnabled) {
+              registerZone(`t-${pileIndex}`, {
+                type: "tableau",
+                index: pileIndex,
+              })(node);
+            }
+          }}
           style={[
             styles.tableauColumn,
             colHighlighted && styles.tableauColumnHighlighted,
@@ -1508,7 +1637,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                     ? makeDragGesture(source)
                     : undefined
                 }
-                hidden={hidden}
+                hidden={hidden || card.id === flyingCardId}
                 onCardLayout={(e) => {
                   const layout = e.nativeEvent.layout;
                   spiderCardLayoutsRef.current[card.id] = {
@@ -1540,6 +1669,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
         <View
           style={[styles.boardCard, styles.boardCardFill, styles.boardCardRow]}
         >
+          {flyLayer}
           <View
             ref={spiderTableauRowRef}
             collapsable={false}
@@ -1691,11 +1821,12 @@ export default function SolitaireGameScreen({ navigation, route }) {
           sizeScale={isLandscape ? slotScale : undefined}
           onPress={() => dispatch(autoMoveAction({ type: "foundation", index }))}
           selected={selected}
-          containerRef={
-            dragEnabled
-              ? registerZone(`f-${index}`, { type: "foundation", index })
-              : undefined
-          }
+          containerRef={(node) => {
+            foundationRefs.current[index] = node;
+            if (dragEnabled) {
+              registerZone(`f-${index}`, { type: "foundation", index })(node);
+            }
+          }}
           highlighted={
             dragEnabled && isLegalTarget({ type: "foundation", index })
           }
@@ -1712,14 +1843,15 @@ export default function SolitaireGameScreen({ navigation, route }) {
       return (
         <View
           key={`freecell-${pileIndex}`}
-          ref={
-            dragEnabled
-              ? registerZone(`t-${pileIndex}`, {
-                  type: "tableau",
-                  index: pileIndex,
-                })
-              : undefined
-          }
+          ref={(node) => {
+            columnRefs.current[pileIndex] = node;
+            if (dragEnabled) {
+              registerZone(`t-${pileIndex}`, {
+                type: "tableau",
+                index: pileIndex,
+              })(node);
+            }
+          }}
           style={[
             styles.tableauColumn,
             colHighlighted && styles.tableauColumnHighlighted,
@@ -1789,7 +1921,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                     ? makeDragGesture(source)
                     : undefined
                 }
-                hidden={hidden}
+                hidden={hidden || card.id === flyingCardId}
                 style={[
                   styles.stackCard,
                   isLandscape
@@ -1810,6 +1942,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
         <View
           style={[styles.boardCard, styles.boardCardFill, styles.boardCardRow]}
         >
+          {flyLayer}
           <View
             style={[styles.tableauRow, styles.tableauRowFill]}
             onLayout={(e) => {
@@ -1909,6 +2042,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
         <View
           style={[styles.boardCard, styles.boardCardFill, styles.boardCardRow]}
         >
+          {flyLayer}
           <View
             style={styles.shapeArea}
             onLayout={(e) => {
@@ -2142,6 +2276,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
         <View
           style={[styles.boardCard, styles.boardCardFill, styles.boardCardRow]}
         >
+          {flyLayer}
           <View
             style={styles.shapeArea}
             onLayout={(e) => {
