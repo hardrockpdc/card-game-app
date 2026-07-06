@@ -30,7 +30,6 @@ import GameMenuButton from "../components/GameMenuButton";
 import EndOfRoundModal from "../components/EndOfRoundModal";
 import Confetti from "../components/Confetti";
 import { hapticWin } from "../game/haptics";
-import StatsStrip from "../components/StatsStrip";
 import { useLayoutMode } from "../game/useLayoutMode";
 import {
   createSolitaireState,
@@ -1542,14 +1541,6 @@ export default function SolitaireGameScreen({ navigation, route }) {
     },
   ];
 
-  // Moves + Time only. Per-variant counts (stock, free cells, etc.) are already
-  // visible on the board, so they'd be redundant here. These live inside the
-  // header (replacing the title) in every orientation — see leftInfo below.
-  const statsItems = [
-    { label: "Moves", value: state.moves, accent: true },
-    { label: "Time", value: formatTime(elapsed), accent: false },
-  ];
-
   // Always-visible Hint button (the menu item is easy to miss for new players).
   const hintButton = (
     <Pressable
@@ -1774,7 +1765,6 @@ export default function SolitaireGameScreen({ navigation, route }) {
 
           <View style={styles.rightRail}>
             <View style={styles.landscapeHeaderRight}>
-              <StatsStrip gameId="solitaire" items={statsItems} bare stacked />
               <GameMenuButton menuItems={menuItems} />
             </View>
             {hintButton}
@@ -1998,7 +1988,6 @@ export default function SolitaireGameScreen({ navigation, route }) {
 
           <View style={[styles.rightRail, { zIndex: 1 }]}>
             <View style={styles.landscapeHeaderRight}>
-              <StatsStrip gameId="solitaire" items={statsItems} bare stacked />
               <GameMenuButton menuItems={menuItems} />
             </View>
             {hintButton}
@@ -2271,7 +2260,6 @@ export default function SolitaireGameScreen({ navigation, route }) {
 
           <View style={styles.rightRail}>
             <View style={styles.landscapeHeaderRight}>
-              <StatsStrip gameId="solitaire" items={statsItems} bare stacked />
               <GameMenuButton menuItems={menuItems} />
             </View>
             {hintButton}
@@ -2425,7 +2413,6 @@ export default function SolitaireGameScreen({ navigation, route }) {
 
           <View style={styles.rightRail}>
             <View style={styles.landscapeHeaderRight}>
-              <StatsStrip gameId="solitaire" items={statsItems} bare stacked />
               <GameMenuButton menuItems={menuItems} />
             </View>
             {hintButton}
@@ -2664,7 +2651,6 @@ export default function SolitaireGameScreen({ navigation, route }) {
 
           <View style={styles.rightRail}>
             <View style={styles.landscapeHeaderRight}>
-              <StatsStrip gameId="solitaire" items={statsItems} bare stacked />
               <GameMenuButton menuItems={menuItems} />
             </View>
             {hintButton}
@@ -2825,7 +2811,6 @@ export default function SolitaireGameScreen({ navigation, route }) {
         <GameHeader
           gameId="solitaire"
           title={variant.label}
-          leftInfo={<StatsStrip gameId="solitaire" items={statsItems} bare />}
           menuItems={menuItems}
         />
       )}
@@ -2985,6 +2970,7 @@ const styles = StyleSheet.create({
   landscapeHeaderRight: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "flex-end",
     gap: scale(10),
     flexWrap: "wrap",
   },
