@@ -1769,8 +1769,8 @@ export default function SolitaireGameScreen({ navigation, route }) {
               <GameMenuButton menuItems={menuItems} />
             </View>
             <View style={styles.railSlotRow}>
-              <View ref={stockWrapRef} collapsable={false}>{stockSlot}</View>
               <View ref={wasteWrapRef} collapsable={false}>{wasteSlot}</View>
+              <View ref={stockWrapRef} collapsable={false}>{stockSlot}</View>
             </View>
             <View style={[styles.railSlotRow, styles.railFoundationsTop]}>
               {foundationSlots[0]}
