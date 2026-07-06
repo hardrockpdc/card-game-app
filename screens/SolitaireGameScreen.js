@@ -40,6 +40,7 @@ import {
   newGameAction,
   solitaireReducer,
   autoMoveAction,
+  getAutoMove,
   moveAction,
   canAutoComplete,
   nextFoundationMove,
@@ -543,6 +544,14 @@ export default function SolitaireGameScreen({ navigation, route }) {
   const [flyGhost, setFlyGhost] = useState(null); // { card, w, h, from/to, startScale }
   const [flyingCardId, setFlyingCardId] = useState(null); // source card hidden mid-flight
 
+  // FLIP: animate a normal tap-move by measuring each moving card before and
+  // after the move, then sliding a ghost from old to new.
+  const cardNodeRefs = useRef(new Map()); // card.id -> measurable node
+  const pendingFlipRef = useRef(null); // { cards, oldRects } between dispatch and measure
+  const flipProgress = useRef(new Animated.Value(0)).current;
+  const [flipGhosts, setFlipGhosts] = useState([]); // [{ id, card, fromX, fromY, toX, toY, w, h }]
+  const [hiddenFlipIds, setHiddenFlipIds] = useState(() => new Set());
+
   // BUG-4: Unified mount effect — always check for a saved game first,
   // regardless of resumeFromSave. Prevents hot-reload from clobbering
   // an in-progress game with a fresh deal.
@@ -630,6 +639,54 @@ export default function SolitaireGameScreen({ navigation, route }) {
     flyToFoundation(move);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoCompleting, state, flyGhost]);
+
+  // FLIP part 2: after a tap-move renders, measure the cards' new positions and
+  // slide ghosts from old → new. The real cards are held hidden until it lands.
+  useEffect(() => {
+    const pending = pendingFlipRef.current;
+    if (!pending) return;
+    pendingFlipRef.current = null;
+    measureCardRects(pending.cards, (newRects) => {
+      const clear = () => {
+        setFlipGhosts([]);
+        setHiddenFlipIds(new Set());
+      };
+      if (!newRects) {
+        clear();
+        return;
+      }
+      const ghosts = [];
+      for (const card of pending.cards) {
+        const from = pending.oldRects[card.id];
+        const to = newRects[card.id];
+        if (!from || !to) continue;
+        ghosts.push({
+          id: card.id,
+          card,
+          fromX: from.x,
+          fromY: from.y,
+          toX: to.x,
+          toY: to.y,
+          w: to.w,
+          h: to.h,
+          startScale: to.w > 0 ? from.w / to.w : 1,
+        });
+      }
+      if (ghosts.length === 0) {
+        clear();
+        return;
+      }
+      setFlipGhosts(ghosts);
+      flipProgress.setValue(0);
+      Animated.timing(flipProgress, {
+        toValue: 1,
+        duration: 190,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }).start(clear);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state]);
 
   function animateDeal(card) {
     const anchor = dealOriginRef.current;
@@ -862,8 +919,98 @@ export default function SolitaireGameScreen({ navigation, route }) {
           />
         </Animated.View>
       )}
+      {flipGhosts.map((g) => (
+        <Animated.View
+          key={g.id}
+          pointerEvents="none"
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            width: g.w,
+            height: g.h,
+            zIndex: 60,
+            transform: [
+              {
+                translateX: flipProgress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [g.fromX, g.toX],
+                }),
+              },
+              {
+                translateY: flipProgress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [g.fromY, g.toY],
+                }),
+              },
+              {
+                scale: flipProgress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [g.startScale, 1],
+                }),
+              },
+            ],
+          }}
+        >
+          <Image
+            source={getCardImage(g.card.rankLabel, g.card.symbol)}
+            resizeMode="cover"
+            style={{ width: "100%", height: "100%", borderRadius: 14 }}
+          />
+        </Animated.View>
+      ))}
     </>
   );
+
+  // Measure a set of cards' board-relative rects (via each card's node + the
+  // board anchor). Calls back with { [id]: {x,y,w,h} }, or null if it can't.
+  function measureCardRects(cards, cb) {
+    const anchor = boardAnchorRef.current;
+    if (!anchor?.measureInWindow || cards.length === 0) return cb(null);
+    anchor.measureInWindow((ax, ay) => {
+      const rects = {};
+      let remaining = cards.length;
+      cards.forEach((card) => {
+        const node = cardNodeRefs.current.get(card.id);
+        if (!node?.measureInWindow) {
+          if (--remaining === 0) cb(rects);
+          return;
+        }
+        node.measureInWindow((x, y, w, h) => {
+          rects[card.id] = { x: x - ax, y: y - ay, w, h };
+          if (--remaining === 0) cb(rects);
+        });
+      });
+    });
+  }
+
+  // Animate a tap-move: measure the moving cards, apply the move (hidden), then
+  // slide ghosts from the old positions to the new ones.
+  function flipMove(move) {
+    measureCardRects(move.cards, (oldRects) => {
+      if (!oldRects) {
+        dispatch(moveAction(move.source, move.dest));
+        return;
+      }
+      pendingFlipRef.current = { cards: move.cards, oldRects };
+      setHiddenFlipIds(new Set(move.cards.map((c) => c.id)));
+      dispatch(moveAction(move.source, move.dest));
+    });
+  }
+
+  // Route a card tap through the FLIP animation when it produces a move.
+  function onCardTap(target) {
+    const move = reduceMotionRef.current ? null : getAutoMove(state, target);
+    if (move && move.cards.length > 0) flipMove(move);
+    else dispatch(autoMoveAction(target));
+  }
+
+  // Register a card's measurable node by id (for FLIP before/after measurement).
+  const setCardNode = (id, node) => {
+    if (!id) return;
+    if (node) cardNodeRefs.current.set(id, node);
+    else cardNodeRefs.current.delete(id);
+  };
 
   // P4: Cleanup any pending Spider animation timers on unmount so we don't
   // leak setTimeout callbacks if the user navigates away mid-animation.
@@ -1289,7 +1436,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
       <StockSlot
         count={state.stock.length}
         emptyLabel="↻"
-        onPress={() => dispatch(autoMoveAction({ type: "stock" }))}
+        onPress={() => onCardTap({ type: "stock" })}
         hinted={hint?.source?.type === "stock"}
         style={{ width: slotW, height: slotH }}
       />
@@ -1300,15 +1447,19 @@ export default function SolitaireGameScreen({ navigation, route }) {
         card={displayWasteTop}
         label="Waste"
         sizeScale={slotScale}
-        onPress={() => dispatch(autoMoveAction({ type: "waste" }))}
+        onPress={() => onCardTap({ type: "waste" })}
         selected={sameTarget(state.selected, { type: "waste" })}
         hinted={hint?.source?.type === "waste"}
+        containerRef={(node) => setCardNode(displayWasteTop?.id, node)}
         dragGesture={
           dragEnabled && wasteTop
             ? makeDragGesture({ type: "waste" })
             : undefined
         }
-        hidden={dragEnabled && draggingSource?.type === "waste"}
+        hidden={
+          (dragEnabled && draggingSource?.type === "waste") ||
+          (displayWasteTop && hiddenFlipIds.has(displayWasteTop.id))
+        }
         style={{
           width: slotW,
           height: slotH,
@@ -1328,10 +1479,11 @@ export default function SolitaireGameScreen({ navigation, route }) {
           card={top}
           label={`F${index + 1}`}
           sizeScale={slotScale}
-          onPress={() => dispatch(autoMoveAction({ type: "foundation", index }))}
+          onPress={() => onCardTap({ type: "foundation", index })}
           selected={selected}
           containerRef={(node) => {
             foundationRefs.current[index] = node;
+            setCardNode(top?.id, node);
             if (dragEnabled) {
               registerZone(`f-${index}`, { type: "foundation", index })(node);
             }
@@ -1432,7 +1584,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                 label=""
                 animateReveal={true}
                 sizeScale={tabCardScale}
-                onPress={() => dispatch(autoMoveAction(source))}
+                onPress={() => onCardTap(source)}
                 selected={selected}
                 hinted={isHintSourceTableau(hint, pileIndex, cardIndex)}
                 disabled={!card.faceUp}
@@ -1441,7 +1593,12 @@ export default function SolitaireGameScreen({ navigation, route }) {
                     ? makeDragGesture(source)
                     : undefined
                 }
-                hidden={hidden || card.id === flyingCardId}
+                containerRef={(node) => setCardNode(card.id, node)}
+                hidden={
+                  hidden ||
+                  card.id === flyingCardId ||
+                  hiddenFlipIds.has(card.id)
+                }
                 style={[
                   styles.stackCard,
                   cardIndex > 0 && { marginTop: margins[cardIndex] },
@@ -1628,7 +1785,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                 label=""
                 animateReveal={true}
                 sizeScale={isLandscape ? tabCardScale : undefined}
-                onPress={() => dispatch(autoMoveAction(source))}
+                onPress={() => onCardTap(source)}
                 selected={selected}
                 hinted={isHintSourceTableau(hint, pileIndex, cardIndex)}
                 disabled={!card.faceUp}
@@ -1637,7 +1794,12 @@ export default function SolitaireGameScreen({ navigation, route }) {
                     ? makeDragGesture(source)
                     : undefined
                 }
-                hidden={hidden || card.id === flyingCardId}
+                containerRef={(node) => setCardNode(card.id, node)}
+                hidden={
+                  hidden ||
+                  card.id === flyingCardId ||
+                  hiddenFlipIds.has(card.id)
+                }
                 onCardLayout={(e) => {
                   const layout = e.nativeEvent.layout;
                   spiderCardLayoutsRef.current[card.id] = {
@@ -1700,7 +1862,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
               <StockSlot
                 count={state.stock.length}
                 emptyLabel="No deal"
-                onPress={() => dispatch(autoMoveAction({ type: "stock" }))}
+                onPress={() => onCardTap({ type: "stock" })}
                 hinted={hint?.source?.type === "stock"}
                 style={{ width: slotW, height: Math.round(slotW * 1.05) }}
               />
@@ -1729,7 +1891,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
           <StockSlot
             count={state.stock.length}
             emptyLabel="No deal"
-            onPress={() => dispatch(autoMoveAction({ type: "stock" }))}
+            onPress={() => onCardTap({ type: "stock" })}
             hinted={hint?.source?.type === "stock"}
           />
 
@@ -1778,7 +1940,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
           card={card}
           label={`Free ${index + 1}`}
           sizeScale={isLandscape ? slotScale : undefined}
-          onPress={() => dispatch(autoMoveAction({ type: "freecell", index }))}
+          onPress={() => onCardTap({ type: "freecell", index })}
           selected={selected}
           hinted={isHintFreecell(hint, index)}
           dragGesture={
@@ -1819,10 +1981,11 @@ export default function SolitaireGameScreen({ navigation, route }) {
           card={top}
           label={`F${index + 1}`}
           sizeScale={isLandscape ? slotScale : undefined}
-          onPress={() => dispatch(autoMoveAction({ type: "foundation", index }))}
+          onPress={() => onCardTap({ type: "foundation", index })}
           selected={selected}
           containerRef={(node) => {
             foundationRefs.current[index] = node;
+            setCardNode(top?.id, node);
             if (dragEnabled) {
               registerZone(`f-${index}`, { type: "foundation", index })(node);
             }
@@ -1913,7 +2076,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                 label=""
                 animateReveal={true}
                 sizeScale={isLandscape ? tabCardScale : undefined}
-                onPress={() => dispatch(autoMoveAction(source))}
+                onPress={() => onCardTap(source)}
                 selected={selected}
                 hinted={isHintSourceTableau(hint, pileIndex, cardIndex)}
                 dragGesture={
@@ -1921,7 +2084,12 @@ export default function SolitaireGameScreen({ navigation, route }) {
                     ? makeDragGesture(source)
                     : undefined
                 }
-                hidden={hidden || card.id === flyingCardId}
+                containerRef={(node) => setCardNode(card.id, node)}
+                hidden={
+                  hidden ||
+                  card.id === flyingCardId ||
+                  hiddenFlipIds.has(card.id)
+                }
                 style={[
                   styles.stackCard,
                   isLandscape
@@ -2118,7 +2286,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                 <StockSlot
                   count={state.stock.length}
                   emptyLabel="↻"
-                  onPress={() => dispatch(autoMoveAction({ type: "stock" }))}
+                  onPress={() => onCardTap({ type: "stock" })}
                   hinted={hint?.source?.type === "stock"}
                   style={{ width: slotW, height: slotH }}
                 />
@@ -2128,7 +2296,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                   card={displayWasteTop}
                   label="Waste"
                   sizeScale={slotScale}
-                  onPress={() => dispatch(autoMoveAction({ type: "waste" }))}
+                  onPress={() => onCardTap({ type: "waste" })}
                   selected={sameTarget(state.selected, { type: "waste" })}
                   hinted={hint?.target?.type === "waste"}
                   style={{
@@ -2159,14 +2327,14 @@ export default function SolitaireGameScreen({ navigation, route }) {
           <StockSlot
             count={state.stock.length}
             emptyLabel="↻"
-            onPress={() => dispatch(autoMoveAction({ type: "stock" }))}
+            onPress={() => onCardTap({ type: "stock" })}
             hinted={hint?.source?.type === "stock"}
           />
 
           <CardSlot
             card={wasteTop}
             label="Waste"
-            onPress={() => dispatch(autoMoveAction({ type: "waste" }))}
+            onPress={() => onCardTap({ type: "waste" })}
             selected={sameTarget(state.selected, { type: "waste" })}
             hinted={hint?.target?.type === "waste"}
             style={styles.slotCard}
@@ -2356,7 +2524,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                 <StockSlot
                   count={state.stock.length}
                   emptyLabel="↻"
-                  onPress={() => dispatch(autoMoveAction({ type: "stock" }))}
+                  onPress={() => onCardTap({ type: "stock" })}
                   hinted={hint?.source?.type === "stock"}
                   style={{ width: slotW, height: slotH }}
                 />
@@ -2366,7 +2534,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
                   card={displayWasteTop}
                   label="Waste"
                   sizeScale={slotScale}
-                  onPress={() => dispatch(autoMoveAction({ type: "waste" }))}
+                  onPress={() => onCardTap({ type: "waste" })}
                   selected={sameTarget(state.selected, { type: "waste" })}
                   hinted={hint?.target?.type === "waste"}
                   style={{
@@ -2397,14 +2565,14 @@ export default function SolitaireGameScreen({ navigation, route }) {
           <StockSlot
             count={state.stock.length}
             emptyLabel="↻"
-            onPress={() => dispatch(autoMoveAction({ type: "stock" }))}
+            onPress={() => onCardTap({ type: "stock" })}
             hinted={hint?.source?.type === "stock"}
           />
 
           <CardSlot
             card={wasteTop}
             label="Waste"
-            onPress={() => dispatch(autoMoveAction({ type: "waste" }))}
+            onPress={() => onCardTap({ type: "waste" })}
             selected={sameTarget(state.selected, { type: "waste" })}
             hinted={hint?.target?.type === "waste"}
             style={styles.slotCard}

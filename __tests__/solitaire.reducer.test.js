@@ -7,6 +7,7 @@ import {
   tapAction,
   autoMoveAction,
   getAutoMoveTarget,
+  getAutoMove,
   canAutoComplete,
   nextFoundationMove,
   moveAction,
@@ -161,6 +162,28 @@ describe("autoMoveAction (one-tap auto-move)", () => {
     const viaAuto = solitaireReducer(s, autoMoveAction({ type: "stock" }));
     const viaTap = solitaireReducer(s, tapAction({ type: "stock" }));
     expect(viaAuto).toEqual(viaTap);
+  });
+
+  test("getAutoMove describes the move a card tap would make", () => {
+    const s = createSolitaireState("klondike");
+    // Find a movable face-up tableau top.
+    let target = null;
+    for (let i = 0; i < s.tableau.length; i += 1) {
+      const pile = s.tableau[i];
+      if (!pile.length || !pile[pile.length - 1].faceUp) continue;
+      const cand = { type: "tableau", index: i, cardIndex: pile.length - 1 };
+      if (getAutoMoveTarget(s, cand)) {
+        target = cand;
+        break;
+      }
+    }
+    if (!target) return;
+    const move = getAutoMove(s, target);
+    expect(move).not.toBeNull();
+    expect(move.source).toEqual(target);
+    expect(move.cards.length).toBeGreaterThan(0);
+    expect(getAutoMove(s, { type: "stock" })).toBeNull();
+    expect(getAutoMove(createSolitaireState("pyramid"), target)).toBeNull();
   });
 });
 

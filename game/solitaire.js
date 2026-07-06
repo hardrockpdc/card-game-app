@@ -1921,6 +1921,34 @@ export function getAutoMoveTarget(state, source) {
     .sort((a, b) => autoMovePriority(state, a) - autoMovePriority(state, b))[0];
 }
 
+// The card(s) a source would move (a tableau run, or a single card).
+function movingCardsFor(state, source) {
+  if (source.type === "tableau") {
+    return (state.tableau[source.index] || []).slice(source.cardIndex);
+  }
+  if (source.type === "waste") {
+    const c = topCard(state.waste);
+    return c ? [c] : [];
+  }
+  if (source.type === "freecell") {
+    const c = state.freecells?.[source.index];
+    return c ? [c] : [];
+  }
+  return [];
+}
+
+// What a card tap would do in a build variant: { source, dest, cards } or null
+// if it wouldn't move. Lets the screen animate the move (FLIP) before applying it.
+export function getAutoMove(state, target) {
+  if (!["klondike", "freecell", "spider"].includes(state.variantId)) return null;
+  if (!target || target.type === "stock") return null;
+  const source = tapSourceFor(state, target);
+  if (!source) return null;
+  const dest = getAutoMoveTarget(state, source);
+  if (!dest) return null;
+  return { source, dest, cards: movingCardsFor(state, source) };
+}
+
 // ── Auto-complete (Klondike / FreeCell) ──────────────────────────────────────
 // When every card is face-up and all that's left is sending them to the
 // foundations, the game finishes itself.
