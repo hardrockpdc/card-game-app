@@ -552,6 +552,11 @@ export default function SolitaireGameScreen({ navigation, route }) {
   const [flipGhosts, setFlipGhosts] = useState([]); // [{ id, card, fromX, fromY, toX, toY, w, h }]
   const [hiddenFlipIds, setHiddenFlipIds] = useState(() => new Set());
 
+  // Animated hint: a ghost card loops from the suggested source to its target.
+  const hintFly = useRef(new Animated.Value(0)).current;
+  const hintAnimRef = useRef(null);
+  const [hintGhost, setHintGhost] = useState(null); // { card, fromX, fromY, toX, toY, w, h }
+
   // BUG-4: Unified mount effect — always check for a saved game first,
   // regardless of resumeFromSave. Prevents hot-reload from clobbering
   // an in-progress game with a fresh deal.
@@ -959,6 +964,49 @@ export default function SolitaireGameScreen({ navigation, route }) {
           />
         </Animated.View>
       ))}
+      {hintGhost && (
+        <Animated.View
+          pointerEvents="none"
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            width: hintGhost.w,
+            height: hintGhost.h,
+            zIndex: 70,
+            opacity: hintFly.interpolate({
+              inputRange: [0, 0.15, 0.8, 1],
+              outputRange: [0, 0.92, 0.92, 0],
+            }),
+            transform: [
+              {
+                translateX: hintFly.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [hintGhost.fromX, hintGhost.toX],
+                }),
+              },
+              {
+                translateY: hintFly.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [hintGhost.fromY, hintGhost.toY],
+                }),
+              },
+            ],
+          }}
+        >
+          <Image
+            source={getCardImage(hintGhost.card.rankLabel, hintGhost.card.symbol)}
+            resizeMode="cover"
+            style={{
+              width: "100%",
+              height: "100%",
+              borderRadius: 14,
+              borderWidth: 2.5,
+              borderColor: "#FFCC66",
+            }}
+          />
+        </Animated.View>
+      )}
     </>
   );
 
@@ -1011,6 +1059,78 @@ export default function SolitaireGameScreen({ navigation, route }) {
     if (node) cardNodeRefs.current.set(id, node);
     else cardNodeRefs.current.delete(id);
   };
+
+  function stopHintAnimation() {
+    hintAnimRef.current?.stop?.();
+    hintAnimRef.current = null;
+    setHintGhost(null);
+  }
+
+  // Loop a ghost card from a hint's source to its target so the move is obvious.
+  // Falls back to the static highlight only (no ghost) when it can't measure.
+  function startHintAnimation(hintMove) {
+    stopHintAnimation();
+    if (reduceMotionRef.current || !hintMove?.source || !hintMove?.target) return;
+    const { source, target } = hintMove;
+
+    let card = null;
+    if (source.type === "tableau") {
+      card = (state.tableau[source.index] || [])[source.cardIndex];
+    } else if (source.type === "waste") {
+      card = getTopCard(state.waste);
+    } else if (source.type === "freecell") {
+      card = state.freecells?.[source.index];
+    }
+    if (!card) return;
+
+    const srcNode = cardNodeRefs.current.get(card.id);
+    const anchor = boardAnchorRef.current;
+    let tgtNode = null;
+    let tgtIsColumn = false;
+    if (target.type === "foundation") {
+      tgtNode = foundationRefs.current[target.index];
+    } else if (target.type === "tableau") {
+      tgtNode = columnRefs.current[target.index];
+      tgtIsColumn = true;
+    }
+    if (
+      !srcNode?.measureInWindow ||
+      !anchor?.measureInWindow ||
+      !tgtNode?.measureInWindow
+    ) {
+      return;
+    }
+
+    anchor.measureInWindow((ax, ay) => {
+      srcNode.measureInWindow((sx, sy, sw, sh) => {
+        tgtNode.measureInWindow((tx, ty, tw, th) => {
+          setHintGhost({
+            card,
+            fromX: sx - ax,
+            fromY: sy - ay,
+            toX: tx - ax,
+            toY: (tgtIsColumn ? ty + th - tabCardH : ty) - ay,
+            w: sw,
+            h: sh,
+          });
+          hintFly.setValue(0);
+          const anim = Animated.loop(
+            Animated.timing(hintFly, {
+              toValue: 1,
+              duration: 950,
+              easing: Easing.inOut(Easing.quad),
+              useNativeDriver: true,
+            }),
+            { iterations: 3 },
+          );
+          hintAnimRef.current = anim;
+          anim.start(() => {
+            hintAnimRef.current = null;
+          });
+        });
+      });
+    });
+  }
 
   // P4: Cleanup any pending Spider animation timers on unmount so we don't
   // leak setTimeout callbacks if the user navigates away mid-animation.
@@ -1358,13 +1478,17 @@ export default function SolitaireGameScreen({ navigation, route }) {
   // board. (state.moves changes on every real move, not selection-only taps.)
   useEffect(() => {
     setHint(null);
+    stopHintAnimation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.moves]);
 
-  // Clear the auto-hide timer on unmount.
+  // Clear the auto-hide timer + hint animation on unmount.
   useEffect(() => {
     return () => {
       if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
+      stopHintAnimation();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const showHint = () => {
@@ -1372,7 +1496,11 @@ export default function SolitaireGameScreen({ navigation, route }) {
     const next = getHint(state);
     setHint(next);
     if (next) {
-      hintTimeoutRef.current = setTimeout(() => setHint(null), 4000);
+      startHintAnimation(next);
+      hintTimeoutRef.current = setTimeout(() => {
+        setHint(null);
+        stopHintAnimation();
+      }, 4000);
     } else {
       Alert.alert("No hint", "No helpful move right now.");
     }
