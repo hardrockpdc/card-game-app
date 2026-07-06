@@ -1765,9 +1765,9 @@ export default function SolitaireGameScreen({ navigation, route }) {
 
           <View style={styles.rightRail}>
             <View style={styles.landscapeHeaderRight}>
+              {hintButton}
               <GameMenuButton menuItems={menuItems} />
             </View>
-            {hintButton}
             <View style={styles.railSlotRow}>
               <View ref={stockWrapRef} collapsable={false}>{stockSlot}</View>
               <View ref={wasteWrapRef} collapsable={false}>{wasteSlot}</View>
@@ -1988,9 +1988,9 @@ export default function SolitaireGameScreen({ navigation, route }) {
 
           <View style={[styles.rightRail, { zIndex: 1 }]}>
             <View style={styles.landscapeHeaderRight}>
+              {hintButton}
               <GameMenuButton menuItems={menuItems} />
             </View>
-            {hintButton}
             <View style={styles.railSlotRow}>
               <StockSlot
                 count={state.stock.length}
@@ -2260,9 +2260,9 @@ export default function SolitaireGameScreen({ navigation, route }) {
 
           <View style={styles.rightRail}>
             <View style={styles.landscapeHeaderRight}>
+              {hintButton}
               <GameMenuButton menuItems={menuItems} />
             </View>
-            {hintButton}
             <View style={styles.railSlotRow}>
               {freeCellSlots[0]}
               {freeCellSlots[1]}
@@ -2413,9 +2413,9 @@ export default function SolitaireGameScreen({ navigation, route }) {
 
           <View style={styles.rightRail}>
             <View style={styles.landscapeHeaderRight}>
+              {hintButton}
               <GameMenuButton menuItems={menuItems} />
             </View>
-            {hintButton}
             <View style={styles.railSlotRow}>
               <View ref={stockWrapRef} collapsable={false}>
                 <StockSlot
@@ -2651,9 +2651,9 @@ export default function SolitaireGameScreen({ navigation, route }) {
 
           <View style={styles.rightRail}>
             <View style={styles.landscapeHeaderRight}>
+              {hintButton}
               <GameMenuButton menuItems={menuItems} />
             </View>
-            {hintButton}
             <View style={styles.railSlotRow}>
               <View ref={stockWrapRef} collapsable={false}>
                 <StockSlot
@@ -2978,7 +2978,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    alignSelf: "flex-end", // sit under the hamburger, compact
     gap: 5,
     paddingHorizontal: 12,
     paddingVertical: 7,
