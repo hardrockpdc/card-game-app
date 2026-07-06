@@ -1943,14 +1943,16 @@ export default function SolitaireGameScreen({ navigation, route }) {
           onPress={() => onCardTap({ type: "freecell", index })}
           selected={selected}
           hinted={isHintFreecell(hint, index)}
+          containerRef={(node) => setCardNode(card?.id, node)}
           dragGesture={
             dragEnabled && card ? makeDragGesture(source) : undefined
           }
           highlighted={dragEnabled && isLegalTarget(source)}
           hidden={
-            dragEnabled &&
-            draggingSource?.type === "freecell" &&
-            draggingSource.index === index
+            (dragEnabled &&
+              draggingSource?.type === "freecell" &&
+              draggingSource.index === index) ||
+            (card && hiddenFlipIds.has(card.id))
           }
           style={isLandscape ? railSlotStyle : styles.slotCard}
         />
