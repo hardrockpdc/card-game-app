@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { View, Text, StyleSheet, Image } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import { useHasSave } from "../game/useResumePrompt";
 import { clearGame } from "../game/gameSaves";
@@ -9,65 +9,18 @@ import { scale, scaleFont } from "../game/responsive";
 
 // ─── Game data ────────────────────────────────────────────────────────────────
 
+// Flat, consistent tiles: each game gets one accent colour + a suit motif +
+// its name. No photo/AI art — a deliberate design system so the set reads as
+// "designed", not generated.
 const GAMES = [
-  {
-    id: "blackjack",
-    label: "Blackjack",
-    tag: "Classic",
-    accent: "#2e7d32",
-    image: require("../assets/images/thumb_blackjack.jpg"),
-  },
-  {
-    id: "solitaire",
-    label: "Solitaire",
-    tag: "5 modes",
-    accent: "#7fb3ff",
-    image: require("../assets/images/thumb_solitaire.jpg"),
-  },
-  {
-    id: "rummy",
-    label: "Rummy",
-    tag: "3 variants",
-    accent: "#e94560",
-    image: require("../assets/images/thumb_rummy.jpg"),
-  },
-  {
-    id: "conquian",
-    label: "Conquián",
-    tag: "Mexican",
-    accent: "#c4923f",
-    image: require("../assets/images/thumb_conquian.jpg"),
-  },
-  {
-    id: "goFish",
-    label: "Go Fish",
-    tag: "Family",
-    accent: "#1565c0",
-    image: require("../assets/images/thumb_gofish.jpg"),
-  },
-  {
-    id: "poker",
-    label: "Poker",
-    tag: "3 variants",
-    accent: "#6a1b9a",
-    image: require("../assets/images/thumb_poker.jpg"),
-  },
-  {
-    id: "lastCard",
-    label: "Last Card",
-    tag: "Color match",
-    accent: "#e94560",
-    image: require("../assets/images/thumb_lastcard.jpg"),
-  },
-  {
-    // No artwork yet — rendered as a styled placeholder tile (see `placeholder`).
-    id: "memory",
-    label: "Memory Match",
-    tag: "Find pairs",
-    accent: "#7c6cff",
-    placeholder: true,
-    icon: "🧠",
-  },
+  { id: "blackjack", label: "Blackjack", tag: "Classic", accent: "#3ea662", suit: "♠" },
+  { id: "solitaire", label: "Solitaire", tag: "5 modes", accent: "#5b9bd5", suit: "♦" },
+  { id: "rummy", label: "Rummy", tag: "3 variants", accent: "#e05068", suit: "♥" },
+  { id: "conquian", label: "Conquián", tag: "Mexican", accent: "#d3a24a", suit: "♣" },
+  { id: "goFish", label: "Go Fish", tag: "Family", accent: "#2aa6bf", suit: "♥" },
+  { id: "poker", label: "Poker", tag: "3 variants", accent: "#9a5cd0", suit: "♠" },
+  { id: "lastCard", label: "Last Card", tag: "Color match", accent: "#e8833a", suit: "♦" },
+  { id: "memory", label: "Memory Match", tag: "Find pairs", accent: "#8a7bff", suit: "♣" },
 ];
 
 // Decorative background grid line positions (percent of screen w/h)
@@ -207,17 +160,19 @@ export default function SinglePlayerSetupScreen({ navigation }) {
       {pendingGame && (
         <View style={styles.resumeOverlay}>
           <View style={styles.resumeCard}>
-            {pendingGame.placeholder ? (
-              <View style={[styles.confirmThumb, styles.placeholderThumb]}>
-                <Text style={styles.placeholderThumbIcon}>{pendingGame.icon}</Text>
-              </View>
-            ) : (
-              <Image
-                source={pendingGame.image}
-                style={styles.confirmThumb}
-                resizeMode="cover"
-              />
-            )}
+            <View
+              style={[
+                styles.confirmThumb,
+                styles.flatTile,
+                { borderColor: pendingGame.accent, borderWidth: 2 },
+              ]}
+            >
+              <Text
+                style={[styles.confirmThumbSuit, { color: pendingGame.accent }]}
+              >
+                {pendingGame.suit}
+              </Text>
+            </View>
             <Text style={styles.resumeTitle}>{pendingGame.label}</Text>
             <Text style={styles.resumeBody}>Ready to play?</Text>
             <TouchableOpacity
@@ -292,41 +247,43 @@ export default function SinglePlayerSetupScreen({ navigation }) {
                     onPress={() => onTilePress(game)}
                     activeOpacity={0.85}
                   >
-                    {game.placeholder ? (
-                      <View
+                    <View
+                      style={[
+                        styles.tile,
+                        styles.flatTile,
+                        tileSize,
+                        {
+                          borderColor: game.accent,
+                          borderWidth: pendingGame?.id === game.id ? 3 : 2,
+                        },
+                      ]}
+                    >
+                      <Text
                         style={[
-                          styles.tile,
-                          styles.placeholderTile,
-                          tileSize,
+                          styles.flatTileSuit,
                           {
-                            borderColor:
-                              pendingGame?.id === game.id
-                                ? game.accent
-                                : game.accent + "66",
-                            borderWidth: pendingGame?.id === game.id ? 3 : 1.5,
+                            color: game.accent,
+                            fontSize: Math.max(44, Math.round(tileH * 0.5)),
                           },
                         ]}
                       >
-                        <Text style={styles.placeholderIcon}>{game.icon}</Text>
-                        <Text style={styles.placeholderLabel}>{game.label}</Text>
+                        {game.suit}
+                      </Text>
+                      <View style={styles.flatTileContent}>
+                        <Text
+                          style={styles.flatTileName}
+                          numberOfLines={2}
+                          adjustsFontSizeToFit
+                        >
+                          {game.label}
+                        </Text>
+                        <Text
+                          style={[styles.flatTileTag, { color: game.accent }]}
+                        >
+                          {game.tag}
+                        </Text>
                       </View>
-                    ) : (
-                      <Image
-                        source={game.image}
-                        style={[
-                          styles.tile,
-                          tileSize,
-                          {
-                            borderColor:
-                              pendingGame?.id === game.id
-                                ? game.accent
-                                : game.accent + "66",
-                            borderWidth: pendingGame?.id === game.id ? 3 : 1.5,
-                          },
-                        ]}
-                        resizeMode="cover"
-                      />
-                    )}
+                    </View>
                   </TouchableOpacity>
                 ))}
             </View>
@@ -389,31 +346,45 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     overflow: "hidden",
   },
-  placeholderTile: {
-    backgroundColor: "#211d3a",
+  // ── Flat game tiles ────────────────────────────────────────────────────────
+  flatTile: {
+    backgroundColor: "#141a2e",
     alignItems: "center",
     justifyContent: "center",
-    padding: scale(8),
+    overflow: "hidden",
   },
-  placeholderIcon: {
-    fontSize: scaleFont(40),
-    marginBottom: scale(8),
+  flatTileSuit: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    textAlign: "center",
+    textAlignVertical: "center",
+    fontWeight: "900",
+    opacity: 0.16,
   },
-  placeholderLabel: {
-    color: "#d7d2ff",
-    fontSize: scaleFont(15),
-    fontWeight: "700",
+  flatTileContent: {
+    alignItems: "center",
+    paddingHorizontal: scale(6),
+  },
+  flatTileName: {
+    color: "#ffffff",
+    fontSize: scaleFont(17),
+    fontWeight: "800",
     textAlign: "center",
   },
-  placeholderThumb: {
-    backgroundColor: "#211d3a",
-    borderWidth: 1.5,
-    borderColor: "#7c6cff66",
-    alignItems: "center",
-    justifyContent: "center",
+  flatTileTag: {
+    fontSize: scaleFont(10),
+    fontWeight: "700",
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+    marginTop: scale(4),
+    textAlign: "center",
   },
-  placeholderThumbIcon: {
-    fontSize: scaleFont(44),
+  confirmThumbSuit: {
+    fontSize: scaleFont(46),
+    fontWeight: "900",
   },
   // ── Blackjack resume overlay ───────────────────────────────────────────────
   resumeOverlay: {
