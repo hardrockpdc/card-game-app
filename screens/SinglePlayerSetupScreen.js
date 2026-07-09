@@ -172,6 +172,24 @@ export default function SinglePlayerSetupScreen({ navigation }) {
               >
                 {pendingGame.suit}
               </Text>
+              <Text
+                style={[
+                  styles.tilePip,
+                  styles.tilePipTL,
+                  { color: pendingGame.accent, fontSize: scaleFont(13) },
+                ]}
+              >
+                {pendingGame.suit}
+              </Text>
+              <Text
+                style={[
+                  styles.tilePip,
+                  styles.tilePipBR,
+                  { color: pendingGame.accent, fontSize: scaleFont(13) },
+                ]}
+              >
+                {pendingGame.suit}
+              </Text>
             </View>
             <Text style={styles.resumeTitle}>{pendingGame.label}</Text>
             <Text style={styles.resumeBody}>Ready to play?</Text>
@@ -258,12 +276,52 @@ export default function SinglePlayerSetupScreen({ navigation }) {
                         },
                       ]}
                     >
+                      {/* Soft accent halo bleeding off the top edge (clipped by
+                          the tile's rounded corners) — colour identity without art. */}
+                      <View
+                        pointerEvents="none"
+                        style={[
+                          styles.tileGlow,
+                          {
+                            backgroundColor: game.accent,
+                            width: tileW * 1.3,
+                            height: tileW * 1.3,
+                            borderRadius: (tileW * 1.3) / 2,
+                            top: -tileW * 0.65,
+                          },
+                        ]}
+                      />
                       <Text
                         style={[
                           styles.flatTileSuit,
                           {
                             color: game.accent,
                             fontSize: Math.max(44, Math.round(tileH * 0.5)),
+                          },
+                        ]}
+                      >
+                        {game.suit}
+                      </Text>
+                      {/* Corner pips, like a real playing card */}
+                      <Text
+                        style={[
+                          styles.tilePip,
+                          styles.tilePipTL,
+                          {
+                            color: game.accent,
+                            fontSize: Math.max(13, Math.round(tileH * 0.1)),
+                          },
+                        ]}
+                      >
+                        {game.suit}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.tilePip,
+                          styles.tilePipBR,
+                          {
+                            color: game.accent,
+                            fontSize: Math.max(13, Math.round(tileH * 0.1)),
                           },
                         ]}
                       >
@@ -357,7 +415,28 @@ const styles = StyleSheet.create({
     textAlign: "center",
     textAlignVertical: "center",
     fontWeight: "900",
-    opacity: 0.16,
+    opacity: 0.2,
+  },
+  // Soft accent halo at the top of a tile (absolute circle, clipped by the
+  // tile's overflow:hidden + rounded corners).
+  tileGlow: {
+    position: "absolute",
+    alignSelf: "center",
+    opacity: 0.13,
+  },
+  // Corner pips, like the rank corners of a real playing card.
+  tilePip: {
+    position: "absolute",
+    fontWeight: "900",
+  },
+  tilePipTL: {
+    top: scale(8),
+    left: scale(10),
+  },
+  tilePipBR: {
+    bottom: scale(8),
+    right: scale(10),
+    transform: [{ rotate: "180deg" }],
   },
   flatTileContent: {
     alignItems: "center",
@@ -380,6 +459,7 @@ const styles = StyleSheet.create({
   confirmThumbSuit: {
     fontSize: scaleFont(46),
     fontWeight: "900",
+    opacity: 0.25,
   },
   // ── Blackjack resume overlay ───────────────────────────────────────────────
   resumeOverlay: {
