@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   StyleSheet,
-  Image,
 } from "react-native";
 import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import { scale, scaleFont } from "../game/responsive";
@@ -14,46 +13,26 @@ import { POKER_VARIANT_OPTIONS } from "../components/PokerVariantWheel";
 import { RUMMY_VARIANTS, RUMMY_VARIANT_OPTIONS } from "../game/rummy";
 import { VARIANT_OPTIONS as SOLITAIRE_VARIANT_OPTIONS } from "../game/solitaire";
 
-const GAME_THUMBS = {
-  blackjack: require("../assets/images/thumb_blackjack.jpg"),
-  goFish: require("../assets/images/thumb_gofish.jpg"),
-  poker: require("../assets/images/thumb_poker.jpg"),
-  rummy: require("../assets/images/thumb_rummy.jpg"),
-  solitaire: require("../assets/images/thumb_solitaire.jpg"),
-  lastcard: require("../assets/images/thumb_lastcard.jpg"),
-};
-
+// Flat card-emblem look (suit + accent), matching the Choose Game tiles.
 const GAMES = [
-  {
-    id: "blackjack",
-    label: "Blackjack",
-    accent: "#e94560",
-    thumb: GAME_THUMBS.blackjack,
-  },
-  {
-    id: "goFish",
-    label: "Go Fish",
-    accent: "#1565c0",
-    thumb: GAME_THUMBS.goFish,
-  },
-  // No dedicated thumb available for Conquián in /assets/images, so it uses
-  // card illustrations instead.
-  { id: "conquian", label: "Conquián", accent: "#6a1b9a", thumb: null },
-  { id: "poker", label: "Poker", accent: "#e94560", thumb: GAME_THUMBS.poker },
-  { id: "rummy", label: "Rummy", accent: "#e94560", thumb: GAME_THUMBS.rummy },
-  {
-    id: "solitaire",
-    label: "Solitaire",
-    accent: "#7fb3ff",
-    thumb: GAME_THUMBS.solitaire,
-  },
-  {
-    id: "lastcard",
-    label: "Last Card",
-    accent: "#e94560",
-    thumb: GAME_THUMBS.lastcard,
-  },
+  { id: "blackjack", label: "Blackjack", accent: "#3ea662", suit: "♠" },
+  { id: "goFish", label: "Go Fish", accent: "#2aa6bf", suit: "♥" },
+  { id: "conquian", label: "Conquián", accent: "#d3a24a", suit: "♣" },
+  { id: "poker", label: "Poker", accent: "#9a5cd0", suit: "♠" },
+  { id: "rummy", label: "Rummy", accent: "#e05068", suit: "♥" },
+  { id: "solitaire", label: "Solitaire", accent: "#5b9bd5", suit: "♦" },
+  { id: "lastcard", label: "Last Card", accent: "#e8833a", suit: "♦" },
 ];
+
+// A mock Last Card card (color + number) for the illustrated rules — Last Card
+// cards aren't standard playing cards, so we draw simple colour/number tiles.
+function MiniCard({ color, value }) {
+  return (
+    <View style={[styles.miniCard, { backgroundColor: color }]}>
+      <Text style={styles.miniCardValue}>{value}</Text>
+    </View>
+  );
+}
 
 // "In the App" — how to actually operate each game on screen (the taps, drags,
 // and buttons), as opposed to the rules above. Keyed by the GAMES `id`.
@@ -701,12 +680,20 @@ function GameIllustration({
           Last Card is a color- and number-matching game — match the top card,
           then use action cards to shake up the turn order.
         </Text>
-        <View style={styles.lastcardThumbWrap}>
-          <Image
-            source={GAME_THUMBS.lastcard}
-            style={styles.lastcardThumb}
-            resizeMode="contain"
-          />
+        <View style={styles.lastcardMatchRow}>
+          <View style={styles.lastcardMatchGroup}>
+            <MiniCard color="#e05068" value="7" />
+            <Text style={styles.lastcardMatchCaption}>top card</Text>
+          </View>
+          <Text style={styles.lastcardMatchArrow}>→</Text>
+          <View style={styles.lastcardMatchGroup}>
+            <MiniCard color="#e05068" value="2" />
+            <Text style={styles.lastcardMatchCaption}>same color</Text>
+          </View>
+          <View style={styles.lastcardMatchGroup}>
+            <MiniCard color="#5b9bd5" value="7" />
+            <Text style={styles.lastcardMatchCaption}>same number</Text>
+          </View>
         </View>
         <Text style={styles.illuHint}>
           Match by color OR number. If you can’t, draw until you can.
@@ -966,23 +953,24 @@ export default function HowToPlayScreen({ navigation, route }) {
           ) : null}
         </View>
 
-        <View style={styles.heroThumbWrap}>
-          {selectedGame.thumb ? (
-            <Image
-              source={selectedGame.thumb}
-              style={styles.heroThumb}
-              resizeMode="contain"
-            />
-          ) : (
-            <View style={styles.heroThumbFallback}>
-              <Text style={styles.heroThumbFallbackText}>
-                {selectedGame.label}
-              </Text>
-              <Text style={styles.heroThumbFallbackHint}>
-                Illustrated rules below
-              </Text>
-            </View>
-          )}
+        <View style={[styles.heroEmblem, { borderColor: accent }]}>
+          <View
+            pointerEvents="none"
+            style={[styles.heroEmblemGlow, { backgroundColor: accent }]}
+          />
+          <Text style={[styles.heroEmblemSuit, { color: accent }]}>
+            {selectedGame.suit}
+          </Text>
+          <Text
+            style={[styles.heroEmblemPip, styles.heroEmblemPipTL, { color: accent }]}
+          >
+            {selectedGame.suit}
+          </Text>
+          <Text
+            style={[styles.heroEmblemPip, styles.heroEmblemPipBR, { color: accent }]}
+          >
+            {selectedGame.suit}
+          </Text>
         </View>
 
         <View style={[styles.goalBox, { borderLeftColor: accent }]}>
@@ -1025,29 +1013,11 @@ export default function HowToPlayScreen({ navigation, route }) {
                 accessibilityLabel={`How to play ${g.label}`}
               >
                 <View style={styles.chipTop}>
-                  {g.thumb ? (
-                    <Image
-                      source={g.thumb}
-                      style={styles.chipImg}
-                      resizeMode="contain"
-                    />
-                  ) : (
-                    <View
-                      style={[
-                        styles.chipImgFallback,
-                        { borderColor: g.accent },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.chipImgFallbackText,
-                          { color: g.accent },
-                        ]}
-                      >
-                        ★
-                      </Text>
-                    </View>
-                  )}
+                  <View style={[styles.chipEmblem, { borderColor: g.accent }]}>
+                    <Text style={[styles.chipEmblemSuit, { color: g.accent }]}>
+                      {g.suit}
+                    </Text>
+                  </View>
                   <Text
                     style={[
                       styles.chipText,
@@ -1257,34 +1227,43 @@ const styles = StyleSheet.create({
     fontSize: scaleFont(13),
   },
 
-  heroThumbWrap: {
-    backgroundColor: "#16213e",
-    borderRadius: scale(12),
-    borderWidth: 1.5,
-    borderColor: "#334",
-    padding: scale(12),
-    marginBottom: scale(12),
-  },
-  heroThumb: {
-    width: "100%",
+  heroEmblem: {
     height: scale(110),
-  },
-  heroThumbFallback: {
+    borderRadius: scale(12),
+    borderWidth: 2,
+    backgroundColor: "#141a2e",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: scale(12),
-    gap: scale(6),
+    overflow: "hidden",
+    marginBottom: scale(12),
   },
-  heroThumbFallbackText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: scaleFont(18),
-    textAlign: "center",
+  heroEmblemGlow: {
+    position: "absolute",
+    top: scale(-70),
+    alignSelf: "center",
+    width: scale(180),
+    height: scale(180),
+    borderRadius: scale(90),
+    opacity: 0.13,
   },
-  heroThumbFallbackHint: {
-    color: "#c4c4d4",
-    fontSize: scaleFont(12),
-    textAlign: "center",
+  heroEmblemSuit: {
+    fontSize: scaleFont(52),
+    fontWeight: "900",
+    opacity: 0.9,
+  },
+  heroEmblemPip: {
+    position: "absolute",
+    fontSize: scaleFont(16),
+    fontWeight: "900",
+  },
+  heroEmblemPipTL: {
+    top: scale(8),
+    left: scale(12),
+  },
+  heroEmblemPipBR: {
+    bottom: scale(8),
+    right: scale(12),
+    transform: [{ rotate: "180deg" }],
   },
 
   goalBox: {
@@ -1340,17 +1319,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  chipImg: { width: scale(32), height: scale(32) },
-  chipImgFallback: {
-    width: scale(32),
-    height: scale(32),
-    borderRadius: scale(16),
+  chipEmblem: {
+    width: scale(30),
+    height: scale(40),
+    borderRadius: scale(6),
     borderWidth: 1.5,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.03)",
+    backgroundColor: "#141a2e",
   },
-  chipImgFallbackText: { fontWeight: "bold" },
+  chipEmblemSuit: {
+    fontSize: scaleFont(18),
+    fontWeight: "900",
+  },
   chipText: { color: "#c4c4d4", fontSize: scaleFont(14), fontWeight: "bold" },
 
   sectionHeader: {
@@ -1442,18 +1423,39 @@ const styles = StyleSheet.create({
     marginVertical: scale(12),
   },
 
-  lastcardThumbWrap: {
-    marginTop: scale(6),
-    backgroundColor: "rgba(255,255,255,0.03)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
-    borderRadius: scale(10),
-    padding: scale(10),
+  lastcardMatchRow: {
+    marginTop: scale(8),
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    gap: scale(12),
   },
-  lastcardThumb: {
-    width: "100%",
-    height: scale(120),
+  lastcardMatchGroup: {
+    alignItems: "center",
+    gap: scale(4),
+  },
+  lastcardMatchArrow: {
+    color: "#8a96ac",
+    fontSize: scaleFont(20),
+    fontWeight: "900",
+  },
+  lastcardMatchCaption: {
+    color: "#c4c4d4",
+    fontSize: scaleFont(11),
+  },
+  miniCard: {
+    width: scale(42),
+    height: scale(58),
+    borderRadius: scale(8),
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.85)",
+  },
+  miniCardValue: {
+    color: "#fff",
+    fontSize: scaleFont(24),
+    fontWeight: "900",
   },
 
   wildPromptBox: {
