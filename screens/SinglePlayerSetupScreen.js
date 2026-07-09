@@ -277,11 +277,6 @@ export default function SinglePlayerSetupScreen({ navigation }) {
                         >
                           {game.label}
                         </Text>
-                        <Text
-                          style={[styles.flatTileTag, { color: game.accent }]}
-                        >
-                          {game.tag}
-                        </Text>
                       </View>
                     </View>
                   </TouchableOpacity>
