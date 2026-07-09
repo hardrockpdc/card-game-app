@@ -164,13 +164,6 @@ export default function HomeScreen({ navigation }) {
             Play with friends, anywhere
           </Text>
 
-          <View style={styles.suitRow}>
-            <Text style={[styles.suit, styles.suitRed]}>♥</Text>
-            <Text style={styles.suit}>♠</Text>
-            <Text style={[styles.suit, styles.suitRed]}>♦</Text>
-            <Text style={styles.suit}>♣</Text>
-          </View>
-
           {!isLoadingProfile && profileHasName && (
             <TouchableOpacity
               style={styles.avatarWrap}
@@ -350,19 +343,6 @@ const styles = StyleSheet.create({
     color: "#c4c4d4",
     textAlign: "center",
     marginBottom: 14,
-  },
-  suitRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 16,
-    marginBottom: 22,
-  },
-  suit: {
-    color: "#5b5b75",
-    fontSize: 18,
-  },
-  suitRed: {
-    color: "#e94560",
   },
   headerRow: {
     flexDirection: "row",
