@@ -4,6 +4,7 @@ import {
   View,
   Text,
   ActivityIndicator,
+  TouchableOpacity,
   StyleSheet,
 } from "react-native";
 import { scale, scaleFont } from "../game/responsive";
@@ -19,7 +20,7 @@ function formatRemaining(ms) {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-export default function ReconnectOverlay({ visible, name, deadline }) {
+export default function ReconnectOverlay({ visible, name, deadline, onEndGame }) {
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -49,6 +50,16 @@ export default function ReconnectOverlay({ visible, name, deadline }) {
           />
           <Text style={styles.timer}>{formatRemaining(remaining)}</Text>
           <Text style={styles.hint}>Waiting for them to reconnect…</Text>
+          {/* Host-only: don't wait out the timer — end the game for everyone. */}
+          {onEndGame && (
+            <TouchableOpacity
+              style={styles.endBtn}
+              onPress={onEndGame}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.endBtnText}>End Game</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </Modal>
@@ -102,5 +113,18 @@ const styles = StyleSheet.create({
     color: "#8a96ac",
     fontSize: scaleFont(13),
     marginTop: scale(4),
+  },
+  endBtn: {
+    marginTop: scale(18),
+    borderWidth: 1.5,
+    borderColor: "#e94560",
+    borderRadius: scale(10),
+    paddingVertical: scale(10),
+    paddingHorizontal: scale(24),
+  },
+  endBtnText: {
+    color: "#e94560",
+    fontSize: scaleFont(15),
+    fontWeight: "800",
   },
 });

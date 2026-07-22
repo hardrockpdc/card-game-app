@@ -28,6 +28,7 @@ import {
   getAIMove,
   getNextPlayer,
   drawUntilPlayable,
+  removePlayer,
 } from "../game/lastCard";
 import {
   setServerListeners,
@@ -257,13 +258,40 @@ export default function LastCardGameScreen({ navigation, route }) {
     },
     broadcast: broadcastToClients,
     resendState: () => broadcastState(stateRef.current),
-    onGraceExpired: (name) => {
+    // A player left for good — either they tapped Quit (intentional) or their
+    // reconnect grace expired. End the game at ≤3 players; at ≥4, drop them and
+    // keep playing. Host quitting is handled separately (handleQuit → stopServer).
+    onPlayerGone: (id, name, intentional) => {
+      const s = fullRef.current;
+      if (!s || s.gameOver) return;
+      if (!s.players.some((p) => String(p.id) === String(id))) return; // already gone
+      const reason = intentional ? "left the game" : "lost connection";
+
+      if (s.players.length <= 3) {
+        // Not enough players to continue — end for everyone.
+        broadcastToClients({ type: "GAME_OVER_DISCONNECT", name });
+        stopServer();
+        Alert.alert("Game over", `${name} ${reason}.`, [
+          { text: "OK", onPress: () => navigation.navigate("Home") },
+        ]);
+        return;
+      }
+
+      // Enough players remain — drop them and continue.
+      const hadTurn =
+        String(s.currentTurn) === String(id) ||
+        String(s.awaitingColorChoiceBy) === String(id);
+      applyState(removePlayer(s, id)); // updates refs + rebroadcasts roster/state
+      setStatusMsg(`${name} ${reason}.`);
+      if (hadTurn) {
+        scheduleTimeout(turnTimerRef, () => handleTurn(stateRef.current), 400);
+      }
+    },
+    // Host tapped "End Game" on the pause overlay. The hook already broadcast
+    // GAME_OVER_DISCONNECT; just tear down and leave.
+    onEndGame: () => {
       stopServer();
-      Alert.alert(
-        "Player left",
-        `${name} didn't reconnect in time. The game has ended.`,
-        [{ text: "OK", onPress: () => navigation.navigate("Home") }],
-      );
+      navigation.navigate("Home");
     },
     onHostEnded: (name) => {
       Alert.alert(
@@ -722,6 +750,12 @@ export default function LastCardGameScreen({ navigation, route }) {
         onClientLeft: ({ id }) => reconnect.hostHandleClientLeft(id),
         onMessage: (msg, clientId) => {
           if (handleHostMessage(msg, clientId)) return;
+          // A deliberate quit (sent before the client tears down) — process even
+          // while paused, so it can clear a pause we started on this player.
+          if (msg.type === "LEAVE") {
+            reconnect.hostHandleClientQuit(clientId);
+            return;
+          }
           if (reconnect.pausedRef.current) return; // ignore actions while paused
           const s = fullRef.current;
           if (!s || s.gameOver) return;
@@ -1004,10 +1038,21 @@ export default function LastCardGameScreen({ navigation, route }) {
   const pal =
     LAST_CARD_TABLES.find((t) => t.id === tableId) ?? LAST_CARD_TABLES[0];
 
+  // Deliberate multiplayer exit. A client sends LEAVE first (so the host drops
+  // them immediately instead of pausing + waiting for a reconnect), THEN tears
+  // down. A host quitting stops the server, which ends the game for everyone.
+  function leaveMultiplayer() {
+    if (isHost) {
+      stopServer();
+    } else {
+      sendToHost({ type: "LEAVE" });
+      disconnectFromHost();
+    }
+  }
+
   function handleQuit() {
     if (isSinglePlayer) clearGame(SAVE_KEY_LASTCARD);
-    else if (isHost) stopServer();
-    else disconnectFromHost();
+    else leaveMultiplayer();
     navigation.navigate("Home");
   }
 
@@ -1042,8 +1087,7 @@ export default function LastCardGameScreen({ navigation, route }) {
               if (typeof handleSaveAndExit === "function") handleSaveAndExit();
               else navigation.navigate("Home");
             } else {
-              if (isHost) stopServer();
-              else disconnectFromHost();
+              leaveMultiplayer();
               navigation.navigate("Home");
             }
           },

@@ -24,11 +24,22 @@ import { onlineGetRoomCode, onlineWatchHostConnected } from "../game/onlineTrans
 // The game screen owns its own state + networking; it just calls the handlers
 // this hook returns at the right spots and renders `overlay`.
 //
+// Intentional quit vs accidental drop:
+//   - A client that taps "Quit" sends the host a LEAVE message BEFORE tearing
+//     down. The host routes it to hostHandleClientQuit(id) → treats it as a
+//     deliberate departure (no pause) and calls onPlayerGone(id, name, true).
+//   - A slot vanishing WITHOUT a LEAVE is an accidental drop → pause + countdown;
+//     if the countdown expires, onPlayerGone(id, name, false).
+//   The screen owns onPlayerGone and decides whether the game ends or the player
+//   is removed and play continues (Card Night: end at ≤3 players, remove at ≥4).
+//   During a pause the host can also tap "End Game" on the overlay → onEndGame.
+//
 // Usage:
 //   const rc = useOnlineReconnect({ role, graceMs, getPlayerName, isRealPlayer,
-//     broadcast, resendState, onGraceExpired, onHostEnded });
+//     broadcast, resendState, onPlayerGone, onEndGame, onHostEnded });
 //   host  setServerListeners: onClientLeft: ({id}) => rc.hostHandleClientLeft(id)
 //                             onClientJoined: ({id}) => rc.hostHandleClientJoined(id)
+//         onMessage: (msg, id) => { if (msg.type === "LEAVE") return rc.hostHandleClientQuit(id); ... }
 //   client setClientListeners onMessage: (msg) => { if (rc.clientHandleMessage(msg)) return; ... }
 //   actions: if (rc.pausedRef.current) return;   render: {rc.overlay}
 const DEFAULT_GRACE_MS = 60000;
@@ -41,7 +52,8 @@ export default function useOnlineReconnect({
   isRealPlayer, // (id) => bool  — exclude AI / the host itself / unknowns
   broadcast, // (msg) => void  — broadcastToClients
   resendState, // () => void    — re-broadcast current GAME_STATE + private hands
-  onGraceExpired, // (name) => void — end the game
+  onPlayerGone, // (id, name, intentional) => void — a player left for good; screen ends or removes
+  onEndGame, // (name) => void — host tapped "End Game" on the pause overlay
   // Client-only:
   onHostEnded, // (name) => void — host ended the game after a drop
 } = {}) {
@@ -83,13 +95,17 @@ export default function useOnlineReconnect({
       clearTimer();
       timerRef.current = setTimeout(() => {
         clearTimer();
+        const goneId = waitingForRef.current;
         waitingForRef.current = null;
         setPaused(null);
-        broadcast?.({ type: "GAME_OVER_DISCONNECT", name });
-        onGraceExpired?.(name);
+        // Resume everyone else; the screen (onPlayerGone) then either ends the
+        // game or removes the player and continues.
+        broadcast?.({ type: "PAUSE", paused: false });
+        const goneName = getPlayerName ? getPlayerName(goneId) : "A player";
+        onPlayerGone?.(goneId, goneName, false);
       }, graceMs);
     },
-    [isHost, isRealPlayer, getPlayerName, graceMs, broadcast, onGraceExpired, setPaused],
+    [isHost, isRealPlayer, getPlayerName, graceMs, broadcast, onPlayerGone, setPaused],
   );
 
   // ── Host: the awaited player returned → resume + re-send state ──────────────
@@ -105,6 +121,40 @@ export default function useOnlineReconnect({
     },
     [isHost, broadcast, resendState, setPaused],
   );
+
+  // ── Host: a client tapped "Quit" (LEAVE message) → deliberate departure ──────
+  // No pause. If we happened to already be paused waiting on this same player
+  // (message/slot-removal reorder), clear that pause first, then let the screen
+  // decide end-vs-remove.
+  const hostHandleClientQuit = useCallback(
+    (id) => {
+      if (!isHost) return;
+      const sid = String(id);
+      if (pausedRef.current && waitingForRef.current === sid) {
+        clearTimer();
+        waitingForRef.current = null;
+        setPaused(null);
+        broadcast?.({ type: "PAUSE", paused: false });
+      }
+      const name = getPlayerName ? getPlayerName(sid) : "A player";
+      onPlayerGone?.(sid, name, true);
+    },
+    [isHost, getPlayerName, broadcast, onPlayerGone, setPaused],
+  );
+
+  // ── Host: tapped "End Game" on the pause overlay → stop waiting, end for all ─
+  const hostEndGameDuringPause = useCallback(() => {
+    if (!isHost || !pausedRef.current) return;
+    const name =
+      waitingForRef.current && getPlayerName
+        ? getPlayerName(waitingForRef.current)
+        : "A player";
+    clearTimer();
+    waitingForRef.current = null;
+    setPaused(null);
+    broadcast?.({ type: "GAME_OVER_DISCONNECT", name });
+    onEndGame?.(name);
+  }, [isHost, getPlayerName, broadcast, onEndGame, setPaused]);
 
   // ── Client: react to the host's pause/resume control messages ──────────────
   const clientHandleMessage = useCallback(
@@ -201,6 +251,8 @@ export default function useOnlineReconnect({
       visible={!!pause}
       name={pause?.name}
       deadline={pause?.deadline}
+      // Only the host, and only during a real pause, gets the "End Game" action.
+      onEndGame={isHost && pause ? hostEndGameDuringPause : undefined}
     />
   );
 
@@ -209,6 +261,7 @@ export default function useOnlineReconnect({
     overlay,
     hostHandleClientLeft,
     hostHandleClientJoined,
+    hostHandleClientQuit,
     clientHandleMessage,
   };
 }
