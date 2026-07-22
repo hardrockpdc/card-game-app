@@ -3,7 +3,6 @@ import { AppState } from "react-native";
 import ReconnectOverlay from "./ReconnectOverlay";
 import { rejoinRoom, markHostConnected } from "../game/onlineRoom";
 import { onlineGetRoomCode, onlineWatchHostConnected } from "../game/onlineTransport";
-import { log } from "../game/logger";
 
 // Shared mid-game reconnect handling for online multiplayer. A drop is treated
 // as "away", not "left":
@@ -83,8 +82,6 @@ export default function useOnlineReconnect({
   // ── Host: a player dropped → pause + countdown ──────────────────────────────
   const hostHandleClientLeft = useCallback(
     (id) => {
-      log("[quit] hostHandleClientLeft (accidental drop path) id =", id,
-          "| already paused?", pausedRef.current);
       if (!isHost || pausedRef.current) return;
       if (isRealPlayer && !isRealPlayer(id)) return;
       const name = getPlayerName ? getPlayerName(id) : "A player";
@@ -131,8 +128,6 @@ export default function useOnlineReconnect({
   // decide end-vs-remove.
   const hostHandleClientQuit = useCallback(
     (id) => {
-      log("[quit] hostHandleClientQuit (LEAVE received) id =", id,
-          "| paused?", pausedRef.current, "| waitingFor =", waitingForRef.current);
       if (!isHost) return;
       const sid = String(id);
       if (pausedRef.current && waitingForRef.current === sid) {
