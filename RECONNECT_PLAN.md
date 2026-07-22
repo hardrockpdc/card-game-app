@@ -1,7 +1,7 @@
 # Online Reconnect Plan — surviving app backgrounding
 
-**Status:** Phase 1 + Phase 2 BUILT for Last Card (2026-07-04 → 2026-07-21),
-awaiting a 2-device test. Built so far:
+**Status:** Phase 1 + Phase 2 BUILT and **device-verified** for Last Card
+(2026-07-04 → 2026-07-21). Built so far:
 - **Phase 1 (client drop):** shared infra (`onlineTransport.onClientJoined`-on-
   reappear + `onlineGetRoomCode`, `onlineRoom.rejoinRoom`), the shared hook
   `components/useOnlineReconnect.js`, and Last Card wiring (host pause/resume,
@@ -18,9 +18,18 @@ awaiting a 2-device test. Built so far:
   scheduled sweep can clean orphans later). No security-rules change needed — the
   host updating its own room's `hostConnected` is already permitted.
 
-**Remaining:** device-test on 2 phones (both the client-drop and host-drop
-cases), then adopt the hook in Go Fish (replaces its half-built inline version),
-Conquián, Rummy, Poker, Who Am I?.
+**Key fix found during testing (2026-07-21):** the host-drop case failed at first
+because App.js's global AppState `background` handler calls `stopServer()` /
+`disconnectFromHost()`, both of which run `onlineTeardown()` in online mode —
+**deleting the room (host) or the player slot (client) on every background**,
+overriding the onDisconnect entirely. Fixed by skipping that teardown when
+`getNetworkMode() === "online"` (App.js); online backgrounding is left to the
+reconnect system. This was the true root cause of "host leaves for a second,
+everyone gets disconnected."
+
+**Remaining:** adopt the hook in Go Fish (replaces its half-built inline version),
+Conquián, Rummy, Poker, Who Am I? — each small now that the mechanism exists and
+is proven.
 
 ## The problem
 Switching away from the app (to read a message, etc.) drops you from an online

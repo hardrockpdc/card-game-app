@@ -3,7 +3,6 @@ import { AppState } from "react-native";
 import ReconnectOverlay from "./ReconnectOverlay";
 import { rejoinRoom, markHostConnected } from "../game/onlineRoom";
 import { onlineGetRoomCode, onlineWatchHostConnected } from "../game/onlineTransport";
-import { log } from "../game/logger";
 
 // Shared mid-game reconnect handling for online multiplayer. A drop is treated
 // as "away", not "left":
@@ -143,16 +142,11 @@ export default function useOnlineReconnect({
   useEffect(() => {
     if (!isHost) return undefined;
     const sub = AppState.addEventListener("change", (next) => {
-      log("[reconnect] HOST AppState ->", next);
       if (next !== "active") return;
       const code = onlineGetRoomCode();
-      log("[reconnect] HOST returned to foreground, room code =", code);
       if (!code) return;
       markHostConnected(code)
-        .then(() => {
-          log("[reconnect] HOST resending state after reconnect");
-          resendState?.();
-        })
+        .then(() => resendState?.())
         .catch(() => {});
     });
     return () => sub.remove();
@@ -173,13 +167,11 @@ export default function useOnlineReconnect({
     const unsub = onlineWatchHostConnected((connected) => {
       if (connected === false) {
         if (hostAwayRef.current) return; // already paused on the host
-        log("[reconnect] CLIENT: host is AWAY → pausing + starting grace timer");
         hostAwayRef.current = true;
         const deadline = Date.now() + graceMs;
         setPaused({ name: "The host", deadline });
         clearHostGrace();
         hostGraceRef.current = setTimeout(() => {
-          log("[reconnect] CLIENT: host grace expired → leaving");
           clearHostGrace();
           hostAwayRef.current = false;
           setPaused(null);
@@ -188,7 +180,6 @@ export default function useOnlineReconnect({
       } else {
         // true or null (absent flag → treat as connected)
         if (!hostAwayRef.current) return;
-        log("[reconnect] CLIENT: host is BACK → resuming");
         hostAwayRef.current = false;
         clearHostGrace();
         setPaused(null);

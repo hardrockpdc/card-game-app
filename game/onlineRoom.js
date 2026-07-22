@@ -22,7 +22,7 @@ import {
 import { getApp } from "@react-native-firebase/app";
 import { getDatabase } from "@react-native-firebase/database";
 import { ensureSignedIn, getUid } from "./firebase";
-import { warn, log } from "./logger";
+import { warn } from "./logger";
 
 // Ambiguous-looking characters removed (no O/0, I/1) so codes are easy to read
 // aloud and type. 4 chars from 32 symbols ≈ 1M combinations — plenty.
@@ -91,8 +91,6 @@ export async function createRoom({ gameId, variant = null, tone = null, hostName
     // comes back leaves a small orphaned room (cleaned up by a future TTL sweep;
     // intentional leaves via leaveRoom/teardown still remove the room outright).
     onDisconnect(roomRef(code)).update({ hostConnected: false });
-    log("[reconnect] createRoom:", code, "host uid", uid,
-        "— onDisconnect set to hostConnected=false (NOT delete)");
 
     return { code, uid };
   } catch (err) {
@@ -175,27 +173,16 @@ export async function rejoinRoom(code) {
 // clients (who were paused) resync. No-op-safe if the room is already gone.
 export async function markHostConnected(code) {
   const cleanCode = String(code || "").trim().toUpperCase();
-  const myUid = getUid();
-  log("[reconnect] markHostConnected: enter, code", cleanCode, "my uid", myUid);
   try {
     const r = roomRef(cleanCode);
     // If the room is already gone (host truly left, or an old room created before
     // the away-on-disconnect change), there's nothing to reconnect to — bail
     // quietly instead of letting update() look like a (denied) room re-creation.
     const snap = await get(r);
-    if (!snap.exists()) {
-      log("[reconnect] markHostConnected: room", cleanCode,
-          "does NOT exist — bailing (it was deleted, not marked away)");
-      return;
-    }
-    const room = snap.val();
-    log("[reconnect] markHostConnected: room exists, host field =", room.host,
-        "| matches my uid?", String(room.host) === String(myUid),
-        "| current hostConnected =", room.hostConnected);
+    if (!snap.exists()) return;
     await update(r, { hostConnected: true });
     // The previous onDisconnect was consumed when it fired; register a fresh one.
     onDisconnect(r).update({ hostConnected: false });
-    log("[reconnect] markHostConnected: SUCCESS — hostConnected=true, onDisconnect re-armed");
   } catch (err) {
     warn("[onlineRoom] markHostConnected failed:", err);
   }

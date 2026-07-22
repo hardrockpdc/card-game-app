@@ -23,7 +23,7 @@ import {
 } from "@react-native-firebase/database";
 import { getApp } from "@react-native-firebase/app";
 import { getDatabase } from "@react-native-firebase/database";
-import { warn, log } from "./logger";
+import { warn } from "./logger";
 
 let config = null; // { code, uid, isHost }
 let serverListeners = {};
@@ -91,11 +91,7 @@ export function onlineWatchHostConnected(cb) {
   const r = ref(db(), `rooms/${config.code}/hostConnected`);
   return onValue(
     r,
-    (snap) => {
-      const val = snap.exists() ? snap.val() : null;
-      log("[reconnect] client hostConnected watch fired, value =", val);
-      cb(val);
-    },
+    (snap) => cb(snap.exists() ? snap.val() : null),
     (err) => warn("[onlineTransport] hostConnected watch error:", err),
   );
 }
@@ -178,8 +174,6 @@ export function onlineSetClientListeners(listeners) {
   const roomRef = ref(db(), `rooms/${config.code}`);
   const unsubRoom = onValue(roomRef, (snap) => {
     if (!snap.exists()) {
-      log("[reconnect] client room watcher: room GONE (deleted) →",
-          "firing onDisconnected ('Lost connection to the host')");
       try {
         clientListeners.onDisconnected?.();
       } catch (_) {}
