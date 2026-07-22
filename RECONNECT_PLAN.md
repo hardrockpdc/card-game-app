@@ -40,12 +40,20 @@ everyone gets disconnected."
   so the host needn't wait out the timer. Host-only, pause-only.
 - Host quitting still ends the game for everyone (unchanged).
 
+**Rejoin option (#5) — added 2026-07-21 (Last Card, awaiting device test):**
+The client watches its OWN Firebase link via `.info/connected`
+(`onlineWatchConnection` in `onlineTransport.js`). A network blip (not a
+backgrounding — AppState wouldn't fire) shows a "Connection Lost / Trying to
+reconnect…" overlay with **Rejoin** + **Leave**; when the link returns it
+auto-re-adds the slot (`rejoinRoom` → host resumes). `ReconnectOverlay` now
+serves both shapes (pause with countdown vs self-disconnect with buttons).
+- **Known gap:** a HOST wifi blip *without* backgrounding still relies on
+  AppState→active to re-mark `hostConnected`; a `.info/connected` watcher on the
+  host would close this symmetrically (follow-up).
+
 **Remaining:**
-1. **Rejoin option (#5, not built):** let a dropped/paused client tap "Rejoin"
-   (rejoinRoom + resync) instead of only bouncing to Home. Design TBD (button on
-   the "Lost connection" alert vs a dedicated re-entry).
-2. Device-test the quit/drop/End-Game flows on 2 phones.
-3. Adopt the hook in Go Fish (replaces its half-built inline version), Conquián,
+1. Device-test the quit/drop/End-Game/Rejoin flows on 2 phones.
+2. Adopt the hook in Go Fish (replaces its half-built inline version), Conquián,
    Rummy, Poker, Who Am I? — each small now that the mechanism exists.
 
 ## The problem
