@@ -27,9 +27,26 @@ overriding the onDisconnect entirely. Fixed by skipping that teardown when
 reconnect system. This was the true root cause of "host leaves for a second,
 everyone gets disconnected."
 
-**Remaining:** adopt the hook in Go Fish (replaces its half-built inline version),
-Conquián, Rummy, Poker, Who Am I? — each small now that the mechanism exists and
-is proven.
+**Quit vs drop + host controls — added 2026-07-21 (Last Card, awaiting device test):**
+- **Intentional quit ≠ accidental drop.** A client's Quit now sends a `LEAVE`
+  message to the host before tearing down; the host drops that player immediately
+  instead of pausing. A slot vanishing without a `LEAVE` is still an accidental
+  drop → pause + countdown.
+- **Departure rule (`onPlayerGone` in the hook → screen decides):** at ≤3 players
+  the game ends for everyone; at ≥4 the player is removed (`removePlayer` in
+  `game/lastCard.js`, 6 tests) and play continues — **no bot takeover** (avoids a
+  bots-as-crutch exploit). Applies to intentional quits and expired grace alike.
+- **Host "End Game" button** on the pause overlay (`ReconnectOverlay` `onEndGame`)
+  so the host needn't wait out the timer. Host-only, pause-only.
+- Host quitting still ends the game for everyone (unchanged).
+
+**Remaining:**
+1. **Rejoin option (#5, not built):** let a dropped/paused client tap "Rejoin"
+   (rejoinRoom + resync) instead of only bouncing to Home. Design TBD (button on
+   the "Lost connection" alert vs a dedicated re-entry).
+2. Device-test the quit/drop/End-Game flows on 2 phones.
+3. Adopt the hook in Go Fish (replaces its half-built inline version), Conquián,
+   Rummy, Poker, Who Am I? — each small now that the mechanism exists.
 
 ## The problem
 Switching away from the app (to read a message, etc.) drops you from an online
