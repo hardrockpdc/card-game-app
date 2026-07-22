@@ -175,6 +175,11 @@ export async function markHostConnected(code) {
   const cleanCode = String(code || "").trim().toUpperCase();
   try {
     const r = roomRef(cleanCode);
+    // If the room is already gone (host truly left, or an old room created before
+    // the away-on-disconnect change), there's nothing to reconnect to — bail
+    // quietly instead of letting update() look like a (denied) room re-creation.
+    const snap = await get(r);
+    if (!snap.exists()) return;
     await update(r, { hostConnected: true });
     // The previous onDisconnect was consumed when it fired; register a fresh one.
     onDisconnect(r).update({ hostConnected: false });
