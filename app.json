@@ -2,7 +2,7 @@
   "expo": {
     "name": "Card Night",
     "slug": "card-game-app",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -33,7 +33,7 @@
       },
       "package": "com.pedro.cardgameapp",
       "googleServicesFile": "./google-services.json",
-      "versionCode": 8,
+      "versionCode": 9,
       "permissions": [
         "android.permission.NEARBY_WIFI_DEVICES",
         "android.permission.ACCESS_NETWORK_STATE",
