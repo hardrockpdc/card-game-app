@@ -73,6 +73,7 @@ export async function createRoom({ gameId, variant = null, tone = null, hostName
       variant,
       tone,
       status: "waiting",
+      hostConnected: true,
       createdAt: serverTimestamp(),
       players: {
         [uid]: {
@@ -83,8 +84,13 @@ export async function createRoom({ gameId, variant = null, tone = null, hostName
       },
     });
 
-    // If the host's device drops, tear the whole room down.
-    onDisconnect(roomRef(code)).remove();
+    // If the host's device drops, mark the host "away" instead of deleting the
+    // room. Clients then pause ("waiting for host…") rather than being kicked,
+    // and the game can resume if the host returns within the grace window (see
+    // markHostConnected + the reconnect hook). Trade-off: a host that never
+    // comes back leaves a small orphaned room (cleaned up by a future TTL sweep;
+    // intentional leaves via leaveRoom/teardown still remove the room outright).
+    onDisconnect(roomRef(code)).update({ hostConnected: false });
 
     return { code, uid };
   } catch (err) {
@@ -158,6 +164,22 @@ export async function rejoinRoom(code) {
   } catch (err) {
     warn("[onlineRoom] rejoinRoom failed:", err);
     return { error: "Could not reconnect." };
+  }
+}
+
+// Host-only: mark the host reconnected after returning from the background and
+// re-arm the "away on disconnect" handler for next time. Called by the reconnect
+// hook on AppState → active; pair it with a resend of the current game state so
+// clients (who were paused) resync. No-op-safe if the room is already gone.
+export async function markHostConnected(code) {
+  const cleanCode = String(code || "").trim().toUpperCase();
+  try {
+    const r = roomRef(cleanCode);
+    await update(r, { hostConnected: true });
+    // The previous onDisconnect was consumed when it fired; register a fresh one.
+    onDisconnect(r).update({ hostConnected: false });
+  } catch (err) {
+    warn("[onlineRoom] markHostConnected failed:", err);
   }
 }
 

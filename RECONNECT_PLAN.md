@@ -1,13 +1,26 @@
 # Online Reconnect Plan — surviving app backgrounding
 
-**Status:** Phase 1 IN PROGRESS (2026-07-04). Built so far: the shared infra
-(`onlineTransport.onClientJoined`-on-reappear + `onlineGetRoomCode`,
-`onlineRoom.rejoinRoom`), the shared hook `components/useOnlineReconnect.js`, and
-wiring in **Last Card** (host pause/resume, client foreground rejoin, action
-gating, overlay). PAUSE uses a single boolean message (not PAUSE/RESUME types) to
-avoid a replay race. **Remaining:** device-test on 2 phones, then adopt the hook
-in Go Fish (replaces its half-built inline version), Conquián, Rummy, Poker,
-Who Am I?. Phase 2 (host survival) not started.
+**Status:** Phase 1 + Phase 2 BUILT for Last Card (2026-07-04 → 2026-07-21),
+awaiting a 2-device test. Built so far:
+- **Phase 1 (client drop):** shared infra (`onlineTransport.onClientJoined`-on-
+  reappear + `onlineGetRoomCode`, `onlineRoom.rejoinRoom`), the shared hook
+  `components/useOnlineReconnect.js`, and Last Card wiring (host pause/resume,
+  client foreground rejoin, action gating, overlay). PAUSE uses a single boolean
+  message (not PAUSE/RESUME types) to avoid a replay race.
+- **Phase 2 (host drop) — added 2026-07-21:** the host's `onDisconnect` now sets
+  room `hostConnected=false` instead of deleting the room (`onlineRoom.createRoom`);
+  `onlineRoom.markHostConnected` flips it back + re-arms the handler on the host's
+  return; `onlineTransport.onlineWatchHostConnected` lets a client read the flag;
+  the hook pauses clients ("The host lost connection") on false + a grace
+  countdown, resumes on true, and the host resends state on foreground.
+  **Trade-off accepted:** a host that never returns leaves a small orphaned room
+  (intentional leaves via `leaveRoom`/`onlineTeardown` still remove it; a TTL/
+  scheduled sweep can clean orphans later). No security-rules change needed — the
+  host updating its own room's `hostConnected` is already permitted.
+
+**Remaining:** device-test on 2 phones (both the client-drop and host-drop
+cases), then adopt the hook in Go Fish (replaces its half-built inline version),
+Conquián, Rummy, Poker, Who Am I?.
 
 ## The problem
 Switching away from the app (to read a message, etc.) drops you from an online
@@ -78,7 +91,11 @@ host stays put and stays authoritative.
 **Result:** a client can switch away and come back within the grace window (60s);
 everyone is paused meanwhile, then the game resumes where it left off.
 
-## Phase 2 — Host survival (the hard problem) — SEPARATE, needs decisions
+## Phase 2 — Host survival — BUILT for Last Card 2026-07-21 (was: the hard problem)
+> **Implemented as described below, with decision (a) — accept orphaned rooms —
+> taken.** See the Status block at the top for the concrete pieces. The rest of
+> this section is the original design rationale, kept for context.
+
 If the **host** backgrounds, `onDisconnect(room).remove()` deletes the room and
 everyone dies. Surviving this is much harder because:
 

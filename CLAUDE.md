@@ -96,7 +96,7 @@ This is a family-friendly card game. Keep all content, copy, and assets appropri
   - `game/haptics.js` + `components/Haptic.js` — haptic feedback (expo-haptics; native, needs a dev build)
   - `game/avatarTransmit.js` + `components/useMultiplayerAvatars.js` — exchange profile pics across multiplayer at game start
   - `components/ProfileAvatar.js` — unified avatar render (photo/emoji/initial) + active profile frame ring
-  - `components/ReconnectOverlay.js` — mid-game drop pause/countdown (Go Fish pilot; PAUSE/RESUME messages)
+  - `components/ReconnectOverlay.js` — mid-game drop pause/countdown modal; `components/useOnlineReconnect.js` — shared reconnect hook wired into **Last Card**. Phase 1 = client drop (host pauses everyone via a boolean PAUSE message, resumes on rejoin); Phase 2 = host drop (host `onDisconnect` sets room `hostConnected=false` instead of deleting the room, clients pause + grace-countdown, host resends state on return). Orphan-room trade accepted; no rules change. Both **await a 2-device test**. See `RECONNECT_PLAN.md`.
   - `components/useSolitaireDrag.js`, `components/useConquianMeldDrag.js` — gesture-handler drag hooks
   - `screens/*GameScreen.js` — per-game screens
 - **Standard patterns:**

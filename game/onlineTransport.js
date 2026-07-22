@@ -81,6 +81,21 @@ export function onlineGetRoomCode() {
   return config?.code ?? null;
 }
 
+// Client-side: watch the room's `hostConnected` flag so a client can pause when
+// the host drops (the host can't broadcast a PAUSE while its phone is asleep, so
+// this is read from the room record directly, not the net channel). cb receives
+// true / false / null (absent → treat as connected). Returns an unsubscribe fn;
+// a no-op in local mode (no room code).
+export function onlineWatchHostConnected(cb) {
+  if (!config?.code) return () => {};
+  const r = ref(db(), `rooms/${config.code}/hostConnected`);
+  return onValue(
+    r,
+    (snap) => cb(snap.exists() ? snap.val() : null),
+    (err) => warn("[onlineTransport] hostConnected watch error:", err),
+  );
+}
+
 // ─── Host listeners ──────────────────────────────────────────────────────────
 export function onlineSetServerListeners(listeners) {
   serverListeners = listeners || {};

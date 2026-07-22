@@ -1,17 +1,25 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { AppState } from "react-native";
 import ReconnectOverlay from "./ReconnectOverlay";
-import { rejoinRoom } from "../game/onlineRoom";
-import { onlineGetRoomCode } from "../game/onlineTransport";
+import { rejoinRoom, markHostConnected } from "../game/onlineRoom";
+import { onlineGetRoomCode, onlineWatchHostConnected } from "../game/onlineTransport";
 
-// Shared mid-game reconnect handling for online multiplayer (Phase 1: a CLIENT
-// backgrounding and returning). A drop is treated as "away", not "left":
+// Shared mid-game reconnect handling for online multiplayer. A drop is treated
+// as "away", not "left":
 //
+// Phase 1 — a CLIENT backgrounding and returning:
 //   HOST   detects a player leave  -> pause everyone + countdown (PAUSE true).
 //          detects that player back -> resume + re-send state     (PAUSE false).
 //          countdown expires        -> end the game               (GAME_OVER_DISCONNECT).
 //   CLIENT returns to foreground    -> rejoinRoom() re-adds its slot (which the
 //          host sees as a rejoin), and reacts to the host's PAUSE messages.
+//
+// Phase 2 — the HOST backgrounding and returning:
+//   HOST   drops   -> its onDisconnect sets room `hostConnected=false` server-side
+//          returns -> markHostConnected() flips it back true + resendState().
+//   CLIENT watches room `hostConnected` (the host can't broadcast while asleep):
+//          false -> pause ("The host lost connection") + grace countdown;
+//          true  -> resume; countdown expires -> leave (onHostEnded).
 //
 // The game screen owns its own state + networking; it just calls the handlers
 // this hook returns at the right spots and renders `overlay`.
@@ -44,6 +52,8 @@ export default function useOnlineReconnect({
   const pausedRef = useRef(false);
   const timerRef = useRef(null);
   const waitingForRef = useRef(null); // host: which player id we're paused on
+  const hostAwayRef = useRef(false); // client: currently paused because host dropped
+  const hostGraceRef = useRef(null); // client: host-away grace timer
 
   const setPaused = useCallback((next) => {
     pausedRef.current = !!next;
@@ -126,7 +136,65 @@ export default function useOnlineReconnect({
     return () => sub.remove();
   }, [isClient]);
 
-  useEffect(() => () => clearTimer(), []);
+  // ── Host: on returning to the foreground, mark ourselves reconnected (flips
+  //    room hostConnected back to true so clients resume) and re-send state so
+  //    everyone resyncs. No-op in local mode (no room code). ──────────────────
+  useEffect(() => {
+    if (!isHost) return undefined;
+    const sub = AppState.addEventListener("change", (next) => {
+      if (next !== "active") return;
+      const code = onlineGetRoomCode();
+      if (!code) return;
+      markHostConnected(code)
+        .then(() => resendState?.())
+        .catch(() => {});
+    });
+    return () => sub.remove();
+  }, [isHost, resendState]);
+
+  // ── Client: watch the room's hostConnected flag. The host can't broadcast a
+  //    PAUSE while its phone is asleep, so a host drop is detected by reading the
+  //    room record directly. false -> pause + grace countdown; true (or absent)
+  //    -> resume. If the host stays away past the grace window, leave. ──────────
+  const clearHostGrace = () => {
+    if (hostGraceRef.current) {
+      clearTimeout(hostGraceRef.current);
+      hostGraceRef.current = null;
+    }
+  };
+  useEffect(() => {
+    if (!isClient) return undefined;
+    const unsub = onlineWatchHostConnected((connected) => {
+      if (connected === false) {
+        if (hostAwayRef.current) return; // already paused on the host
+        hostAwayRef.current = true;
+        const deadline = Date.now() + graceMs;
+        setPaused({ name: "The host", deadline });
+        clearHostGrace();
+        hostGraceRef.current = setTimeout(() => {
+          clearHostGrace();
+          hostAwayRef.current = false;
+          setPaused(null);
+          onHostEnded?.("The host");
+        }, graceMs);
+      } else {
+        // true or null (absent flag → treat as connected)
+        if (!hostAwayRef.current) return;
+        hostAwayRef.current = false;
+        clearHostGrace();
+        setPaused(null);
+      }
+    });
+    return () => {
+      if (typeof unsub === "function") unsub();
+      clearHostGrace();
+    };
+  }, [isClient, graceMs, onHostEnded, setPaused]);
+
+  useEffect(() => () => {
+    clearTimer();
+    clearHostGrace();
+  }, []);
 
   const overlay = (
     <ReconnectOverlay
