@@ -62,6 +62,7 @@ import {
   HapticStyle,
 } from "../game/haptics";
 import { LC } from "../game/lastCardImages";
+import { log } from "../game/logger";
 import ProfileAvatar from "../components/ProfileAvatar";
 import useMultiplayerAvatars from "../components/useMultiplayerAvatars";
 import TableThemePicker from "../components/TableThemePicker";
@@ -749,6 +750,7 @@ export default function LastCardGameScreen({ navigation, route }) {
         onClientJoined: ({ id }) => reconnect.hostHandleClientJoined(id),
         onClientLeft: ({ id }) => reconnect.hostHandleClientLeft(id),
         onMessage: (msg, clientId) => {
+          log("[quit] host onMessage type =", msg?.type, "from", clientId);
           if (handleHostMessage(msg, clientId)) return;
           // A deliberate quit (sent before the client tears down) — process even
           // while paused, so it can clear a pause we started on this player.
@@ -1045,6 +1047,7 @@ export default function LastCardGameScreen({ navigation, route }) {
     if (isHost) {
       stopServer();
     } else {
+      log("[quit] client → sending LEAVE, then disconnecting");
       sendToHost({ type: "LEAVE" });
       disconnectFromHost();
     }
