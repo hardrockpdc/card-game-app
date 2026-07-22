@@ -1,13 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Image,
-  Alert,
-  ActivityIndicator,
-} from "react-native";
+import { View, Text, StyleSheet, Alert, ActivityIndicator } from "react-native";
 import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import * as Network from "expo-network";
 import { loadProfile, getDisplayName } from "../game/profile";
@@ -17,45 +10,19 @@ import { scale, scaleFont } from "../game/responsive";
 const COLS = 2;
 const GAP = scale(12);
 
-// Multiplayer-capable games. Solitaire and Blackjack are single-player only.
+// Flat, consistent tiles: each game gets one accent colour + a suit motif +
+// its name — the same design system as the single-player Choose Game screen
+// (accents/suits match there exactly so the two screens read as one set).
+// Who Am I? isn't a card game (a masked party game), so it keeps its 🎭 motif
+// instead of a suit and drops the corner pips.
+// Solitaire and Blackjack are single-player only, so they're absent here.
 const GAMES = [
-  {
-    id: "goFish",
-    label: "Go Fish",
-    accent: "#1565c0",
-    image: require("../assets/images/thumb_gofish.jpg"),
-  },
-  {
-    id: "conquian",
-    label: "Conquián",
-    accent: "#c4923f",
-    image: require("../assets/images/thumb_conquian.jpg"),
-  },
-  {
-    id: "poker",
-    label: "Poker",
-    accent: "#6a1b9a",
-    image: require("../assets/images/thumb_poker.jpg"),
-  },
-  {
-    id: "rummy",
-    label: "Rummy",
-    accent: "#e94560",
-    image: require("../assets/images/thumb_rummy.jpg"),
-  },
-  {
-    id: "lastCard",
-    label: "Last Card",
-    accent: "#e94560",
-    image: require("../assets/images/thumb_lastcard.jpg"),
-  },
-  {
-    id: "whoami",
-    label: "Who Am I?",
-    accent: "#2e7d32",
-    emoji: "🎭",
-    emojiColor: "#0a2010",
-  },
+  { id: "goFish", label: "Go Fish", accent: "#2aa6bf", suit: "♥" },
+  { id: "conquian", label: "Conquián", accent: "#d3a24a", suit: "♣" },
+  { id: "poker", label: "Poker", accent: "#9a5cd0", suit: "♠" },
+  { id: "rummy", label: "Rummy", accent: "#e05068", suit: "♥" },
+  { id: "lastCard", label: "Last Card", accent: "#e8833a", suit: "♦" },
+  { id: "whoami", label: "Who Am I?", accent: "#3a9d4e", emoji: "🎭" },
 ];
 
 // Decorative background grid
@@ -72,6 +39,7 @@ export default function MultiplayerGamePickerScreen({ navigation, route }) {
   const [hostName, setHostName] = useState(null);
   const [hostIp, setHostIp] = useState(null);
   const [creating, setCreating] = useState(false);
+  const [gridSize, setGridSize] = useState(null); // measured grid area, for tile sizing
 
   useEffect(() => {
     loadProfile().then((p) => setHostName(getDisplayName(p)));
@@ -167,12 +135,24 @@ export default function MultiplayerGamePickerScreen({ navigation, route }) {
     }
   }
 
-  // 7 games + 1 "more coming" = 4 even rows
-  const gridItems = [...GAMES];
   const rows = [];
-  for (let i = 0; i < gridItems.length; i += COLS) {
-    rows.push(gridItems.slice(i, i + COLS));
+  for (let i = 0; i < GAMES.length; i += COLS) {
+    rows.push(GAMES.slice(i, i + COLS));
   }
+
+  // Deterministic tile sizing: measure the grid area (onLayout) then compute an
+  // exact px size that fits a 3:4 tile in each cell. Matches the single-player
+  // screen; guards against the flex + aspectRatio collapse that plagued it.
+  const ROWS = rows.length;
+  let tileW = 0;
+  let tileH = 0;
+  if (gridSize && gridSize.width > 0 && gridSize.height > 0) {
+    const cellW = (gridSize.width - GAP * (COLS - 1)) / COLS;
+    const cellH = (gridSize.height - GAP * (ROWS - 1)) / ROWS;
+    tileW = Math.min(cellW, cellH * (3 / 4)); // bound by tighter dimension
+    tileH = tileW * (4 / 3);
+  }
+  const tileSize = { width: tileW, height: tileH };
 
   const loading = !hostName || (!isOnline && !hostIp) || creating;
 
@@ -195,27 +175,29 @@ export default function MultiplayerGamePickerScreen({ navigation, route }) {
       )}
 
       <View style={styles.container}>
-        <View style={styles.grid}>
+        <View
+          style={styles.grid}
+          onLayout={(e) => {
+            const { width, height } = e.nativeEvent.layout;
+            setGridSize((prev) =>
+              prev && prev.width === width && prev.height === height
+                ? prev
+                : { width, height },
+            );
+          }}
+        >
           {rows.map((row, rowIdx) => (
             <View
               key={rowIdx}
               style={[
                 styles.row,
+                { height: tileH },
                 rowIdx < rows.length - 1 && { marginBottom: GAP },
               ]}
             >
-              {row.map((game, colIdx) =>
-                game.comingSoon ? (
-                  <View
-                    key="comingSoon"
-                    style={[styles.cell, { marginLeft: colIdx > 0 ? GAP : 0 }]}
-                  >
-                    <View style={[styles.tile, styles.comingSoonTile]}>
-                      <Text style={styles.comingSoonText}>Coming{"\n"}Soon</Text>
-                    </View>
-                  </View>
-                ) : game.emoji ? (
-                  // Emoji placeholder tile (no thumbnail image)
+              {row.map((game, colIdx) => {
+                const motif = game.suit || game.emoji;
+                return (
                   <TouchableOpacity
                     key={game.id}
                     style={[styles.cell, { marginLeft: colIdx > 0 ? GAP : 0 }]}
@@ -226,35 +208,79 @@ export default function MultiplayerGamePickerScreen({ navigation, route }) {
                     <View
                       style={[
                         styles.tile,
-                        styles.emojiTile,
-                        {
-                          backgroundColor: game.emojiColor,
-                          borderColor: game.accent + "66",
-                        },
+                        styles.flatTile,
+                        tileSize,
+                        { borderColor: game.accent, borderWidth: 2 },
                       ]}
                     >
-                      <Text style={styles.emojiIcon}>{game.emoji}</Text>
-                      <Text style={[styles.emojiLabel, { color: game.accent }]}>
-                        {game.label}
+                      {/* Soft accent halo bleeding off the top edge (clipped by
+                          the tile's rounded corners) — colour identity without art. */}
+                      <View
+                        pointerEvents="none"
+                        style={[
+                          styles.tileGlow,
+                          {
+                            backgroundColor: game.accent,
+                            width: tileW * 1.3,
+                            height: tileW * 1.3,
+                            borderRadius: (tileW * 1.3) / 2,
+                            top: -tileW * 0.65,
+                          },
+                        ]}
+                      />
+                      <Text
+                        style={[
+                          styles.flatTileSuit,
+                          {
+                            color: game.suit ? game.accent : undefined,
+                            fontSize: Math.max(44, Math.round(tileH * 0.5)),
+                          },
+                        ]}
+                      >
+                        {motif}
                       </Text>
+                      {/* Corner pips, like a real playing card — cards only */}
+                      {game.suit && (
+                        <>
+                          <Text
+                            style={[
+                              styles.tilePip,
+                              styles.tilePipTL,
+                              {
+                                color: game.accent,
+                                fontSize: Math.max(13, Math.round(tileH * 0.1)),
+                              },
+                            ]}
+                          >
+                            {game.suit}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.tilePip,
+                              styles.tilePipBR,
+                              {
+                                color: game.accent,
+                                fontSize: Math.max(13, Math.round(tileH * 0.1)),
+                              },
+                            ]}
+                          >
+                            {game.suit}
+                          </Text>
+                        </>
+                      )}
+                      <View style={styles.flatTileContent}>
+                        <Text
+                          style={styles.flatTileName}
+                          numberOfLines={2}
+                          adjustsFontSizeToFit
+                        >
+                          {game.label}
+                        </Text>
+                      </View>
                     </View>
                   </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity
-                    key={game.id}
-                    style={[styles.cell, { marginLeft: colIdx > 0 ? GAP : 0 }]}
-                    onPress={() => handleGamePress(game)}
-                    activeOpacity={0.85}
-                    disabled={loading}
-                  >
-                    <Image
-                      source={game.image}
-                      style={[styles.tile, { borderColor: game.accent + "66" }]}
-                      resizeMode="cover"
-                    />
-                  </TouchableOpacity>
-                ),
-              )}
+                );
+              })}
             </View>
           ))}
         </View>
@@ -293,13 +319,15 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    padding: GAP,
+    paddingHorizontal: scale(16),
+    paddingTop: scale(12),
+    paddingBottom: scale(8),
   },
   grid: {
     flex: 1,
+    justifyContent: "center", // absorb any vertical slack (tiles are fixed-size)
   },
   row: {
-    flex: 1,
     flexDirection: "row",
   },
   cell: {
@@ -307,40 +335,62 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  // The bordered tile. Its width/height are supplied at render time (computed
+  // from the measured grid area) so it can never collapse. 3:4 ratio is
+  // enforced by that computation, not aspectRatio.
   tile: {
-    flex: 1,
-    width: "100%",
-    aspectRatio: 3 / 4,
-    borderRadius: scale(12),
+    backgroundColor: "#0d1424",
+    borderRadius: scale(14),
     borderWidth: 1.5,
     overflow: "hidden",
   },
-  emojiTile: {
+  // ── Flat game tiles ────────────────────────────────────────────────────────
+  flatTile: {
+    backgroundColor: "#141a2e",
     alignItems: "center",
     justifyContent: "center",
-    gap: scale(8),
+    overflow: "hidden",
   },
-  emojiIcon: {
-    fontSize: scaleFont(52),
-  },
-  emojiLabel: {
-    fontSize: scaleFont(14),
-    fontWeight: "700",
-    letterSpacing: 0.3,
+  flatTileSuit: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     textAlign: "center",
+    textAlignVertical: "center",
+    fontWeight: "900",
+    opacity: 0.2,
   },
-  comingSoonTile: {
-    backgroundColor: "#16213e",
-    borderStyle: "dashed",
-    borderColor: "#334",
+  // Soft accent halo at the top of a tile (absolute circle, clipped by the
+  // tile's overflow:hidden + rounded corners).
+  tileGlow: {
+    position: "absolute",
+    alignSelf: "center",
+    opacity: 0.13,
+  },
+  // Corner pips, like the rank corners of a real playing card.
+  tilePip: {
+    position: "absolute",
+    fontWeight: "900",
+  },
+  tilePipTL: {
+    top: scale(8),
+    left: scale(10),
+  },
+  tilePipBR: {
+    bottom: scale(8),
+    right: scale(10),
+    transform: [{ rotate: "180deg" }],
+  },
+  flatTileContent: {
     alignItems: "center",
-    justifyContent: "center",
+    paddingHorizontal: scale(6),
   },
-  comingSoonText: {
-    color: "#5a6b85",
-    fontSize: scaleFont(13),
-    fontWeight: "600",
+  flatTileName: {
+    color: "#ffffff",
+    fontSize: scaleFont(17),
+    fontWeight: "800",
     textAlign: "center",
-    lineHeight: scaleFont(20),
   },
 });
