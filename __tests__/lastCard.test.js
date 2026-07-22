@@ -4,6 +4,7 @@ import {
   isPlayable,
   checkWin,
   getNextPlayer,
+  removePlayer,
 } from "../game/lastCard";
 
 const num = (color, value) => ({ color, type: "number", value });
@@ -150,5 +151,71 @@ describe("getNextPlayer", () => {
     expect(getNextPlayer({ players, currentTurn: 0, turnDirection: -1 })).toBe(
       "2",
     );
+  });
+});
+
+describe("removePlayer", () => {
+  // A 4-player game so removal leaves a playable 3-player game.
+  const baseState = () => ({
+    players: [{ id: 0 }, { id: 1 }, { id: 2 }, { id: 3 }],
+    hands: {
+      0: [num("crimson", 5)],
+      1: [num("od_green", 2), WILD],
+      2: [num("turquoise", 9)],
+      3: [num("coral", 1)],
+    },
+    currentTurn: "0",
+    turnDirection: 1,
+    activeColor: "crimson",
+    pendingDraw: 0,
+    pendingAction: null,
+    awaitingColorChoiceBy: null,
+    pendingWildCard: null,
+  });
+
+  test("drops the player and their hand", () => {
+    const s = removePlayer(baseState(), "1");
+    expect(s.players.map((p) => String(p.id))).toEqual(["0", "2", "3"]);
+    expect(s.hands["1"]).toBeUndefined();
+    expect(s.hands["0"]).toBeDefined();
+  });
+
+  test("keeps the current turn when a non-current player leaves", () => {
+    const s = removePlayer(baseState(), "2");
+    expect(s.currentTurn).toBe("0"); // player 0 was and still is up
+  });
+
+  test("advances the turn to the next remaining player when the leaver is up", () => {
+    const s = removePlayer({ ...baseState(), currentTurn: "1" }, "1");
+    expect(s.currentTurn).toBe("2"); // turn moves off the leaver
+    expect(s.players.map((p) => String(p.id))).toEqual(["0", "2", "3"]);
+  });
+
+  test("clears a pending colour choice the leaver owed", () => {
+    const s = removePlayer(
+      {
+        ...baseState(),
+        currentTurn: "1",
+        awaitingColorChoiceBy: "1",
+        pendingWildCard: WILD,
+      },
+      "1",
+    );
+    expect(s.awaitingColorChoiceBy).toBeNull();
+    expect(s.pendingWildCard).toBeNull();
+    expect(s.currentTurn).toBe("2");
+  });
+
+  test("returns the state unchanged if the player isn't in the game", () => {
+    const state = baseState();
+    expect(removePlayer(state, "9")).toBe(state);
+  });
+
+  test("won't drop below 2 players (caller must end the game instead)", () => {
+    const twoPlayer = {
+      ...baseState(),
+      players: [{ id: 0 }, { id: 1 }],
+    };
+    expect(removePlayer(twoPlayer, "1")).toBe(twoPlayer);
   });
 });

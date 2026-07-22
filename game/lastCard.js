@@ -292,6 +292,49 @@ export function getNextPlayer(state) {
   );
 }
 
+// Removes a player who left mid-game. Only meant to be called when enough
+// players remain to keep playing — the CALLER owns the "end vs continue"
+// threshold (Card Night ends the game at ≤3 players and only removes at ≥4).
+// The leaver's hand is discarded out of play. If it was their turn (or they
+// owed a colour choice), the turn advances to the next remaining player and any
+// pending draw/colour state they held is cleared. Returns a new state, or the
+// original unchanged if the player isn't present or removing them would leave
+// fewer than 2 players (in which case the caller should end the game instead).
+export function removePlayer(state, playerId) {
+  const pid = String(playerId);
+  const players = state.players ?? [];
+  const idx = players.findIndex((p) => String(p.id) === pid);
+  if (idx < 0) return state; // not in the game
+  if (players.length <= 2) return state; // can't continue — caller ends the game
+
+  // If the leaver is the current player (or owes a colour choice), work out the
+  // next turn BEFORE removing them, since nextPlayerId walks the current array.
+  const leaverHasTurn =
+    String(state.currentTurn) === pid ||
+    String(state.awaitingColorChoiceBy) === pid;
+  const nextTurn = leaverHasTurn
+    ? nextPlayerId(players, pid, state.turnDirection ?? 1, 1)
+    : state.currentTurn;
+
+  const newPlayers = players.filter((p) => String(p.id) !== pid);
+  const newHands = { ...state.hands };
+  delete newHands[pid];
+
+  return {
+    ...state,
+    players: newPlayers,
+    hands: newHands,
+    currentTurn: String(nextTurn),
+    // A fresh turn for the next player: drop any pending draw/action/colour the
+    // leaver was mid-way through.
+    awaitingColorChoiceBy: leaverHasTurn ? null : state.awaitingColorChoiceBy,
+    pendingWildCard: leaverHasTurn ? null : state.pendingWildCard,
+    pendingDraw: leaverHasTurn ? 0 : state.pendingDraw,
+    pendingAction: leaverHasTurn ? null : state.pendingAction,
+    skippedPlayer: null,
+  };
+}
+
 export function getAIMove(state, playerId) {
   const hand = state.hands[String(playerId)] ?? [];
   const topCard = state.discardPile[state.discardPile.length - 1];
