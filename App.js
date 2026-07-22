@@ -54,6 +54,7 @@ import {
   stopBroadcasting,
   stopDiscovery,
   disconnectFromHost,
+  getNetworkMode,
 } from "./game/GameNetwork";
 
 // SystemBars needs the react-native-edge-to-edge native module (RNEdgeToEdge),
@@ -121,9 +122,17 @@ export default function App() {
   // Close TCP server and UDP sockets when the app moves to the background.
   // Prevents "port already in use" errors on the next host attempt when the
   // user never went through the normal back-button flow to trigger cleanup.
+  //
+  // ONLINE play is the exception: backgrounding is expected and survivable. The
+  // reconnect system handles it (server-side onDisconnect marks the host "away"
+  // / drops a client's slot, and we rejoin on return). Running the teardown here
+  // in online mode would DELETE the room (host) or the player slot (client) on
+  // every background — which was exactly the bug that dropped everyone when the
+  // host briefly switched apps. So skip it entirely in online mode.
   useEffect(() => {
     const sub = AppState.addEventListener("change", (nextState) => {
       if (nextState === "background") {
+        if (getNetworkMode() === "online") return;
         stopServer();
         stopBroadcasting();
         stopDiscovery();
