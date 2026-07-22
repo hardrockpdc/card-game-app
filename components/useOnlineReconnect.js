@@ -2,7 +2,11 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { AppState } from "react-native";
 import ReconnectOverlay from "./ReconnectOverlay";
 import { rejoinRoom, markHostConnected } from "../game/onlineRoom";
-import { onlineGetRoomCode, onlineWatchHostConnected } from "../game/onlineTransport";
+import {
+  onlineGetRoomCode,
+  onlineWatchHostConnected,
+  onlineWatchConnection,
+} from "../game/onlineTransport";
 
 // Shared mid-game reconnect handling for online multiplayer. A drop is treated
 // as "away", not "left":
@@ -56,6 +60,7 @@ export default function useOnlineReconnect({
   onEndGame, // (name) => void — host tapped "End Game" on the pause overlay
   // Client-only:
   onHostEnded, // (name) => void — host ended the game after a drop
+  onSelfLeave, // () => void — client tapped "Leave" on the self-disconnect overlay
 } = {}) {
   const isHost = role === "host";
   const isClient = role === "client";
@@ -66,6 +71,8 @@ export default function useOnlineReconnect({
   const waitingForRef = useRef(null); // host: which player id we're paused on
   const hostAwayRef = useRef(false); // client: currently paused because host dropped
   const hostGraceRef = useRef(null); // client: host-away grace timer
+  const [selfLost, setSelfLost] = useState(false); // client: lost our OWN connection
+  const wasConnectedRef = useRef(false); // client: have we ever been connected?
 
   const setPaused = useCallback((next) => {
     pausedRef.current = !!next;
@@ -241,12 +248,51 @@ export default function useOnlineReconnect({
     };
   }, [isClient, graceMs, onHostEnded, setPaused]);
 
+  // ── Client: watch our OWN connection. If this device drops off the network
+  //    (a Wi-Fi blip, not a backgrounding — AppState wouldn't fire), show the
+  //    self-disconnect overlay; when the link returns, re-add our slot so the
+  //    host resumes. `.info/connected` blips false→true once on first connect,
+  //    so we only treat a drop as real after we've been connected. ────────────
+  const rejoinNow = useCallback(() => {
+    const code = onlineGetRoomCode();
+    if (!code) return;
+    rejoinRoom(code)
+      .then((res) => {
+        if (res && !res.error) setSelfLost(false);
+      })
+      .catch(() => {});
+  }, []);
+  useEffect(() => {
+    if (!isClient) return undefined;
+    const unsub = onlineWatchConnection((connected) => {
+      if (connected) {
+        if (wasConnectedRef.current) rejoinNow(); // reconnected after a real drop
+        wasConnectedRef.current = true;
+      } else if (wasConnectedRef.current) {
+        setSelfLost(true); // only after we'd actually been connected
+      }
+    });
+    return () => {
+      if (typeof unsub === "function") unsub();
+    };
+  }, [isClient, rejoinNow]);
+
   useEffect(() => () => {
     clearTimer();
     clearHostGrace();
   }, []);
 
-  const overlay = (
+  // Our own connection loss takes precedence — it's the client's immediate
+  // problem and it can't act on a pause while offline anyway.
+  const overlay = selfLost ? (
+    <ReconnectOverlay
+      visible
+      title="Connection Lost"
+      message="Trying to reconnect…"
+      onRejoin={rejoinNow}
+      onLeave={onSelfLeave}
+    />
+  ) : (
     <ReconnectOverlay
       visible={!!pause}
       name={pause?.name}

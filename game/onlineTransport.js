@@ -81,6 +81,21 @@ export function onlineGetRoomCode() {
   return config?.code ?? null;
 }
 
+// Client-side: watch THIS device's own connection to Firebase via the special
+// `.info/connected` path. Lets a client notice it dropped off the network (a
+// Wi-Fi blip, not a backgrounding) so it can show a "reconnecting" overlay and
+// re-add its slot when the link returns. cb receives true/false. Returns an
+// unsubscribe fn; a no-op in local mode.
+export function onlineWatchConnection(cb) {
+  if (!config?.code) return () => {};
+  const r = ref(db(), ".info/connected");
+  return onValue(
+    r,
+    (snap) => cb(snap.val() === true),
+    (err) => warn("[onlineTransport] connection watch error:", err),
+  );
+}
+
 // Client-side: watch the room's `hostConnected` flag so a client can pause when
 // the host drops (the host can't broadcast a PAUSE while its phone is asleep, so
 // this is read from the room record directly, not the net channel). cb receives

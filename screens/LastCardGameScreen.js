@@ -300,6 +300,11 @@ export default function LastCardGameScreen({ navigation, route }) {
         [{ text: "OK", onPress: () => navigation.navigate("Home") }],
       );
     },
+    // Client tapped "Leave" on the self-disconnect overlay: quit cleanly.
+    onSelfLeave: () => {
+      leaveMultiplayer();
+      navigation.navigate("Home");
+    },
   });
 
   // Keep the table palette in sync (loaded at app start; may change via the
