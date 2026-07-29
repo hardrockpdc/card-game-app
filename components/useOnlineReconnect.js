@@ -47,6 +47,10 @@ import {
 //   client setClientListeners onMessage: (msg) => { if (rc.clientHandleMessage(msg)) return; ... }
 //   actions: if (rc.pausedRef.current) return;   render: {rc.overlay}
 const DEFAULT_GRACE_MS = 60000;
+// Don't flash the "Connection Lost" overlay on a momentary `.info/connected`
+// flicker (Firebase blips it during normal operation, including around the host
+// tearing down the room). Only show it if we STAY disconnected this long.
+const SELF_LOST_DELAY_MS = 2500;
 
 export default function useOnlineReconnect({
   role, // "host" | "client" | undefined (single-player)
@@ -73,6 +77,7 @@ export default function useOnlineReconnect({
   const hostGraceRef = useRef(null); // client: host-away grace timer
   const [selfLost, setSelfLost] = useState(false); // client: lost our OWN connection
   const wasConnectedRef = useRef(false); // client: have we ever been connected?
+  const selfLostTimerRef = useRef(null); // client: debounce before showing the overlay
 
   const setPaused = useCallback((next) => {
     pausedRef.current = !!next;
@@ -173,6 +178,13 @@ export default function useOnlineReconnect({
       }
       if (msg.type === "GAME_OVER_DISCONNECT") {
         setPaused(null);
+        // The game's over — make sure a stray self-disconnect overlay can't linger
+        // and block the game-ended flow.
+        setSelfLost(false);
+        if (selfLostTimerRef.current) {
+          clearTimeout(selfLostTimerRef.current);
+          selfLostTimerRef.current = null;
+        }
         onHostEnded?.(msg.name);
         return true;
       }
@@ -253,6 +265,12 @@ export default function useOnlineReconnect({
   //    self-disconnect overlay; when the link returns, re-add our slot so the
   //    host resumes. `.info/connected` blips false→true once on first connect,
   //    so we only treat a drop as real after we've been connected. ────────────
+  const clearSelfLostTimer = () => {
+    if (selfLostTimerRef.current) {
+      clearTimeout(selfLostTimerRef.current);
+      selfLostTimerRef.current = null;
+    }
+  };
   const rejoinNow = useCallback(() => {
     const code = onlineGetRoomCode();
     if (!code) return;
@@ -266,20 +284,29 @@ export default function useOnlineReconnect({
     if (!isClient) return undefined;
     const unsub = onlineWatchConnection((connected) => {
       if (connected) {
+        clearSelfLostTimer();
         if (wasConnectedRef.current) rejoinNow(); // reconnected after a real drop
         wasConnectedRef.current = true;
       } else if (wasConnectedRef.current) {
-        setSelfLost(true); // only after we'd actually been connected
+        // Debounce: a brief blip (which also happens as the host tears the room
+        // down) shouldn't flash the overlay — only a sustained drop counts.
+        clearSelfLostTimer();
+        selfLostTimerRef.current = setTimeout(
+          () => setSelfLost(true),
+          SELF_LOST_DELAY_MS,
+        );
       }
     });
     return () => {
       if (typeof unsub === "function") unsub();
+      clearSelfLostTimer();
     };
   }, [isClient, rejoinNow]);
 
   useEffect(() => () => {
     clearTimer();
     clearHostGrace();
+    clearSelfLostTimer();
   }, []);
 
   // Our own connection loss takes precedence — it's the client's immediate
