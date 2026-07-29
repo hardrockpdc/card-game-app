@@ -185,10 +185,17 @@ export function onlineSetClientListeners(listeners) {
   subs.push(onChildAdded(netRef(`private/${config.uid}`), onChild));
   subs.push(onChildChanged(netRef(`private/${config.uid}`), onChild));
 
-  // Room removed (host left / closed) → treat as a disconnect.
+  // Room gone (host left / closed) → treat as a disconnect. Also eject if the
+  // room is a "zombie": present but with no `host` or status !== "playing". That
+  // happens if the host ended the game (deleting the room) while we were offline
+  // and our own reconnect re-created just our player slot — a room fragment with
+  // no host to run the game. Without this check we'd sit in a dead game unable
+  // to act. (Host-away in Phase 2 keeps the `host` field, so it isn't caught.)
   const roomRef = ref(db(), `rooms/${config.code}`);
   const unsubRoom = onValue(roomRef, (snap) => {
-    if (!snap.exists()) {
+    const room = snap.exists() ? snap.val() : null;
+    const dead = !room || !room.host || room.status !== "playing";
+    if (dead) {
       try {
         clientListeners.onDisconnected?.();
       } catch (_) {}

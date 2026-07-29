@@ -152,6 +152,11 @@ export async function rejoinRoom(code) {
     if (!snap.exists()) return { error: "Room closed." };
     const room = snap.val();
 
+    // Don't re-add our slot to a dead room (host ended the game → the room was
+    // deleted; writing our slot would resurrect a hostless fragment). Requires a
+    // live host and an in-progress game.
+    if (!room.host || room.status !== "playing") return { error: "Game ended." };
+
     const roster = Array.isArray(room.gamePlayers) ? room.gamePlayers : [];
     const mine = roster.find((p) => String(p?.id) === String(uid));
     if (!mine) return { error: "You're not in this game." };
