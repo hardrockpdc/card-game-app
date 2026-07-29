@@ -22,7 +22,7 @@ import {
 import { getApp } from "@react-native-firebase/app";
 import { getDatabase } from "@react-native-firebase/database";
 import { ensureSignedIn, getUid } from "./firebase";
-import { warn, log } from "./logger";
+import { warn } from "./logger";
 
 // Ambiguous-looking characters removed (no O/0, I/1) so codes are easy to read
 // aloud and type. 4 chars from 32 symbols ≈ 1M combinations — plenty.
@@ -149,11 +149,8 @@ export async function rejoinRoom(code) {
   const cleanCode = String(code || "").trim().toUpperCase();
   try {
     const snap = await get(roomRef(cleanCode));
-    log("[rejoin] rejoinRoom get:", cleanCode, "exists =", snap.exists());
     if (!snap.exists()) return { error: "Room closed." };
     const room = snap.val();
-    log("[rejoin] rejoinRoom room: host =", room.host, "| status =", room.status,
-        "| gamePlayers =", JSON.stringify(room.gamePlayers), "| my uid =", uid);
 
     // Don't re-add our slot to a dead room (host ended the game → the room was
     // deleted; writing our slot would resurrect a hostless fragment). Requires a
@@ -162,10 +159,7 @@ export async function rejoinRoom(code) {
 
     const roster = Array.isArray(room.gamePlayers) ? room.gamePlayers : [];
     const mine = roster.find((p) => String(p?.id) === String(uid));
-    if (!mine) {
-      log("[rejoin] rejoinRoom: my uid not in gamePlayers roster → refusing");
-      return { error: "You're not in this game." };
-    }
+    if (!mine) return { error: "You're not in this game." };
 
     const playerRef = ref(db(), `rooms/${cleanCode}/players/${uid}`);
     await set(playerRef, { name: mine.name || "Player", isHost: false });
