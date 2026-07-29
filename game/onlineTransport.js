@@ -23,7 +23,7 @@ import {
 } from "@react-native-firebase/database";
 import { getApp } from "@react-native-firebase/app";
 import { getDatabase } from "@react-native-firebase/database";
-import { warn } from "./logger";
+import { warn, log } from "./logger";
 
 let config = null; // { code, uid, isHost }
 let serverListeners = {};
@@ -195,6 +195,8 @@ export function onlineSetClientListeners(listeners) {
   const unsubRoom = onValue(roomRef, (snap) => {
     const room = snap.exists() ? snap.val() : null;
     const dead = !room || !room.host || room.status !== "playing";
+    log("[rejoin] client room watch: exists =", !!room,
+        "| host =", room?.host, "| status =", room?.status, "→ dead =", dead);
     if (dead) {
       try {
         clientListeners.onDisconnected?.();

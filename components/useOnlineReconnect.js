@@ -7,6 +7,7 @@ import {
   onlineWatchHostConnected,
   onlineWatchConnection,
 } from "../game/onlineTransport";
+import { log } from "../game/logger";
 
 // Shared mid-game reconnect handling for online multiplayer. A drop is treated
 // as "away", not "left":
@@ -255,12 +256,14 @@ export default function useOnlineReconnect({
   //    so we only treat a drop as real after we've been connected. ────────────
   const rejoinNow = useCallback(() => {
     const code = onlineGetRoomCode();
+    log("[rejoin] rejoinNow tapped/triggered, code =", code);
     if (!code) return;
     rejoinRoom(code)
       .then((res) => {
+        log("[rejoin] rejoinNow result:", JSON.stringify(res));
         if (res && !res.error) setSelfLost(false);
       })
-      .catch(() => {});
+      .catch((e) => log("[rejoin] rejoinNow threw:", String(e)));
   }, []);
   useEffect(() => {
     if (!isClient) return undefined;
