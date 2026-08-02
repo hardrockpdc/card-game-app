@@ -45,6 +45,17 @@ function netRef(path) {
   return ref(db(), `rooms/${config.code}/net/${path}`);
 }
 
+// SECURITY: per-player private state (hole cards, hands, the Who Am I? secret)
+// deliberately lives OUTSIDE rooms/<code>. Firebase read rules cascade downward
+// and can't be revoked by a descendant, and rooms/<code> must stay readable as a
+// whole subtree (subscribeToRoom / joinRoom / rejoinRoom / markHostConnected all
+// read it in one shot). Anything private parked under there would therefore be
+// readable by every player in the room. See privateNet in database.rules.json,
+// where the read rule is `$uid === auth.uid`.
+function privateRef(uid, type) {
+  return ref(db(), `privateNet/${config.code}/${uid}/${type}`);
+}
+
 // Store each message as an opaque JSON STRING rather than a nested Firebase
 // object. This avoids two RTDB gotchas that the local TCP transport (which uses
 // JSON over the wire) never hits:
@@ -181,9 +192,11 @@ export function onlineSetClientListeners(listeners) {
   subs.push(onChildAdded(netRef("broadcast"), onChild));
   subs.push(onChildChanged(netRef("broadcast"), onChild));
 
-  // Host → me (private hand, etc.) — same per-type slot model.
-  subs.push(onChildAdded(netRef(`private/${config.uid}`), onChild));
-  subs.push(onChildChanged(netRef(`private/${config.uid}`), onChild));
+  // Host → me (private hand, etc.) — same per-type slot model, but read from
+  // privateNet, which only this uid can read (see privateRef).
+  const myPrivate = ref(db(), `privateNet/${config.code}/${config.uid}`);
+  subs.push(onChildAdded(myPrivate, onChild));
+  subs.push(onChildChanged(myPrivate, onChild));
 
   // Room gone (host left / closed) → treat as a disconnect. Also eject if the
   // room is a "zombie": present but with no `host` or status !== "playing". That
@@ -228,7 +241,7 @@ export function onlineSendToClient(clientId, message) {
   const type = message?.type || "MSG";
   const key = `${clientId}/${type}`;
   privateSeq[key] = (privateSeq[key] || 0) + 1;
-  set(netRef(`private/${clientId}/${type}`), {
+  set(privateRef(clientId, type), {
     seq: privateSeq[key],
     payload: encode(message),
   }).catch((err) => warn("[onlineTransport] sendToClient failed:", err));
@@ -255,6 +268,9 @@ export function onlineTeardown() {
   if (config) {
     if (config.isHost) {
       remove(ref(db(), `rooms/${config.code}`)).catch(() => {});
+      // privateNet is a sibling of rooms, so deleting the room doesn't take it
+      // with it — drop it explicitly or every player's last hand is left behind.
+      remove(ref(db(), `privateNet/${config.code}`)).catch(() => {});
     } else if (config.uid) {
       remove(ref(db(), `rooms/${config.code}/players/${config.uid}`)).catch(
         () => {},
@@ -269,4 +285,5 @@ export function onlineTeardown() {
 export function onlineResetChannel() {
   if (!config?.isHost) return;
   remove(netRef("")).catch(() => {});
+  remove(ref(db(), `privateNet/${config.code}`)).catch(() => {});
 }

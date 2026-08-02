@@ -28,20 +28,24 @@
               "payload": { ".validate": "newData.isString() && newData.val().length <= 500000" }
             }
           },
-          "private": {
-            ".write": "auth != null && root.child('rooms').child($code).child('host').val() === auth.uid",
-            "$uid": {
-              "$type": {
-                "payload": { ".validate": "newData.isString() && newData.val().length <= 500000" }
-              }
-            }
-          },
           "toHost": {
             ".write": "auth != null && root.child('rooms').child($code).child('players').child(auth.uid).exists()",
             "$pushId": {
               "sender": { ".validate": "newData.isString() && newData.val().length <= 128" },
               "payload": { ".validate": "newData.isString() && newData.val().length <= 500000" }
             }
+          }
+        }
+      }
+    },
+
+    "privateNet": {
+      "$code": {
+        ".write": "auth != null && root.child('rooms').child($code).child('host').val() === auth.uid",
+        "$uid": {
+          ".read": "$uid === auth.uid",
+          "$type": {
+            "payload": { ".validate": "newData.isString() && newData.val().length <= 500000" }
           }
         }
       }
