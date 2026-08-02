@@ -1,6 +1,11 @@
-import React from "react";
-import { Modal, StyleSheet, Text, View } from "react-native";
+import React, { useCallback, useEffect, useMemo } from "react";
+import { Modal, ScrollView, StyleSheet, Text, View } from "react-native";
 import { scale, scaleFont } from "../game/responsive";
+import {
+  coinBadge,
+  createPressGate,
+  resolveCloseHandler,
+} from "./endOfRoundLogic";
 import { HapticPressable as Pressable } from "./Haptic";
 
 // Shared end-of-round / results modal used by every game so they all look
@@ -18,24 +23,71 @@ export default function EndOfRoundModal({
   onContinue,
   onAdjustBet,
   onLeave,
+  onRequestClose, // optional: overrides what the Android Back button does
   leaveLabel,
   tableColor, // accepted for backward compat; no longer themes the card
   isGameOver,
   continueLabel,
 }) {
+  const gate = useMemo(() => createPressGate(), []);
+
+  // A fresh showing of the modal always starts unlocked, even if the previous
+  // one was dismissed mid-window.
+  useEffect(() => {
+    if (!visible) gate.reset();
+  }, [visible, gate]);
+
+  const once = useCallback(
+    (fn) => {
+      if (typeof fn !== "function") return undefined;
+      return () => {
+        if (gate.allow()) fn();
+      };
+    },
+    [gate],
+  );
+
+  // RN's Modal needs a function here or Android Back silently does nothing.
+  const handleRequestClose = useCallback(() => {
+    const handler = resolveCloseHandler(onRequestClose, onLeave);
+    if (handler) handler();
+  }, [onRequestClose, onLeave]);
+
+  const badge = coinBadge(coins);
+
+  const continueText =
+    continueLabel ?? (isGameOver ? "Play Again" : "Continue");
+  const leaveText = leaveLabel ?? "Main Menu";
+
   return (
     <Modal
       transparent
       animationType="fade"
       visible={!!visible}
       statusBarTranslucent
+      onRequestClose={handleRequestClose}
     >
       <View style={styles.overlay}>
-        <View style={styles.box}>
-          <Text style={styles.title}>{title}</Text>
+        {/* The card is capped and scrollable so the actions stay reachable when
+            a long message meets a large system font scale. */}
+        <ScrollView
+          style={styles.boxScroll}
+          contentContainerStyle={styles.box}
+          bounces={false}
+          accessibilityViewIsModal
+          accessibilityLiveRegion="polite"
+        >
+          <Text style={styles.title} accessibilityRole="header">
+            {title}
+          </Text>
           {!!message && <Text style={styles.message}>{message}</Text>}
-          {coins > 0 && (
-            <Text style={styles.coins}>+{coins.toLocaleString()} 🪙</Text>
+          {badge.show && (
+            <Text
+              style={styles.coins}
+              accessibilityLabel={`Earned ${badge.amount.toLocaleString()} coins`}
+            >
+              {badge.text}
+            </Text>
           )}
 
           <View style={styles.buttonCol}>
@@ -45,11 +97,11 @@ export default function EndOfRoundModal({
                   styles.primaryBtn,
                   pressed && styles.btnPressed,
                 ]}
-                onPress={onContinue}
+                onPress={once(onContinue)}
+                accessibilityRole="button"
+                accessibilityLabel={continueText}
               >
-                <Text style={styles.primaryBtnText}>
-                  {continueLabel ?? (isGameOver ? "Play Again" : "Continue")}
-                </Text>
+                <Text style={styles.primaryBtnText}>{continueText}</Text>
               </Pressable>
             )}
             {showAdjustBet && (
@@ -58,7 +110,9 @@ export default function EndOfRoundModal({
                   styles.secondaryBtn,
                   pressed && styles.btnPressed,
                 ]}
-                onPress={onAdjustBet}
+                onPress={once(onAdjustBet)}
+                accessibilityRole="button"
+                accessibilityLabel="Adjust Bet"
               >
                 <Text style={styles.secondaryBtnText}>Adjust Bet</Text>
               </Pressable>
@@ -69,15 +123,15 @@ export default function EndOfRoundModal({
                   styles.secondaryBtn,
                   pressed && styles.btnPressed,
                 ]}
-                onPress={onLeave}
+                onPress={once(onLeave)}
+                accessibilityRole="button"
+                accessibilityLabel={leaveText}
               >
-                <Text style={styles.secondaryBtnText}>
-                  {leaveLabel ?? "Main Menu"}
-                </Text>
+                <Text style={styles.secondaryBtnText}>{leaveText}</Text>
               </Pressable>
             )}
           </View>
-        </View>
+        </ScrollView>
       </View>
     </Modal>
   );
@@ -91,11 +145,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: scale(24),
   },
-  box: {
+  // flexGrow: 0 keeps the ScrollView hugging its content instead of filling the
+  // overlay; maxHeight is what actually caps it on a short screen.
+  boxScroll: {
     width: "100%",
     maxWidth: scale(360),
+    maxHeight: "100%",
+    flexGrow: 0,
     backgroundColor: "#16213e",
     borderRadius: scale(16),
+  },
+  box: {
     padding: scale(24),
     alignItems: "center",
     gap: scale(12),
@@ -123,11 +183,15 @@ const styles = StyleSheet.create({
     gap: scale(12),
     marginTop: scale(4),
   },
+  // minHeight holds the Material 48 dp touch-target floor even when scale()
+  // clamps down on a small phone.
   primaryBtn: {
     backgroundColor: "#2e9e54",
     borderRadius: scale(10),
     paddingVertical: scale(14),
+    minHeight: scale(48),
     alignItems: "center",
+    justifyContent: "center",
   },
   primaryBtnText: {
     color: "#ffffff",
@@ -139,7 +203,9 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: "#334",
     paddingVertical: scale(14),
+    minHeight: scale(48),
     alignItems: "center",
+    justifyContent: "center",
   },
   secondaryBtnText: {
     color: "#c4c4d4",
