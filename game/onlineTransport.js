@@ -29,8 +29,38 @@ let config = null; // { code, uid, isHost }
 let serverListeners = {};
 let clientListeners = {};
 
-// Active Firebase unsubscribe functions, cleared on teardown.
-let subs = [];
+// Active Firebase unsubscribe functions, split by role so re-registering one
+// side can't disturb the other.
+//
+// These MUST be detached before a new set is attached. Screens re-register
+// freely — the lobby hands over to the game screen, effect cleanups call
+// setClientListeners({}) to "clear" — and every one of those calls used to
+// append another live subscription set that was never removed. That both
+// silenced delivery (clientListeners became {} while the old subscriptions kept
+// running) and multiplied every broadcast by the number of accumulated sets.
+let serverSubs = [];
+let clientSubs = [];
+
+function detach(list) {
+  list.forEach((unsub) => {
+    try {
+      if (typeof unsub === "function") unsub();
+    } catch (_) {}
+  });
+  list.length = 0;
+}
+
+// Screens clear their listeners by passing an empty object (see the effect
+// cleanups in RummyGameScreen). That has to mean "stop listening" — detach and
+// stay detached — not "detach and immediately resubscribe with no handlers",
+// which would leave live RTDB subscriptions feeding a handler set that can
+// never deliver.
+function hasHandlers(listeners) {
+  return (
+    !!listeners &&
+    Object.values(listeners).some((v) => typeof v === "function")
+  );
+}
 
 // Per-message-type sequence numbers. Each message type gets its own slot so
 // different types never overwrite each other (e.g. AVATARS clobbering
@@ -132,8 +162,12 @@ export function onlineWatchHostConnected(cb) {
 
 // ─── Host listeners ──────────────────────────────────────────────────────────
 export function onlineSetServerListeners(listeners) {
+  // Replace, never accumulate. Also makes setServerListeners({}) a genuine
+  // detach rather than a silent re-subscribe.
+  detach(serverSubs);
+  knownPlayerIds = null;
   serverListeners = listeners || {};
-  if (!config?.isHost) return;
+  if (!config?.isHost || !hasHandlers(serverListeners)) return;
 
   // Drain the client→host queue: process each message then delete it so the
   // queue stays small and we never reprocess on re-attach.
@@ -161,7 +195,7 @@ export function onlineSetServerListeners(listeners) {
     }
     remove(snap.ref).catch(() => {});
   });
-  subs.push(unsubQueue);
+  serverSubs.push(unsubQueue);
 
   // Detect a player dropping: watch the room's player list and fire onClientLeft
   // for any uid that disappears.
@@ -196,13 +230,15 @@ export function onlineSetServerListeners(listeners) {
     }
     known = now;
   });
-  subs.push(unsubPlayers);
+  serverSubs.push(unsubPlayers);
 }
 
 // ─── Client listeners ────────────────────────────────────────────────────────
 export function onlineSetClientListeners(listeners) {
+  // Replace, never accumulate — see onlineSetServerListeners.
+  detach(clientSubs);
   clientListeners = listeners || {};
-  if (config?.isHost) return;
+  if (config?.isHost || !hasHandlers(clientListeners)) return;
 
   // Host → everyone. Each message type lives in its own child slot, so a late
   // client receives the latest of EVERY type on attach (onChildAdded replays
@@ -212,14 +248,14 @@ export function onlineSetClientListeners(listeners) {
     const msg = val ? decode(val.payload) : null;
     if (msg) deliverToClient(msg);
   };
-  subs.push(onChildAdded(netRef("broadcast"), onChild));
-  subs.push(onChildChanged(netRef("broadcast"), onChild));
+  clientSubs.push(onChildAdded(netRef("broadcast"), onChild));
+  clientSubs.push(onChildChanged(netRef("broadcast"), onChild));
 
   // Host → me (private hand, etc.) — same per-type slot model, but read from
   // privateNet, which only this uid can read (see privateRef).
   const myPrivate = ref(db(), `privateNet/${config.code}/${config.uid}`);
-  subs.push(onChildAdded(myPrivate, onChild));
-  subs.push(onChildChanged(myPrivate, onChild));
+  clientSubs.push(onChildAdded(myPrivate, onChild));
+  clientSubs.push(onChildChanged(myPrivate, onChild));
 
   // Room gone (host left / closed) → treat as a disconnect. Also eject if the
   // room is a "zombie": present but with no `host` or status !== "playing". That
@@ -237,7 +273,7 @@ export function onlineSetClientListeners(listeners) {
       } catch (_) {}
     }
   });
-  subs.push(unsubRoom);
+  clientSubs.push(unsubRoom);
 }
 
 function deliverToClient(payload) {
@@ -282,12 +318,8 @@ export function onlineSendToHost(message) {
 // (which signals every client to disconnect); a client removes only its own
 // player slot (so the host sees it leave).
 export function onlineTeardown() {
-  subs.forEach((unsub) => {
-    try {
-      if (typeof unsub === "function") unsub();
-    } catch (_) {}
-  });
-  subs = [];
+  detach(serverSubs);
+  detach(clientSubs);
   if (config) {
     if (config.isHost) {
       remove(ref(db(), `rooms/${config.code}`)).catch(() => {});
