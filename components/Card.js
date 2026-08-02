@@ -1,8 +1,7 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import {
   Animated,
   Easing,
-  AccessibilityInfo,
   Image,
   StyleSheet,
   View,
@@ -10,6 +9,7 @@ import {
 } from "react-native";
 import { getCardImage, getCardBackImage } from "../game/cardTheme";
 import { useTheme } from "../game/ThemeContext";
+import { useReduceMotion } from "../game/reduceMotion";
 
 const BASE_WIDTH = 390;
 const FLIP_DURATION = 260;
@@ -20,24 +20,11 @@ const DEAL_TRAVEL = 200; // pixels — how far above the final position the card
 function DealWrapper({ children, dealDelay, w, h, m }) {
   const translateY = useRef(new Animated.Value(-DEAL_TRAVEL)).current;
   const opacity = useRef(new Animated.Value(0)).current;
-  const [reduceMotion, setReduceMotion] = useState(false);
+  // Shared store: one native query + one listener for the whole app, instead of
+  // a pair per card (see game/reduceMotion.js).
+  const reduceMotion = useReduceMotion();
   const initialDealDelayRef = useRef(dealDelay);
   const didStartRef = useRef(false);
-
-  useEffect(() => {
-    let mounted = true;
-    AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
-      if (mounted) setReduceMotion(enabled);
-    });
-    const sub = AccessibilityInfo.addEventListener(
-      "reduceMotionChanged",
-      (enabled) => setReduceMotion(enabled),
-    );
-    return () => {
-      mounted = false;
-      sub?.remove?.();
-    };
-  }, []);
 
   useEffect(() => {
     // If reduced motion is on, snap to final state immediately.
@@ -103,26 +90,8 @@ function FlipCard({
   const flipValue = useRef(new Animated.Value(faceDown ? 0 : 1)).current;
   const lastFaceDownRef = useRef(faceDown);
 
-  const [reduceMotion, setReduceMotion] = useState(false);
-
-  // Check reduced motion preference on mount; update if user changes it.
-  useEffect(() => {
-    let mounted = true;
-
-    AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
-      if (mounted) setReduceMotion(enabled);
-    });
-
-    const sub = AccessibilityInfo.addEventListener(
-      "reduceMotionChanged",
-      (enabled) => setReduceMotion(enabled),
-    );
-
-    return () => {
-      mounted = false;
-      sub?.remove?.();
-    };
-  }, []);
+  // Shared store — see the note in DealWrapper.
+  const reduceMotion = useReduceMotion();
 
   // When faceDown changes, run the flip animation (or snap if animation is off).
   useEffect(() => {
@@ -230,7 +199,7 @@ const styles = StyleSheet.create({
   },
 });
 
-export default function Card({
+function Card({
   rank,
   suit,
   faceDown = false,
@@ -322,3 +291,12 @@ export default function Card({
 
   return flipCardEl;
 }
+
+// Every prop is a primitive, so the default shallow compare is exactly right: a
+// card re-renders only when its own rank/suit/size/animation flags change.
+// Without this, all 52 cards in a Solitaire tableau re-rendered on any parent
+// state change — a tap, a timer tick, a drag frame.
+//
+// Theme changes still propagate: useTheme() is a context read, and context
+// updates bypass memo.
+export default React.memo(Card);

@@ -49,6 +49,7 @@ import { initPokerTable } from "./game/pokerTheme";
 import { initGofishTable } from "./game/gofishTheme";
 import { ThemeProvider } from "./game/ThemeContext";
 import { initErrorReporting } from "./game/errorReporter";
+import { initReduceMotion } from "./game/reduceMotion";
 import ErrorBoundary from "./components/ErrorBoundary";
 import {
   stopServer,
@@ -114,6 +115,9 @@ export default function App() {
     initRummyTable();
     initPokerTable();
     initGofishTable();
+    // Resolve the reduce-motion setting once, up front, so the first deal reads
+    // a cached value instead of racing an async native query per card.
+    initReduceMotion();
 
     // Anonymous Firebase sign-in for online multiplayer. Guarded so a dev build
     // made before the Firebase native modules were added is a no-op instead of
