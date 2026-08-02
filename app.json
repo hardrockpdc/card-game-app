@@ -53,7 +53,8 @@
     "extra": {
       "eas": {
         "projectId": "ca993ea1-d3bf-4c46-ad57-f51c28c366b4"
-      }
+      },
+      "sentryDsn": null
     },
     "owner": "hardrockpdc",
     "plugins": [

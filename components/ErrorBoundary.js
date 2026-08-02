@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { warn } from "../game/logger";
+import { reportError } from "../game/errorReporter";
 import { HapticTouchable as TouchableOpacity } from "./Haptic";
 
 export default class ErrorBoundary extends React.Component {
@@ -16,6 +17,10 @@ export default class ErrorBoundary extends React.Component {
   componentDidCatch(error, info) {
     warn("[ErrorBoundary] Uncaught error:", error);
     warn("[ErrorBoundary] Component stack:", info.componentStack);
+    // The whole reason this screen exists is that something broke badly enough
+    // to unmount the tree. Report the real Error with its stack, not just the
+    // flattened warn() text.
+    reportError(error, { componentStack: info?.componentStack });
   }
 
   handleReset() {

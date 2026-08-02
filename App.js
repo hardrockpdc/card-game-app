@@ -48,6 +48,7 @@ import { initRummyTable } from "./game/rummyTheme";
 import { initPokerTable } from "./game/pokerTheme";
 import { initGofishTable } from "./game/gofishTheme";
 import { ThemeProvider } from "./game/ThemeContext";
+import { initErrorReporting } from "./game/errorReporter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import {
   stopServer,
@@ -72,6 +73,23 @@ let ScreenOrientation = null;
 try {
   ScreenOrientation = require("expo-screen-orientation");
 } catch {}
+
+// Crash reporting. Started before anything else so an error during the very
+// first render is still captured. Reads the DSN from app.json (expo.extra
+// .sentryDsn); with no DSN configured this is a complete no-op and the app
+// behaves exactly as before, so it's safe to ship un-configured.
+try {
+  const Constants = require("expo-constants").default;
+  const extra =
+    Constants?.expoConfig?.extra ?? Constants?.manifest?.extra ?? {};
+  initErrorReporting({
+    dsn: extra.sentryDsn,
+    environment: __DEV__ ? "development" : "production",
+    release: Constants?.expoConfig?.version,
+  });
+} catch (_) {
+  // expo-constants unavailable — skip reporting rather than fail to boot.
+}
 
 const Stack = createNativeStackNavigator();
 
