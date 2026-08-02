@@ -111,6 +111,34 @@ describe("doAsk", () => {
     history: [],
   });
 
+  // M1 — a client sends targetId over the wire (GoFishGameScreen passes
+  // msg.targetId straight into doAsk). doAsk validated that the ASKER holds the
+  // rank, but never that the target was someone else. With fromPid === toPid the
+  // two `hands` keys in the returned object collide: the removal is written
+  // first and then overwritten by `original + matching`, so the player's own
+  // cards are duplicated out of thin air. The UI can't trigger it; a modified
+  // client can.
+  test("asking yourself is rejected and cannot duplicate cards", () => {
+    const s = base();
+    const before = s.hands.a.length;
+    const next = doAsk(s, "a", "a", "7");
+    expect(next).toBe(s); // state untouched
+    expect(next.hands.a).toHaveLength(before);
+  });
+
+  test("asking yourself conserves the 52-card invariant", () => {
+    const s = dealGoFish([{ id: "a" }, { id: "b" }]);
+    const rank = s.hands.a[0].rank;
+    const next = doAsk(s, "a", "a", rank);
+    expect(total(next)).toBe(52);
+  });
+
+  test("asking a player who isn't in the game is rejected", () => {
+    const s = base();
+    const next = doAsk(s, "a", "ghost", "7");
+    expect(next).toBe(s);
+  });
+
   test("a successful ask transfers cards and grants an extra turn", () => {
     const next = doAsk(base(), "a", "b", "7");
     expect(next.hands.a).toHaveLength(3);
