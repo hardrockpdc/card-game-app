@@ -22,6 +22,7 @@ import {
 import { getApp } from "@react-native-firebase/app";
 import { getDatabase } from "@react-native-firebase/database";
 import { ensureSignedIn, getUid } from "./firebase";
+import { isRoomFull } from "./roomRoster";
 import { warn } from "./logger";
 
 // Ambiguous-looking characters removed (no O/0, I/1) so codes are easy to read
@@ -118,6 +119,17 @@ export async function joinRoom(code, { playerName }) {
     const room = snap.val();
     if (room.status !== "waiting") {
       return { error: "That game has already started." };
+    }
+
+    // Refuse a join that would push the room past the game's player limit.
+    // Without this the lobby could fill past capacity and the deal would run
+    // out of cards. Note this is a client-side courtesy check — the authoritative
+    // limit is enforced by the host at start (see canStartGame), because the
+    // database rule can't express a per-game count.
+    const currentCount = room.players ? Object.keys(room.players).length : 0;
+    const alreadyIn = !!room.players?.[uid];
+    if (!alreadyIn && isRoomFull(room.gameId, currentCount)) {
+      return { error: "That room is full." };
     }
 
     const playerRef = ref(db(), `rooms/${cleanCode}/players/${uid}`);
