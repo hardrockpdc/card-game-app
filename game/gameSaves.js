@@ -22,11 +22,20 @@ export function __resetSaveGuards() {
   _recentlyCleared.clear();
 }
 
+// Test-only: how many guard entries are currently held.
+export function __clearGuardSize() {
+  return _recentlyCleared.size;
+}
+
 export async function saveGame(gameKey, state) {
   const clearedAt = _recentlyCleared.get(gameKey);
-  if (clearedAt && Date.now() - clearedAt < CLEAR_GUARD_MS) {
-    // A clear just happened for this key — drop this stray save.
-    return;
+  if (clearedAt) {
+    if (Date.now() - clearedAt < CLEAR_GUARD_MS) {
+      // A clear just happened for this key — drop this stray save.
+      return;
+    }
+    // Guard has expired; it can only produce noise from here on.
+    _recentlyCleared.delete(gameKey);
   }
   try {
     await AsyncStorage.setItem(

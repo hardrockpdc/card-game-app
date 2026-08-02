@@ -94,3 +94,29 @@ describe("hasSave", () => {
     expect(await hasSave(KEY)).toBe(true);
   });
 });
+
+// m11 — clearGame recorded a timestamp per key in an in-memory Map that was
+// never pruned. Bounded by the number of game keys, so it's small, but the
+// entries also stayed past their usefulness: the guard only matters for
+// CLEAR_GUARD_MS, and a stale entry is pure noise.
+describe("m11 — the clear guard does not retain entries forever", () => {
+  test("an expired guard entry is dropped rather than kept", async () => {
+    const { __clearGuardSize } = require("../game/gameSaves");
+    __resetSaveGuards();
+
+    await clearGame("@test:prune:a");
+    expect(__clearGuardSize()).toBe(1);
+
+    // Past the guard window, a save for the same key is allowed again AND the
+    // bookkeeping entry is gone.
+    const realNow = Date.now;
+    Date.now = () => realNow() + 10_000;
+    try {
+      await saveGame("@test:prune:a", { ok: true });
+      expect(await loadGame("@test:prune:a")).toEqual({ ok: true });
+      expect(__clearGuardSize()).toBe(0);
+    } finally {
+      Date.now = realNow;
+    }
+  });
+});

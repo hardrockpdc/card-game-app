@@ -768,7 +768,10 @@ export default function PokerGameScreen({ navigation, route }) {
             return;
           }
           if (
-            state.players.findIndex((p) => p.id === clientId) !==
+            // String-compare both sides: local mode assigns numeric client ids,
+            // online mode uses string uids. They never mix today, so === works,
+            // but this matches the Rummy handler and removes the trap.
+            state.players.findIndex((p) => String(p.id) === String(clientId)) !==
             state.currentPlayerIndex
           )
             return;

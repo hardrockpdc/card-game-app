@@ -338,6 +338,10 @@ export function onlineTeardown() {
   serverListeners = {};
   clientListeners = {};
   knownPlayerIds = null;
+  // Drop the session too. Leaving it set meant onlineGetRoomCode() kept handing
+  // back a dead code, and the reconnect hook reads that on AppState-active to
+  // call rejoinRoom — trying to re-add our slot to a room that's already gone.
+  config = null;
 }
 
 // Clear any stale net channel before a fresh game starts (host only).

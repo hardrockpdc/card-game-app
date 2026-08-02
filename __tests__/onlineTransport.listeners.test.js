@@ -137,3 +137,29 @@ describe("C3 — teardown detaches everything", () => {
     expect(__mock.activeListeners().length).toBe(0);
   });
 });
+
+// m3 — onlineTeardown detached listeners but never cleared `config`, so
+// onlineGetRoomCode() kept returning a dead room code. The reconnect hook reads
+// that on AppState-active and calls rejoinRoom, which would try to re-add our
+// player slot to a room that no longer exists.
+describe("m3 — teardown clears the session config", () => {
+  const { onlineGetRoomCode, onlineGetAssignedClientId } = require("../game/onlineTransport");
+
+  test("the room code is not reported after teardown", () => {
+    setOnlineConfig(CLIENT);
+    expect(onlineGetRoomCode()).toBe("ABCD");
+
+    onlineTeardown();
+
+    expect(onlineGetRoomCode()).toBeNull();
+  });
+
+  test("the assigned client id is not reported after teardown", () => {
+    setOnlineConfig(CLIENT);
+    expect(onlineGetAssignedClientId()).toBe("u-client");
+
+    onlineTeardown();
+
+    expect(onlineGetAssignedClientId()).toBeNull();
+  });
+});

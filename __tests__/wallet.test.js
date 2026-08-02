@@ -68,3 +68,34 @@ describe("resetCoins", () => {
     expect(await getCoins()).toBe(1000);
   });
 });
+
+// m9 — setCoins and resetCoins bypassed the enqueue chain that addCoins and
+// subtractCoins use. Wallet writes are read-modify-write, so an operation that
+// skips the queue can interleave with one inside it and lose an update.
+describe("m9 — every wallet write goes through the same queue", () => {
+  test("operations land in call order: a reset issued last wins", async () => {
+    await setCoins(1000);
+
+    // Issue both without awaiting the first. resetCoins was called second, so
+    // it must land second — balance ends at the starting amount. Pre-fix,
+    // resetCoins skipped the queue and could be overwritten by the award's
+    // read-modify-write completing afterwards, leaving 1500.
+    const award = addCoins(500);
+    const reset = resetCoins();
+    await Promise.all([award, reset]);
+
+    expect(await getCoins()).toBe(1000);
+    expect(await getLifetimeEarned()).toBe(0);
+  });
+
+  test("an award issued after a reset is kept", async () => {
+    await setCoins(1000);
+
+    const reset = resetCoins();
+    const award = addCoins(500);
+    await Promise.all([reset, award]);
+
+    expect(await getCoins()).toBe(1500);
+    expect(await getLifetimeEarned()).toBe(500);
+  });
+});

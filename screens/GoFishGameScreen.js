@@ -237,7 +237,8 @@ export default function GoFishGameScreen({ navigation, route }) {
           const state = fullRef.current;
           if (!state || msg.type !== "ACTION" || msg.action !== "ask") return;
           if (
-            state.players.findIndex((p) => p.id === clientId) !==
+            // String-compare both sides — see the note in PokerGameScreen.
+            state.players.findIndex((p) => String(p.id) === String(clientId)) !==
             state.currentPlayerIndex
           )
             return;
