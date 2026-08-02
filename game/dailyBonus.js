@@ -126,11 +126,19 @@ export async function claimDailyBonus(now = new Date()) {
 
     const day = status.claimDay;
     const amount = DAILY_REWARDS[day - 1] || 0;
-    const newBalance = await addCoins(amount);
 
+    // Record the claim BEFORE paying it. The old order paid first, and these
+    // two writes sit outside any try/catch — so a storage failure left the
+    // coins paid with no claim recorded, and the bonus could be claimed again
+    // the same day, indefinitely.
+    //
+    // Failing this direction can at worst cost a player one day's bonus, which
+    // they can retry; the reverse direction is an unbounded coin farm.
     const today = todayKey(now);
     await AsyncStorage.setItem(KEY_LAST_CLAIM, today);
     await AsyncStorage.setItem(KEY_STREAK_DAY, String(day));
+
+    const newBalance = await addCoins(amount);
 
     // Track total consecutive days (not the 1..7 cycle) for the loyalty
     // achievements (7-/30-day login streak). Use the TRUE gap-based

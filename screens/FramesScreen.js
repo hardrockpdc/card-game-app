@@ -5,7 +5,8 @@ import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import ProfileAvatar from "../components/ProfileAvatar";
 import { scale, scaleFont } from "../game/responsive";
 import { FRAMES_LIST, getFramePrice, isFrameUnlocked } from "../game/frames";
-import { getCoins, subtractCoins } from "../game/wallet";
+import { getCoins } from "../game/wallet";
+import { purchaseCosmetic } from "../game/shop";
 import { loadProfile, updateProfile, subscribeProfile } from "../game/profile";
 
 // Profile-frame shop: a grid of decorative rings previewed on the player's own
@@ -60,11 +61,22 @@ export default function FramesScreen({ navigation }) {
       {
         text: "Unlock",
         onPress: async () => {
-          const newBalance = await subtractCoins(price);
-          setCoins(newBalance);
           const next = [...unlockedFrames, id];
+          const result = await purchaseCosmetic({
+            price,
+            apply: () => updateProfile({ unlockedFrames: next }),
+          });
+          setCoins(result.balance);
+          if (!result.ok) {
+            Alert.alert(
+              "Unlock failed",
+              result.reason === "insufficient"
+                ? "You don't have enough coins for that."
+                : "Something went wrong saving your unlock. Your coins have been returned.",
+            );
+            return;
+          }
           setUnlockedFrames(next);
-          await updateProfile({ unlockedFrames: next }).catch(() => {});
           applyFrame(id); // unlock + wear in one step
         },
       },

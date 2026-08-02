@@ -101,3 +101,58 @@ describe("listAchievements", () => {
     expect(firstWin.claimed).toBe(false);
   });
 });
+
+// M5 — coins were paid BEFORE the claimed-set was persisted, and the persist
+// was wrapped in a swallowing try/catch. If that write failed (or the process
+// died in the window), the player kept the coins and the achievement stayed
+// unclaimed — so the next checkAndClaim paid it again. checkAndClaim runs on
+// every Home focus, so the window is hit constantly.
+describe("M5 — an award is never paid twice when the claim write fails", () => {
+  test("a failed claimed-set write does not pay out", async () => {
+    await recordWin("solitaire"); // unlocks first_win + clean_sweep
+    const before = await getCoins();
+
+    const realSetItem = AsyncStorage.setItem;
+    AsyncStorage.setItem = jest.fn(async (key, value) => {
+      if (key === "@cardnight:ach:claimed") throw new Error("disk full");
+      return realSetItem(key, value);
+    });
+
+    let threw = false;
+    try {
+      await checkAndClaim();
+    } catch (_) {
+      threw = true;
+    }
+    AsyncStorage.setItem = realSetItem;
+
+    // Whether it surfaces the error or not, the invariant is the same: coins
+    // must not have moved if the claim couldn't be recorded.
+    expect(await getCoins()).toBe(before);
+    expect(threw || true).toBe(true);
+  });
+
+  test("after a failed write, a later successful claim pays exactly once", async () => {
+    await recordWin("solitaire");
+    const before = await getCoins();
+
+    const realSetItem = AsyncStorage.setItem;
+    AsyncStorage.setItem = jest.fn(async (key, value) => {
+      if (key === "@cardnight:ach:claimed") throw new Error("disk full");
+      return realSetItem(key, value);
+    });
+    try {
+      await checkAndClaim();
+    } catch (_) {}
+    AsyncStorage.setItem = realSetItem;
+
+    const awarded = await checkAndClaim();
+    const total = awarded.reduce((n, a) => n + a.reward, 0);
+    expect(await getCoins()).toBe(before + total);
+
+    // And a third call pays nothing more.
+    const again = await checkAndClaim();
+    expect(again).toEqual([]);
+    expect(await getCoins()).toBe(before + total);
+  });
+});

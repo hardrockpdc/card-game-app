@@ -24,7 +24,8 @@ import {
   loadProfile,
   subscribeProfile,
 } from "../game/profile";
-import { getCoins, subtractCoins } from "../game/wallet";
+import { getCoins } from "../game/wallet";
+import { purchaseCosmetic } from "../game/shop";
 
 export default function CardThemeScreen() {
   const { width, height } = useWindowDimensions();
@@ -100,11 +101,22 @@ export default function CardThemeScreen() {
         {
           text: "Unlock",
           onPress: async () => {
-            const newBalance = await subtractCoins(price);
-            setCoins(newBalance);
             const nextUnlocked = [...unlockedThemes, key];
+            const result = await purchaseCosmetic({
+              price,
+              apply: () => updateProfile({ unlockedThemes: nextUnlocked }),
+            });
+            setCoins(result.balance);
+            if (!result.ok) {
+              Alert.alert(
+                "Unlock failed",
+                result.reason === "insufficient"
+                  ? "You don't have enough coins for that."
+                  : "Something went wrong saving your unlock. Your coins have been returned.",
+              );
+              return;
+            }
             setUnlockedThemes(nextUnlocked);
-            await updateProfile({ unlockedThemes: nextUnlocked }).catch(() => {});
             applyTheme(key); // unlock + apply in one step
           },
         },
