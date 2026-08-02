@@ -38,6 +38,14 @@ let subs = [];
 const broadcastSeq = {}; // type -> seq
 const privateSeq = {}; // `${uid}/${type}` -> seq
 
+// Host-side roster of uids currently in the room, kept in sync by the players
+// watcher in onlineSetServerListeners. Used to reject messages claiming to come
+// from someone who isn't in the room. `null` means "no snapshot yet" — we can't
+// validate, so we accept, rather than silently dropping a real player's opening
+// message in the race before the first roster arrives. The database rule is the
+// hard enforcement; this is defence in depth.
+let knownPlayerIds = null;
+
 function db() {
   return getDatabase(getApp());
 }
@@ -133,12 +141,23 @@ export function onlineSetServerListeners(listeners) {
   const unsubQueue = onChildAdded(toHost, (snap) => {
     const val = snap.val();
     const msg = val ? decode(val.payload) : null;
-    if (msg) {
+    // `sender` is the identity every host-side turn check authorises against,
+    // so it must be trustworthy. The database rule pins it to auth.uid (see
+    // net/toHost/$pushId/sender), which is the real enforcement point — a
+    // forged sender never lands in the first place. This check is defence in
+    // depth for the window before the rules are re-deployed, and it drops any
+    // message whose sender isn't a known player in the room.
+    const sender = val?.sender;
+    const known =
+      sender && (knownPlayerIds === null || knownPlayerIds.has(String(sender)));
+    if (msg && known) {
       try {
-        serverListeners.onMessage?.(msg, val.sender);
+        serverListeners.onMessage?.(msg, sender);
       } catch (err) {
         warn("[onlineTransport] host onMessage threw:", err);
       }
+    } else if (msg) {
+      warn("[onlineTransport] dropped message from unknown sender:", sender);
     }
     remove(snap.ref).catch(() => {});
   });
@@ -150,6 +169,10 @@ export function onlineSetServerListeners(listeners) {
   let known = null;
   const unsubPlayers = onValue(playersRef, (snap) => {
     const now = snap.exists() ? Object.keys(snap.val()) : [];
+    // Keep the sender allow-list in sync with the live roster (see the toHost
+    // drain above). The host itself never routes through toHost, so it doesn't
+    // need to be in here.
+    knownPlayerIds = new Set(now.map(String));
     if (known !== null) {
       for (const uid of known) {
         if (!now.includes(uid)) {
@@ -279,6 +302,7 @@ export function onlineTeardown() {
   }
   serverListeners = {};
   clientListeners = {};
+  knownPlayerIds = null;
 }
 
 // Clear any stale net channel before a fresh game starts (host only).

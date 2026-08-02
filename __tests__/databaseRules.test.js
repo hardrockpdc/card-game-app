@@ -78,3 +78,41 @@ describe("C1 — per-player private state is not readable by other players", () 
     expect(room[".read"]).toBe("auth != null");
   });
 });
+
+// ─── C2 ──────────────────────────────────────────────────────────────────────
+// The bug: a client->host message carried its own `sender` field, validated
+// only as "a string up to 128 chars". onlineTransport hands that value to the
+// host as the authoritative player identity, and every host-side turn check
+// (LastCard, Rummy, Poker, Go Fish, Who Am I?) authorises against it. A client
+// writing `sender: <victimUid>` therefore acts AS that victim — playing their
+// cards, folding their hand, submitting their secret. The whole
+// host-authoritative design collapses, because the identity it authorises
+// against is attacker-supplied.
+describe("C2 — a client cannot forge the sender of a message to the host", () => {
+  test("sender must equal the authenticated uid", () => {
+    const sender = rules.rules.rooms.$code.net.toHost.$pushId.sender;
+    expect(sender[".validate"]).toBe("newData.val() === auth.uid");
+  });
+
+  test("the sender rule is an identity check, not just a type/length check", () => {
+    const validate = rules.rules.rooms.$code.net.toHost.$pushId.sender[".validate"];
+    expect(validate).toContain("auth.uid");
+    // The old rule permitted any string; make sure we didn't keep that shape.
+    expect(validate).not.toContain("isString()");
+  });
+
+  test("only a player already in the room may enqueue to the host", () => {
+    expect(rules.rules.rooms.$code.net.toHost[".write"]).toContain(
+      "root.child('rooms').child($code).child('players').child(auth.uid).exists()",
+    );
+  });
+});
+
+describe("C1 — regression: readable-room assumption stays explicit", () => {
+  test("room read rule is unchanged by the C2 fix", () => {
+    // Deliberate: subscribeToRoom/joinRoom/rejoinRoom read rooms/<code> whole.
+    // This is safe ONLY because no per-player secret lives under it any more,
+    // which the first assertion in this block enforces.
+    expect(room[".read"]).toBe("auth != null");
+  });
+});
