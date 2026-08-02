@@ -390,6 +390,10 @@ export default function WhoAmIGameScreen({ navigation, route }) {
                     onChangeText={setSecretText}
                     placeholder="e.g. Tom Hanks, Batman, a giraffe…"
                     placeholderTextColor="#7a7a8c"
+                    // Matches MAX_SECRET_CHARS in game/whoami.js, which is the
+                    // real enforcement — this just stops the keyboard letting
+                    // you type past a limit that would be silently trimmed.
+                    maxLength={60}
                     autoFocus
                     returnKeyType="done"
                     onSubmitEditing={handleSetSecret}
@@ -451,6 +455,8 @@ export default function WhoAmIGameScreen({ navigation, route }) {
                       onChangeText={setQuestionText}
                       placeholder="Are you a real person?"
                       placeholderTextColor="#7a7a8c"
+                      // Matches MAX_QUESTION_CHARS in game/whoami.js.
+                      maxLength={120}
                       autoFocus
                       returnKeyType="send"
                       onSubmitEditing={handleAsk}
