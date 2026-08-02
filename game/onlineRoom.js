@@ -23,6 +23,7 @@ import { getApp } from "@react-native-firebase/app";
 import { getDatabase } from "@react-native-firebase/database";
 import { ensureSignedIn, getUid } from "./firebase";
 import { isRoomFull } from "./roomRoster";
+import { rememberHostedRoom, forgetHostedRoom } from "./roomCleanup";
 import { warn } from "./logger";
 
 // Ambiguous-looking characters removed (no O/0, I/1) so codes are easy to read
@@ -89,9 +90,12 @@ export async function createRoom({ gameId, variant = null, tone = null, hostName
     // room. Clients then pause ("waiting for host…") rather than being kicked,
     // and the game can resume if the host returns within the grace window (see
     // markHostConnected + the reconnect hook). Trade-off: a host that never
-    // comes back leaves a small orphaned room (cleaned up by a future TTL sweep;
-    // intentional leaves via leaveRoom/teardown still remove the room outright).
+    // comes back leaves a small orphaned room. Intentional leaves via
+    // leaveRoom/teardown remove the room outright; for the case where the app
+    // dies without either, we record the code so the next launch can sweep it
+    // (see game/roomCleanup.js — a global TTL isn't possible client-side).
     onDisconnect(roomRef(code)).update({ hostConnected: false });
+    rememberHostedRoom(code);
 
     return { code, uid };
   } catch (err) {
@@ -248,6 +252,9 @@ export async function leaveRoom(code, { isHost }) {
   try {
     if (isHost) {
       await remove(roomRef(code));
+      // Clean exit — drop the sweep record so we can never delete this code
+      // later, after it's been recycled to someone else's room.
+      forgetHostedRoom();
     } else if (uid) {
       await remove(ref(db(), `rooms/${code}/players/${uid}`));
     }

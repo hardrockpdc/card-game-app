@@ -144,6 +144,20 @@ export default function OnlineLobbyScreen({ navigation, route }) {
     };
   }, []);
 
+  // Leave the room if this screen goes away by any route other than the
+  // hardware-back handler above — `leftRef` was always documented as a guard
+  // for "leave-on-unmount", but that effect didn't exist, so backing out any
+  // other way stranded the room (or our player slot) on the server.
+  //
+  // Skipped when launchedRef is set: navigating INTO the game is not leaving.
+  useEffect(() => {
+    return () => {
+      if (leftRef.current || launchedRef.current) return;
+      leftRef.current = true;
+      leaveRoom(code, { isHost });
+    };
+  }, [code, isHost]);
+
   async function handleCopyCode() {
     await Clipboard.setStringAsync(code);
     setCopied(true);

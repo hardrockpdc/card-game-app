@@ -124,7 +124,14 @@ export default function App() {
     // crashing — it'll start working after the next rebuild.
     try {
       const { ensureSignedIn } = require("./game/firebase");
-      ensureSignedIn().catch((err) => warn("Firebase sign-in failed:", err));
+      ensureSignedIn()
+        .then(() => {
+          // If a previous session died while hosting, its room is still up
+          // there. Remove it once it's past the TTL. Best-effort, never blocks.
+          const { sweepOwnStaleRoom } = require("./game/roomCleanup");
+          return sweepOwnStaleRoom().catch(() => {});
+        })
+        .catch((err) => warn("Firebase sign-in failed:", err));
     } catch (err) {
       warn("Firebase not available (needs rebuild):", err);
     }

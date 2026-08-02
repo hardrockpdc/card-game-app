@@ -23,6 +23,7 @@ import {
 } from "@react-native-firebase/database";
 import { getApp } from "@react-native-firebase/app";
 import { getDatabase } from "@react-native-firebase/database";
+import { forgetHostedRoom } from "./roomCleanup";
 import { warn } from "./logger";
 
 let config = null; // { code, uid, isHost }
@@ -326,6 +327,8 @@ export function onlineTeardown() {
       // privateNet is a sibling of rooms, so deleting the room doesn't take it
       // with it — drop it explicitly or every player's last hand is left behind.
       remove(ref(db(), `privateNet/${config.code}`)).catch(() => {});
+      // Clean teardown: drop the sweep record (see game/roomCleanup.js).
+      forgetHostedRoom();
     } else if (config.uid) {
       remove(ref(db(), `rooms/${config.code}/players/${config.uid}`)).catch(
         () => {},
