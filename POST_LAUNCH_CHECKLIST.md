@@ -76,3 +76,32 @@ eas build --profile production --platform android
 ```
 (The `android/` folder must not exist locally, or EAS skips prebuild and ignores
 app.json changes — that caused the versionCode/permission issues on v4–v6.)
+
+## Security audit remediation (2026-08-02) — BLOCKING
+
+From the structural audit on branch `fix/audit-remediation`. The first item is
+the one that matters most: two critical fixes are code-complete but **inert**
+until the rules are re-published.
+
+- [ ] **Re-publish `database.rules.json`** in the Firebase console (Realtime
+      Database → Rules → paste → Publish). Until this happens, per-player hands
+      are still readable by every player in the room, and a client can still
+      forge `sender` to act as another player. Keep the file comment-free — the
+      console rejects any top-level key but `rules`.
+- [ ] **Re-test online multiplayer end-to-end on 2 devices.** Already outstanding
+      from the 2026-07-04 deploy. Now higher-stakes: private hands moved to a new
+      `privateNet/*` path, so a bad rules deploy breaks hands specifically. Check
+      a poker hand deals to the right player and nobody else's is visible.
+- [ ] **Set `expo.extra.sentryDsn`** in `app.json` (currently `null`, so crash
+      reporting is a no-op) and rebuild the dev client — Sentry is a native module.
+- [ ] **Add a privacy-policy line covering crash data leaving the device.**
+      Required for the next Play submission now that Sentry is wired. This is a
+      family-rated title, so it needs to be explicit, not implied.
+- [ ] Device-verify the Card memoization actually improves the Solitaire deal —
+      the tests prove the listener count dropped, not the frame timing.
+
+### Known residue (not fixable client-side)
+Rooms abandoned by a host who never reopens the app are never collected. Each
+host now sweeps its OWN leftover room on next launch, but a global TTL needs a
+Cloud Function: listing rooms client-side would require a read grant on the
+`rooms` node, which would let anyone enumerate every live room code.
