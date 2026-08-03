@@ -8,8 +8,10 @@ import {
   FlatList,
   ScrollView,
   Alert,
+  BackHandler,
   useWindowDimensions,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   HapticTouchable as TouchableOpacity,
@@ -17,13 +19,11 @@ import {
 } from "../components/Haptic";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
-import {
-  loadProfile,
-  saveProfile,
-} from "../game/profile";
+import { loadProfile, saveProfile } from "../game/profile";
 import {
   THEMES_LIST,
   getThemePreviewImage,
+  getThemePrice,
   setTheme,
   getTheme,
 } from "../game/cardTheme";
@@ -56,9 +56,32 @@ async function cropToSquare(uri, width, height) {
 // Onboarding flow: welcome intro → name → photo → card style → game info → Home.
 const APP_ICON = require("../assets/icon.png");
 
-// Game roster grouped by mode, shown on the post-setup info screen.
-const SOLO_GAMES = ["Blackjack", "Solitaire", "Go Fish", "Rummy", "Conquián", "Poker", "Last Card"];
-const MP_GAMES = ["Go Fish", "Rummy", "Conquián", "Poker", "Last Card", "Who Am I?"];
+// Survives a kill-and-relaunch mid-flow. The profile isn't written until the
+// card-style step finishes, so without this a user who backgrounds the app
+// after typing their name comes back to an empty field.
+const NAME_DRAFT_KEY = "@cardnight:onboarding:nameDraft";
+
+// Game roster grouped by mode, shown on the post-setup info screen. Keep these
+// in step with the Choose Game grid (SinglePlayerSetupScreen) and the
+// multiplayer picker — a new player counts them.
+const SOLO_GAMES = [
+  "Blackjack",
+  "Solitaire",
+  "Go Fish",
+  "Rummy",
+  "Conquián",
+  "Poker",
+  "Last Card",
+  "Memory Match",
+];
+const MP_GAMES = [
+  "Go Fish",
+  "Rummy",
+  "Conquián",
+  "Poker",
+  "Last Card",
+  "Who Am I?",
+];
 
 export default function OnboardingScreen({ navigation }) {
   const { width, height } = useWindowDimensions();
@@ -83,16 +106,47 @@ export default function OnboardingScreen({ navigation }) {
 
   useEffect(() => {
     loadProfile().then(setProfile);
+    AsyncStorage.getItem(NAME_DRAFT_KEY)
+      .then((saved) => {
+        if (saved) setNameDraft(saved);
+      })
+      .catch(() => {});
   }, []);
 
   // ── Step navigation ─────────────────────────────────────────────────────────
 
+  // This flow used to move in one direction only — every setStep call advanced,
+  // there was no back control, and the profile wasn't written until the card
+  // step finished. A mistyped name was uncorrectable, and Android's hardware
+  // Back (this is the stack's root route, with no handler) quit the app and
+  // discarded everything typed so far.
+  function goBack() {
+    setStep((s) => Math.max(0, s - 1));
+  }
+
+  useEffect(() => {
+    const onHardwareBack = () => {
+      // The summary step is past the point of no return — the profile is
+      // already saved, so Back there means "enter the app", not "undo".
+      if (step >= 4) return false;
+      if (step === 0) return false; // let Back exit from the welcome screen
+      goBack();
+      return true;
+    };
+    const sub = BackHandler.addEventListener(
+      "hardwareBackPress",
+      onHardwareBack,
+    );
+    return () => sub.remove();
+  }, [step]);
+
+  function handleNameChange(text) {
+    setNameDraft(text);
+    AsyncStorage.setItem(NAME_DRAFT_KEY, text).catch(() => {});
+  }
+
   function handleNameNext() {
-    const trimmed = nameDraft.trim();
-    if (!trimmed) {
-      Alert.alert("Enter your name", "Please type a name to continue.");
-      return;
-    }
+    if (!nameDraft.trim()) return; // the button is disabled; belt and braces
     setStep(2);
   }
 
@@ -108,11 +162,21 @@ export default function OnboardingScreen({ navigation }) {
       };
       await saveProfile(next);
 
-      // Apply the selected card theme
+      // Apply the selected card theme — ONLY if it's actually free.
+      //
+      // This carousel used to hand out whatever was on screen, and five of the
+      // seven decks cost 3,000 coins each. Because isThemeUnlocked grandfathers
+      // whatever deck is currently active, that made the giveaway permanent:
+      // 15,000 coins of inventory — the single largest sink in an earned-only
+      // economy — gone before the player had earned one. Locked decks are still
+      // shown here, as something to play towards.
       const [key] = THEMES_LIST[themeIndex];
-      setTheme(key);
-      await updateProfile({ cardTheme: key });
+      if (getThemePrice(key) === 0) {
+        setTheme(key);
+        await updateProfile({ cardTheme: key });
+      }
 
+      await AsyncStorage.removeItem(NAME_DRAFT_KEY).catch(() => {});
       setStep(4);
     } catch {
       Alert.alert("Error", "Something went wrong. Please try again.");
@@ -176,15 +240,22 @@ export default function OnboardingScreen({ navigation }) {
 
   function renderPhotoPreview() {
     if (photoType === "custom" && photoUri) {
-      return (
-        <Image source={{ uri: photoUri }} style={styles.photoPreview} />
-      );
+      return <Image source={{ uri: photoUri }} style={styles.photoPreview} />;
     }
     if (photoType === "avatar" && photoValue) {
       const avatar = AVATAR_CHOICES.find((a) => a.id === photoValue);
       if (avatar) {
         return (
-          <View style={[styles.photoPreview, { backgroundColor: avatar.color, alignItems: "center", justifyContent: "center" }]}>
+          <View
+            style={[
+              styles.photoPreview,
+              {
+                backgroundColor: avatar.color,
+                alignItems: "center",
+                justifyContent: "center",
+              },
+            ]}
+          >
             <Text style={{ fontSize: scale(52) }}>{avatar.emoji}</Text>
           </View>
         );
@@ -200,6 +271,25 @@ export default function OnboardingScreen({ navigation }) {
   const previewH = Math.min(height * 0.38, 320);
   const previewW = previewH * 0.7;
 
+  const selectedThemeKey = THEMES_LIST[themeIndex]?.[0];
+  const selectedThemeLocked =
+    !!selectedThemeKey && getThemePrice(selectedThemeKey) !== 0;
+
+  // Every setup step gets a way back. Without it the only exit was the hardware
+  // Back button, which quit the app.
+  function renderBackLink() {
+    return (
+      <TouchableOpacity
+        style={styles.backLink}
+        onPress={goBack}
+        accessibilityRole="button"
+        accessibilityLabel="Go back to the previous step"
+      >
+        <Text style={styles.backLinkText}>← Back</Text>
+      </TouchableOpacity>
+    );
+  }
+
   // ── Steps ────────────────────────────────────────────────────────────────────
 
   if (step === 0) {
@@ -207,19 +297,28 @@ export default function OnboardingScreen({ navigation }) {
       <SafeAreaView style={styles.safe}>
         <SuitBackground />
         <ScrollView
-          contentContainerStyle={[styles.stepContainer, styles.welcomeContainer]}
+          contentContainerStyle={[
+            styles.stepContainer,
+            styles.welcomeContainer,
+          ]}
           keyboardShouldPersistTaps="handled"
         >
-          <Image source={APP_ICON} style={styles.welcomeIcon} resizeMode="contain" />
+          <Image
+            source={APP_ICON}
+            style={styles.welcomeIcon}
+            resizeMode="contain"
+          />
           <Text style={styles.welcomeTitle}>Welcome to Card Night!</Text>
           <Text style={styles.welcomeText}>
-            Your home for classic card games — play solo against the computer
-            or gather friends for multiplayer. Let's set up your profile.
+            Your home for classic card games — play solo against the computer or
+            gather friends for multiplayer. Let's set up your profile.
           </Text>
 
           <TouchableOpacity
             style={[styles.primaryBtn, styles.welcomeBtn]}
             onPress={() => setStep(1)}
+            accessibilityRole="button"
+            accessibilityLabel="Get started"
           >
             <Text style={styles.primaryBtnText}>Get Started →</Text>
           </TouchableOpacity>
@@ -232,26 +331,39 @@ export default function OnboardingScreen({ navigation }) {
     return (
       <SafeAreaView style={styles.safe}>
         <SuitBackground />
-        <ScrollView contentContainerStyle={styles.stepContainer} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={styles.stepContainer}
+          keyboardShouldPersistTaps="handled"
+        >
+          {renderBackLink()}
           <Text style={styles.stepLabel}>STEP 1 OF 3</Text>
           <Text style={styles.title}>What's your name?</Text>
-          <Text style={styles.subtitle}>This is how you'll appear in games.</Text>
+          <Text style={styles.subtitle}>
+            This is how you'll appear in games.
+          </Text>
 
           <TextInput
             style={styles.nameInput}
             value={nameDraft}
-            onChangeText={setNameDraft}
+            onChangeText={handleNameChange}
             placeholder="Enter your name"
-            placeholderTextColor="#555"
+            placeholderTextColor="#8a8aa0"
             maxLength={20}
             autoFocus
             returnKeyType="next"
             onSubmitEditing={handleNameNext}
+            accessibilityLabel="Your name"
           />
 
+          {/* Dimmed AND disabled. It used to be dimmed but still pressable,
+              firing an alert — a control that looks dead and isn't. */}
           <TouchableOpacity
             style={[styles.primaryBtn, !nameDraft.trim() && styles.btnDimmed]}
             onPress={handleNameNext}
+            disabled={!nameDraft.trim()}
+            accessibilityRole="button"
+            accessibilityLabel="Next"
+            accessibilityState={{ disabled: !nameDraft.trim() }}
           >
             <Text style={styles.primaryBtnText}>Next →</Text>
           </TouchableOpacity>
@@ -264,24 +376,43 @@ export default function OnboardingScreen({ navigation }) {
     return (
       <SafeAreaView style={styles.safe}>
         <SuitBackground />
-        <ScrollView contentContainerStyle={styles.stepContainer} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={styles.stepContainer}
+          keyboardShouldPersistTaps="handled"
+        >
+          {renderBackLink()}
           <Text style={styles.stepLabel}>STEP 2 OF 3</Text>
           <Text style={styles.title}>Add a profile photo</Text>
-          <Text style={styles.subtitle}>Optional — you can change this later.</Text>
+          <Text style={styles.subtitle}>
+            Optional — you can change this later.
+          </Text>
 
-          <View style={styles.photoRow}>
-            {renderPhotoPreview()}
-          </View>
+          <View style={styles.photoRow}>{renderPhotoPreview()}</View>
 
           {!showAvatarGrid ? (
             <View style={styles.photoActions}>
-              <TouchableOpacity style={styles.photoBtn} onPress={handleTakePhoto}>
+              <TouchableOpacity
+                style={styles.photoBtn}
+                onPress={handleTakePhoto}
+                accessibilityRole="button"
+                accessibilityLabel="Take a photo with the camera"
+              >
                 <Text style={styles.photoBtnText}>📷 Take Photo</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.photoBtn} onPress={handlePickFromLibrary}>
+              <TouchableOpacity
+                style={styles.photoBtn}
+                onPress={handlePickFromLibrary}
+                accessibilityRole="button"
+                accessibilityLabel="Choose a photo from your library"
+              >
                 <Text style={styles.photoBtnText}>🖼️ Choose from Library</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.photoBtn} onPress={() => setShowAvatarGrid(true)}>
+              <TouchableOpacity
+                style={styles.photoBtn}
+                onPress={() => setShowAvatarGrid(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Pick an emoji avatar instead"
+              >
                 <Text style={styles.photoBtnText}>😀 Pick an Emoji Avatar</Text>
               </TouchableOpacity>
             </View>
@@ -296,6 +427,9 @@ export default function OnboardingScreen({ navigation }) {
                     photoValue === avatar.id && styles.avatarCellSelected,
                   ]}
                   onPress={() => handleChooseAvatar(avatar)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${avatar.emoji} avatar`}
+                  accessibilityState={{ selected: photoValue === avatar.id }}
                 >
                   <Text style={styles.avatarEmoji}>{avatar.emoji}</Text>
                 </TouchableOpacity>
@@ -303,17 +437,19 @@ export default function OnboardingScreen({ navigation }) {
             </View>
           )}
 
-          <View style={styles.navRow}>
-            <TouchableOpacity style={styles.skipBtn} onPress={() => setStep(3)}>
-              <Text style={styles.skipBtnText}>Skip</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.primaryBtn, styles.navPrimaryBtn]}
-              onPress={() => setStep(3)}
-            >
-              <Text style={styles.primaryBtnText}>Next →</Text>
-            </TouchableOpacity>
-          </View>
+          {/* One button, not two. Skip and Next both called setStep(3) — two
+              controls offering one outcome, which reads as a trap. The label
+              now tells the truth about what tapping does. */}
+          <TouchableOpacity
+            style={[styles.primaryBtn, styles.navPrimaryBtn]}
+            onPress={() => setStep(3)}
+            accessibilityRole="button"
+            accessibilityLabel={photoType ? "Next" : "Skip adding a photo"}
+          >
+            <Text style={styles.primaryBtnText}>
+              {photoType ? "Next →" : "Skip for now →"}
+            </Text>
+          </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>
     );
@@ -322,62 +458,102 @@ export default function OnboardingScreen({ navigation }) {
   // Step 3: Card style
   if (step === 3) {
     return (
-    <SafeAreaView style={styles.safe}>
-      <SuitBackground />
-      <View style={styles.cardStepHeader}>
-        <Text style={styles.stepLabel}>STEP 3 OF 3</Text>
-        <Text style={styles.title}>Choose your card style</Text>
-        <Text style={styles.subtitle}>Optional — you can change this later.</Text>
-      </View>
-
-      <FlatList
-        ref={flatListRef}
-        data={THEMES_LIST}
-        keyExtractor={([key]) => key}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onViewableItemsChanged={onViewableItemsChanged}
-        viewabilityConfig={viewabilityConfig}
-        initialScrollIndex={themeIndex}
-        getItemLayout={(_, index) => ({
-          length: width,
-          offset: width * index,
-          index,
-        })}
-        renderItem={({ item: [key] }) => (
-          <View style={[styles.themePage, { width }]}>
-            <Image
-              source={getThemePreviewImage(key)}
-              style={{ width: previewW, height: previewH, borderRadius: 12 }}
-              resizeMode="contain"
-            />
-            <Text style={styles.swipeHint}>← swipe to browse →</Text>
-          </View>
-        )}
-      />
-
-      <View style={styles.dotsRow}>
-        {THEMES_LIST.map((_, i) => (
-          <View key={i} style={[styles.dot, i === themeIndex && styles.dotActive]} />
-        ))}
-      </View>
-
-      <View style={styles.navRow}>
-        <TouchableOpacity style={styles.skipBtn} onPress={handleFinish} disabled={isSaving}>
-          <Text style={styles.skipBtnText}>Skip</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.primaryBtn, styles.navPrimaryBtn, isSaving && styles.btnDimmed]}
-          onPress={handleFinish}
-          disabled={isSaving}
-        >
-          <Text style={styles.primaryBtnText}>
-            {isSaving ? "Saving…" : "Next →"}
+      <SafeAreaView style={styles.safe}>
+        <SuitBackground />
+        <View style={styles.cardStepHeader}>
+          {renderBackLink()}
+          <Text style={styles.stepLabel}>STEP 3 OF 3</Text>
+          <Text style={styles.title}>Choose your card style</Text>
+          <Text style={styles.subtitle}>
+            Optional — you can change this later.
           </Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+        </View>
+
+        <FlatList
+          ref={flatListRef}
+          data={THEMES_LIST}
+          keyExtractor={([key]) => key}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onViewableItemsChanged={onViewableItemsChanged}
+          viewabilityConfig={viewabilityConfig}
+          initialScrollIndex={themeIndex}
+          getItemLayout={(_, index) => ({
+            length: width,
+            offset: width * index,
+            index,
+          })}
+          renderItem={({ item: [key, theme] }) => {
+            const locked = getThemePrice(key) !== 0;
+            return (
+              <View style={[styles.themePage, { width }]}>
+                <Image
+                  source={getThemePreviewImage(key)}
+                  style={{
+                    width: previewW,
+                    height: previewH,
+                    borderRadius: 12,
+                    opacity: locked ? 0.55 : 1,
+                  }}
+                  resizeMode="contain"
+                  accessibilityLabel={`${theme.name} card deck${locked ? ", locked" : ""}`}
+                />
+                <Text style={styles.themeName}>{theme.name}</Text>
+                {locked ? (
+                  <Text style={styles.themeLocked}>
+                    🔒 {getThemePrice(key).toLocaleString()} 🪙 — earn coins by
+                    playing to unlock
+                  </Text>
+                ) : (
+                  <Text style={styles.themeFree}>Free</Text>
+                )}
+                <Text style={styles.swipeHint}>← swipe to browse →</Text>
+              </View>
+            );
+          }}
+        />
+
+        <View style={styles.dotsRow}>
+          {THEMES_LIST.map((_, i) => (
+            <View
+              key={i}
+              style={[styles.dot, i === themeIndex && styles.dotActive]}
+            />
+          ))}
+        </View>
+
+        {/* One button, not two — Skip and Next both called handleFinish. When the
+          visible deck is locked, say so plainly rather than appearing to grant
+          it and silently falling back. */}
+        <View style={styles.navRow}>
+          <TouchableOpacity
+            style={[
+              styles.primaryBtn,
+              styles.navPrimaryBtn,
+              isSaving && styles.btnDimmed,
+            ]}
+            onPress={handleFinish}
+            disabled={isSaving}
+            accessibilityRole="button"
+            accessibilityLabel={
+              isSaving
+                ? "Saving"
+                : selectedThemeLocked
+                  ? "Continue with the Classic deck"
+                  : "Use this deck and continue"
+            }
+          >
+            <Text style={styles.primaryBtnText}>
+              {isSaving
+                ? "Saving…"
+                : selectedThemeLocked
+                  ? "Continue with Classic →"
+                  : "Use This Deck →"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -385,7 +561,10 @@ export default function OnboardingScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.safe}>
       <SuitBackground />
-      <ScrollView contentContainerStyle={styles.stepContainer} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={styles.stepContainer}
+        keyboardShouldPersistTaps="handled"
+      >
         <Text style={styles.title}>You're all set! 🎉</Text>
         <Text style={styles.subtitle}>Here's what you can play.</Text>
 
@@ -409,6 +588,8 @@ export default function OnboardingScreen({ navigation }) {
         <TouchableOpacity
           style={[styles.primaryBtn, styles.welcomeBtn]}
           onPress={handleEnterApp}
+          accessibilityRole="button"
+          accessibilityLabel="Start playing"
         >
           <Text style={styles.primaryBtnText}>Let's Play! 🎉</Text>
         </TouchableOpacity>
@@ -598,16 +779,15 @@ const styles = StyleSheet.create({
     paddingBottom: scale(24),
     paddingTop: scale(8),
   },
-  skipBtn: {
-    borderWidth: 1.5,
-    borderColor: "#334",
-    borderRadius: scale(12),
-    paddingVertical: scale(16),
-    paddingHorizontal: scale(20),
-    alignItems: "center",
+  backLink: {
+    alignSelf: "flex-start",
+    paddingVertical: scale(8),
+    paddingRight: scale(16),
+    minHeight: scale(48),
+    justifyContent: "center",
   },
-  skipBtnText: {
-    color: "#888",
+  backLinkText: {
+    color: "#9aa4c4",
     fontSize: scaleFont(16),
   },
   cardStepHeader: {
@@ -621,8 +801,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     gap: scale(16),
   },
+  themeName: {
+    color: "#ffffff",
+    fontSize: scaleFont(20),
+    fontWeight: "700",
+  },
+  themeFree: {
+    color: "#7fb3ff",
+    fontSize: scaleFont(14),
+    fontWeight: "600",
+  },
+  themeLocked: {
+    color: "#ffd700",
+    fontSize: scaleFont(14),
+    fontWeight: "600",
+    textAlign: "center",
+    paddingHorizontal: scale(24),
+  },
+  // Was #444 on #1a1a2e — about 1.4:1, effectively invisible, and it is the
+  // carousel's only affordance.
   swipeHint: {
-    color: "#444",
+    color: "#9aa4c4",
     fontSize: scaleFont(13),
   },
   dotsRow: {
