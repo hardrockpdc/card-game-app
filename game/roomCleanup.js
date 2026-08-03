@@ -103,9 +103,13 @@ export async function sweepOwnStaleRoom({ now = Date.now() } = {}) {
     const room = snap.val();
     if (!isRoomStale(room, now)) return null;
 
-    await remove(ref(db(), `rooms/${code}`));
-    // privateNet is a sibling of rooms and isn't removed along with it.
+    // ORDER MATTERS. privateNet is a sibling of rooms and isn't removed along
+    // with it, but its write rule authorises us by reading rooms/<code>/host.
+    // Delete the room first and that check resolves to null, the privateNet
+    // delete is rejected, and the catch below forgets the room for good —
+    // orphaning every player's last hand permanently. Private state first.
     await remove(ref(db(), `privateNet/${code}`));
+    await remove(ref(db(), `rooms/${code}`));
     await forgetHostedRoom();
     return code;
   } catch (err) {

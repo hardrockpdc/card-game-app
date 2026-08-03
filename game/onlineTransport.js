@@ -58,8 +58,7 @@ function detach(list) {
 // never deliver.
 function hasHandlers(listeners) {
   return (
-    !!listeners &&
-    Object.values(listeners).some((v) => typeof v === "function")
+    !!listeners && Object.values(listeners).some((v) => typeof v === "function")
   );
 }
 
@@ -309,9 +308,10 @@ export function onlineSendToClient(clientId, message) {
 
 export function onlineSendToHost(message) {
   if (config?.isHost) return;
-  push(netRef("toHost"), { sender: config.uid, payload: encode(message) }).catch(
-    (err) => warn("[onlineTransport] sendToHost failed:", err),
-  );
+  push(netRef("toHost"), {
+    sender: config.uid,
+    payload: encode(message),
+  }).catch((err) => warn("[onlineTransport] sendToHost failed:", err));
 }
 
 // ─── Teardown ────────────────────────────────────────────────────────────────
@@ -323,10 +323,16 @@ export function onlineTeardown() {
   detach(clientSubs);
   if (config) {
     if (config.isHost) {
-      remove(ref(db(), `rooms/${config.code}`)).catch(() => {});
-      // privateNet is a sibling of rooms, so deleting the room doesn't take it
-      // with it — drop it explicitly or every player's last hand is left behind.
-      remove(ref(db(), `privateNet/${config.code}`)).catch(() => {});
+      const code = config.code;
+      // ORDER MATTERS. privateNet is a sibling of rooms, so deleting the room
+      // doesn't take it with it — it has to go explicitly or every player's
+      // last hand is left behind. But its write rule authorises us by reading
+      // rooms/<code>/host, so once the room is gone that check resolves to
+      // null and the delete is REJECTED. Drop privateNet first, then the room.
+      remove(ref(db(), `privateNet/${code}`))
+        .catch(() => {})
+        .then(() => remove(ref(db(), `rooms/${code}`)))
+        .catch(() => {});
       // Clean teardown: drop the sweep record (see game/roomCleanup.js).
       forgetHostedRoom();
     } else if (config.uid) {
