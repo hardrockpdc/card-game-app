@@ -41,6 +41,7 @@ import {
   disconnectFromHost,
 } from "../game/GameNetwork";
 import { scale, scaleFont } from "../game/responsive";
+import { useReduceMotion } from "../game/reduceMotion";
 import { addCoins } from "../game/wallet";
 import { getWinReward } from "../game/rewards";
 import { recordAchievementEvent } from "../game/achievements";
@@ -77,11 +78,14 @@ const COLOR_HEX = {
   coral: "#FF7F50",
 };
 
+// Plain colour names a child can say out loud. These were "OD Green",
+// "Crimson", "Turquoise" and "Coral" — military and paint-chip jargon in a
+// family game, and the wild-colour picker asks players to choose one by name.
 const COLOR_LABELS = {
-  od_green: "OD Green",
-  crimson: "Crimson",
-  turquoise: "Turquoise",
-  coral: "Coral",
+  od_green: "Green",
+  crimson: "Red",
+  turquoise: "Blue",
+  coral: "Orange",
 };
 
 // Translucent version of a #rrggbb hex — used for the active-colour halo behind
@@ -229,6 +233,7 @@ export default function LastCardGameScreen({ navigation, route }) {
   const turnTimerRef = useRef(null);
   const colorTimerRef = useRef(null);
   const yourTurnTimerRef = useRef(null);
+  const shakeResetRef = useRef(null);
   const prevTurnRef = useRef(null);
   const [gameState, setGameState] = useState(null);
   const [showYourTurnBanner, setShowYourTurnBanner] = useState(false);
@@ -242,6 +247,8 @@ export default function LastCardGameScreen({ navigation, route }) {
   const [tableId, setTableId] = useState(getLastCardTableId());
   const [showTablePicker, setShowTablePicker] = useState(false);
   const shakeAnim = useRef(new Animated.Value(0)).current;
+  // Shared store — one native query and one listener for the whole app.
+  const reduceMotion = useReduceMotion();
   const coinRewardedRef = useRef(false);
   const outcomeBuzzedRef = useRef(false); // fire win/lose haptic once per game
   const lastSaveRef = useRef(0); // BUG-4: auto-save throttle (once / 3s)
@@ -320,6 +327,7 @@ export default function LastCardGameScreen({ navigation, route }) {
       if (aiTimerRef.current) clearTimeout(aiTimerRef.current);
       if (turnTimerRef.current) clearTimeout(turnTimerRef.current);
       if (colorTimerRef.current) clearTimeout(colorTimerRef.current);
+      if (shakeResetRef.current) clearTimeout(shakeResetRef.current);
       if (yourTurnTimerRef.current) clearTimeout(yourTurnTimerRef.current);
     },
     [],
@@ -403,6 +411,14 @@ export default function LastCardGameScreen({ navigation, route }) {
   }
 
   function triggerShake(cardId) {
+    // Reduce motion: a five-step jitter is exactly what the setting exists to
+    // suppress. Flash the card as the "rejected" signal instead of moving it.
+    if (reduceMotion) {
+      setShakeId(cardId);
+      shakeAnim.setValue(0);
+      scheduleTimeout(shakeResetRef, () => setShakeId(null), 220);
+      return;
+    }
     setShakeId(cardId);
     shakeAnim.setValue(0);
     Animated.sequence([
@@ -932,6 +948,12 @@ export default function LastCardGameScreen({ navigation, route }) {
     if (!isPlayable(card, topCard, s.activeColor, hasColorMatch)) {
       triggerShake(card.id);
       hapticError(); // sharp "nope" on an illegal card
+      // Say WHY. A shake and a buzz with no words is punishment without
+      // explanation — the rule is invisible, so a first-timer or anyone handed
+      // the phone mid-game just taps until they guess it.
+      setStatusMsg(
+        `Can't play that — match ${COLOR_LABELS[s.activeColor] ?? "the colour"} or a ${cardTitle(topCard)}.`,
+      );
       return;
     }
 
@@ -972,8 +994,13 @@ export default function LastCardGameScreen({ navigation, route }) {
     if (s.awaitingColorChoiceBy) return;
     if (lockedRef.current) return;
 
-    const hasPlay = hasPlayableCard(s, myPid);
-    if (hasPlay) return;
+    // Drawing is only legal with nothing playable. This used to return in
+    // silence — a completely dead tap, no shake, no buzz, no words.
+    if (hasPlayableCard(s, myPid)) {
+      hapticError();
+      setStatusMsg("You still have a card you can play.");
+      return;
+    }
 
     hapticButton(); // tick when you draw from the deck
 
@@ -1330,12 +1357,25 @@ export default function LastCardGameScreen({ navigation, route }) {
                 )
               : false;
             const isShaking = card.id === shakeId;
-            const shouldDimUnplayable = difficulty === "easy" && !playable;
+            // Always dim unplayable cards. This used to be gated on
+            // `difficulty === "easy"`, and the default is "medium" — so the
+            // standard game gave no indication of which cards were legal.
+            // Seeing which cards are legal is a rules-visibility aid, not a
+            // strategy hint: at a real table you can see the pile. Difficulty
+            // should mean a harder opponent, not a stingier interface.
+            const shouldDimUnplayable = !playable;
+            const colorName = COLOR_LABELS[card.color];
             return (
               <TouchableOpacity
                 key={card.id}
                 onPress={() => onCardTap(card)}
                 activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  `${colorName ? `${colorName} ` : ""}${cardTitle(card)}` +
+                  (playable ? "" : ", can't be played right now")
+                }
+                accessibilityState={{ disabled: !playable }}
               >
                 <Animated.View
                   style={
@@ -1349,6 +1389,7 @@ export default function LastCardGameScreen({ navigation, route }) {
                       styles.cardShell,
                       { width: HAND_W, height: HAND_H },
                       shouldDimUnplayable && styles.dimmed,
+                      isShaking && styles.cardRejected,
                     ]}
                   >
                     <Image
@@ -1623,6 +1664,12 @@ const styles = StyleSheet.create({
   },
   dimmed: {
     opacity: 0.38,
+  },
+  // The reduce-motion stand-in for the shake: a card that was just refused
+  // gets a red edge instead of jittering.
+  cardRejected: {
+    borderWidth: 2,
+    borderColor: "#e94560",
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
