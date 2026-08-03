@@ -250,10 +250,12 @@ export default function LastCardGameScreen({ navigation, route }) {
   const reconnect = useOnlineReconnect({
     role,
     getPlayerName: (id) =>
-      stateRef.current?.players.find((p) => String(p.id) === String(id))?.name ??
-      "A player",
+      stateRef.current?.players.find((p) => String(p.id) === String(id))
+        ?.name ?? "A player",
     isRealPlayer: (id) => {
-      const p = stateRef.current?.players.find((x) => String(x.id) === String(id));
+      const p = stateRef.current?.players.find(
+        (x) => String(x.id) === String(id),
+      );
       return !!p && !p.isAI && String(p.id) !== MY_ID;
     },
     broadcast: broadcastToClients,
@@ -294,11 +296,9 @@ export default function LastCardGameScreen({ navigation, route }) {
       navigation.navigate("Home");
     },
     onHostEnded: (name) => {
-      Alert.alert(
-        "Game ended",
-        `${name} left and didn't reconnect in time.`,
-        [{ text: "OK", onPress: () => navigation.navigate("Home") }],
-      );
+      Alert.alert("Game ended", `${name} left and didn't reconnect in time.`, [
+        { text: "OK", onPress: () => navigation.navigate("Home") },
+      ]);
     },
     // Client tapped "Leave" on the self-disconnect overlay: quit cleanly.
     onSelfLeave: () => {
@@ -325,12 +325,22 @@ export default function LastCardGameScreen({ navigation, route }) {
     [],
   );
 
+  // Rewards run in EVERY mode, not just single player.
+  //
+  // This effect used to open with `if (!isSinglePlayer) return`, so a
+  // multiplayer win paid no coins, recorded no win, fired no achievement event
+  // and didn't even buzz — while line 2 of the block below already asked
+  // getWinReward for the (higher) multiplayer tier. Two of the three audiences
+  // this app is built for were locked out of the whole reward loop.
+  //
+  // No host authority is needed: each device evaluates `winner === myPid` for
+  // its own player, so every device pays exactly its own user, once.
   useEffect(() => {
-    if (!isSinglePlayer) return;
     const isWon = phase === "gameOver" && winner === myPid;
     if (isWon && !coinRewardedRef.current) {
       coinRewardedRef.current = true;
-      clearGame(SAVE_KEY_LASTCARD);
+      // Only single player has a local save to clear.
+      if (isSinglePlayer) clearGame(SAVE_KEY_LASTCARD);
       const reward = getWinReward("lastcard", !isSinglePlayer);
       addCoins(reward).then(() => setCoinsEarned(reward));
       recordWin("lastcard");
@@ -447,7 +457,8 @@ export default function LastCardGameScreen({ navigation, route }) {
     setPhase(
       // Only the player who owes the color choice sees the picker — otherwise
       // the host pops it up too when a client plays a wild.
-      next.awaitingColorChoiceBy && String(next.awaitingColorChoiceBy) === String(myPid)
+      next.awaitingColorChoiceBy &&
+        String(next.awaitingColorChoiceBy) === String(myPid)
         ? "colorPicker"
         : next.gameOver
           ? "gameOver"
@@ -855,7 +866,9 @@ export default function LastCardGameScreen({ navigation, route }) {
           if (shouldShowColorPicker) {
             setStatusMsg("Choose a color");
           } else if (msg.gameOver) {
-            const w = msg.players?.find((p) => String(p.id) === String(msg.winner));
+            const w = msg.players?.find(
+              (p) => String(p.id) === String(msg.winner),
+            );
             setStatusMsg(`${w?.name ?? "Player"} wins!`);
           } else if (String(msg.currentTurn) === String(myPid)) {
             setStatusMsg("Your turn — tap a card to play");
@@ -1223,7 +1236,9 @@ export default function LastCardGameScreen({ navigation, route }) {
                   resizeMode="contain"
                 />
               </View>
-              <View style={[styles.countBadge, { backgroundColor: pal.accent }]}>
+              <View
+                style={[styles.countBadge, { backgroundColor: pal.accent }]}
+              >
                 <Text style={[styles.countBadgeText, { color: pal.onAccent }]}>
                   {gameState?.drawPileCount ?? 0}
                 </Text>
@@ -1248,7 +1263,10 @@ export default function LastCardGameScreen({ navigation, route }) {
               <View style={[styles.pileWrapper, { borderColor: activeHex }]}>
                 {topCard ? (
                   <View
-                    style={[styles.cardShell, { width: PILE_W, height: PILE_H }]}
+                    style={[
+                      styles.cardShell,
+                      { width: PILE_W, height: PILE_H },
+                    ]}
                   >
                     <Image
                       source={cardImage(topCard)}
@@ -1258,7 +1276,10 @@ export default function LastCardGameScreen({ navigation, route }) {
                   </View>
                 ) : (
                   <View
-                    style={[styles.emptyPile, { width: PILE_W, height: PILE_H }]}
+                    style={[
+                      styles.emptyPile,
+                      { width: PILE_W, height: PILE_H },
+                    ]}
                   />
                 )}
               </View>
@@ -1323,22 +1344,22 @@ export default function LastCardGameScreen({ navigation, route }) {
                       : null
                   }
                 >
-                    <View
-                      style={[
-                        styles.cardShell,
-                        { width: HAND_W, height: HAND_H },
-                        shouldDimUnplayable && styles.dimmed,
-                      ]}
-                    >
-                      <Image
-                        source={cardImage(card)}
-                        style={styles.cardArt}
-                        resizeMode="contain"
-                      />
-                      <Text style={styles.cardFallbackText}>
-                        {cardTitle(card)}
-                      </Text>
-                    </View>
+                  <View
+                    style={[
+                      styles.cardShell,
+                      { width: HAND_W, height: HAND_H },
+                      shouldDimUnplayable && styles.dimmed,
+                    ]}
+                  >
+                    <Image
+                      source={cardImage(card)}
+                      style={styles.cardArt}
+                      resizeMode="contain"
+                    />
+                    <Text style={styles.cardFallbackText}>
+                      {cardTitle(card)}
+                    </Text>
+                  </View>
                 </Animated.View>
               </TouchableOpacity>
             );
@@ -1389,7 +1410,7 @@ export default function LastCardGameScreen({ navigation, route }) {
               : `${(gameState?.players ?? []).find((p) => p.id === winner)?.name ?? "Player"} wins!`
             : "Game Over"
         }
-        coins={isSinglePlayer && winner === myPid ? coinsEarned : 0}
+        coins={winner === myPid ? coinsEarned : 0}
         showContinue={isHost}
         showLeave
         isGameOver

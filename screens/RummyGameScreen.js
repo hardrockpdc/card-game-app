@@ -256,9 +256,12 @@ export default function RummyGameScreen({ navigation, route }) {
     AccessibilityInfo.isReduceMotionEnabled().then((v) => {
       if (mounted) reduceMotionRef.current = v;
     });
-    const sub = AccessibilityInfo.addEventListener("reduceMotionChanged", (v) => {
-      reduceMotionRef.current = v;
-    });
+    const sub = AccessibilityInfo.addEventListener(
+      "reduceMotionChanged",
+      (v) => {
+        reduceMotionRef.current = v;
+      },
+    );
     return () => {
       mounted = false;
       sub?.remove?.();
@@ -277,8 +280,7 @@ export default function RummyGameScreen({ navigation, route }) {
     return subscribeRummyTable((id) => setTableId(id));
   }, []);
 
-  const pal =
-    RUMMY_TABLES.find((t) => t.id === tableId) ?? RUMMY_TABLES[0];
+  const pal = RUMMY_TABLES.find((t) => t.id === tableId) ?? RUMMY_TABLES[0];
 
   const variantLabel =
     gameState?.variantLabel || getRummyVariantLabel(variantId);
@@ -841,8 +843,11 @@ export default function RummyGameScreen({ navigation, route }) {
     saveGame(key, { fullState: fullRef.current });
   }, [gameState]);
 
+  // Rewards run in every mode. This used to open with `if (!isSinglePlayer)
+  // return`, so a multiplayer win paid no coins and recorded no stats. The win
+  // test already compares against localPlayerIndex, so each device pays its
+  // own player exactly once — no host authority needed.
   useEffect(() => {
-    if (!isSinglePlayer) return;
     const isWon =
       gameState?.winner != null &&
       !gameState?.tie &&
@@ -918,11 +923,9 @@ export default function RummyGameScreen({ navigation, route }) {
         >
           {renderHeaderCard(true)}
 
-          {isSinglePlayer &&
-            gameState.winner === localPlayerIndex &&
-            coinsEarned > 0 && (
-              <Text style={styles.coinsEarnedText}>+{coinsEarned} 🪙</Text>
-            )}
+          {gameState.winner === localPlayerIndex && coinsEarned > 0 && (
+            <Text style={styles.coinsEarnedText}>+{coinsEarned} 🪙</Text>
+          )}
 
           <View style={styles.resultsCard}>
             <Text style={styles.sectionTitle}>Final Scores</Text>
@@ -992,7 +995,10 @@ export default function RummyGameScreen({ navigation, route }) {
         style={[
           styles.oppBar,
           { backgroundColor: pal.panel, borderColor: pal.panelBorder },
-          isActive && { backgroundColor: pal.accentBg, borderColor: pal.accent },
+          isActive && {
+            backgroundColor: pal.accentBg,
+            borderColor: pal.accent,
+          },
           isWinner && styles.oppBarWinner,
         ]}
       >
@@ -1278,9 +1284,7 @@ export default function RummyGameScreen({ navigation, route }) {
         <View
           style={styles.handRow}
           accessibilityElementsHidden={!handReady}
-          importantForAccessibility={
-            handReady ? "auto" : "no-hide-descendants"
-          }
+          importantForAccessibility={handReady ? "auto" : "no-hide-descendants"}
         >
           {myHand.map((card, index) => {
             const selected = selectedHandIndexes.includes(index);
