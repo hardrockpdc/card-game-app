@@ -57,6 +57,7 @@ import {
   stopDiscovery,
   disconnectFromHost,
   getNetworkMode,
+  isLocalSessionActive,
 } from "./game/GameNetwork";
 
 // SystemBars needs the react-native-edge-to-edge native module (RNEdgeToEdge),
@@ -158,10 +159,19 @@ export default function App() {
   // in online mode would DELETE the room (host) or the player slot (client) on
   // every background — which was exactly the bug that dropped everyone when the
   // host briefly switched apps. So skip it entirely in online mode.
+  //
+  // A LIVE LOCAL SESSION is the same exception for the same reason. This used
+  // to tear down unconditionally outside online mode, so a player who checked a
+  // text mid-game dropped the whole table — and local same-WiFi play is the
+  // mode the family-in-one-room audience actually uses. The teardown exists to
+  // stop "port already in use" on the NEXT host attempt when someone skipped
+  // the normal back-button exit; that only matters when nothing is connected,
+  // which is exactly when isLocalSessionActive() is false.
   useEffect(() => {
     const sub = AppState.addEventListener("change", (nextState) => {
       if (nextState === "background") {
         if (getNetworkMode() === "online") return;
+        if (isLocalSessionActive()) return;
         stopServer();
         stopBroadcasting();
         stopDiscovery();
@@ -232,7 +242,7 @@ export default function App() {
                   component={GameScreen}
                   options={{ headerShown: false }}
                 />
-<Stack.Screen
+                <Stack.Screen
                   name="Settings"
                   component={SettingsScreen}
                   options={{ title: "Settings" }}

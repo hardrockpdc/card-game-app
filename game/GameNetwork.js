@@ -50,7 +50,8 @@ let nextClientId = 1;
 let serverListeners = {};
 
 export function setServerListeners(listeners) {
-  if (networkMode === "online") return online.onlineSetServerListeners(listeners);
+  if (networkMode === "online")
+    return online.onlineSetServerListeners(listeners);
   serverListeners = listeners || {};
 }
 
@@ -196,6 +197,19 @@ export function getClientCount() {
   return clients.size;
 }
 
+// Is a LOCAL (same-WiFi) session actually live right now — either we're hosting
+// with at least one player joined, or we're a client with an open socket?
+//
+// App.js uses this to decide whether backgrounding should tear the transport
+// down. It always did, which meant switching to Messages mid-game dropped
+// everyone at the table. Online play already had an exception; local play, the
+// mode the same-room audience actually uses, did not.
+export function isLocalSessionActive() {
+  if (networkMode === "online") return false;
+  if (IS_WEB) return false;
+  return clients.size > 0 || clientSocket !== null;
+}
+
 // Returns [{ id, name }, ...] for every currently connected client
 export function getConnectedPlayers() {
   if (IS_WEB) {
@@ -224,7 +238,8 @@ export function getAssignedClientId() {
 let clientListeners = {};
 
 export function setClientListeners(listeners) {
-  if (networkMode === "online") return online.onlineSetClientListeners(listeners);
+  if (networkMode === "online")
+    return online.onlineSetClientListeners(listeners);
   clientListeners = listeners || {};
 }
 
