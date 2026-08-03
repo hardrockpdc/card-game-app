@@ -13,14 +13,62 @@ import { scale, scaleFont } from "../game/responsive";
 // its name. No photo/AI art — a deliberate design system so the set reads as
 // "designed", not generated.
 const GAMES = [
-  { id: "blackjack", label: "Blackjack", tag: "Classic", accent: "#3ea662", suit: "♠" },
-  { id: "solitaire", label: "Solitaire", tag: "5 modes", accent: "#5b9bd5", suit: "♦" },
-  { id: "rummy", label: "Rummy", tag: "3 variants", accent: "#e05068", suit: "♥" },
-  { id: "conquian", label: "Conquián", tag: "Mexican", accent: "#d3a24a", suit: "♣" },
-  { id: "goFish", label: "Go Fish", tag: "Family", accent: "#2aa6bf", suit: "♥" },
-  { id: "poker", label: "Poker", tag: "3 variants", accent: "#9a5cd0", suit: "♠" },
-  { id: "lastCard", label: "Last Card", tag: "Color match", accent: "#e8833a", suit: "♦" },
-  { id: "memory", label: "Memory Match", tag: "Find pairs", accent: "#8a7bff", suit: "♣" },
+  {
+    id: "blackjack",
+    label: "Blackjack",
+    tag: "Classic",
+    accent: "#3ea662",
+    suit: "♠",
+  },
+  {
+    id: "solitaire",
+    label: "Solitaire",
+    tag: "5 modes",
+    accent: "#5b9bd5",
+    suit: "♦",
+  },
+  {
+    id: "rummy",
+    label: "Rummy",
+    tag: "3 variants",
+    accent: "#e05068",
+    suit: "♥",
+  },
+  {
+    id: "conquian",
+    label: "Conquián",
+    tag: "Mexican",
+    accent: "#d3a24a",
+    suit: "♣",
+  },
+  {
+    id: "goFish",
+    label: "Go Fish",
+    tag: "Family",
+    accent: "#2aa6bf",
+    suit: "♥",
+  },
+  {
+    id: "poker",
+    label: "Poker",
+    tag: "3 variants",
+    accent: "#9a5cd0",
+    suit: "♠",
+  },
+  {
+    id: "lastCard",
+    label: "Last Card",
+    tag: "Color match",
+    accent: "#e8833a",
+    suit: "♦",
+  },
+  {
+    id: "memory",
+    label: "Memory Match",
+    tag: "Find pairs",
+    accent: "#8a7bff",
+    suit: "♣",
+  },
 ];
 
 // Decorative background grid line positions (percent of screen w/h)
@@ -35,28 +83,27 @@ const DEFAULT_RUMMY_VARIANT = "ginRummy";
 
 export default function SinglePlayerSetupScreen({ navigation }) {
   const [selectedId, setSelectedId] = useState(null); // for blackjack resume dialog
-  const [pendingGame, setPendingGame] = useState(null); // "Play this game?" confirm
   const [gridSize, setGridSize] = useState(null); // measured grid area, for tile sizing
 
   const hasBlackjackSave = useHasSave(BLACKJACK_SAVE_KEY);
 
   // ─── Navigation handlers ──────────────────────────────────────────────────
 
-  // A tap opens a confirm step first (guards against accidental taps while
-  // swiping the grid). Blackjack-with-a-save skips straight to its own resume
-  // dialog, which already offers a Cancel.
+  // A tap plays. There used to be a "Ready to play?" confirm here, justified as
+  // guarding accidental taps while swiping the grid — but this screen has no
+  // ScrollView and the tiles are fixed-size inside a flex:1 container, so there
+  // is nothing to swipe. It charged an extra tap and a full-screen modal on the
+  // most-used path in the app to prevent a gesture that cannot happen, and it
+  // was inconsistent too: Blackjack-with-a-save skipped it entirely.
+  //
+  // Blackjack-with-a-save still goes to its own resume dialog, which has a real
+  // decision in it (continue or start new) and its own Cancel.
   function onTilePress(game) {
     if (game.id === "blackjack" && hasBlackjackSave) {
       setSelectedId("blackjack");
       return;
     }
-    setPendingGame(game);
-  }
-
-  function confirmPendingPlay() {
-    const game = pendingGame;
-    setPendingGame(null);
-    if (game) handleGamePress(game);
+    handleGamePress(game);
   }
 
   function handleGamePress(game) {
@@ -156,66 +203,16 @@ export default function SinglePlayerSetupScreen({ navigation }) {
         ))}
       </View>
 
-      {/* "Play this game?" confirm — guards accidental taps while swiping */}
-      {pendingGame && (
-        <View style={styles.resumeOverlay}>
-          <View style={styles.resumeCard}>
-            <View
-              style={[
-                styles.confirmThumb,
-                styles.flatTile,
-                { borderColor: pendingGame.accent, borderWidth: 2 },
-              ]}
-            >
-              <Text
-                style={[styles.confirmThumbSuit, { color: pendingGame.accent }]}
-              >
-                {pendingGame.suit}
-              </Text>
-              <Text
-                style={[
-                  styles.tilePip,
-                  styles.tilePipTL,
-                  { color: pendingGame.accent, fontSize: scaleFont(13) },
-                ]}
-              >
-                {pendingGame.suit}
-              </Text>
-              <Text
-                style={[
-                  styles.tilePip,
-                  styles.tilePipBR,
-                  { color: pendingGame.accent, fontSize: scaleFont(13) },
-                ]}
-              >
-                {pendingGame.suit}
-              </Text>
-            </View>
-            <Text style={styles.resumeTitle}>{pendingGame.label}</Text>
-            <Text style={styles.resumeBody}>Ready to play?</Text>
-            <TouchableOpacity
-              style={[styles.resumeBtn, { backgroundColor: pendingGame.accent }]}
-              onPress={confirmPendingPlay}
-            >
-              <Text style={styles.resumeBtnText}>Play</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.resumeCancel}
-              onPress={() => setPendingGame(null)}
-            >
-              <Text style={styles.resumeCancelText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
-
       {/* Blackjack resume dialog */}
       {selectedId === "blackjack" && (
         <View style={styles.resumeOverlay}>
           <View style={styles.resumeCard}>
             <Text style={styles.resumeTitle}>Blackjack</Text>
             <Text style={styles.resumeBody}>You have a saved game.</Text>
-            <TouchableOpacity style={styles.resumeBtn} onPress={blackjackResume}>
+            <TouchableOpacity
+              style={styles.resumeBtn}
+              onPress={blackjackResume}
+            >
               <Text style={styles.resumeBtnText}>Continue Game</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -256,89 +253,94 @@ export default function SinglePlayerSetupScreen({ navigation }) {
               ]}
             >
               {row.map((game, colIdx) => (
-                  <TouchableOpacity
-                    key={game.id}
+                <TouchableOpacity
+                  key={game.id}
+                  style={[styles.cell, { marginLeft: colIdx > 0 ? GAP : 0 }]}
+                  onPress={() => onTilePress(game)}
+                  activeOpacity={0.85}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${game.label}, ${game.tag}`}
+                  accessibilityHint="Starts this game"
+                >
+                  <View
                     style={[
-                      styles.cell,
-                      { marginLeft: colIdx > 0 ? GAP : 0 },
+                      styles.tile,
+                      styles.flatTile,
+                      tileSize,
+                      { borderColor: game.accent, borderWidth: 2 },
                     ]}
-                    onPress={() => onTilePress(game)}
-                    activeOpacity={0.85}
                   >
+                    {/* Soft accent halo bleeding off the top edge (clipped by
+                          the tile's rounded corners) — colour identity without art. */}
                     <View
+                      pointerEvents="none"
                       style={[
-                        styles.tile,
-                        styles.flatTile,
-                        tileSize,
+                        styles.tileGlow,
                         {
-                          borderColor: game.accent,
-                          borderWidth: pendingGame?.id === game.id ? 3 : 2,
+                          backgroundColor: game.accent,
+                          width: tileW * 1.3,
+                          height: tileW * 1.3,
+                          borderRadius: (tileW * 1.3) / 2,
+                          top: -tileW * 0.65,
+                        },
+                      ]}
+                    />
+                    <Text
+                      style={[
+                        styles.flatTileSuit,
+                        {
+                          color: game.accent,
+                          fontSize: Math.max(44, Math.round(tileH * 0.5)),
                         },
                       ]}
                     >
-                      {/* Soft accent halo bleeding off the top edge (clipped by
-                          the tile's rounded corners) — colour identity without art. */}
-                      <View
-                        pointerEvents="none"
-                        style={[
-                          styles.tileGlow,
-                          {
-                            backgroundColor: game.accent,
-                            width: tileW * 1.3,
-                            height: tileW * 1.3,
-                            borderRadius: (tileW * 1.3) / 2,
-                            top: -tileW * 0.65,
-                          },
-                        ]}
-                      />
+                      {game.suit}
+                    </Text>
+                    {/* Corner pips, like a real playing card */}
+                    <Text
+                      style={[
+                        styles.tilePip,
+                        styles.tilePipTL,
+                        {
+                          color: game.accent,
+                          fontSize: Math.max(13, Math.round(tileH * 0.1)),
+                        },
+                      ]}
+                    >
+                      {game.suit}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.tilePip,
+                        styles.tilePipBR,
+                        {
+                          color: game.accent,
+                          fontSize: Math.max(13, Math.round(tileH * 0.1)),
+                        },
+                      ]}
+                    >
+                      {game.suit}
+                    </Text>
+                    <View style={styles.flatTileContent}>
                       <Text
-                        style={[
-                          styles.flatTileSuit,
-                          {
-                            color: game.accent,
-                            fontSize: Math.max(44, Math.round(tileH * 0.5)),
-                          },
-                        ]}
+                        style={styles.flatTileName}
+                        numberOfLines={2}
+                        adjustsFontSizeToFit
                       >
-                        {game.suit}
+                        {game.label}
                       </Text>
-                      {/* Corner pips, like a real playing card */}
-                      <Text
-                        style={[
-                          styles.tilePip,
-                          styles.tilePipTL,
-                          {
-                            color: game.accent,
-                            fontSize: Math.max(13, Math.round(tileH * 0.1)),
-                          },
-                        ]}
-                      >
-                        {game.suit}
+                      {/* The tag was in the data and the style existed, but
+                            neither was ever rendered — so the grid couldn't
+                            tell you Solitaire has 5 modes or Poker 3 variants,
+                            and the only thing distinguishing eight otherwise
+                            identical tiles was accent colour. */}
+                      <Text style={styles.flatTileTag} numberOfLines={1}>
+                        {game.tag}
                       </Text>
-                      <Text
-                        style={[
-                          styles.tilePip,
-                          styles.tilePipBR,
-                          {
-                            color: game.accent,
-                            fontSize: Math.max(13, Math.round(tileH * 0.1)),
-                          },
-                        ]}
-                      >
-                        {game.suit}
-                      </Text>
-                      <View style={styles.flatTileContent}>
-                        <Text
-                          style={styles.flatTileName}
-                          numberOfLines={2}
-                          adjustsFontSizeToFit
-                        >
-                          {game.label}
-                        </Text>
-                      </View>
                     </View>
-                  </TouchableOpacity>
-                ))}
+                  </View>
+                </TouchableOpacity>
+              ))}
             </View>
           ))}
         </View>
@@ -448,18 +450,16 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     textAlign: "center",
   },
+  // 10pt clamps to 9px on a small phone, which is unreadable at the arm's
+  // length these tiles are actually looked at across a table.
   flatTileTag: {
-    fontSize: scaleFont(10),
+    color: "#a7b3c9",
+    fontSize: scaleFont(11),
     fontWeight: "700",
     letterSpacing: 0.6,
     textTransform: "uppercase",
     marginTop: scale(4),
     textAlign: "center",
-  },
-  confirmThumbSuit: {
-    fontSize: scaleFont(46),
-    fontWeight: "900",
-    opacity: 0.25,
   },
   // ── Blackjack resume overlay ───────────────────────────────────────────────
   resumeOverlay: {
@@ -490,14 +490,6 @@ const styles = StyleSheet.create({
     color: "#c4c4d4",
     fontSize: scaleFont(14),
     textAlign: "center",
-  },
-  confirmThumb: {
-    // Explicit width AND height (3:4) — not aspectRatio, which RN's Image can
-    // ignore in favor of the source's intrinsic (huge) size.
-    width: scale(96),
-    height: scale(128),
-    borderRadius: scale(10),
-    marginBottom: scale(4),
   },
   resumeBtn: {
     backgroundColor: "#e94560",

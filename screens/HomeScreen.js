@@ -426,24 +426,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 5,
   },
-  singlePlayerButtonDisabled: {
-    backgroundColor: "#2a3340",
-    borderColor: "#3a4456",
-    opacity: 0.85,
-    shadowOpacity: 0,
-    elevation: 0,
-  },
   singlePlayerButtonText: {
     color: "#ffffff",
     fontWeight: "bold",
-  },
-  singlePlayerButtonTextDisabled: {
-    color: "#888",
-  },
-  singlePlayerButtonHint: {
-    color: "#888",
-    fontSize: 12,
-    marginTop: 4,
   },
   primaryButton: {
     backgroundColor: "#e94560",

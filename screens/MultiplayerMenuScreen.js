@@ -58,7 +58,7 @@ export default function MultiplayerMenuScreen({ navigation }) {
             <Text
               style={[styles.primaryButtonText, { fontSize: buttonTextSize }]}
             >
-              🌐  Host Online
+              🌐 Host Online
             </Text>
           </TouchableOpacity>
 
@@ -78,7 +78,7 @@ export default function MultiplayerMenuScreen({ navigation }) {
             <Text
               style={[styles.secondaryButtonText, { fontSize: buttonTextSize }]}
             >
-              🔑  Join Online
+              🔑 Join Online
             </Text>
           </TouchableOpacity>
 
@@ -98,7 +98,7 @@ export default function MultiplayerMenuScreen({ navigation }) {
             <Text
               style={[styles.primaryButtonText, { fontSize: buttonTextSize }]}
             >
-              📡  Host Local
+              📡 Host Local
             </Text>
           </TouchableOpacity>
 
@@ -118,7 +118,7 @@ export default function MultiplayerMenuScreen({ navigation }) {
             <Text
               style={[styles.secondaryButtonText, { fontSize: buttonTextSize }]}
             >
-              🔍  Join Local
+              🔍 Join Local
             </Text>
           </TouchableOpacity>
 
@@ -180,27 +180,9 @@ const styles = StyleSheet.create({
   suitRed: {
     color: "#e94560",
   },
-  disabledButton: {
-    width: "100%",
-    maxWidth: 420,
-    borderRadius: scale(16),
-    borderWidth: 2,
-    borderColor: "#4a4a5f",
-    backgroundColor: "#2a2a3d",
-    marginBottom: scale(14),
-  },
   disabledButtonText: {
     color: "#8b8ba3",
     fontWeight: "bold",
-  },
-  comingSoon: {
-    color: "#c4c4d4",
-    fontSize: scaleFont(12),
-    marginTop: scale(4),
-  },
-  buttonTextRow: {
-    alignItems: "center",
-    justifyContent: "center",
   },
   primaryButton: {
     width: "100%",

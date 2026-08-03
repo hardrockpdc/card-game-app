@@ -139,17 +139,6 @@ function cardTitle(card) {
   return card.type;
 }
 
-function cardLabel(card) {
-  if (!card) return "";
-  if (card.type === "number") return String(card.value);
-  if (card.type === "wild") return "Wild";
-  if (card.type === "wild_draw4") return "Wild +4";
-  if (card.type === "draw2") return "+2";
-  if (card.type === "skip") return "Skip";
-  if (card.type === "reverse") return "Reverse";
-  return card.type;
-}
-
 function buildInitialState(routePlayers) {
   const deck = createDeck();
   const { hands, remainingDeck } = dealHands(deck, routePlayers.length);
@@ -644,7 +633,7 @@ export default function LastCardGameScreen({ navigation, route }) {
       next = applyCard(result.state, playerId, drawn, null);
     } else {
       setStatusMsg(
-        `${playerName} draws ${drawCount} card${drawCount !== 1 ? "s" : ""} and plays ${cardLabel(drawn)}`,
+        `${playerName} draws ${drawCount} card${drawCount !== 1 ? "s" : ""} and plays ${cardTitle(drawn)}`,
       );
       next = applyCard(result.state, playerId, drawn, null);
     }
@@ -663,7 +652,7 @@ export default function LastCardGameScreen({ navigation, route }) {
       if (move) {
         const next = doHostCardPlay(current.id, move.card, move.chosenColor);
         if (next !== s) {
-          const parts = [`${current.name} plays ${cardLabel(move.card)}`];
+          const parts = [`${current.name} plays ${cardTitle(move.card)}`];
           if (move.card.type === "skip") parts.push("— skips next player!");
           if (move.card.type === "reverse") parts.push("— reverses direction!");
           if (move.card.type === "draw2") parts.push("— next player draws 2!");
@@ -1753,38 +1742,6 @@ const styles = StyleSheet.create({
     textShadowColor: "rgba(0,0,0,0.6)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
-  },
-  winTitle: {
-    color: "#fff",
-    fontSize: scaleFont(32),
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: scale(12),
-  },
-  winCoinsText: {
-    color: "#ffd700",
-    fontSize: scaleFont(20),
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: scale(14),
-  },
-  winBtn: {
-    backgroundColor: "#e94560",
-    borderRadius: scale(12),
-    paddingVertical: scale(14),
-    paddingHorizontal: scale(48),
-    alignItems: "center",
-    width: "100%",
-  },
-  winBtnSecondary: {
-    backgroundColor: "#16213e",
-    borderWidth: 1.5,
-    borderColor: "#334",
-  },
-  winBtnText: {
-    color: "#fff",
-    fontSize: scaleFont(18),
-    fontWeight: "bold",
   },
   // (Table Theme picker styles now live in components/TableThemePicker.js.)
 });
