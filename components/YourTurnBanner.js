@@ -7,6 +7,7 @@ import {
   AccessibilityInfo,
 } from "react-native";
 import { scale, scaleFont } from "../game/responsive";
+import { positive } from "../game/colors";
 
 export default function YourTurnBanner({ visible }) {
   const opacity = useRef(new Animated.Value(0)).current;
@@ -63,12 +64,15 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(10, 8, 32, 0.93)",
     borderRadius: scale(16),
     borderWidth: 2,
-    borderColor: "#e94560",
+    // Was the brand red — the same literal used for error text elsewhere.
+    // "It's your turn" is the most positive prompt in the game; it should not
+    // borrow the colour that means something went wrong.
+    borderColor: positive,
     paddingVertical: scale(20),
     paddingHorizontal: scale(40),
     alignItems: "center",
     gap: scale(6),
-    shadowColor: "#e94560",
+    shadowColor: positive,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.45,
     shadowRadius: 14,

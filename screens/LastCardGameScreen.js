@@ -42,6 +42,7 @@ import {
 } from "../game/GameNetwork";
 import { scale, scaleFont } from "../game/responsive";
 import { useReduceMotion } from "../game/reduceMotion";
+import { brandRed, surfaceSunken } from "../game/colors";
 import { addCoins } from "../game/wallet";
 import { getWinReward } from "../game/rewards";
 import { recordAchievementEvent } from "../game/achievements";
@@ -1179,14 +1180,22 @@ export default function LastCardGameScreen({ navigation, route }) {
           { backgroundColor: pal.felt, borderColor: pal.feltBorder },
         ]}
       >
+        {/* The indicator is the only sign that more seats exist: with 7
+            opponents this row is far wider than the screen, and it was hidden. */}
         <ScrollView
           horizontal
-          showsHorizontalScrollIndicator={false}
+          showsHorizontalScrollIndicator={opponents.length > 3}
+          persistentScrollbar={opponents.length > 3}
           style={[styles.seatBar, { borderBottomColor: pal.feltBorder }]}
           contentContainerStyle={styles.seatBarContent}
         >
           {opponents.map((p) => {
             const isActive = p.id === gameState?.currentTurn;
+            // The moment the game is named after. Reaching one card used to
+            // render as the same 11px numeral as "7" — the loudest beat at the
+            // table had no design at all. The brand red is free for it now that
+            // the badge no longer uses red as its neutral background.
+            const onLastCard = p.cardCount === 1;
             return (
               <View
                 key={p.id}
@@ -1200,7 +1209,12 @@ export default function LastCardGameScreen({ navigation, route }) {
                     backgroundColor: pal.accentBg,
                     borderColor: pal.accent,
                   },
+                  onLastCard && styles.seatLastCard,
                 ]}
+                accessibilityLabel={
+                  `${p.name}, ${p.cardCount} card${p.cardCount === 1 ? "" : "s"}` +
+                  (onLastCard ? " — last card!" : "")
+                }
               >
                 <View style={styles.seatCardWrap}>
                   <ProfileAvatar
@@ -1216,12 +1230,14 @@ export default function LastCardGameScreen({ navigation, route }) {
                         borderColor: pal.rail,
                       },
                       isActive && { backgroundColor: pal.accent },
+                      onLastCard && styles.seatCountBadgeLastCard,
                     ]}
                   >
                     <Text
                       style={[
                         styles.seatCountText,
                         { color: isActive ? pal.onAccent : pal.text },
+                        onLastCard && styles.seatCountTextLastCard,
                       ]}
                     >
                       {p.cardCount}
@@ -1238,6 +1254,9 @@ export default function LastCardGameScreen({ navigation, route }) {
                   {isActive ? "▶ " : ""}
                   {p.name}
                 </Text>
+                {onLastCard && (
+                  <Text style={styles.seatLastCardTag}>LAST CARD</Text>
+                )}
               </View>
             );
           })}
@@ -1484,10 +1503,14 @@ const styles = StyleSheet.create({
     maxHeight: scale(104),
     borderBottomWidth: 1,
   },
+  // justifyContent: "center" only centres when the seats FIT. With 7 opponents
+  // the row is ~588px on a 390px screen, and centring split the overflow off
+  // both edges — so seats were hidden left AND right with no cue either way.
+  // flex-start keeps the overflow on one side, where the scroll indicator is.
   seatBarContent: {
     flexDirection: "row",
     alignItems: "flex-start",
-    justifyContent: "center",
+    justifyContent: "flex-start",
     flexGrow: 1,
     paddingHorizontal: scale(12),
     paddingVertical: scale(10),
@@ -1522,6 +1545,26 @@ const styles = StyleSheet.create({
   seatCountText: {
     fontSize: scaleFont(11),
     fontWeight: "bold",
+  },
+  // ─── "Last card!" — the beat the game is named after ───────────────────────
+  seatLastCard: {
+    borderColor: brandRed,
+    borderWidth: 2,
+  },
+  seatCountBadgeLastCard: {
+    backgroundColor: brandRed,
+    borderColor: brandRed,
+  },
+  seatCountTextLastCard: {
+    color: "#ffffff",
+    fontSize: scaleFont(13),
+  },
+  seatLastCardTag: {
+    color: brandRed,
+    fontSize: scaleFont(9),
+    fontWeight: "800",
+    letterSpacing: 0.5,
+    marginTop: scale(2),
   },
   seatName: {
     fontSize: scaleFont(11),
@@ -1590,7 +1633,9 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: -scale(8),
     right: -scale(8),
-    backgroundColor: "#e94560",
+    // Was the brand red. This badge is a neutral card count, not an alert —
+    // it borrowed the error colour and made every opponent look like a warning.
+    backgroundColor: surfaceSunken,
     borderRadius: scale(10),
     minWidth: scale(22),
     height: scale(22),
