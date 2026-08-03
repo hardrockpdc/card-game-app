@@ -101,7 +101,16 @@ and deliberately kept separate from the coin economy. Not built, not committed.
 - **Name:** Card Night. Package `com.pedro.cardgameapp`.
 - **Voice:** plain, warm, all-ages. No gambling language, no aggressive
   monetization prompts, no dark patterns.
-- **Accent color:** `#7fb3ff` blue. Error text stays `#e94560` red.
+- **Colour roles** (tokens in `game/colors.js`): `#7fb3ff` blue accent,
+  `#ffd700` gold for coins, `#2e9e54` green for primary actions, `#4caf50` for
+  positive states, `#e94560` for errors.
+- **The Home screen's casino red is deliberate.** `#e94560` fills the hub's
+  Multiplayer CTA, and that is a confirmed choice (2026-08-03), not drift: the
+  hub should feel like game night, not a settings screen. It is tokenised as
+  `brandRed`, kept separate from `error` even though they currently share a
+  value, because they are separate ideas and only one is free to change. The
+  same literal used to also serve as a neutral count badge and a positive "your
+  turn" banner; those now use their own roles.
 - **Established visual direction:** flat card-emblem tiles (dark tile, accent
   color, suit motif, corner pips) for game selection on all three picker screens.
   This replaced AI photo thumbnails and is a deliberate, current choice.

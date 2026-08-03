@@ -117,7 +117,44 @@ This is a family-friendly card game. Keep all content, copy, and assets appropri
 - Drag-and-drop is **DONE** (2026-06-04): `GestureHandlerRootView` at root + `react-native-gesture-handler`, with immediate touch-and-move activation (tap-to-move kept as a fallback). Shipped for **Solitaire Klondike / FreeCell / Spider in landscape** via the reusable `components/useSolitaireDrag.js` hook + `getLegalTargets` in `game/solitaire.js`. Pyramid/TriPeaks stay tap (match/collect games). Pure JS, no rebuild.
 - Layout direction: **orientation is LOCKED** (changed 2026-06-04). The app is **portrait-locked everywhere except Solitaire** (landscape-locked). This *reverses* the earlier "responsive to aspect ratio, NOT forced orientation / Fold-first" stance — we ship Android phone-first, so Fold/tablet free-rotation was deprioritized. Responsive *sizing* (`useLayoutMode()`) still applies *within* the locked orientation. See `PROJECT_NOTES.md` → "Responsive Layout & Orientation Architecture" → Orientation policy.
 
-## 7. Current status & pending items (as of 2026-08-02)
+## 7. Current status & pending items (as of 2026-08-03)
+
+### Design audit + critique — remediated 2026-08-03 (branch `fix/audit-remediation`)
+
+A technical audit (12/20) and a UX critique (23/40) over HomeScreen, Onboarding,
+SinglePlayerSetup and LastCard. Test count 515 → 543 across 45 suites.
+**None of this is device-verified yet.** Fixed, in commit order:
+
+- `EndOfRoundModal` — Android Back did nothing (no `onRequestClose`) in every
+  game's results modal; no double-tap guard; unguarded `coins.toLocaleString()`;
+  could overflow the screen at large font scale; zero accessibility props.
+- `privateNet` was deleted AFTER `rooms/<code>`, but its write rule authorises
+  via `rooms/<code>/host` — so once the rules are published that delete is
+  rejected and every player's last hand is orphaned permanently.
+- **Multiplayer wins paid nothing** in Last Card, Go Fish, Conquián and Rummy
+  (`if (!isSinglePlayer) return` above the reward block). Go Fish also needed a
+  per-device winner check; it only ever matched the host.
+- **Onboarding gave away 15,000 coins of card decks** on first run, permanently
+  (`isThemeUnlocked` grandfathers the active deck). Also: no Back on any step,
+  hardware Back quit the app and discarded the typed name, Next was dimmed but
+  not disabled, duplicate Skip/Next pairs, Memory Match missing from the roster.
+- Last Card: unplayable cards were only dimmed on Easy (default is Medium), an
+  illegal tap gave a shake and no words, a dead deck tap gave nothing at all,
+  hand cards had no accessibility labels, and `triggerShake` ignored reduce
+  motion. Wild colours renamed from "OD Green"/"Crimson"/"Turquoise"/"Coral".
+- Backgrounding tore down **local** WiFi multiplayer mid-game (online already
+  had an exception; local, the same-room audience's mode, did not).
+- `game/colors.js` added. `#e94560` was serving as brand CTA, error, neutral
+  badge and positive banner at once; the last two now have their own roles, and
+  the freed red marks the "last card" moment the game is named after.
+- Choose Game: `tag` data existed and was never rendered; removed a
+  "Ready to play?" confirm guarding a swipe the screen cannot perform.
+
+**Still open from the critique:** Poker uses a hardcoded single-player reward
+tier (its MP end-game is the parked item below); Home's primary actions sit
+above the thumb zone; there is no resume-from-Home; the achievement celebration
+is a system `Alert` that can stack over `DailyBonusModal`; and the three exits
+from a game screen still produce three different outcomes.
 
 ### Security & robustness audit — remediated 2026-08-02 (branch `fix/audit-remediation`)
 

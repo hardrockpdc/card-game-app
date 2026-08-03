@@ -168,6 +168,7 @@ card-game-app/
 │   ├── avatarTransmit.js          (encode/decode avatars for multiplayer — emoji pass-through, photos → 120px JPEG base64)
 │   ├── profile.js                 (loadProfile, saveProfile, subscribeProfile, getDisplayName, recordWin, + cosmetic ownership: unlockedThemes/unlockedFelts/unlockedFrames/activeFrame — AsyncStorage)
 │   ├── responsive.js              (scale(), scaleFont() — BASE_WIDTH 390, clamped factors)
+│   ├── colors.js                  (semantic chrome tokens — surface/text/accent/status; `brandRed` (Home CTA) is deliberately separate from `error` despite sharing a value)
 │   ├── sounds.js                  (initSounds/playSound/getMuted/setMuted — expo-audio; preloads 4 sounds on app start; graceful no-op if unavailable)
 │   ├── tablePalette.js            (createTablePalette factory — switchable felt palettes, reuses LAST_CARD_TABLES)
 │   ├── lastCardTheme.js           (Last Card felt-palette wrapper — init/get/set)
