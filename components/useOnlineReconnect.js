@@ -46,6 +46,17 @@ import {
 //         onMessage: (msg, id) => { if (msg.type === "LEAVE") return rc.hostHandleClientQuit(id); ... }
 //   client setClientListeners onMessage: (msg) => { if (rc.clientHandleMessage(msg)) return; ... }
 //   actions: if (rc.pausedRef.current) return;   render: {rc.overlay}
+//
+// DELIBERATE EXITS ARE ANNOUNCED, both ways. A client sends LEAVE; a host
+// broadcasts GAME_OVER_DISCONNECT with reason "host_left" and waits for that
+// write before deleting the room. A host that just vanishes blips every
+// client's Firebase connection, and each client then blames its own network.
+//
+// A SCREEN USING THIS HOOK MUST GATE ITS OWN MODALS ON `overlayVisible`
+// (e.g. <EndOfRoundModal visible={showRoundModal && !rc.overlayVisible} />).
+// Two sibling RN Modals open at once on Android are two dialog windows: the
+// newer one draws, the older one keeps input, and the overlay's buttons become
+// unpressable with no way out but force-quitting the app.
 const DEFAULT_GRACE_MS = 60000;
 // Don't flash the "Connection Lost" overlay on a momentary `.info/connected`
 // flicker (Firebase blips it during normal operation, including around the host
@@ -63,7 +74,8 @@ export default function useOnlineReconnect({
   onPlayerGone, // (id, name, intentional) => void — a player left for good; screen ends or removes
   onEndGame, // (name) => void — host tapped "End Game" on the pause overlay
   // Client-only:
-  onHostEnded, // (name) => void — host ended the game after a drop
+  onHostEnded, // (name, reason) => void — game over. reason "host_left" = the
+  // host deliberately quit; undefined = a drop whose grace ran out.
   onSelfLeave, // () => void — client tapped "Leave" on the self-disconnect overlay
 } = {}) {
   const isHost = role === "host";
@@ -76,6 +88,7 @@ export default function useOnlineReconnect({
   const hostAwayRef = useRef(false); // client: currently paused because host dropped
   const hostGraceRef = useRef(null); // client: host-away grace timer
   const [selfLost, setSelfLost] = useState(false); // client: lost our OWN connection
+  const [roomGone, setRoomGone] = useState(false); // client: nothing left to rejoin
   const wasConnectedRef = useRef(false); // client: have we ever been connected?
   const selfLostTimerRef = useRef(null); // client: debounce before showing the overlay
 
@@ -117,7 +130,15 @@ export default function useOnlineReconnect({
         onPlayerGone?.(goneId, goneName, false);
       }, graceMs);
     },
-    [isHost, isRealPlayer, getPlayerName, graceMs, broadcast, onPlayerGone, setPaused],
+    [
+      isHost,
+      isRealPlayer,
+      getPlayerName,
+      graceMs,
+      broadcast,
+      onPlayerGone,
+      setPaused,
+    ],
   );
 
   // ── Host: the awaited player returned → resume + re-send state ──────────────
@@ -173,7 +194,9 @@ export default function useOnlineReconnect({
     (msg) => {
       if (!isClient || !msg) return false;
       if (msg.type === "PAUSE") {
-        setPaused(msg.paused ? { name: msg.name, deadline: msg.deadline } : null);
+        setPaused(
+          msg.paused ? { name: msg.name, deadline: msg.deadline } : null,
+        );
         return true;
       }
       if (msg.type === "GAME_OVER_DISCONNECT") {
@@ -181,11 +204,14 @@ export default function useOnlineReconnect({
         // The game's over — make sure a stray self-disconnect overlay can't linger
         // and block the game-ended flow.
         setSelfLost(false);
+        setRoomGone(false);
         if (selfLostTimerRef.current) {
           clearTimeout(selfLostTimerRef.current);
           selfLostTimerRef.current = null;
         }
-        onHostEnded?.(msg.name);
+        // `reason` distinguishes a host who deliberately quit ("host_left") from
+        // a player whose reconnect grace ran out. The screen words them apart.
+        onHostEnded?.(msg.name, msg.reason);
         return true;
       }
       return false;
@@ -271,14 +297,21 @@ export default function useOnlineReconnect({
       selfLostTimerRef.current = null;
     }
   };
+  // rejoinRoom already refuses to resurrect a dead room ("Room closed." /
+  // "Game ended."). Surface that instead of leaving a Rejoin button that looks
+  // live and silently does nothing every time it's pressed.
   const rejoinNow = useCallback(() => {
     const code = onlineGetRoomCode();
-    if (!code) return;
+    if (!code) {
+      setRoomGone(true);
+      return;
+    }
     rejoinRoom(code)
       .then((res) => {
-        if (res && !res.error) setSelfLost(false);
+        if (res && res.error) setRoomGone(true);
+        else setSelfLost(false);
       })
-      .catch(() => {});
+      .catch(() => setRoomGone(true));
   }, []);
   useEffect(() => {
     if (!isClient) return undefined;
@@ -303,35 +336,59 @@ export default function useOnlineReconnect({
     };
   }, [isClient, rejoinNow]);
 
-  useEffect(() => () => {
-    clearTimer();
-    clearHostGrace();
-    clearSelfLostTimer();
-  }, []);
+  useEffect(
+    () => () => {
+      clearTimer();
+      clearHostGrace();
+      clearSelfLostTimer();
+    },
+    [],
+  );
 
   // Our own connection loss takes precedence — it's the client's immediate
-  // problem and it can't act on a pause while offline anyway.
-  const overlay = selfLost ? (
-    <ReconnectOverlay
-      visible
-      title="Connection Lost"
-      message="Trying to reconnect…"
-      onRejoin={rejoinNow}
-      onLeave={onSelfLeave}
-    />
-  ) : (
-    <ReconnectOverlay
-      visible={!!pause}
-      name={pause?.name}
-      deadline={pause?.deadline}
-      // Only the host, and only during a real pause, gets the "End Game" action.
-      onEndGame={isHost && pause ? hostEndGameDuringPause : undefined}
-    />
-  );
+  // problem and it can't act on a pause while offline anyway. A confirmed-dead
+  // room outranks both: there is nothing to wait for and nothing to rejoin.
+  let overlay;
+  if (roomGone) {
+    overlay = (
+      <ReconnectOverlay
+        visible
+        title="Game Ended"
+        message="The host closed the room."
+        onLeave={onSelfLeave}
+      />
+    );
+  } else if (selfLost) {
+    overlay = (
+      <ReconnectOverlay
+        visible
+        title="Connection Lost"
+        message="Trying to reconnect…"
+        onRejoin={rejoinNow}
+        onLeave={onSelfLeave}
+      />
+    );
+  } else {
+    overlay = (
+      <ReconnectOverlay
+        visible={!!pause}
+        name={pause?.name}
+        deadline={pause?.deadline}
+        // Only the host, and only during a real pause, gets the "End Game" action.
+        onEndGame={isHost && pause ? hostEndGameDuringPause : undefined}
+      />
+    );
+  }
 
   return {
     pausedRef,
     overlay,
+    // Whether `overlay` is actually showing something. A screen MUST hide its
+    // own Modals while this is true: on Android two sibling RN Modals are two
+    // dialog windows, the newer one draws but the older one keeps input, so the
+    // overlay's buttons render and receive nothing. That is unrecoverable — no
+    // back, no buttons, force-quit only.
+    overlayVisible: roomGone || selfLost || !!pause,
     hostHandleClientLeft,
     hostHandleClientJoined,
     hostHandleClientQuit,

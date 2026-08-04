@@ -2,6 +2,7 @@
 
 **Status:** Phase 1 + Phase 2 BUILT and **device-verified** for Last Card
 (2026-07-04 → 2026-07-21). Built so far:
+
 - **Phase 1 (client drop):** shared infra (`onlineTransport.onClientJoined`-on-
   reappear + `onlineGetRoomCode`, `onlineRoom.rejoinRoom`), the shared hook
   `components/useOnlineReconnect.js`, and Last Card wiring (host pause/resume,
@@ -28,6 +29,7 @@ reconnect system. This was the true root cause of "host leaves for a second,
 everyone gets disconnected."
 
 **Quit vs drop + host controls — added 2026-07-21 (Last Card, awaiting device test):**
+
 - **Intentional quit ≠ accidental drop.** A client's Quit now sends a `LEAVE`
   message to the host before tearing down; the host drops that player immediately
   instead of pausing. A slot vanishing without a `LEAVE` is still an accidental
@@ -38,7 +40,8 @@ everyone gets disconnected."
   bots-as-crutch exploit). Applies to intentional quits and expired grace alike.
 - **Host "End Game" button** on the pause overlay (`ReconnectOverlay` `onEndGame`)
   so the host needn't wait out the timer. Host-only, pause-only.
-- Host quitting still ends the game for everyone (unchanged).
+- Host quitting still ends the game for everyone — but it has to SAY so; see the
+  2026-08-03 fix below.
 
 **Rejoin option (#5) — added 2026-07-21 (Last Card, awaiting device test):**
 The client watches its OWN Firebase link via `.info/connected`
@@ -47,16 +50,50 @@ backgrounding — AppState wouldn't fire) shows a "Connection Lost / Trying to
 reconnect…" overlay with **Rejoin** + **Leave**; when the link returns it
 auto-re-adds the slot (`rejoinRoom` → host resumes). `ReconnectOverlay` now
 serves both shapes (pause with countdown vs self-disconnect with buttons).
-- **Known gap:** a HOST wifi blip *without* backgrounding still relies on
+
+- **Known gap:** a HOST wifi blip _without_ backgrounding still relies on
   AppState→active to re-mark `hostConnected`; a `.info/connected` watcher on the
   host would close this symmetrically (follow-up).
 
+**Host quit trapped the client — fixed 2026-08-03 (device-reported, not yet re-verified):**
+Found in live two-device play: after two games the host tapped Leave on the
+results modal and the client was stuck on "Connection Lost / Trying to
+reconnect…" with **Rejoin and Leave both unpressable**. Three separate defects,
+all fixed:
+
+1. **The host never announced its exit.** `leaveMultiplayer()` called
+   `stopServer()` and nothing else — a client quitting sends `LEAVE`, a host
+   quitting just vanished. Deleting the room blips every client's Firebase
+   link, so each client concluded its OWN network had died. The host now
+   broadcasts `GAME_OVER_DISCONNECT` with `reason: "host_left"` first.
+2. **The announcement was racing its own transport.** `onlineBroadcast` returned
+   nothing, so there was no way to wait for the write before deleting the room
+   out from under it. It now returns the write promise (`undefined` for a
+   non-host and in local mode, which is how the screen picks its branch).
+   Pinned by `__tests__/hostLeaveAnnounce.test.js` (8 tests).
+3. **Two RN Modals were open at once.** `EndOfRoundModal` was still up from the
+   finished game when `ReconnectOverlay` appeared. On Android those are two
+   dialog windows — the newer draws, the older keeps input, so the overlay's
+   buttons rendered and received nothing. **Unrecoverable: no back, no buttons,
+   force-quit only.** The hook now exposes `overlayVisible` and **every screen
+   adopting it must gate its own Modals on that**. An `Alert` raised over an
+   open Modal has the same problem, so `onHostEnded` closes the results modal
+   before alerting.
+
+`onHostEnded` is now `(name, reason)` so a deliberate host exit reads "The host
+ended the game" rather than "…didn't reconnect in time". A Rejoin against a
+deleted room now shows "Game Ended / The host closed the room." with Leave only,
+instead of a live-looking button that silently does nothing.
+
 **Remaining:**
-1. Device-test the quit/drop/End-Game/Rejoin flows on 2 phones.
+
+1. Device-test the quit/drop/End-Game/Rejoin flows on 2 phones, **including the
+   host-leaves-after-a-finished-game case above**.
 2. Adopt the hook in Go Fish (replaces its half-built inline version), Conquián,
    Rummy, Poker, Who Am I? — each small now that the mechanism exists.
 
 ## The problem
+
 Switching away from the app (to read a message, etc.) drops you from an online
 game. On mobile the OS suspends a backgrounded app and kills its network socket.
 Firebase's server-side `onDisconnect` handlers then run our cleanup:
@@ -64,16 +101,17 @@ Firebase's server-side `onDisconnect` handlers then run our cleanup:
 - Host disconnect → **the whole room is deleted** (`onlineRoom.js:87`) → everyone dies.
 - Client disconnect → **their player slot is removed** (`onlineRoom.js:125`) → host sees them "leave".
 
-Because `onDisconnect` fires *server-side while the phone is asleep*, we can't
+Because `onDisconnect` fires _server-side while the phone is asleep_, we can't
 intercept it from the sleeping app. So the fix is **not** "stay connected" — it's
 **"treat a drop as temporary: pause, then reconnect + resync when the app returns."**
 
 ## What already exists (and what's missing)
+
 - `components/ReconnectOverlay.js` — a countdown "Game Paused" modal. ✅ reusable.
 - **Go Fish only**: host detects a client drop (`onClientLeft`) → `startPause()` →
   broadcasts `PAUSE {name, deadline}` → 60s timer → on timeout ends the game.
 - **Missing everywhere:**
-  1. No `RESUME` is ever sent — nothing detects a player coming *back*.
+  1. No `RESUME` is ever sent — nothing detects a player coming _back_.
   2. The online transport fires `onClientLeft` when a uid disappears from
      `players`, but **never fires `onClientJoined` when a uid reappears**
      (`onlineTransport.js:104`). So the host can't notice a reconnect.
@@ -84,11 +122,13 @@ intercept it from the sleeping app. So the fix is **not** "stay connected" — i
      have none.
 
 ## Good news: the security rules already allow reconnect
+
 A returning client re-adding its own `players/$uid` slot is permitted by the
 deployed rules (`$uid === auth.uid`, and `name` is present). **No rules change is
 needed for the client-reconnect case.** (The host case is different — see Phase 2.)
 
 ## Design principles
+
 1. **A drop is "away", not "left".** Pause the game; don't tear it down.
 2. **Reconnect = re-attach + re-add slot + resync.** The transport already stores
    the latest of every message type in its own slot (`net/broadcast/<type>`,
@@ -99,12 +139,14 @@ needed for the client-reconnect case.** (The host case is different — see Phas
    every game gets identical, tested behavior (not 6 copies).
 
 ## Phase 1 — Client reconnect (the common case) — RECOMMENDED FIRST
+
 Covers a **non-host** player backgrounding briefly (the scenario you hit). The
 host stays put and stays authoritative.
 
 **Build:**
+
 1. **Transport: fire `onClientJoined` on reappearance.** In the host's
-   `players` `onValue` watcher, when a uid *appears* (not just disappears), call
+   `players` `onValue` watcher, when a uid _appears_ (not just disappears), call
    `serverListeners.onClientJoined?.({ id })`. (Online mode only; local TCP
    already fires it.)
 2. **`rejoinRoom(code)` function** in `onlineRoom.js` — re-adds the caller's
@@ -126,6 +168,7 @@ host stays put and stays authoritative.
 everyone is paused meanwhile, then the game resumes where it left off.
 
 ## Phase 2 — Host survival — BUILT for Last Card 2026-07-21 (was: the hard problem)
+
 > **Implemented as described below, with decision (a) — accept orphaned rooms —
 > taken.** See the Status block at the top for the concrete pieces. The rest of
 > this section is the original design rationale, kept for context.
@@ -138,7 +181,7 @@ everyone dies. Surviving this is much harder because:
 - We'd change the host's `onDisconnect` to **not delete** the room (e.g., set
   `hostConnected = false` instead), show clients "waiting for host…", and on the
   host's return resume + resync.
-- **Stale-room cleanup is the snag:** the rules only let the *host* delete the
+- **Stale-room cleanup is the snag:** the rules only let the _host_ delete the
   room. If the host never comes back, a client can't clean it up. Options:
   (a) accept small orphaned rooms (cheapest; revisit with a scheduled cleanup or
   TTL later), (b) relax the delete rule so a client can remove a room whose host
@@ -149,12 +192,14 @@ case end-to-end). Treat Phase 2 as a follow-up with its own design pass, since i
 touches the authority model and the security rules.
 
 ## Testing (2 devices, per phase)
+
 - Phase 1: client backgrounds mid-turn → both show "Game Paused" countdown →
   client returns → game resumes, correct hands/turn. Then let the timer expire →
-  clean game-over. Repeat with the client whose turn it is *not*.
+  clean game-over. Repeat with the client whose turn it is _not_.
 - Phase 2: host backgrounds → clients wait → host returns → resume.
 
 ## Rough size
+
 - Phase 1: transport tweak + `rejoinRoom` + AppState + a shared hook + wiring per
   game screen. Medium. Each game-screen adoption is small once the hook exists.
 - Phase 2: authority/rules design + implementation + careful testing. Larger.

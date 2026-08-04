@@ -148,7 +148,35 @@ stuck waiting for `CHOOSE_COLOR`, game dead for the whole table. Three causes:
 `toPublic` moved into `game/lastCard.js` as `toPublicState()` (pure logic
 belongs there), joined by `owesColorChoice(state, pid)` — one answer both sides
 read. New suite `__tests__/lastCard.colorChoice.test.js`; 543 → 553 tests over
-46 suites. Pure JS, no rebuild. **Not device-verified.**
+46 suites. Pure JS, no rebuild.
+**✅ Device-verified 2026-08-03** on 2 devices: private hands arrive, a client
+drawing into a wild picks a colour, host-drawn wilds don't pop a picker on the
+client, hand-played wilds still work, and back-to-back games don't multiply
+broadcasts (test plan A1–A4, A11).
+
+### Host quit trapped the client — fixed 2026-08-03 (branch `fix/audit-remediation`)
+
+Found during the 2-device test pass. Host tapped Leave on the results modal
+after the second game; the client sat on "Connection Lost / Trying to
+reconnect…" with **Rejoin and Leave both unpressable** — force-quit only. Three
+defects:
+
+1. `leaveMultiplayer()` host branch called `stopServer()` and announced nothing.
+   A client quitting sends `LEAVE`; a host quitting vanished. Deleting the room
+   blips every client's Firebase link, so each client blamed its own network.
+   Now broadcasts `GAME_OVER_DISCONNECT` with `reason: "host_left"` first.
+2. `onlineBroadcast` returned nothing, so the announcement couldn't be waited on
+   before the room was deleted out from under it. It now returns the write
+   promise (`undefined` for a non-host and in local mode).
+3. **Two RN Modals open at once.** `EndOfRoundModal` + `ReconnectOverlay`. On
+   Android those are two dialog windows — the newer draws, the older keeps
+   input. **This is the general trap:** any screen adopting `useOnlineReconnect`
+   MUST gate its own Modals on the new `overlayVisible`. An `Alert` over an open
+   Modal has the same problem.
+
+New suite `__tests__/hostLeaveAnnounce.test.js`; 559 → 567 tests over 47 suites.
+The modal-stacking half is render-level and **device-verified only**.
+See `RECONNECT_PLAN.md`.
 
 ### Wild +4 restriction — kept, explained 2026-08-03
 

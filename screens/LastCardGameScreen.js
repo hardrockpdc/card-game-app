@@ -297,10 +297,17 @@ export default function LastCardGameScreen({ navigation, route }) {
       stopServer();
       navigation.navigate("Home");
     },
-    onHostEnded: (name) => {
-      Alert.alert("Game ended", `${name} left and didn't reconnect in time.`, [
-        { text: "OK", onPress: () => navigation.navigate("Home") },
-      ]);
+    onHostEnded: (name, reason) => {
+      // Close the results modal first. An Alert raised over an open RN Modal on
+      // Android lands behind it — same stacking trap, different dialog.
+      setShowRoundModal(false);
+      Alert.alert(
+        "Game ended",
+        reason === "host_left"
+          ? "The host ended the game."
+          : `${name} left and didn't reconnect in time.`,
+        [{ text: "OK", onPress: () => navigation.navigate("Home") }],
+      );
     },
     // Client tapped "Leave" on the self-disconnect overlay: quit cleanly.
     onSelfLeave: () => {
@@ -1093,12 +1100,28 @@ export default function LastCardGameScreen({ navigation, route }) {
   const pal =
     LAST_CARD_TABLES.find((t) => t.id === tableId) ?? LAST_CARD_TABLES[0];
 
-  // Deliberate multiplayer exit. A client sends LEAVE first (so the host drops
-  // them immediately instead of pausing + waiting for a reconnect), THEN tears
-  // down. A host quitting stops the server, which ends the game for everyone.
+  // Deliberate multiplayer exit. Both sides announce before they tear down.
+  //
+  // A client sends LEAVE so the host drops them immediately instead of pausing
+  // and waiting out a reconnect that isn't coming.
+  //
+  // A host used to just call stopServer() and vanish. That deletes the room,
+  // which blips every client's Firebase connection — so each client decided its
+  // OWN network had died and sat on a "Connection Lost / trying to reconnect"
+  // overlay for a host that was never coming back. It now says so first, and
+  // waits for that write to land before deleting the room out from under it.
   function leaveMultiplayer() {
     if (isHost) {
-      stopServer();
+      const sent = broadcastToClients({
+        type: "GAME_OVER_DISCONNECT",
+        name: "The host",
+        reason: "host_left",
+      });
+      if (sent && typeof sent.then === "function") {
+        sent.then(() => stopServer()).catch(() => stopServer());
+      } else {
+        stopServer(); // local mode: the socket write already went out
+      }
     } else {
       sendToHost({ type: "LEAVE" });
       disconnectFromHost();
@@ -1472,7 +1495,11 @@ export default function LastCardGameScreen({ navigation, route }) {
       <YourTurnBanner visible={showYourTurnBanner} />
 
       <EndOfRoundModal
-        visible={showRoundModal}
+        // Never on screen at the same time as the reconnect overlay. Two RN
+        // Modals open together on Android leaves the top one visible but deaf
+        // to touches — which is exactly how a host leaving after a finished
+        // game trapped the client with an unpressable Rejoin/Leave.
+        visible={showRoundModal && !reconnect.overlayVisible}
         title={
           winner
             ? winner === myPid

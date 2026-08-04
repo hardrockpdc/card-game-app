@@ -285,11 +285,15 @@ function deliverToClient(payload) {
 }
 
 // ─── Sending ─────────────────────────────────────────────────────────────────
+// Returns the write promise. Callers that tear the room down immediately after
+// a broadcast (a host quitting) have to wait for it — delete the room first and
+// the message never reaches anyone, which is how a host leaving used to look
+// like a network failure to every client.
 export function onlineBroadcast(message) {
-  if (!config?.isHost) return;
+  if (!config?.isHost) return undefined;
   const type = message?.type || "MSG";
   broadcastSeq[type] = (broadcastSeq[type] || 0) + 1;
-  set(netRef(`broadcast/${type}`), {
+  return set(netRef(`broadcast/${type}`), {
     seq: broadcastSeq[type],
     payload: encode(message),
   }).catch((err) => warn("[onlineTransport] broadcast failed:", err));
