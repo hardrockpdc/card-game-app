@@ -30,6 +30,7 @@ import {
   drawUntilPlayable,
   toPublicState,
   owesColorChoice,
+  whyUnplayable,
   removePlayer,
 } from "../game/lastCard";
 import {
@@ -139,6 +140,27 @@ function cardTitle(card) {
   if (card.type === "skip") return "Skip";
   if (card.type === "reverse") return "Reverse";
   return card.type;
+}
+
+// One sentence per reason a card is illegal, keyed on whyUnplayable()'s code.
+// Wild +4 gets its own: the generic line reads "match Green or a 5" to a player
+// who is holding a Green 5 — it names the card they have as the reason they
+// can't play a different one, which is worse than saying nothing.
+function unplayableText(reason, activeColor, topCard) {
+  const colorName = COLOR_LABELS[activeColor] ?? "the colour";
+  if (reason === "draw4_has_color_match") {
+    return `Wild +4 is only for when you can't match — you still have a ${colorName} card to play.`;
+  }
+  return `Can't play that — match ${colorName} or a ${cardTitle(topCard)}.`;
+}
+
+// Short version for screen readers, appended to the card's own name.
+function unplayableHint(reason, activeColor) {
+  if (reason === "draw4_has_color_match") {
+    return `, can't be played — you still have a ${COLOR_LABELS[activeColor] ?? "matching"} card`;
+  }
+  if (reason) return ", can't be played right now";
+  return "";
 }
 
 function buildInitialState(routePlayers) {
@@ -930,15 +952,14 @@ export default function LastCardGameScreen({ navigation, route }) {
     const hand = s.hands[myPid] ?? [];
     const topCard = s.discardPile[s.discardPile.length - 1];
     const hasColorMatch = hand.some((c) => c.color === s.activeColor);
-    if (!isPlayable(card, topCard, s.activeColor, hasColorMatch)) {
+    const reason = whyUnplayable(card, topCard, s.activeColor, hasColorMatch);
+    if (reason) {
       triggerShake(card.id);
       hapticError(); // sharp "nope" on an illegal card
       // Say WHY. A shake and a buzz with no words is punishment without
       // explanation — the rule is invisible, so a first-timer or anyone handed
       // the phone mid-game just taps until they guess it.
-      setStatusMsg(
-        `Can't play that — match ${COLOR_LABELS[s.activeColor] ?? "the colour"} or a ${cardTitle(topCard)}.`,
-      );
+      setStatusMsg(unplayableText(reason, s.activeColor, topCard));
       return;
     }
 
@@ -1044,6 +1065,11 @@ export default function LastCardGameScreen({ navigation, route }) {
   const hasPlayable = getCurrentState()
     ? hasPlayableCard(getCurrentState(), myPid)
     : false;
+  // Hoisted out of the hand map — it was recomputed once per card, and every
+  // card in the hand needs the same answer.
+  const handHasColorMatch = myCards.some(
+    (c) => c.color === gameState?.activeColor,
+  );
   const opponents = (gameState?.players ?? []).filter((p) => p.id !== myPid);
   const isMyTurn = gameState?.currentTurn === myPid;
   const turnDirectionGlyph =
@@ -1350,14 +1376,15 @@ export default function LastCardGameScreen({ navigation, route }) {
           contentContainerStyle={styles.handGrid}
         >
           {myCards.map((card) => {
-            const playable = topCard
-              ? isPlayable(
+            const reason = topCard
+              ? whyUnplayable(
                   card,
                   topCard,
                   gameState?.activeColor,
-                  myCards.some((c) => c.color === gameState?.activeColor),
+                  handHasColorMatch,
                 )
-              : false;
+              : "no_match";
+            const playable = reason === null;
             const isShaking = card.id === shakeId;
             // Always dim unplayable cards. This used to be gated on
             // `difficulty === "easy"`, and the default is "medium" — so the
@@ -1375,7 +1402,7 @@ export default function LastCardGameScreen({ navigation, route }) {
                 accessibilityRole="button"
                 accessibilityLabel={
                   `${colorName ? `${colorName} ` : ""}${cardTitle(card)}` +
-                  (playable ? "" : ", can't be played right now")
+                  unplayableHint(reason, gameState?.activeColor)
                 }
                 accessibilityState={{ disabled: !playable }}
               >

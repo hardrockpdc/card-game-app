@@ -99,6 +99,11 @@ Card back:      card_back.png
 - Next player must draw 4 cards AND loses their turn.
 - **Legal restriction:** Should only be played when the player has no card matching the current color. In digital play, this is enforced automatically — the game will only allow Wild Draw 4 if no color match exists in hand.
 - If no legal play exists at all, Wild Draw 4 can always be played.
+- **This rule is deliberate — confirmed 2026-08-03.** A dimmed Wild +4 next to a
+  bright colour match reads as a bug, and it isn't; without the restriction, +4
+  is a no-downside attack you'd throw every turn. Plain **Wild is unrestricted**
+  and never dims. The fix for the confusion is explaining the restriction (see
+  Card Highlighting), not removing it.
 
 ---
 
@@ -185,8 +190,21 @@ gets the picker without ever having tapped a card.
 ### Card Highlighting
 
 - Playable cards: full brightness
-- Unplayable cards: dimmed to ~40% opacity
-- Tapping an unplayable card: subtle shake + no action
+- Unplayable cards: dimmed to ~40% opacity (at every difficulty — seeing which
+  cards are legal is a rules aid, not a strategy hint)
+- Tapping an unplayable card: shake + error haptic + **a sentence saying why**
+
+The reason comes from `whyUnplayable()` in `game/lastCard.js`, which returns a
+code the screen turns into copy. Two codes today:
+
+| code                    | when                                    | shown as                                                                  |
+| ----------------------- | --------------------------------------- | ------------------------------------------------------------------------- |
+| `no_match`              | wrong colour and wrong number/type      | "Can't play that — match Green or a 5."                                   |
+| `draw4_has_color_match` | Wild +4 while a colour match is in hand | "Wild +4 is only for when you can't match — you still have a Green card…" |
+
+Wild +4 has to be its own case. It is the only card whose legality depends on
+the rest of the hand, so the generic line tells a player to play the very card
+that is blocking them. The same codes feed the accessibility labels.
 
 ---
 

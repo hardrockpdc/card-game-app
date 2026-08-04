@@ -150,6 +150,21 @@ belongs there), joined by `owesColorChoice(state, pid)` — one answer both side
 read. New suite `__tests__/lastCard.colorChoice.test.js`; 543 → 553 tests over
 46 suites. Pure JS, no rebuild. **Not device-verified.**
 
+### Wild +4 restriction — kept, explained 2026-08-03
+
+Reported as "wild cards should always be available" from a screenshot of a
+dimmed Wild +4. **Not a bug, and the rule stays** (Pedro confirmed): plain Wild
+is unrestricted and never dims; Wild +4 is illegal while you hold a card
+matching the active colour — the official rule, and already in `LASTCARD_SPEC`.
+Without it, +4 is a free every-turn attack.
+
+What WAS broken: one generic message for every illegal card. Tapping the dimmed
++4 while holding a Green 5 said _"Can't play that — match Green or a 5."_ —
+naming the card in your hand as the reason you can't play a different one.
+`whyUnplayable()` (in `game/lastCard.js`) now returns a reason code that feeds
+both the tap message and the accessibility label. 553 → 559 tests.
+**Not device-verified.**
+
 ### Design audit + critique — remediated 2026-08-03 (branch `fix/audit-remediation`)
 
 A technical audit (12/20) and a UX critique (23/40) over HomeScreen, Onboarding,

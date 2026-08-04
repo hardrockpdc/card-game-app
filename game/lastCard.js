@@ -83,6 +83,24 @@ export function isPlayable(card, topCard, activeColor, hasColorMatch = false) {
   return false;
 }
 
+// Why is this card illegal right now? Returns a reason CODE, or null when the
+// card is playable. The wording lives in the screen; only the reasoning is here
+// so both the tap message and the accessibility label read from one source.
+//
+// Wild +4 needs its own code because the generic "match the colour" line is
+// actively wrong for it — holding a matching colour is the very thing that
+// blocks the card, so that line tells a player to do what they already can.
+export function whyUnplayable(
+  card,
+  topCard,
+  activeColor,
+  hasColorMatch = false,
+) {
+  if (isPlayable(card, topCard, activeColor, hasColorMatch)) return null;
+  if (card?.type === "wild_draw4") return "draw4_has_color_match";
+  return "no_match";
+}
+
 function nextPlayerId(players, currentTurn, turnDirection, steps = 1) {
   const index = players.findIndex((p) => String(p.id) === String(currentTurn));
   if (index < 0 || players.length === 0) return currentTurn;

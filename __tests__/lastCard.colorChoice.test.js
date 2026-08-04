@@ -27,6 +27,7 @@ import {
   drawUntilPlayable,
   toPublicState,
   owesColorChoice,
+  whyUnplayable,
   COLORS,
 } from "../game/lastCard";
 
@@ -171,5 +172,49 @@ describe("drawing into a wild is reported exactly like playing one", () => {
     const played = applyCard(baseState(), CLIENT, wild, null);
 
     expect(chooseColor(played, HOST, COLORS[2])).toBe(played);
+  });
+});
+
+// A dimmed Wild +4 is the rule working (you may only play it when you can't
+// match the colour), but the screen printed ONE line for every illegal card:
+// "Can't play that — match Green or a 5." Say that to a player holding a Green
+// 5 and you have named the card in their hand as the reason they can't play a
+// different one. Wild +4 needs its own reason, and it is the only card whose
+// legality depends on the REST of the hand rather than on the card itself.
+describe("an illegal card explains itself correctly", () => {
+  const greenTop = greenFive;
+
+  test("a legal card has no reason at all", () => {
+    expect(whyUnplayable(crimsonTwo, greenTop, "crimson", false)).toBeNull();
+    expect(whyUnplayable(wild, greenTop, "od_green", true)).toBeNull();
+  });
+
+  test("a plain Wild is legal even holding a colour match — always", () => {
+    // The card the players actually mean by "wilds should always be available".
+    for (const activeColor of COLORS) {
+      expect(whyUnplayable(wild, greenTop, activeColor, true)).toBeNull();
+      expect(whyUnplayable(wild, greenTop, activeColor, false)).toBeNull();
+    }
+  });
+
+  test("Wild +4 blocked by a colour match says so, not 'match the colour'", () => {
+    expect(whyUnplayable(wildDraw4, greenTop, "od_green", true)).toBe(
+      "draw4_has_color_match",
+    );
+  });
+
+  test("Wild +4 is legal the moment the colour match is gone", () => {
+    expect(whyUnplayable(wildDraw4, greenTop, "od_green", false)).toBeNull();
+  });
+
+  test("an ordinary mismatch gets the generic reason", () => {
+    expect(whyUnplayable(crimsonTwo, greenTop, "od_green", true)).toBe(
+      "no_match",
+    );
+  });
+
+  test("no top card yet is a plain mismatch, not a crash", () => {
+    expect(whyUnplayable(crimsonTwo, null, "od_green", false)).toBe("no_match");
+    expect(whyUnplayable(null, greenTop, "od_green", false)).toBe("no_match");
   });
 });
