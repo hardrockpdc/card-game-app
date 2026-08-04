@@ -55,7 +55,14 @@ serves both shapes (pause with countdown vs self-disconnect with buttons).
   AppState→active to re-mark `hostConnected`; a `.info/connected` watcher on the
   host would close this symmetrically (follow-up).
 
-**Host quit trapped the client — fixed 2026-08-03 (device-reported, not yet re-verified):**
+**Host quit trapped the client — fixed 2026-08-03. Defects 1+2 device-verified,
+defect 3 NOT:** all three host-exit paths (after a finished game, mid-game, and
+via hardware Back) now give the client a clean "The host ended the game". But
+the `overlayVisible` modal gate never fired in those runs — the announcement
+beats the 2.5s self-lost timer, so `ReconnectOverlay` never appears. **The gate
+still needs the genuine-drop case: kill the client's wifi for 5+ seconds while
+its results modal is up.** Until that passes, a real network drop during a
+results screen can still trap a player with unpressable buttons.
 Found in live two-device play: after two games the host tapped Leave on the
 results modal and the client was stuck on "Connection Lost / Trying to
 reconnect…" with **Rejoin and Leave both unpressable**. Three separate defects,

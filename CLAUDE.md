@@ -175,7 +175,15 @@ defects:
    Modal has the same problem.
 
 New suite `__tests__/hostLeaveAnnounce.test.js`; 559 → 567 tests over 47 suites.
-The modal-stacking half is render-level and **device-verified only**.
+
+**✅ Device-verified 2026-08-03 (defects 1 + 2 only):** host leaving after a
+finished game, mid-game, and via hardware Back all produce a clean "The host
+ended the game" on the client. **Defect 3's `overlayVisible` gate is still
+unverified** — the announcement now beats the 2.5s self-lost timer, so the
+overlay never appears in that flow. It needs the genuine-drop case: kill the
+client's wifi for 5+ seconds while its results modal is up. Until then, assume
+a real network drop during a results screen can still trap a player.
+
 See `RECONNECT_PLAN.md`.
 
 ### Wild +4 restriction — kept, explained 2026-08-03
