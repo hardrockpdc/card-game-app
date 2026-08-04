@@ -67,6 +67,7 @@ import {
   HapticStyle,
 } from "../game/haptics";
 import { LC } from "../game/lastCardImages";
+import { log } from "../game/logger"; // TEMPORARY — for the D1 diagnostic below
 import ProfileAvatar from "../components/ProfileAvatar";
 import useMultiplayerAvatars from "../components/useMultiplayerAvatars";
 import TableThemePicker from "../components/TableThemePicker";
@@ -947,19 +948,50 @@ export default function LastCardGameScreen({ navigation, route }) {
     };
   }
 
+  // TEMPORARY DIAGNOSTIC — remove once D1 is understood. Tapping an unplayable
+  // card reportedly does nothing at all, while legal cards play fine. That
+  // combination is impossible from reading the code: if the guards pass we reach
+  // whyUnplayable, and a card the render dimmed must come back non-null there.
+  // So one of these values is not what it looks like. Logs every tap.
+  function logTap(card, stage, extra) {
+    log("[lastcard-d1]", stage, {
+      cardId: card?.id,
+      cardType: card?.type,
+      cardColor: card?.color,
+      ...extra,
+    });
+  }
+
   function onCardTap(card) {
-    if (reconnect.pausedRef.current) return;
+    if (reconnect.pausedRef.current) return logTap(card, "blocked:paused");
     const s = getCurrentState();
-    if (!s || s.gameOver) return;
-    if (phaseRef.current === "colorPicker") return;
-    if (s.currentTurn !== myPid) return;
-    if (s.awaitingColorChoiceBy) return;
-    if (lockedRef.current) return;
+    if (!s || s.gameOver) return logTap(card, "blocked:noState/gameOver");
+    if (phaseRef.current === "colorPicker")
+      return logTap(card, "blocked:colorPicker");
+    if (s.currentTurn !== myPid)
+      return logTap(card, "blocked:notMyTurn", {
+        currentTurn: s.currentTurn,
+        myPid,
+      });
+    if (s.awaitingColorChoiceBy)
+      return logTap(card, "blocked:awaitingColor", {
+        who: s.awaitingColorChoiceBy,
+      });
+    if (lockedRef.current) return logTap(card, "blocked:locked");
 
     const hand = s.hands[myPid] ?? [];
     const topCard = s.discardPile[s.discardPile.length - 1];
     const hasColorMatch = hand.some((c) => c.color === s.activeColor);
     const reason = whyUnplayable(card, topCard, s.activeColor, hasColorMatch);
+    logTap(card, "reached", {
+      reason,
+      activeColor: s.activeColor,
+      hasColorMatch,
+      topCard: topCard
+        ? `${topCard.color}/${topCard.type}/${topCard.value}`
+        : null,
+      reduceMotion,
+    });
     if (reason) {
       triggerShake(card.id);
       hapticError(); // sharp "nope" on an illegal card
