@@ -40,10 +40,16 @@ Built into Card Night alongside the existing 5 games. Follows the same multiplay
 
 ### Colors
 
-- 🟢 **OD Green** `#556B2F`
-- 🔴 **Crimson** `#B92841`
-- 🩵 **Turquoise** `#40E0D0`
-- 🟠 **Coral** `#FF7F50`
+Internal ids stayed as they were; the names players read were changed on
+2026-08-03 (`COLOR_LABELS` in `LastCardGameScreen.js`) because a family game
+shouldn't ask a child to say "OD Green".
+
+| id          | shown as   | hex       |
+| ----------- | ---------- | --------- |
+| `od_green`  | **Green**  | `#556B2F` |
+| `crimson`   | **Red**    | `#B92841` |
+| `turquoise` | **Blue**   | `#40E0D0` |
+| `coral`     | **Orange** | `#FF7F50` |
 
 ### Card Image Files
 
@@ -157,12 +163,19 @@ If the draw pile AND discard pile are both empty and no player can play (extreme
 └─────────────────────────────────┘
 ```
 
-### Color Picker (shown after playing Wild or Wild Draw 4)
+### Color Picker (shown after playing OR drawing Wild / Wild Draw 4)
 
 - Full-screen overlay
-- 4 large color buttons: OD Green / Crimson / Turquoise / Coral
+- 4 large color buttons: Green / Red / Blue / Orange
 - "Choose a color" prompt at top
 - No dismiss — must pick a color to continue
+
+Shown to **exactly one player**: whoever `awaitingColorChoiceBy` names. Both the
+host and a client decide that with `owesColorChoice(state, myPid)` from
+`game/lastCard.js`, reading the same field — the host off the full state, a
+client off the broadcast. Drawing into a wild has to behave identically to
+playing one: the host resolves the draw and auto-plays the wild, so the drawer
+gets the picker without ever having tapped a card.
 
 ### Active Player Indicator
 
@@ -188,7 +201,7 @@ Follows the standard Card Night host/client pattern:
 - Broadcasts `GAME_STATE` (public) after every action
 - Sends `PRIVATE_HAND` to each player individually
 
-**Public state includes:**
+**Public state includes:** (built by `toPublicState()` in `game/lastCard.js`)
 
 - Draw pile count (not contents)
 - Discard pile top card
@@ -197,6 +210,9 @@ Follows the standard Card Night host/client pattern:
 - Whose turn it is
 - Turn direction
 - Any pending action (e.g. next player must draw 2)
+- `awaitingColorChoiceBy` + `pendingWildCard` — who owes a colour, and for which
+  card. A client cannot show a working picker without these; leaving them out is
+  what froze the game when a client drew a wild.
 
 **Private state includes:**
 

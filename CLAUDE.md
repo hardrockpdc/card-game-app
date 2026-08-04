@@ -33,23 +33,29 @@ Ask **one focused question at a time** when something is genuinely ambiguous. Do
 ## 2. Hard technical rules (learned the painful way — do not violate)
 
 ### 2.1 Hooks order — the #1 recurring bug
+
 **Every `useState`, `useRef`, `useEffect`, `useMemo`, `useContext` call MUST appear BEFORE every early `return` in a component.** A hook placed after an `if (...) return ...` causes "Rendered more hooks than during the previous render" and crashes the screen.
 
 This has bitten this project at least four times (Poker, Conquián twice, Rummy). Whenever you add or move a hook in a game screen, **verify top-to-bottom that all hooks are above all early returns.** When editing a game screen, proactively scan for this even if it's not what I asked about.
 
 ### 2.2 This is a JavaScript project, not TypeScript
+
 There is no `tsconfig.json` and the project is all `.js`. **Do not run `tsc`** to "verify" — it produces hundreds of fake errors because the project was never set up for TypeScript. Verify by checking that Metro bundles / the app runs, not by type-checking. (The `typescript` dependency was removed on 2026-06-02 — the project remains all-JS with no tsconfig.json. The rule still stands: don't run `tsc`.)
 
 ### 2.3 Don't strip cross-platform code
-Even though distribution is currently **Android-only**, the codebase stays cross-platform (React Native). Do NOT remove `Platform.select` branches, iOS config, or platform abstractions to "simplify." They cost nothing to keep and preserve the option to ship iOS later. Android-only is a *distribution* decision, not a *code* decision.
+
+Even though distribution is currently **Android-only**, the codebase stays cross-platform (React Native). Do NOT remove `Platform.select` branches, iOS config, or platform abstractions to "simplify." They cost nothing to keep and preserve the option to ship iOS later. Android-only is a _distribution_ decision, not a _code_ decision.
 
 ### 2.4 Respect reduced motion in animations
+
 Every animation must check `AccessibilityInfo.isReduceMotionEnabled()` and snap to the final state when enabled. This is an established pattern in `components/Card.js` and `SolitaireGameScreen.js`. Match it.
 
 ### 2.5 Native modules require a dev build
+
 `react-native-gesture-handler`, `react-native-reanimated`, `react-native-worklets`, `expo-screen-orientation`, `expo-haptics`, etc. only work in a compiled dev build, NOT Expo Go. I run a dev build (expo-dev-client). When adding a native module, remind me a rebuild is needed before it'll work.
 
 ### 2.6 Don't install libraries without a concrete plan to use them
+
 Every native dependency adds app size, upgrade-conflict risk, and bug surface. "Might be nice someday" is not sufficient. Only add a dependency when there's a real, near-term use for it.
 
 ---
@@ -57,26 +63,33 @@ Every native dependency adds app size, upgrade-conflict risk, and bug surface. "
 ## 3. Process discipline
 
 ### 3.1 Diagnostic-first on risky cleanups
+
 Before any multi-file deletion, refactor, or "remove all traces of X," **do a read-only diagnostic pass first**: report exactly what exists and where, then propose the surgical change. Do not blind-delete across files. (This has repeatedly saved us from breaking things.)
 
 ### 3.2 Commit after each logical unit of work
+
 End each completed change with a git commit using a clear, conventional message (e.g. `fix(conquian): ...`, `feat: ...`, `cleanup: ...`, `docs: ...`). Show me the commit hash. Keep commits focused — one logical change per commit.
 
 ### 3.3 Always tell me what to test
+
 After implementing, give me a short, concrete list of what to check on my device to confirm it worked — including likely failure modes to watch for.
 
 ### 3.5 Batch native changes before requesting a rebuild
+
 Never prompt for a dev-client rebuild after each individual native-touching change. Collect all native changes for a logical unit of work first, then request a single rebuild. Rebuilds are slow — one per batch, not one per commit.
 
 ### 3.4 Verify before claiming done
+
 Confirm the files compile (Metro/bundler, not tsc), confirm the specific changes landed, and report honestly what changed vs. what was skipped and why.
 
 ### 3.6 Keep docs current — no stale docs
+
 Docs are part of the change, not an afterthought. Whenever a change makes something in `CLAUDE.md`, `PROJECT_NOTES.md`, or a per-game spec inaccurate — a new/removed/renamed file, a changed dependency, a resolved tracker item, a new game/feature — update the doc **in the same unit of work** (ideally the same commit). When marking a tracker item done, fix every place it's referenced, not just the checkbox. If a fix isn't verified yet (e.g. needs a device test), say so in the doc rather than claiming it's fully done. Stale docs have repeatedly caused wasted effort here; treat them as a bug.
 
 ---
 
 ## 4. Child-safety / content note
+
 This is a family-friendly card game. Keep all content, copy, and assets appropriate for all ages.
 
 ---
@@ -100,7 +113,7 @@ This is a family-friendly card game. Keep all content, copy, and assets appropri
   - `components/useSolitaireDrag.js`, `components/useConquianMeldDrag.js` — gesture-handler drag hooks
   - `screens/*GameScreen.js` — per-game screens
 - **Standard patterns:**
-  - `hasMountedRef` set true *before* the fresh-deal `applyState` (so deals animate) and *after* the resume `applyState` (so restored games don't animate). Used in `ConquianGameScreen.js` and `RummyGameScreen.js`; Solitaire uses a different approach (`initialGameDispatched` ref).
+  - `hasMountedRef` set true _before_ the fresh-deal `applyState` (so deals animate) and _after_ the resume `applyState` (so restored games don't animate). Used in `ConquianGameScreen.js` and `RummyGameScreen.js`; Solitaire uses a different approach (`initialGameDispatched` ref).
   - Auto-save effects throttled to one write / 3s via a `lastSaveRef`.
   - Accent color `#7fb3ff` blue (error text stays `#e94560` red).
   - Responsive sizing via `scale()` / `scaleFont()` from `game/responsive.js`.
@@ -115,9 +128,27 @@ This is a family-friendly card game. Keep all content, copy, and assets appropri
 
 - I considered switching to native Kotlin and considered a full rewrite. We concluded: **stay on React Native** — a card game is not performance-limited, and my main frustration (drag-and-drop) was caused by setup gaps (no `GestureHandlerRootView`, raw PanResponder instead of gesture-handler), not by RN being incapable. If I bring up rewriting again, make me justify it against this conclusion before helping.
 - Drag-and-drop is **DONE** (2026-06-04): `GestureHandlerRootView` at root + `react-native-gesture-handler`, with immediate touch-and-move activation (tap-to-move kept as a fallback). Shipped for **Solitaire Klondike / FreeCell / Spider in landscape** via the reusable `components/useSolitaireDrag.js` hook + `getLegalTargets` in `game/solitaire.js`. Pyramid/TriPeaks stay tap (match/collect games). Pure JS, no rebuild.
-- Layout direction: **orientation is LOCKED** (changed 2026-06-04). The app is **portrait-locked everywhere except Solitaire** (landscape-locked). This *reverses* the earlier "responsive to aspect ratio, NOT forced orientation / Fold-first" stance — we ship Android phone-first, so Fold/tablet free-rotation was deprioritized. Responsive *sizing* (`useLayoutMode()`) still applies *within* the locked orientation. See `PROJECT_NOTES.md` → "Responsive Layout & Orientation Architecture" → Orientation policy.
+- Layout direction: **orientation is LOCKED** (changed 2026-06-04). The app is **portrait-locked everywhere except Solitaire** (landscape-locked). This _reverses_ the earlier "responsive to aspect ratio, NOT forced orientation / Fold-first" stance — we ship Android phone-first, so Fold/tablet free-rotation was deprioritized. Responsive _sizing_ (`useLayoutMode()`) still applies _within_ the locked orientation. See `PROJECT_NOTES.md` → "Responsive Layout & Orientation Architecture" → Orientation policy.
 
 ## 7. Current status & pending items (as of 2026-08-03)
+
+### Last Card multiplayer colour picker — fixed 2026-08-03 (branch `fix/audit-remediation`)
+
+Reported from a live online game. A client who **drew** a wild got the colour
+picker and every colour tap was a no-op — client stuck on the overlay, host
+stuck waiting for `CHOOSE_COLOR`, game dead for the whole table. Three causes:
+
+1. `toPublic()` dropped `awaitingColorChoiceBy` and `pendingWildCard`, so a
+   client had to guess it owed a colour from "I tapped the deck and the top card
+   is a wild" — and never set `pendingWildRef`, which `onColorPick` requires.
+2. `phaseRef` was declared and read by three guards and **never assigned**. All
+   three were dead. Phase changes now go through `changePhase()`.
+3. `doHostDraw` set the host's own picker for _any_ player's draw.
+
+`toPublic` moved into `game/lastCard.js` as `toPublicState()` (pure logic
+belongs there), joined by `owesColorChoice(state, pid)` — one answer both sides
+read. New suite `__tests__/lastCard.colorChoice.test.js`; 543 → 553 tests over
+46 suites. Pure JS, no rebuild. **Not device-verified.**
 
 ### Design audit + critique — remediated 2026-08-03 (branch `fix/audit-remediation`)
 
@@ -171,6 +202,7 @@ error reporting (M4); per-card accessibility listeners + no memoization (M6);
 orphaned rooms accumulating forever (M8); plus minors m3/m8/m9/m11.
 
 **Blocking follow-ups before the next release:**
+
 1. **Re-publish `database.rules.json` in the Firebase console.** The C1/C2 fixes
    are inert until then. Keep the file comment-free.
 2. **Set `expo.extra.sentryDsn` in `app.json`** — currently `null`, so crash
@@ -185,7 +217,6 @@ orphaned rooms accumulating forever (M8); plus minors m3/m8/m9/m11.
 **Known residue (needs a server, not a code fix):** rooms abandoned by a host who
 never reopens the app are never collected. A global TTL needs a Cloud Function —
 listing rooms client-side would require a read grant that leaks every room code.
-
 
 Session context for picking up where we left off (branch `claude/ecstatic-cannon-vx06pn`):
 

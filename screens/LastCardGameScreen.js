@@ -28,6 +28,8 @@ import {
   getAIMove,
   getNextPlayer,
   drawUntilPlayable,
+  toPublicState,
+  owesColorChoice,
   removePlayer,
 } from "../game/lastCard";
 import {
@@ -178,24 +180,6 @@ function buildInitialState(routePlayers) {
 
 const MY_ID = "host";
 
-function toPublic(state) {
-  return {
-    drawPileCount: state.drawPile.length,
-    topCard: state.discardPile[state.discardPile.length - 1] ?? null,
-    activeColor: state.activeColor,
-    players: state.players.map((p) => ({
-      id: p.id,
-      name: p.name,
-      cardCount: state.hands[p.id]?.length ?? 0,
-    })),
-    currentTurn: state.currentTurn,
-    turnDirection: state.turnDirection === 1 ? "clockwise" : "counterclockwise",
-    pendingAction: state.pendingAction,
-    gameOver: state.gameOver,
-    winner: state.winner,
-  };
-}
-
 export default function LastCardGameScreen({ navigation, route }) {
   const {
     role,
@@ -218,7 +202,6 @@ export default function LastCardGameScreen({ navigation, route }) {
   const phaseRef = useRef("playing");
   const lockedRef = useRef(false);
   const pendingWildRef = useRef(null);
-  const awaitingDrawRef = useRef(false);
   const aiTimerRef = useRef(null);
   const turnTimerRef = useRef(null);
   const colorTimerRef = useRef(null);
@@ -442,7 +425,7 @@ export default function LastCardGameScreen({ navigation, route }) {
 
   function broadcastState(next) {
     if (isSinglePlayer) return;
-    const pub = toPublic(next);
+    const pub = toPublicState(next);
     broadcastToClients({ type: "GAME_STATE", ...pub });
     next.players.forEach((p) => {
       if (p.id === "host") return;
@@ -453,31 +436,40 @@ export default function LastCardGameScreen({ navigation, route }) {
     });
   }
 
+  // phaseRef mirrors `phase`. Three guards read the ref (handleTurn, onCardTap,
+  // onDeckTap) and nothing ever assigned it, so all three were permanently
+  // disabled. Every phase change goes through here now.
+  function changePhase(next) {
+    setPhase((prev) => {
+      const value = typeof next === "function" ? next(prev) : next;
+      phaseRef.current = value;
+      return value;
+    });
+  }
+
   function applyState(next) {
     fullRef.current = next;
     stateRef.current = next;
-    const pub = toPublic(next);
+    const pub = toPublicState(next);
     setGameState(pub);
     setMyHand(next.hands[myPid] ?? []);
     setWinner(next.winner ?? null);
-    setPhase(
-      // Only the player who owes the color choice sees the picker — otherwise
-      // the host pops it up too when a client plays a wild.
-      next.awaitingColorChoiceBy &&
-        String(next.awaitingColorChoiceBy) === String(myPid)
-        ? "colorPicker"
-        : next.gameOver
-          ? "gameOver"
-          : "playing",
+    // Only the player who owes the color choice sees the picker — otherwise
+    // the host pops it up too when a client plays a wild.
+    const iOweColor = owesColorChoice(next, myPid);
+    changePhase(
+      iOweColor ? "colorPicker" : next.gameOver ? "gameOver" : "playing",
     );
     if (next.gameOver && next.winner) {
       setStatusMsg(
         `${next.players.find((p) => p.id === next.winner)?.name ?? "Player"} wins!`,
       );
     }
-    if (!next.awaitingColorChoiceBy && !next.gameOver) {
-      pendingWildRef.current = null;
-    }
+    // Keyed on "do *I* owe a choice", not "does anyone" — the host used to hold
+    // on to a wild a client drew, because someone still owed a colour.
+    pendingWildRef.current = iOweColor
+      ? (next.pendingWildCard ?? pendingWildRef.current)
+      : null;
     broadcastState(next);
   }
 
@@ -625,8 +617,13 @@ export default function LastCardGameScreen({ navigation, route }) {
     let next;
 
     if (drawn.type === "wild" || drawn.type === "wild_draw4") {
-      pendingWildRef.current = drawn;
-      setPhase("colorPicker");
+      // This runs on the host for EVERY player's draw, including a remote
+      // client's — so the picker is only ours if the draw was ours. applyState
+      // sets the ref and the phase from the resulting state either way.
+      if (String(playerId) === String(myPid)) {
+        pendingWildRef.current = drawn;
+        changePhase("colorPicker");
+      }
       setStatusMsg(
         `${playerName} draws ${drawCount} card${drawCount !== 1 ? "s" : ""} and must choose a color`,
       );
@@ -851,25 +848,23 @@ export default function LastCardGameScreen({ navigation, route }) {
         if (reconnect.clientHandleMessage(msg)) return;
         if (handleClientMessage(msg)) return;
         if (msg.type === "GAME_STATE") {
-          const shouldShowColorPicker =
-            awaitingDrawRef.current &&
-            msg.currentTurn === myPid &&
-            msg.topCard &&
-            (msg.topCard.type === "wild" || msg.topCard.type === "wild_draw4");
+          // The host says who owes a colour, so read it instead of guessing
+          // from "did I just tap the deck?". That guess showed the picker
+          // without ever setting pendingWildRef, and onColorPick bails on a
+          // null ref — so every colour tap was dead and the game froze.
+          const iOweColor = owesColorChoice(msg, myPid);
 
-          awaitingDrawRef.current = false;
           setGameState(msg);
           setWinner(msg.winner ?? null);
-          setPhase((prev) => {
-            if (msg.gameOver) return "gameOver";
-            if (shouldShowColorPicker) return "colorPicker";
-            if (prev === "colorPicker" && msg.currentTurn === myPid)
-              return "colorPicker";
-            return "playing";
-          });
+          pendingWildRef.current = iOweColor
+            ? (msg.pendingWildCard ?? msg.topCard ?? null)
+            : null;
+          changePhase(
+            iOweColor ? "colorPicker" : msg.gameOver ? "gameOver" : "playing",
+          );
           // Update the status text from the synced state, otherwise the client
           // is stuck showing the initial "Dealing..." forever.
-          if (shouldShowColorPicker) {
+          if (iOweColor) {
             setStatusMsg("Choose a color");
           } else if (msg.gameOver) {
             const w = msg.players?.find(
@@ -951,7 +946,7 @@ export default function LastCardGameScreen({ navigation, route }) {
 
     if (card.type === "wild" || card.type === "wild_draw4") {
       pendingWildRef.current = card;
-      setPhase("colorPicker");
+      changePhase("colorPicker");
       setStatusMsg("Choose a color");
       if (isHost) {
         const next = applyCard(s, myPid, card, null);
@@ -1002,7 +997,6 @@ export default function LastCardGameScreen({ navigation, route }) {
         scheduleTimeout(turnTimerRef, () => handleTurn(stateRef.current), 300);
       }
     } else {
-      awaitingDrawRef.current = true;
       setStatusMsg("Drawing...");
       sendToHost({ type: "DRAW_CARD" });
     }
@@ -1018,7 +1012,7 @@ export default function LastCardGameScreen({ navigation, route }) {
     hapticButton(); // tick when picking a wild color
 
     pendingWildRef.current = null;
-    setPhase("playing");
+    changePhase("playing");
     setStatusMsg("");
 
     if (isHost) {
@@ -1040,7 +1034,7 @@ export default function LastCardGameScreen({ navigation, route }) {
     const next = buildInitialState(initialPlayers);
     applyState(next);
     setStatusMsg("Dealing...");
-    setPhase("playing");
+    changePhase("playing");
     lockedRef.current = false;
     scheduleTimeout(turnTimerRef, () => handleTurn(next), 300);
   }
