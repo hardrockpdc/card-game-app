@@ -197,9 +197,33 @@ Without it, +4 is a free every-turn attack.
 What WAS broken: one generic message for every illegal card. Tapping the dimmed
 +4 while holding a Green 5 said _"Can't play that — match Green or a 5."_ —
 naming the card in your hand as the reason you can't play a different one.
-`whyUnplayable()` (in `game/lastCard.js`) now returns a reason code that feeds
-both the tap message and the accessibility label. 553 → 559 tests.
-**Not device-verified.**
+`whyUnplayable()` (in `game/lastCard.js`) returns a reason code instead of one
+flat string. 553 → 559 tests.
+
+**Superseded the same day — see below. The on-screen message no longer exists;
+the reason codes now feed the dimming and the accessibility labels only.**
+
+### Illegal-tap feedback removed — Pedro's call, 2026-08-03
+
+Device test D1 found that tapping an unplayable card did **nothing at all** — no
+shake, no haptic, no text — while legal cards in the same hand played fine. That
+combination is impossible from reading the code (legal cards playing means every
+guard in `onCardTap` passed, so a dimmed card must come back non-null from
+`whyUnplayable`). **The cause was never identified.**
+
+Pedro prefers the silence, so it is now explicit rather than accidental: the tap
+returns at `whyUnplayable` and nothing fires. `triggerShake`, `unplayableText`,
+the `shakeId`/`shakeAnim`/`shakeResetRef` state, the `Animated` import and the
+`cardRejected` style are all deleted — they were dead once nothing called them.
+
+**Accessibility is unaffected** — each card's `accessibilityLabel` still carries
+its reason via `unplayableHint()`, because a screen-reader user has no dimming
+to read. That is why `whyUnplayable()` and its tests stay.
+
+**If anyone restores the visible feedback, find what was swallowing it first.**
+An unexplained failure that we build on top of will resurface. A plausible
+suspect never ruled out: `hapticError()` throwing, which would also silently
+kill the deck-tap message (test D6, still untested).
 
 ### Design audit + critique — remediated 2026-08-03 (branch `fix/audit-remediation`)
 
@@ -228,6 +252,9 @@ SinglePlayerSetup and LastCard. Test count 515 → 543 across 45 suites.
   illegal tap gave a shake and no words, a dead deck tap gave nothing at all,
   hand cards had no accessibility labels, and `triggerShake` ignored reduce
   motion. Wild colours renamed from "OD Green"/"Crimson"/"Turquoise"/"Coral".
+  **The illegal-tap half was reversed on 2026-08-03 — the shake and the message
+  are gone by choice; see "Illegal-tap feedback removed" above. The dimming, the
+  deck-tap message and the accessibility labels all stand.**
 - Backgrounding tore down **local** WiFi multiplayer mid-game (online already
   had an exception; local, the same-room audience's mode, did not).
 - `game/colors.js` added. `#e94560` was serving as brand CTA, error, neutral

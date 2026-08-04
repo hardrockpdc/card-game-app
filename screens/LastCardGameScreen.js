@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  Animated,
   useWindowDimensions,
   Alert,
   BackHandler,
@@ -142,18 +141,6 @@ function cardTitle(card) {
   return card.type;
 }
 
-// One sentence per reason a card is illegal, keyed on whyUnplayable()'s code.
-// Wild +4 gets its own: the generic line reads "match Green or a 5" to a player
-// who is holding a Green 5 — it names the card they have as the reason they
-// can't play a different one, which is worse than saying nothing.
-function unplayableText(reason, activeColor, topCard) {
-  const colorName = COLOR_LABELS[activeColor] ?? "the colour";
-  if (reason === "draw4_has_color_match") {
-    return `Wild +4 is only for when you can't match — you still have a ${colorName} card to play.`;
-  }
-  return `Can't play that — match ${colorName} or a ${cardTitle(topCard)}.`;
-}
-
 // Short version for screen readers, appended to the card's own name.
 function unplayableHint(reason, activeColor) {
   if (reason === "draw4_has_color_match") {
@@ -228,7 +215,6 @@ export default function LastCardGameScreen({ navigation, route }) {
   const turnTimerRef = useRef(null);
   const colorTimerRef = useRef(null);
   const yourTurnTimerRef = useRef(null);
-  const shakeResetRef = useRef(null);
   const prevTurnRef = useRef(null);
   const [gameState, setGameState] = useState(null);
   const [showYourTurnBanner, setShowYourTurnBanner] = useState(false);
@@ -236,12 +222,10 @@ export default function LastCardGameScreen({ navigation, route }) {
   const [statusMsg, setStatusMsg] = useState("Dealing...");
   const [phase, setPhase] = useState("playing");
   const [winner, setWinner] = useState(null);
-  const [shakeId, setShakeId] = useState(null);
   const [coinsEarned, setCoinsEarned] = useState(0);
   const [showRoundModal, setShowRoundModal] = useState(false);
   const [tableId, setTableId] = useState(getLastCardTableId());
   const [showTablePicker, setShowTablePicker] = useState(false);
-  const shakeAnim = useRef(new Animated.Value(0)).current;
   // Shared store — one native query and one listener for the whole app.
   const reduceMotion = useReduceMotion();
   const coinRewardedRef = useRef(false);
@@ -329,7 +313,6 @@ export default function LastCardGameScreen({ navigation, route }) {
       if (aiTimerRef.current) clearTimeout(aiTimerRef.current);
       if (turnTimerRef.current) clearTimeout(turnTimerRef.current);
       if (colorTimerRef.current) clearTimeout(colorTimerRef.current);
-      if (shakeResetRef.current) clearTimeout(shakeResetRef.current);
       if (yourTurnTimerRef.current) clearTimeout(yourTurnTimerRef.current);
     },
     [],
@@ -410,46 +393,6 @@ export default function LastCardGameScreen({ navigation, route }) {
       ref.current = null;
       fn();
     }, ms);
-  }
-
-  function triggerShake(cardId) {
-    // Reduce motion: a five-step jitter is exactly what the setting exists to
-    // suppress. Flash the card as the "rejected" signal instead of moving it.
-    if (reduceMotion) {
-      setShakeId(cardId);
-      shakeAnim.setValue(0);
-      scheduleTimeout(shakeResetRef, () => setShakeId(null), 220);
-      return;
-    }
-    setShakeId(cardId);
-    shakeAnim.setValue(0);
-    Animated.sequence([
-      Animated.timing(shakeAnim, {
-        toValue: 9,
-        duration: 55,
-        useNativeDriver: true,
-      }),
-      Animated.timing(shakeAnim, {
-        toValue: -9,
-        duration: 55,
-        useNativeDriver: true,
-      }),
-      Animated.timing(shakeAnim, {
-        toValue: 6,
-        duration: 55,
-        useNativeDriver: true,
-      }),
-      Animated.timing(shakeAnim, {
-        toValue: -6,
-        duration: 55,
-        useNativeDriver: true,
-      }),
-      Animated.timing(shakeAnim, {
-        toValue: 0,
-        duration: 55,
-        useNativeDriver: true,
-      }),
-    ]).start(() => setShakeId(null));
   }
 
   function broadcastState(next) {
@@ -959,16 +902,22 @@ export default function LastCardGameScreen({ navigation, route }) {
     const hand = s.hands[myPid] ?? [];
     const topCard = s.discardPile[s.discardPile.length - 1];
     const hasColorMatch = hand.some((c) => c.color === s.activeColor);
-    const reason = whyUnplayable(card, topCard, s.activeColor, hasColorMatch);
-    if (reason) {
-      triggerShake(card.id);
-      hapticError(); // sharp "nope" on an illegal card
-      // Say WHY. A shake and a buzz with no words is punishment without
-      // explanation — the rule is invisible, so a first-timer or anyone handed
-      // the phone mid-game just taps until they guess it.
-      setStatusMsg(unplayableText(reason, s.activeColor, topCard));
-      return;
-    }
+    // An illegal card is rejected in SILENCE, deliberately (Pedro's call,
+    // 2026-08-03, after playing it on a device). Unplayable cards are dimmed at
+    // every difficulty, so the legal set is already visible before you touch
+    // anything — a shake, a buzz and a sentence on top of that read as being
+    // told off for a mistake the interface had already shown you not to make.
+    //
+    // This USED to shake + buzz + explain. On device none of it appeared and we
+    // never found out why; rather than leave a path that fails for unknown
+    // reasons (and could start firing again after an unrelated edit), the
+    // silence is now explicit. If you want the feedback back, restore it here
+    // AND find out what was swallowing it — don't assume it works.
+    //
+    // Screen readers are NOT silenced: each card's accessibilityLabel still
+    // carries its reason via unplayableHint(), because a blind player has no
+    // dimming to read.
+    if (whyUnplayable(card, topCard, s.activeColor, hasColorMatch)) return;
 
     hapticImpact(HapticStyle.Light); // satisfying tap when a card plays
 
@@ -1408,7 +1357,6 @@ export default function LastCardGameScreen({ navigation, route }) {
                 )
               : "no_match";
             const playable = reason === null;
-            const isShaking = card.id === shakeId;
             // Always dim unplayable cards. This used to be gated on
             // `difficulty === "easy"`, and the default is "medium" — so the
             // standard game gave no indication of which cards were legal.
@@ -1429,31 +1377,20 @@ export default function LastCardGameScreen({ navigation, route }) {
                 }
                 accessibilityState={{ disabled: !playable }}
               >
-                <Animated.View
-                  style={
-                    isShaking
-                      ? { transform: [{ translateX: shakeAnim }] }
-                      : null
-                  }
+                <View
+                  style={[
+                    styles.cardShell,
+                    { width: HAND_W, height: HAND_H },
+                    shouldDimUnplayable && styles.dimmed,
+                  ]}
                 >
-                  <View
-                    style={[
-                      styles.cardShell,
-                      { width: HAND_W, height: HAND_H },
-                      shouldDimUnplayable && styles.dimmed,
-                      isShaking && styles.cardRejected,
-                    ]}
-                  >
-                    <Image
-                      source={cardImage(card)}
-                      style={styles.cardArt}
-                      resizeMode="contain"
-                    />
-                    <Text style={styles.cardFallbackText}>
-                      {cardTitle(card)}
-                    </Text>
-                  </View>
-                </Animated.View>
+                  <Image
+                    source={cardImage(card)}
+                    style={styles.cardArt}
+                    resizeMode="contain"
+                  />
+                  <Text style={styles.cardFallbackText}>{cardTitle(card)}</Text>
+                </View>
               </TouchableOpacity>
             );
           })}
@@ -1746,12 +1683,6 @@ const styles = StyleSheet.create({
   },
   dimmed: {
     opacity: 0.38,
-  },
-  // The reduce-motion stand-in for the shake: a card that was just refused
-  // gets a red edge instead of jittering.
-  cardRejected: {
-    borderWidth: 2,
-    borderColor: "#e94560",
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,

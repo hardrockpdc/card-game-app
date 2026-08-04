@@ -192,19 +192,33 @@ gets the picker without ever having tapped a card.
 - Playable cards: full brightness
 - Unplayable cards: dimmed to ~40% opacity (at every difficulty — seeing which
   cards are legal is a rules aid, not a strategy hint)
-- Tapping an unplayable card: shake + error haptic + **a sentence saying why**
+- Tapping an unplayable card: **nothing at all — no shake, no haptic, no text**
 
-The reason comes from `whyUnplayable()` in `game/lastCard.js`, which returns a
-code the screen turns into copy. Two codes today:
+That silence is deliberate (**Pedro's call, 2026-08-03**, after playing it on a
+device). The dimming already shows the legal set before you touch anything, so
+scolding a player for a move the interface had told them not to make is noise.
+The tap returns at `whyUnplayable(...)` in `onCardTap` and nothing else fires.
 
-| code                    | when                                    | shown as                                                                  |
-| ----------------------- | --------------------------------------- | ------------------------------------------------------------------------- |
-| `no_match`              | wrong colour and wrong number/type      | "Can't play that — match Green or a 5."                                   |
-| `draw4_has_color_match` | Wild +4 while a colour match is in hand | "Wild +4 is only for when you can't match — you still have a Green card…" |
+It briefly did shake + buzz + explain (2026-08-03). On device none of it
+appeared, the cause was never found, and rather than keep a path that fails for
+unknown reasons the silence was made explicit. **If you ever restore the
+feedback, find out what was swallowing it first — don't assume it works.** The
+shake animation, `triggerShake`, the `cardRejected` style and `unplayableText`
+were all deleted with it; they're in git history if needed.
+
+`whyUnplayable()` in `game/lastCard.js` survives, because two things still use
+it: the **dimming**, and the **accessibility labels** — a screen reader still
+announces why a card can't be played, since a blind player has no dimming to
+read. It returns a code the screen turns into copy:
+
+| code                    | when                                    | screen reader hears                                |
+| ----------------------- | --------------------------------------- | -------------------------------------------------- |
+| `no_match`              | wrong colour and wrong number/type      | "…, can't be played right now"                     |
+| `draw4_has_color_match` | Wild +4 while a colour match is in hand | "…, can't be played — you still have a Green card" |
 
 Wild +4 has to be its own case. It is the only card whose legality depends on
-the rest of the hand, so the generic line tells a player to play the very card
-that is blocking them. The same codes feed the accessibility labels.
+the rest of the hand, so the generic line would tell a player to play the very
+card that is blocking them.
 
 ---
 
