@@ -101,3 +101,48 @@ describe("claimDailyBonus", () => {
     expect(week).toBe(2000);
   });
 });
+
+// M5 — claimDailyBonus paid coins BEFORE writing KEY_LAST_CLAIM, and those two
+// setItem calls sat outside any try/catch. A failed write left the coins paid
+// with no claim recorded, so the bonus could be claimed again the same day —
+// an unbounded coin farm.
+describe("M5 — the daily bonus is never paid twice when the claim write fails", () => {
+  test("a failed last-claim write does not pay out", async () => {
+    const before = await getCoins();
+
+    const realSetItem = AsyncStorage.setItem;
+    AsyncStorage.setItem = jest.fn(async (key, value) => {
+      if (key === "@cardnight:daily:last_claim") throw new Error("disk full");
+      return realSetItem(key, value);
+    });
+
+    try {
+      await claimDailyBonus(d("2026-07-03"));
+    } catch (_) {}
+    AsyncStorage.setItem = realSetItem;
+
+    expect(await getCoins()).toBe(before);
+  });
+
+  test("after a failed write the same day still pays exactly once", async () => {
+    const before = await getCoins();
+
+    const realSetItem = AsyncStorage.setItem;
+    AsyncStorage.setItem = jest.fn(async (key, value) => {
+      if (key === "@cardnight:daily:last_claim") throw new Error("disk full");
+      return realSetItem(key, value);
+    });
+    try {
+      await claimDailyBonus(d("2026-07-03"));
+    } catch (_) {}
+    AsyncStorage.setItem = realSetItem;
+
+    const r = await claimDailyBonus(d("2026-07-03"));
+    expect(r.claimed).toBe(true);
+    expect(await getCoins()).toBe(before + DAILY_REWARDS[0]);
+
+    const again = await claimDailyBonus(d("2026-07-03"));
+    expect(again.claimed).toBe(false);
+    expect(await getCoins()).toBe(before + DAILY_REWARDS[0]);
+  });
+});

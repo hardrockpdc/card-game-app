@@ -19,16 +19,10 @@ import {
 } from "../game/onlineRoom";
 import { setNetworkMode } from "../game/GameNetwork";
 import { recordAchievementEvent } from "../game/achievements";
+import { getGameInfo, canStartGame } from "../game/roomRoster";
 
-// Per-game labels + player limits + the game screen each launches into.
-const GAME_INFO = {
-  goFish: { label: "Go Fish", min: 2, max: 4, screen: "GoFishGame" },
-  conquian: { label: "Conquián", min: 2, max: 4, screen: "ConquianGame" },
-  poker: { label: "Poker", min: 2, max: 5, screen: "PokerGame" },
-  rummy: { label: "Rummy", min: 2, max: 4, screen: "RummyGame" },
-  lastCard: { label: "Last Card", min: 2, max: 8, screen: "LastCardGame" },
-  whoami: { label: "Who Am I?", min: 2, max: 8, screen: "WhoAmIGame" },
-};
+// Per-game labels + player limits + the game screen each launches into now live
+// in game/roomRoster.js, so the min/max rules are pure and unit-tested.
 
 // Per-game launch params, mirroring what the local lobby passes. Variant/tone
 // were chosen in the game picker and stored on the room.
@@ -150,6 +144,20 @@ export default function OnlineLobbyScreen({ navigation, route }) {
     };
   }, []);
 
+  // Leave the room if this screen goes away by any route other than the
+  // hardware-back handler above — `leftRef` was always documented as a guard
+  // for "leave-on-unmount", but that effect didn't exist, so backing out any
+  // other way stranded the room (or our player slot) on the server.
+  //
+  // Skipped when launchedRef is set: navigating INTO the game is not leaving.
+  useEffect(() => {
+    return () => {
+      if (leftRef.current || launchedRef.current) return;
+      leftRef.current = true;
+      leaveRoom(code, { isHost });
+    };
+  }, [code, isHost]);
+
   async function handleCopyCode() {
     await Clipboard.setStringAsync(code);
     setCopied(true);
@@ -158,13 +166,12 @@ export default function OnlineLobbyScreen({ navigation, route }) {
   }
 
   function handleStart() {
-    const info = GAME_INFO[room?.gameId] || {};
-    const count = players.length;
-    if (count < (info.min ?? 2)) {
-      Alert.alert(
-        "Not enough players",
-        `${info.label || "This game"} needs at least ${info.min} players.`,
-      );
+    const info = getGameInfo(room?.gameId);
+    // Checks BOTH bounds. The upper one used to be missing entirely, so a lobby
+    // over capacity could start and exhaust the deck on the deal.
+    const verdict = canStartGame(room?.gameId, players.length);
+    if (!verdict.ok) {
+      Alert.alert(verdict.title, verdict.message);
       return;
     }
 
@@ -187,7 +194,10 @@ export default function OnlineLobbyScreen({ navigation, route }) {
   }
 
   const players = toPlayerArray(room?.players, myUid);
-  const info = GAME_INFO[room?.gameId] || { label: "Game", min: 2, max: 8 };
+  const info = getGameInfo(room?.gameId);
+  // Same verdict the Start button uses, so the hint text and the dimmed state
+  // can't disagree with what actually happens on tap.
+  const startVerdict = canStartGame(room?.gameId, players.length);
 
   if (!room) {
     return (
@@ -250,14 +260,14 @@ export default function OnlineLobbyScreen({ navigation, route }) {
         {isHost ? (
           <>
             <Text style={styles.waitingText}>
-              {players.length < info.min
-                ? `${info.label} needs at least ${info.min} players`
-                : "Ready! Tap Start when everyone's in."}
+              {startVerdict.ok
+                ? "Ready! Tap Start when everyone's in."
+                : startVerdict.message}
             </Text>
             <TouchableOpacity
               style={[
                 styles.startButton,
-                players.length < info.min && styles.startButtonDimmed,
+                !startVerdict.ok && styles.startButtonDimmed,
               ]}
               onPress={handleStart}
             >

@@ -28,6 +28,9 @@ import {
   getAIMove,
   getNextPlayer,
   drawUntilPlayable,
+  toPublicState,
+  owesColorChoice,
+  whyUnplayable,
   removePlayer,
 } from "../game/lastCard";
 import {
@@ -41,6 +44,8 @@ import {
   disconnectFromHost,
 } from "../game/GameNetwork";
 import { scale, scaleFont } from "../game/responsive";
+import { useReduceMotion } from "../game/reduceMotion";
+import { brandRed, surfaceSunken } from "../game/colors";
 import { addCoins } from "../game/wallet";
 import { getWinReward } from "../game/rewards";
 import { recordAchievementEvent } from "../game/achievements";
@@ -77,11 +82,14 @@ const COLOR_HEX = {
   coral: "#FF7F50",
 };
 
+// Plain colour names a child can say out loud. These were "OD Green",
+// "Crimson", "Turquoise" and "Coral" — military and paint-chip jargon in a
+// family game, and the wild-colour picker asks players to choose one by name.
 const COLOR_LABELS = {
-  od_green: "OD Green",
-  crimson: "Crimson",
-  turquoise: "Turquoise",
-  coral: "Coral",
+  od_green: "Green",
+  crimson: "Red",
+  turquoise: "Blue",
+  coral: "Orange",
 };
 
 // Translucent version of a #rrggbb hex — used for the active-colour halo behind
@@ -134,15 +142,25 @@ function cardTitle(card) {
   return card.type;
 }
 
-function cardLabel(card) {
-  if (!card) return "";
-  if (card.type === "number") return String(card.value);
-  if (card.type === "wild") return "Wild";
-  if (card.type === "wild_draw4") return "Wild +4";
-  if (card.type === "draw2") return "+2";
-  if (card.type === "skip") return "Skip";
-  if (card.type === "reverse") return "Reverse";
-  return card.type;
+// One sentence per reason a card is illegal, keyed on whyUnplayable()'s code.
+// Wild +4 gets its own: the generic line reads "match Green or a 5" to a player
+// who is holding a Green 5 — it names the card they have as the reason they
+// can't play a different one, which is worse than saying nothing.
+function unplayableText(reason, activeColor, topCard) {
+  const colorName = COLOR_LABELS[activeColor] ?? "the colour";
+  if (reason === "draw4_has_color_match") {
+    return `Wild +4 is only for when you can't match — you still have a ${colorName} card to play.`;
+  }
+  return `Can't play that — match ${colorName} or a ${cardTitle(topCard)}.`;
+}
+
+// Short version for screen readers, appended to the card's own name.
+function unplayableHint(reason, activeColor) {
+  if (reason === "draw4_has_color_match") {
+    return `, can't be played — you still have a ${COLOR_LABELS[activeColor] ?? "matching"} card`;
+  }
+  if (reason) return ", can't be played right now";
+  return "";
 }
 
 function buildInitialState(routePlayers) {
@@ -184,24 +202,6 @@ function buildInitialState(routePlayers) {
 
 const MY_ID = "host";
 
-function toPublic(state) {
-  return {
-    drawPileCount: state.drawPile.length,
-    topCard: state.discardPile[state.discardPile.length - 1] ?? null,
-    activeColor: state.activeColor,
-    players: state.players.map((p) => ({
-      id: p.id,
-      name: p.name,
-      cardCount: state.hands[p.id]?.length ?? 0,
-    })),
-    currentTurn: state.currentTurn,
-    turnDirection: state.turnDirection === 1 ? "clockwise" : "counterclockwise",
-    pendingAction: state.pendingAction,
-    gameOver: state.gameOver,
-    winner: state.winner,
-  };
-}
-
 export default function LastCardGameScreen({ navigation, route }) {
   const {
     role,
@@ -224,11 +224,11 @@ export default function LastCardGameScreen({ navigation, route }) {
   const phaseRef = useRef("playing");
   const lockedRef = useRef(false);
   const pendingWildRef = useRef(null);
-  const awaitingDrawRef = useRef(false);
   const aiTimerRef = useRef(null);
   const turnTimerRef = useRef(null);
   const colorTimerRef = useRef(null);
   const yourTurnTimerRef = useRef(null);
+  const shakeResetRef = useRef(null);
   const prevTurnRef = useRef(null);
   const [gameState, setGameState] = useState(null);
   const [showYourTurnBanner, setShowYourTurnBanner] = useState(false);
@@ -242,6 +242,8 @@ export default function LastCardGameScreen({ navigation, route }) {
   const [tableId, setTableId] = useState(getLastCardTableId());
   const [showTablePicker, setShowTablePicker] = useState(false);
   const shakeAnim = useRef(new Animated.Value(0)).current;
+  // Shared store — one native query and one listener for the whole app.
+  const reduceMotion = useReduceMotion();
   const coinRewardedRef = useRef(false);
   const outcomeBuzzedRef = useRef(false); // fire win/lose haptic once per game
   const lastSaveRef = useRef(0); // BUG-4: auto-save throttle (once / 3s)
@@ -250,10 +252,12 @@ export default function LastCardGameScreen({ navigation, route }) {
   const reconnect = useOnlineReconnect({
     role,
     getPlayerName: (id) =>
-      stateRef.current?.players.find((p) => String(p.id) === String(id))?.name ??
-      "A player",
+      stateRef.current?.players.find((p) => String(p.id) === String(id))
+        ?.name ?? "A player",
     isRealPlayer: (id) => {
-      const p = stateRef.current?.players.find((x) => String(x.id) === String(id));
+      const p = stateRef.current?.players.find(
+        (x) => String(x.id) === String(id),
+      );
       return !!p && !p.isAI && String(p.id) !== MY_ID;
     },
     broadcast: broadcastToClients,
@@ -294,11 +298,9 @@ export default function LastCardGameScreen({ navigation, route }) {
       navigation.navigate("Home");
     },
     onHostEnded: (name) => {
-      Alert.alert(
-        "Game ended",
-        `${name} left and didn't reconnect in time.`,
-        [{ text: "OK", onPress: () => navigation.navigate("Home") }],
-      );
+      Alert.alert("Game ended", `${name} left and didn't reconnect in time.`, [
+        { text: "OK", onPress: () => navigation.navigate("Home") },
+      ]);
     },
     // Client tapped "Leave" on the self-disconnect overlay: quit cleanly.
     onSelfLeave: () => {
@@ -320,17 +322,28 @@ export default function LastCardGameScreen({ navigation, route }) {
       if (aiTimerRef.current) clearTimeout(aiTimerRef.current);
       if (turnTimerRef.current) clearTimeout(turnTimerRef.current);
       if (colorTimerRef.current) clearTimeout(colorTimerRef.current);
+      if (shakeResetRef.current) clearTimeout(shakeResetRef.current);
       if (yourTurnTimerRef.current) clearTimeout(yourTurnTimerRef.current);
     },
     [],
   );
 
+  // Rewards run in EVERY mode, not just single player.
+  //
+  // This effect used to open with `if (!isSinglePlayer) return`, so a
+  // multiplayer win paid no coins, recorded no win, fired no achievement event
+  // and didn't even buzz — while line 2 of the block below already asked
+  // getWinReward for the (higher) multiplayer tier. Two of the three audiences
+  // this app is built for were locked out of the whole reward loop.
+  //
+  // No host authority is needed: each device evaluates `winner === myPid` for
+  // its own player, so every device pays exactly its own user, once.
   useEffect(() => {
-    if (!isSinglePlayer) return;
     const isWon = phase === "gameOver" && winner === myPid;
     if (isWon && !coinRewardedRef.current) {
       coinRewardedRef.current = true;
-      clearGame(SAVE_KEY_LASTCARD);
+      // Only single player has a local save to clear.
+      if (isSinglePlayer) clearGame(SAVE_KEY_LASTCARD);
       const reward = getWinReward("lastcard", !isSinglePlayer);
       addCoins(reward).then(() => setCoinsEarned(reward));
       recordWin("lastcard");
@@ -393,6 +406,14 @@ export default function LastCardGameScreen({ navigation, route }) {
   }
 
   function triggerShake(cardId) {
+    // Reduce motion: a five-step jitter is exactly what the setting exists to
+    // suppress. Flash the card as the "rejected" signal instead of moving it.
+    if (reduceMotion) {
+      setShakeId(cardId);
+      shakeAnim.setValue(0);
+      scheduleTimeout(shakeResetRef, () => setShakeId(null), 220);
+      return;
+    }
     setShakeId(cardId);
     shakeAnim.setValue(0);
     Animated.sequence([
@@ -426,7 +447,7 @@ export default function LastCardGameScreen({ navigation, route }) {
 
   function broadcastState(next) {
     if (isSinglePlayer) return;
-    const pub = toPublic(next);
+    const pub = toPublicState(next);
     broadcastToClients({ type: "GAME_STATE", ...pub });
     next.players.forEach((p) => {
       if (p.id === "host") return;
@@ -437,30 +458,40 @@ export default function LastCardGameScreen({ navigation, route }) {
     });
   }
 
+  // phaseRef mirrors `phase`. Three guards read the ref (handleTurn, onCardTap,
+  // onDeckTap) and nothing ever assigned it, so all three were permanently
+  // disabled. Every phase change goes through here now.
+  function changePhase(next) {
+    setPhase((prev) => {
+      const value = typeof next === "function" ? next(prev) : next;
+      phaseRef.current = value;
+      return value;
+    });
+  }
+
   function applyState(next) {
     fullRef.current = next;
     stateRef.current = next;
-    const pub = toPublic(next);
+    const pub = toPublicState(next);
     setGameState(pub);
     setMyHand(next.hands[myPid] ?? []);
     setWinner(next.winner ?? null);
-    setPhase(
-      // Only the player who owes the color choice sees the picker — otherwise
-      // the host pops it up too when a client plays a wild.
-      next.awaitingColorChoiceBy && String(next.awaitingColorChoiceBy) === String(myPid)
-        ? "colorPicker"
-        : next.gameOver
-          ? "gameOver"
-          : "playing",
+    // Only the player who owes the color choice sees the picker — otherwise
+    // the host pops it up too when a client plays a wild.
+    const iOweColor = owesColorChoice(next, myPid);
+    changePhase(
+      iOweColor ? "colorPicker" : next.gameOver ? "gameOver" : "playing",
     );
     if (next.gameOver && next.winner) {
       setStatusMsg(
         `${next.players.find((p) => p.id === next.winner)?.name ?? "Player"} wins!`,
       );
     }
-    if (!next.awaitingColorChoiceBy && !next.gameOver) {
-      pendingWildRef.current = null;
-    }
+    // Keyed on "do *I* owe a choice", not "does anyone" — the host used to hold
+    // on to a wild a client drew, because someone still owed a colour.
+    pendingWildRef.current = iOweColor
+      ? (next.pendingWildCard ?? pendingWildRef.current)
+      : null;
     broadcastState(next);
   }
 
@@ -608,15 +639,20 @@ export default function LastCardGameScreen({ navigation, route }) {
     let next;
 
     if (drawn.type === "wild" || drawn.type === "wild_draw4") {
-      pendingWildRef.current = drawn;
-      setPhase("colorPicker");
+      // This runs on the host for EVERY player's draw, including a remote
+      // client's — so the picker is only ours if the draw was ours. applyState
+      // sets the ref and the phase from the resulting state either way.
+      if (String(playerId) === String(myPid)) {
+        pendingWildRef.current = drawn;
+        changePhase("colorPicker");
+      }
       setStatusMsg(
         `${playerName} draws ${drawCount} card${drawCount !== 1 ? "s" : ""} and must choose a color`,
       );
       next = applyCard(result.state, playerId, drawn, null);
     } else {
       setStatusMsg(
-        `${playerName} draws ${drawCount} card${drawCount !== 1 ? "s" : ""} and plays ${cardLabel(drawn)}`,
+        `${playerName} draws ${drawCount} card${drawCount !== 1 ? "s" : ""} and plays ${cardTitle(drawn)}`,
       );
       next = applyCard(result.state, playerId, drawn, null);
     }
@@ -635,7 +671,7 @@ export default function LastCardGameScreen({ navigation, route }) {
       if (move) {
         const next = doHostCardPlay(current.id, move.card, move.chosenColor);
         if (next !== s) {
-          const parts = [`${current.name} plays ${cardLabel(move.card)}`];
+          const parts = [`${current.name} plays ${cardTitle(move.card)}`];
           if (move.card.type === "skip") parts.push("— skips next player!");
           if (move.card.type === "reverse") parts.push("— reverses direction!");
           if (move.card.type === "draw2") parts.push("— next player draws 2!");
@@ -834,28 +870,28 @@ export default function LastCardGameScreen({ navigation, route }) {
         if (reconnect.clientHandleMessage(msg)) return;
         if (handleClientMessage(msg)) return;
         if (msg.type === "GAME_STATE") {
-          const shouldShowColorPicker =
-            awaitingDrawRef.current &&
-            msg.currentTurn === myPid &&
-            msg.topCard &&
-            (msg.topCard.type === "wild" || msg.topCard.type === "wild_draw4");
+          // The host says who owes a colour, so read it instead of guessing
+          // from "did I just tap the deck?". That guess showed the picker
+          // without ever setting pendingWildRef, and onColorPick bails on a
+          // null ref — so every colour tap was dead and the game froze.
+          const iOweColor = owesColorChoice(msg, myPid);
 
-          awaitingDrawRef.current = false;
           setGameState(msg);
           setWinner(msg.winner ?? null);
-          setPhase((prev) => {
-            if (msg.gameOver) return "gameOver";
-            if (shouldShowColorPicker) return "colorPicker";
-            if (prev === "colorPicker" && msg.currentTurn === myPid)
-              return "colorPicker";
-            return "playing";
-          });
+          pendingWildRef.current = iOweColor
+            ? (msg.pendingWildCard ?? msg.topCard ?? null)
+            : null;
+          changePhase(
+            iOweColor ? "colorPicker" : msg.gameOver ? "gameOver" : "playing",
+          );
           // Update the status text from the synced state, otherwise the client
           // is stuck showing the initial "Dealing..." forever.
-          if (shouldShowColorPicker) {
+          if (iOweColor) {
             setStatusMsg("Choose a color");
           } else if (msg.gameOver) {
-            const w = msg.players?.find((p) => String(p.id) === String(msg.winner));
+            const w = msg.players?.find(
+              (p) => String(p.id) === String(msg.winner),
+            );
             setStatusMsg(`${w?.name ?? "Player"} wins!`);
           } else if (String(msg.currentTurn) === String(myPid)) {
             setStatusMsg("Your turn — tap a card to play");
@@ -916,9 +952,14 @@ export default function LastCardGameScreen({ navigation, route }) {
     const hand = s.hands[myPid] ?? [];
     const topCard = s.discardPile[s.discardPile.length - 1];
     const hasColorMatch = hand.some((c) => c.color === s.activeColor);
-    if (!isPlayable(card, topCard, s.activeColor, hasColorMatch)) {
+    const reason = whyUnplayable(card, topCard, s.activeColor, hasColorMatch);
+    if (reason) {
       triggerShake(card.id);
       hapticError(); // sharp "nope" on an illegal card
+      // Say WHY. A shake and a buzz with no words is punishment without
+      // explanation — the rule is invisible, so a first-timer or anyone handed
+      // the phone mid-game just taps until they guess it.
+      setStatusMsg(unplayableText(reason, s.activeColor, topCard));
       return;
     }
 
@@ -926,7 +967,7 @@ export default function LastCardGameScreen({ navigation, route }) {
 
     if (card.type === "wild" || card.type === "wild_draw4") {
       pendingWildRef.current = card;
-      setPhase("colorPicker");
+      changePhase("colorPicker");
       setStatusMsg("Choose a color");
       if (isHost) {
         const next = applyCard(s, myPid, card, null);
@@ -959,8 +1000,13 @@ export default function LastCardGameScreen({ navigation, route }) {
     if (s.awaitingColorChoiceBy) return;
     if (lockedRef.current) return;
 
-    const hasPlay = hasPlayableCard(s, myPid);
-    if (hasPlay) return;
+    // Drawing is only legal with nothing playable. This used to return in
+    // silence — a completely dead tap, no shake, no buzz, no words.
+    if (hasPlayableCard(s, myPid)) {
+      hapticError();
+      setStatusMsg("You still have a card you can play.");
+      return;
+    }
 
     hapticButton(); // tick when you draw from the deck
 
@@ -972,7 +1018,6 @@ export default function LastCardGameScreen({ navigation, route }) {
         scheduleTimeout(turnTimerRef, () => handleTurn(stateRef.current), 300);
       }
     } else {
-      awaitingDrawRef.current = true;
       setStatusMsg("Drawing...");
       sendToHost({ type: "DRAW_CARD" });
     }
@@ -988,7 +1033,7 @@ export default function LastCardGameScreen({ navigation, route }) {
     hapticButton(); // tick when picking a wild color
 
     pendingWildRef.current = null;
-    setPhase("playing");
+    changePhase("playing");
     setStatusMsg("");
 
     if (isHost) {
@@ -1010,7 +1055,7 @@ export default function LastCardGameScreen({ navigation, route }) {
     const next = buildInitialState(initialPlayers);
     applyState(next);
     setStatusMsg("Dealing...");
-    setPhase("playing");
+    changePhase("playing");
     lockedRef.current = false;
     scheduleTimeout(turnTimerRef, () => handleTurn(next), 300);
   }
@@ -1020,6 +1065,11 @@ export default function LastCardGameScreen({ navigation, route }) {
   const hasPlayable = getCurrentState()
     ? hasPlayableCard(getCurrentState(), myPid)
     : false;
+  // Hoisted out of the hand map — it was recomputed once per card, and every
+  // card in the hand needs the same answer.
+  const handHasColorMatch = myCards.some(
+    (c) => c.color === gameState?.activeColor,
+  );
   const opponents = (gameState?.players ?? []).filter((p) => p.id !== myPid);
   const isMyTurn = gameState?.currentTurn === myPid;
   const turnDirectionGlyph =
@@ -1139,14 +1189,22 @@ export default function LastCardGameScreen({ navigation, route }) {
           { backgroundColor: pal.felt, borderColor: pal.feltBorder },
         ]}
       >
+        {/* The indicator is the only sign that more seats exist: with 7
+            opponents this row is far wider than the screen, and it was hidden. */}
         <ScrollView
           horizontal
-          showsHorizontalScrollIndicator={false}
+          showsHorizontalScrollIndicator={opponents.length > 3}
+          persistentScrollbar={opponents.length > 3}
           style={[styles.seatBar, { borderBottomColor: pal.feltBorder }]}
           contentContainerStyle={styles.seatBarContent}
         >
           {opponents.map((p) => {
             const isActive = p.id === gameState?.currentTurn;
+            // The moment the game is named after. Reaching one card used to
+            // render as the same 11px numeral as "7" — the loudest beat at the
+            // table had no design at all. The brand red is free for it now that
+            // the badge no longer uses red as its neutral background.
+            const onLastCard = p.cardCount === 1;
             return (
               <View
                 key={p.id}
@@ -1160,7 +1218,12 @@ export default function LastCardGameScreen({ navigation, route }) {
                     backgroundColor: pal.accentBg,
                     borderColor: pal.accent,
                   },
+                  onLastCard && styles.seatLastCard,
                 ]}
+                accessibilityLabel={
+                  `${p.name}, ${p.cardCount} card${p.cardCount === 1 ? "" : "s"}` +
+                  (onLastCard ? " — last card!" : "")
+                }
               >
                 <View style={styles.seatCardWrap}>
                   <ProfileAvatar
@@ -1176,12 +1239,14 @@ export default function LastCardGameScreen({ navigation, route }) {
                         borderColor: pal.rail,
                       },
                       isActive && { backgroundColor: pal.accent },
+                      onLastCard && styles.seatCountBadgeLastCard,
                     ]}
                   >
                     <Text
                       style={[
                         styles.seatCountText,
                         { color: isActive ? pal.onAccent : pal.text },
+                        onLastCard && styles.seatCountTextLastCard,
                       ]}
                     >
                       {p.cardCount}
@@ -1198,6 +1263,9 @@ export default function LastCardGameScreen({ navigation, route }) {
                   {isActive ? "▶ " : ""}
                   {p.name}
                 </Text>
+                {onLastCard && (
+                  <Text style={styles.seatLastCardTag}>LAST CARD</Text>
+                )}
               </View>
             );
           })}
@@ -1223,7 +1291,9 @@ export default function LastCardGameScreen({ navigation, route }) {
                   resizeMode="contain"
                 />
               </View>
-              <View style={[styles.countBadge, { backgroundColor: pal.accent }]}>
+              <View
+                style={[styles.countBadge, { backgroundColor: pal.accent }]}
+              >
                 <Text style={[styles.countBadgeText, { color: pal.onAccent }]}>
                   {gameState?.drawPileCount ?? 0}
                 </Text>
@@ -1248,7 +1318,10 @@ export default function LastCardGameScreen({ navigation, route }) {
               <View style={[styles.pileWrapper, { borderColor: activeHex }]}>
                 {topCard ? (
                   <View
-                    style={[styles.cardShell, { width: PILE_W, height: PILE_H }]}
+                    style={[
+                      styles.cardShell,
+                      { width: PILE_W, height: PILE_H },
+                    ]}
                   >
                     <Image
                       source={cardImage(topCard)}
@@ -1258,7 +1331,10 @@ export default function LastCardGameScreen({ navigation, route }) {
                   </View>
                 ) : (
                   <View
-                    style={[styles.emptyPile, { width: PILE_W, height: PILE_H }]}
+                    style={[
+                      styles.emptyPile,
+                      { width: PILE_W, height: PILE_H },
+                    ]}
                   />
                 )}
               </View>
@@ -1300,21 +1376,35 @@ export default function LastCardGameScreen({ navigation, route }) {
           contentContainerStyle={styles.handGrid}
         >
           {myCards.map((card) => {
-            const playable = topCard
-              ? isPlayable(
+            const reason = topCard
+              ? whyUnplayable(
                   card,
                   topCard,
                   gameState?.activeColor,
-                  myCards.some((c) => c.color === gameState?.activeColor),
+                  handHasColorMatch,
                 )
-              : false;
+              : "no_match";
+            const playable = reason === null;
             const isShaking = card.id === shakeId;
-            const shouldDimUnplayable = difficulty === "easy" && !playable;
+            // Always dim unplayable cards. This used to be gated on
+            // `difficulty === "easy"`, and the default is "medium" — so the
+            // standard game gave no indication of which cards were legal.
+            // Seeing which cards are legal is a rules-visibility aid, not a
+            // strategy hint: at a real table you can see the pile. Difficulty
+            // should mean a harder opponent, not a stingier interface.
+            const shouldDimUnplayable = !playable;
+            const colorName = COLOR_LABELS[card.color];
             return (
               <TouchableOpacity
                 key={card.id}
                 onPress={() => onCardTap(card)}
                 activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  `${colorName ? `${colorName} ` : ""}${cardTitle(card)}` +
+                  unplayableHint(reason, gameState?.activeColor)
+                }
+                accessibilityState={{ disabled: !playable }}
               >
                 <Animated.View
                   style={
@@ -1323,22 +1413,23 @@ export default function LastCardGameScreen({ navigation, route }) {
                       : null
                   }
                 >
-                    <View
-                      style={[
-                        styles.cardShell,
-                        { width: HAND_W, height: HAND_H },
-                        shouldDimUnplayable && styles.dimmed,
-                      ]}
-                    >
-                      <Image
-                        source={cardImage(card)}
-                        style={styles.cardArt}
-                        resizeMode="contain"
-                      />
-                      <Text style={styles.cardFallbackText}>
-                        {cardTitle(card)}
-                      </Text>
-                    </View>
+                  <View
+                    style={[
+                      styles.cardShell,
+                      { width: HAND_W, height: HAND_H },
+                      shouldDimUnplayable && styles.dimmed,
+                      isShaking && styles.cardRejected,
+                    ]}
+                  >
+                    <Image
+                      source={cardImage(card)}
+                      style={styles.cardArt}
+                      resizeMode="contain"
+                    />
+                    <Text style={styles.cardFallbackText}>
+                      {cardTitle(card)}
+                    </Text>
+                  </View>
                 </Animated.View>
               </TouchableOpacity>
             );
@@ -1389,7 +1480,7 @@ export default function LastCardGameScreen({ navigation, route }) {
               : `${(gameState?.players ?? []).find((p) => p.id === winner)?.name ?? "Player"} wins!`
             : "Game Over"
         }
-        coins={isSinglePlayer && winner === myPid ? coinsEarned : 0}
+        coins={winner === myPid ? coinsEarned : 0}
         showContinue={isHost}
         showLeave
         isGameOver
@@ -1422,10 +1513,14 @@ const styles = StyleSheet.create({
     maxHeight: scale(104),
     borderBottomWidth: 1,
   },
+  // justifyContent: "center" only centres when the seats FIT. With 7 opponents
+  // the row is ~588px on a 390px screen, and centring split the overflow off
+  // both edges — so seats were hidden left AND right with no cue either way.
+  // flex-start keeps the overflow on one side, where the scroll indicator is.
   seatBarContent: {
     flexDirection: "row",
     alignItems: "flex-start",
-    justifyContent: "center",
+    justifyContent: "flex-start",
     flexGrow: 1,
     paddingHorizontal: scale(12),
     paddingVertical: scale(10),
@@ -1460,6 +1555,26 @@ const styles = StyleSheet.create({
   seatCountText: {
     fontSize: scaleFont(11),
     fontWeight: "bold",
+  },
+  // ─── "Last card!" — the beat the game is named after ───────────────────────
+  seatLastCard: {
+    borderColor: brandRed,
+    borderWidth: 2,
+  },
+  seatCountBadgeLastCard: {
+    backgroundColor: brandRed,
+    borderColor: brandRed,
+  },
+  seatCountTextLastCard: {
+    color: "#ffffff",
+    fontSize: scaleFont(13),
+  },
+  seatLastCardTag: {
+    color: brandRed,
+    fontSize: scaleFont(9),
+    fontWeight: "800",
+    letterSpacing: 0.5,
+    marginTop: scale(2),
   },
   seatName: {
     fontSize: scaleFont(11),
@@ -1528,7 +1643,9 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: -scale(8),
     right: -scale(8),
-    backgroundColor: "#e94560",
+    // Was the brand red. This badge is a neutral card count, not an alert —
+    // it borrowed the error colour and made every opponent look like a warning.
+    backgroundColor: surfaceSunken,
     borderRadius: scale(10),
     minWidth: scale(22),
     height: scale(22),
@@ -1603,6 +1720,12 @@ const styles = StyleSheet.create({
   dimmed: {
     opacity: 0.38,
   },
+  // The reduce-motion stand-in for the shake: a card that was just refused
+  // gets a red edge instead of jittering.
+  cardRejected: {
+    borderWidth: 2,
+    borderColor: "#e94560",
+  },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0,0,0,0.88)",
@@ -1640,38 +1763,6 @@ const styles = StyleSheet.create({
     textShadowColor: "rgba(0,0,0,0.6)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
-  },
-  winTitle: {
-    color: "#fff",
-    fontSize: scaleFont(32),
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: scale(12),
-  },
-  winCoinsText: {
-    color: "#ffd700",
-    fontSize: scaleFont(20),
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: scale(14),
-  },
-  winBtn: {
-    backgroundColor: "#e94560",
-    borderRadius: scale(12),
-    paddingVertical: scale(14),
-    paddingHorizontal: scale(48),
-    alignItems: "center",
-    width: "100%",
-  },
-  winBtnSecondary: {
-    backgroundColor: "#16213e",
-    borderWidth: 1.5,
-    borderColor: "#334",
-  },
-  winBtnText: {
-    color: "#fff",
-    fontSize: scaleFont(18),
-    fontWeight: "bold",
   },
   // (Table Theme picker styles now live in components/TableThemePicker.js.)
 });

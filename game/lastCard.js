@@ -15,7 +15,8 @@
 //   pendingWildCard: Card | null,
 // }
 //
-// Public state is created in LastCardGameScreen.js via toPublic().
+// Public state (what the host broadcasts to every client) is built here by
+// toPublicState() — it used to live in LastCardGameScreen.js.
 
 export const COLORS = ["od_green", "crimson", "turquoise", "coral"];
 
@@ -80,6 +81,24 @@ export function isPlayable(card, topCard, activeColor, hasColorMatch = false) {
   }
 
   return false;
+}
+
+// Why is this card illegal right now? Returns a reason CODE, or null when the
+// card is playable. The wording lives in the screen; only the reasoning is here
+// so both the tap message and the accessibility label read from one source.
+//
+// Wild +4 needs its own code because the generic "match the colour" line is
+// actively wrong for it — holding a matching colour is the very thing that
+// blocks the card, so that line tells a player to do what they already can.
+export function whyUnplayable(
+  card,
+  topCard,
+  activeColor,
+  hasColorMatch = false,
+) {
+  if (isPlayable(card, topCard, activeColor, hasColorMatch)) return null;
+  if (card?.type === "wild_draw4") return "draw4_has_color_match";
+  return "no_match";
 }
 
 function nextPlayerId(players, currentTurn, turnDirection, steps = 1) {
@@ -290,6 +309,40 @@ export function getNextPlayer(state) {
     state.turnDirection ?? 1,
     1,
   );
+}
+
+// The view of the game every player is allowed to see: counts instead of hands.
+// A client holds ONLY this plus its own cards, so anything a client has to make
+// a decision about has to survive the trip. awaitingColorChoiceBy and
+// pendingWildCard used to be dropped here, which left a client that drew a wild
+// showing a colour picker it had no way to act on.
+export function toPublicState(state) {
+  return {
+    drawPileCount: state.drawPile.length,
+    topCard: state.discardPile[state.discardPile.length - 1] ?? null,
+    activeColor: state.activeColor,
+    players: state.players.map((p) => ({
+      id: p.id,
+      name: p.name,
+      cardCount: state.hands[p.id]?.length ?? 0,
+    })),
+    currentTurn: state.currentTurn,
+    turnDirection: state.turnDirection === 1 ? "clockwise" : "counterclockwise",
+    pendingAction: state.pendingAction,
+    awaitingColorChoiceBy: state.awaitingColorChoiceBy ?? null,
+    pendingWildCard: state.pendingWildCard ?? null,
+    gameOver: state.gameOver,
+    winner: state.winner,
+  };
+}
+
+// Does this player owe a colour choice right now? Works on either the full
+// state or the public one, so the host and a client answer it the same way
+// instead of the client guessing from "did I just tap the deck?".
+export function owesColorChoice(state, playerId) {
+  if (!state) return false;
+  const owed = state.awaitingColorChoiceBy;
+  return owed != null && String(owed) === String(playerId);
 }
 
 // Removes a player who left mid-game. Only meant to be called when enough

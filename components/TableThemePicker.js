@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Alert, StyleSheet, Text, View } from "react-native";
 import { HapticPressable as Pressable } from "./Haptic";
 import { getFeltPrice, isFeltUnlocked } from "../game/feltShop";
-import { getCoins, subtractCoins } from "../game/wallet";
+import { getCoins } from "../game/wallet";
+import { purchaseCosmetic } from "../game/shop";
 import { loadProfile, subscribeProfile, updateProfile } from "../game/profile";
 
 // Reusable full-screen "Table Theme" picker overlay, shared by every game with
@@ -69,11 +70,22 @@ export default function TableThemePicker({
         {
           text: "Unlock",
           onPress: async () => {
-            const newBalance = await subtractCoins(price);
-            setCoins(newBalance);
             const next = [...unlockedFelts, t.id];
+            const result = await purchaseCosmetic({
+              price,
+              apply: () => updateProfile({ unlockedFelts: next }),
+            });
+            setCoins(result.balance);
+            if (!result.ok) {
+              Alert.alert(
+                "Unlock failed",
+                result.reason === "insufficient"
+                  ? "You don't have enough coins for that."
+                  : "Something went wrong saving your unlock. Your coins have been returned.",
+              );
+              return;
+            }
             setUnlockedFelts(next);
-            await updateProfile({ unlockedFelts: next }).catch(() => {});
             onPick?.(t.id); // unlock + apply in one step
           },
         },

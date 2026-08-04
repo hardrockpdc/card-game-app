@@ -51,9 +51,36 @@ export function createGame(players, options = {}) {
   };
 }
 
+// Bounds on player-authored text.
+//
+// Both fields arrive over the wire — WhoAmIGameScreen passes msg.text straight
+// through — and are then broadcast to every other player and appended to
+// `history`. Unbounded, that's an oversized-payload vector and, for a
+// family-rated title, the one place arbitrary text from one user renders on
+// another's screen. Caps are generous for real play: a secret is a name, a
+// question is a sentence.
+const MAX_SECRET_CHARS = 60;
+const MAX_QUESTION_CHARS = 120;
+
+// Keep only the most recent exchanges. A long round otherwise grows `history`
+// without limit, and it rides along in every broadcast of the public state.
+const MAX_HISTORY = 40;
+
+// Coerce wire input to a bounded, trimmed string. Anything that isn't actually
+// a string is rejected outright rather than stringified, so an object or number
+// can't smuggle itself into the rendered text.
+function cleanText(text, max) {
+  if (typeof text !== "string") return "";
+  return text.trim().slice(0, max);
+}
+
+function trimHistory(history) {
+  return history.length > MAX_HISTORY ? history.slice(-MAX_HISTORY) : history;
+}
+
 // Judge submits the secret → move into the asking phase.
 export function setSecret(state, text) {
-  const trimmed = (text || "").trim();
+  const trimmed = cleanText(text, MAX_SECRET_CHARS);
   if (state.phase !== "choosing" || !trimmed) return state;
   return {
     ...state,
@@ -66,7 +93,7 @@ export function setSecret(state, text) {
 
 // Current asker submits a question → it becomes pending until the judge answers.
 export function askQuestion(state, text) {
-  const trimmed = (text || "").trim();
+  const trimmed = cleanText(text, MAX_QUESTION_CHARS);
   if (state.phase !== "asking" || state.pendingQuestion || !trimmed) {
     return state;
   }
@@ -89,7 +116,7 @@ export function recordAnswer(state, answer) {
   const askers = nonJudgePlayers(state);
   return {
     ...state,
-    history: [...state.history, { ...state.pendingQuestion, answer }],
+    history: trimHistory([...state.history, { ...state.pendingQuestion, answer }]),
     pendingQuestion: null,
     askerIndex:
       askers.length > 0 ? (state.askerIndex + 1) % askers.length : 0,
@@ -113,7 +140,7 @@ export function awardRound(state) {
     (p) => String(p.id) === String(winnerInfo.id),
   );
   const history = state.pendingQuestion
-    ? [...state.history, { ...state.pendingQuestion, answer: "gotit" }]
+    ? trimHistory([...state.history, { ...state.pendingQuestion, answer: "gotit" }])
     : state.history;
 
   const base = {

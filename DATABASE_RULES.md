@@ -7,10 +7,28 @@ anything but a single top-level `rules` key (JSON has no real comments, and the
 'rules' property."*). This doc holds the explanation instead.
 
 ## What Firebase stores
-Only `rooms/*` — online lobbies and the in-game message relay. **Coins, profile,
-stats and achievements are LOCAL to each device** (AsyncStorage) and never touch
-Firebase. Auth is anonymous (see `game/firebase.js`), so `auth != null` mainly
-ties every write to a stable uid, which powers the host/player ownership checks.
+Two top-level paths:
+
+- **`rooms/*`** — online lobbies and the public in-game message relay.
+- **`privateNet/*`** — per-player private state (poker hole cards, Go Fish and
+  Rummy hands, the Who Am I? secret).
+
+**Coins, profile, stats and achievements are LOCAL to each device**
+(AsyncStorage) and never touch Firebase. Auth is anonymous (see
+`game/firebase.js`), so `auth != null` mainly ties every write to a stable uid,
+which powers the host/player ownership checks.
+
+### Why private state is NOT under `rooms/`
+Firebase read rules **cascade downward and cannot be revoked by a descendant**.
+`rooms/$code` must stay readable as a whole subtree — `subscribeToRoom`,
+`joinRoom`, `rejoinRoom`, `markHostConnected` and the zombie-room check each
+read `rooms/<code>` in a single call, and a narrow rule on a child does not
+authorise reading the parent. So anything private parked under `rooms/` is
+readable by every player in the room, no matter what rule sits on it.
+
+Private state therefore lives at `privateNet/$code/$uid`, whose read rule is
+`$uid === auth.uid`. It previously sat at `rooms/$code/net/private/$uid`, which
+meant **every player could read every opponent's hand** (fixed 2026-08-02).
 
 ## How to deploy
 - **Console:** Realtime Database → **Rules** tab → paste the whole
@@ -22,9 +40,10 @@ ties every write to a stable uid, which powers the host/player ownership checks.
   or writable unless a deeper rule re-grants it. Rules only ADD access down the tree.
 - **`rooms/$code`**
   - **`.read: auth != null`** — any signed-in device may read a room. Joiners must
-    read it to check status before joining, and clients read `net/*` to receive
-    game state. The 4-char room code is the shared secret; no personal data lives
-    here beyond chosen display names.
+    read it to check status before joining, and clients read `net/broadcast` to
+    receive game state. The 4-char room code is the shared secret; no personal
+    data lives here beyond chosen display names, and **no per-player secrets** —
+    those are in `privateNet` (see above).
   - **`.write` (the long one)** — governs room-level fields (settings, status,
     teardown). **Create:** the writer must make themselves the host
     (`newData.host === auth.uid`). **Update/delete:** only the existing host may
@@ -37,12 +56,39 @@ ties every write to a stable uid, which powers the host/player ownership checks.
     have a `name` (≤24 chars). No one can write someone else's slot.
   - **`net/broadcast`** — host → everyone. Only the host may write. `payload` is a
     string ≤500 KB (a `seq` counter rides alongside; both are fine).
-  - **`net/private/$uid`** — host → one client. Only the host may write.
   - **`net/toHost`** — client → host queue. Only a device that is actually a
     player in this room may push; the host drains the queue.
+    - **`sender`** — must equal `auth.uid`. This is load-bearing: the host hands
+      `sender` to every turn-ownership check (LastCard, Rummy, Poker, Go Fish,
+      Who Am I?) as the authoritative player identity. It used to be validated
+      only as "a string ≤128 chars", so a client could set another player's uid
+      and act as them — playing their cards, folding their hand, submitting
+      their secret (fixed 2026-08-02).
+- **`privateNet/$code`**
+  - **`.write`** — only the room's host may write any player's private slot.
+  - **`$uid/.read: $uid === auth.uid`** — a player may read only their own slot.
+    No `.read` is granted at `privateNet` or `privateNet/$code`, because a
+    truthy read at either would cascade past this rule and re-open the hole.
+  - **`$uid/$type/payload`** — string ≤500 KB, same as broadcast.
 
 ## Note on the room code
 Reads are gated by `auth != null` **and** knowing the 4-character code. That's the
-intended design (code = shared secret), but 4 chars is low-entropy — someone could
-brute-force codes to read a room's display names + game state. Low risk for a
-family card game; lengthen the code later if you ever want to harden this.
+intended design (code = shared secret), but 4 chars is low-entropy — 32^4 ≈ 1M
+combinations, generated with `Math.random()` — so someone could brute-force codes
+to read a room's display names + public game state. Per-player secrets are no
+longer exposed this way (see `privateNet` above), which is what made this
+low-risk rather than serious.
+
+Worth knowing: `google-services.json` is committed and contains a public Firebase
+API key. That's normal for an Android Firebase config, but combined with open
+anonymous auth it means the RTDB REST API is reachable without the app at all.
+Lengthening `CODE_LENGTH` in `game/onlineRoom.js` to 6 (32^6 ≈ 1e9) is the cheap
+hardening if you ever want it.
+
+## Cleanup
+There is no server component, so there is **no global TTL sweep** — listing rooms
+would require a read grant on the `rooms` node, which would let anyone enumerate
+every live room code. Instead each host records the code it created
+(`game/roomCleanup.js`), clears it on a clean exit, and sweeps its own leftover
+room on next launch. Rooms abandoned by a host who never reopens the app still
+linger; collecting those genuinely needs a Cloud Function.

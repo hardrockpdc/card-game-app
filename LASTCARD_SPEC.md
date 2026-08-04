@@ -40,10 +40,16 @@ Built into Card Night alongside the existing 5 games. Follows the same multiplay
 
 ### Colors
 
-- 🟢 **OD Green** `#556B2F`
-- 🔴 **Crimson** `#B92841`
-- 🩵 **Turquoise** `#40E0D0`
-- 🟠 **Coral** `#FF7F50`
+Internal ids stayed as they were; the names players read were changed on
+2026-08-03 (`COLOR_LABELS` in `LastCardGameScreen.js`) because a family game
+shouldn't ask a child to say "OD Green".
+
+| id          | shown as   | hex       |
+| ----------- | ---------- | --------- |
+| `od_green`  | **Green**  | `#556B2F` |
+| `crimson`   | **Red**    | `#B92841` |
+| `turquoise` | **Blue**   | `#40E0D0` |
+| `coral`     | **Orange** | `#FF7F50` |
 
 ### Card Image Files
 
@@ -93,6 +99,11 @@ Card back:      card_back.png
 - Next player must draw 4 cards AND loses their turn.
 - **Legal restriction:** Should only be played when the player has no card matching the current color. In digital play, this is enforced automatically — the game will only allow Wild Draw 4 if no color match exists in hand.
 - If no legal play exists at all, Wild Draw 4 can always be played.
+- **This rule is deliberate — confirmed 2026-08-03.** A dimmed Wild +4 next to a
+  bright colour match reads as a bug, and it isn't; without the restriction, +4
+  is a no-downside attack you'd throw every turn. Plain **Wild is unrestricted**
+  and never dims. The fix for the confusion is explaining the restriction (see
+  Card Highlighting), not removing it.
 
 ---
 
@@ -157,12 +168,19 @@ If the draw pile AND discard pile are both empty and no player can play (extreme
 └─────────────────────────────────┘
 ```
 
-### Color Picker (shown after playing Wild or Wild Draw 4)
+### Color Picker (shown after playing OR drawing Wild / Wild Draw 4)
 
 - Full-screen overlay
-- 4 large color buttons: OD Green / Crimson / Turquoise / Coral
+- 4 large color buttons: Green / Red / Blue / Orange
 - "Choose a color" prompt at top
 - No dismiss — must pick a color to continue
+
+Shown to **exactly one player**: whoever `awaitingColorChoiceBy` names. Both the
+host and a client decide that with `owesColorChoice(state, myPid)` from
+`game/lastCard.js`, reading the same field — the host off the full state, a
+client off the broadcast. Drawing into a wild has to behave identically to
+playing one: the host resolves the draw and auto-plays the wild, so the drawer
+gets the picker without ever having tapped a card.
 
 ### Active Player Indicator
 
@@ -172,8 +190,21 @@ If the draw pile AND discard pile are both empty and no player can play (extreme
 ### Card Highlighting
 
 - Playable cards: full brightness
-- Unplayable cards: dimmed to ~40% opacity
-- Tapping an unplayable card: subtle shake + no action
+- Unplayable cards: dimmed to ~40% opacity (at every difficulty — seeing which
+  cards are legal is a rules aid, not a strategy hint)
+- Tapping an unplayable card: shake + error haptic + **a sentence saying why**
+
+The reason comes from `whyUnplayable()` in `game/lastCard.js`, which returns a
+code the screen turns into copy. Two codes today:
+
+| code                    | when                                    | shown as                                                                  |
+| ----------------------- | --------------------------------------- | ------------------------------------------------------------------------- |
+| `no_match`              | wrong colour and wrong number/type      | "Can't play that — match Green or a 5."                                   |
+| `draw4_has_color_match` | Wild +4 while a colour match is in hand | "Wild +4 is only for when you can't match — you still have a Green card…" |
+
+Wild +4 has to be its own case. It is the only card whose legality depends on
+the rest of the hand, so the generic line tells a player to play the very card
+that is blocking them. The same codes feed the accessibility labels.
 
 ---
 
@@ -188,7 +219,7 @@ Follows the standard Card Night host/client pattern:
 - Broadcasts `GAME_STATE` (public) after every action
 - Sends `PRIVATE_HAND` to each player individually
 
-**Public state includes:**
+**Public state includes:** (built by `toPublicState()` in `game/lastCard.js`)
 
 - Draw pile count (not contents)
 - Discard pile top card
@@ -197,6 +228,9 @@ Follows the standard Card Night host/client pattern:
 - Whose turn it is
 - Turn direction
 - Any pending action (e.g. next player must draw 2)
+- `awaitingColorChoiceBy` + `pendingWildCard` — who owes a colour, and for which
+  card. A client cannot show a working picker without these; leaving them out is
+  what froze the game when a client drew a wild.
 
 **Private state includes:**
 

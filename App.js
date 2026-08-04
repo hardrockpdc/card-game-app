@@ -48,6 +48,8 @@ import { initRummyTable } from "./game/rummyTheme";
 import { initPokerTable } from "./game/pokerTheme";
 import { initGofishTable } from "./game/gofishTheme";
 import { ThemeProvider } from "./game/ThemeContext";
+import { initErrorReporting } from "./game/errorReporter";
+import { initReduceMotion } from "./game/reduceMotion";
 import ErrorBoundary from "./components/ErrorBoundary";
 import {
   stopServer,
@@ -55,6 +57,7 @@ import {
   stopDiscovery,
   disconnectFromHost,
   getNetworkMode,
+  isLocalSessionActive,
 } from "./game/GameNetwork";
 
 // SystemBars needs the react-native-edge-to-edge native module (RNEdgeToEdge),
@@ -72,6 +75,23 @@ let ScreenOrientation = null;
 try {
   ScreenOrientation = require("expo-screen-orientation");
 } catch {}
+
+// Crash reporting. Started before anything else so an error during the very
+// first render is still captured. Reads the DSN from app.json (expo.extra
+// .sentryDsn); with no DSN configured this is a complete no-op and the app
+// behaves exactly as before, so it's safe to ship un-configured.
+try {
+  const Constants = require("expo-constants").default;
+  const extra =
+    Constants?.expoConfig?.extra ?? Constants?.manifest?.extra ?? {};
+  initErrorReporting({
+    dsn: extra.sentryDsn,
+    environment: __DEV__ ? "development" : "production",
+    release: Constants?.expoConfig?.version,
+  });
+} catch (_) {
+  // expo-constants unavailable — skip reporting rather than fail to boot.
+}
 
 const Stack = createNativeStackNavigator();
 
@@ -96,13 +116,23 @@ export default function App() {
     initRummyTable();
     initPokerTable();
     initGofishTable();
+    // Resolve the reduce-motion setting once, up front, so the first deal reads
+    // a cached value instead of racing an async native query per card.
+    initReduceMotion();
 
     // Anonymous Firebase sign-in for online multiplayer. Guarded so a dev build
     // made before the Firebase native modules were added is a no-op instead of
     // crashing — it'll start working after the next rebuild.
     try {
       const { ensureSignedIn } = require("./game/firebase");
-      ensureSignedIn().catch((err) => warn("Firebase sign-in failed:", err));
+      ensureSignedIn()
+        .then(() => {
+          // If a previous session died while hosting, its room is still up
+          // there. Remove it once it's past the TTL. Best-effort, never blocks.
+          const { sweepOwnStaleRoom } = require("./game/roomCleanup");
+          return sweepOwnStaleRoom().catch(() => {});
+        })
+        .catch((err) => warn("Firebase sign-in failed:", err));
     } catch (err) {
       warn("Firebase not available (needs rebuild):", err);
     }
@@ -129,10 +159,19 @@ export default function App() {
   // in online mode would DELETE the room (host) or the player slot (client) on
   // every background — which was exactly the bug that dropped everyone when the
   // host briefly switched apps. So skip it entirely in online mode.
+  //
+  // A LIVE LOCAL SESSION is the same exception for the same reason. This used
+  // to tear down unconditionally outside online mode, so a player who checked a
+  // text mid-game dropped the whole table — and local same-WiFi play is the
+  // mode the family-in-one-room audience actually uses. The teardown exists to
+  // stop "port already in use" on the NEXT host attempt when someone skipped
+  // the normal back-button exit; that only matters when nothing is connected,
+  // which is exactly when isLocalSessionActive() is false.
   useEffect(() => {
     const sub = AppState.addEventListener("change", (nextState) => {
       if (nextState === "background") {
         if (getNetworkMode() === "online") return;
+        if (isLocalSessionActive()) return;
         stopServer();
         stopBroadcasting();
         stopDiscovery();
@@ -203,7 +242,7 @@ export default function App() {
                   component={GameScreen}
                   options={{ headerShown: false }}
                 />
-<Stack.Screen
+                <Stack.Screen
                   name="Settings"
                   component={SettingsScreen}
                   options={{ title: "Settings" }}

@@ -237,8 +237,10 @@ export default function GoFishGameScreen({ navigation, route }) {
           const state = fullRef.current;
           if (!state || msg.type !== "ACTION" || msg.action !== "ask") return;
           if (
-            state.players.findIndex((p) => p.id === clientId) !==
-            state.currentPlayerIndex
+            // String-compare both sides — see the note in PokerGameScreen.
+            state.players.findIndex(
+              (p) => String(p.id) === String(clientId),
+            ) !== state.currentPlayerIndex
           )
             return;
           applyState(doAsk(state, clientId, msg.targetId, msg.rank));
@@ -247,9 +249,7 @@ export default function GoFishGameScreen({ navigation, route }) {
         onClientLeft: ({ id }) => {
           const state = fullRef.current;
           if (!state || state.phase !== "playing" || pausedRef.current) return;
-          const player = state.players.find(
-            (p) => String(p.id) === String(id),
-          );
+          const player = state.players.find((p) => String(p.id) === String(id));
           if (!player || player.isAI || player.id === "host") return;
           startPause(player.name);
         },
@@ -307,10 +307,17 @@ export default function GoFishGameScreen({ navigation, route }) {
     setSelectedTarget(null);
   }
 
+  // Rewards run in every mode. This used to open with `if (!isSinglePlayer)
+  // return`, so multiplayer wins paid nothing — and the win test below only
+  // ever matched the host, which is why the early return was needed at all.
+  // Identify the local player the same way the seat rendering does (id for the
+  // host, name for a client), so each device rewards exactly its own user.
   useEffect(() => {
-    if (!isSinglePlayer) return;
     const isWon =
-      gameState?.phase === "results" && gameState?.winner?.id === "host";
+      gameState?.phase === "results" &&
+      (isHost
+        ? gameState?.winner?.id === "host"
+        : gameState?.winner?.name === myName);
     if (isWon && !coinRewardedRef.current) {
       coinRewardedRef.current = true;
       const reward = getWinReward("gofish", !isSinglePlayer);
@@ -500,7 +507,9 @@ export default function GoFishGameScreen({ navigation, route }) {
                 <Text style={styles.seatBooks}>
                   📚 {books[pid]?.length ?? 0}
                 </Text>
-                <Text style={styles.seatCards}>{handSizes[pid] ?? 0} cards</Text>
+                <Text style={styles.seatCards}>
+                  {handSizes[pid] ?? 0} cards
+                </Text>
                 {canTarget ? (
                   <Text
                     style={[
@@ -556,7 +565,9 @@ export default function GoFishGameScreen({ navigation, route }) {
         {/* You: hand + ask */}
         <View style={[styles.youArea, { borderTopColor: pal.panelBorder }]}>
           <View style={styles.youLabelRow}>
-            <Text style={styles.youLabel}>Your Hand ({displayHand.length})</Text>
+            <Text style={styles.youLabel}>
+              Your Hand ({displayHand.length})
+            </Text>
             {isMyTurn && phase === "playing" ? (
               <Text style={styles.youHint}>tap a rank</Text>
             ) : null}

@@ -82,6 +82,13 @@ export function nextTurn(state) {
 export function doAsk(state, fromId, targetId, rank) {
   const fromPid = String(fromId);
   const toPid = String(targetId);
+  // targetId arrives over the wire (GoFishGameScreen passes msg.targetId
+  // straight through), so it can't be trusted to be a different, real player.
+  // Asking yourself would collide the two `hands` keys built below — the
+  // removal is written first, then overwritten by `original + matching` — which
+  // duplicates the asker's own cards and breaks the 52-card invariant.
+  if (fromPid === toPid) return state;
+  if (!state.players.some((p) => String(p.id) === toPid)) return state;
   if (!state.hands[fromPid]?.some((c) => c.rank === rank)) return state;
 
   const targetHand = state.hands[toPid] || [];

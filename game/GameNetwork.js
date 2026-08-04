@@ -2,6 +2,7 @@ import { Alert, Platform } from "react-native";
 import TcpSocket from "react-native-tcp-socket";
 import UdpSocket from "react-native-udp";
 import { log, warn } from "./logger";
+import { feedLines } from "./lineProtocol";
 
 export const PROTOCOL_VERSION = 1;
 
@@ -49,7 +50,8 @@ let nextClientId = 1;
 let serverListeners = {};
 
 export function setServerListeners(listeners) {
-  if (networkMode === "online") return online.onlineSetServerListeners(listeners);
+  if (networkMode === "online")
+    return online.onlineSetServerListeners(listeners);
   serverListeners = listeners || {};
 }
 
@@ -76,15 +78,21 @@ export function startServer() {
     // only parse complete newline-terminated lines, keeping any partial remainder
     // for the next event. Without this, large messages (e.g. full-state broadcasts)
     // fragment, fail JSON.parse, and are silently dropped -> multiplayer desync.
+    //
+    // The framing itself lives in game/lineProtocol.js so it's unit-testable and
+    // shared with the client path below. It also bounds the pending buffer: the
+    // game port is unauthenticated, so any device on the Wi-Fi could otherwise
+    // stream bytes without a newline until the host ran out of memory.
     let buffer = "";
     socket.on("data", (data) => {
-      buffer += data.toString();
-      let idx;
-      while ((idx = buffer.indexOf("\n")) !== -1) {
-        const line = buffer.slice(0, idx);
-        buffer = buffer.slice(idx + 1);
-        if (!line.trim()) continue;
-
+      const framed = feedLines(buffer, data.toString());
+      buffer = framed.buffer;
+      if (framed.overflow) {
+        log("[GameNetwork] client exceeded max line length — dropping socket");
+        socket.destroy();
+        return;
+      }
+      for (const line of framed.lines) {
         // Only the PARSE is swallowed (a partial/garbage line is expected on a
         // byte stream — skip it and keep reading). The message handler runs
         // outside this catch so a real bug in it surfaces in logs (NB-3) instead
@@ -189,6 +197,19 @@ export function getClientCount() {
   return clients.size;
 }
 
+// Is a LOCAL (same-WiFi) session actually live right now — either we're hosting
+// with at least one player joined, or we're a client with an open socket?
+//
+// App.js uses this to decide whether backgrounding should tear the transport
+// down. It always did, which meant switching to Messages mid-game dropped
+// everyone at the table. Online play already had an exception; local play, the
+// mode the same-room audience actually uses, did not.
+export function isLocalSessionActive() {
+  if (networkMode === "online") return false;
+  if (IS_WEB) return false;
+  return clients.size > 0 || clientSocket !== null;
+}
+
 // Returns [{ id, name }, ...] for every currently connected client
 export function getConnectedPlayers() {
   if (IS_WEB) {
@@ -217,7 +238,8 @@ export function getAssignedClientId() {
 let clientListeners = {};
 
 export function setClientListeners(listeners) {
-  if (networkMode === "online") return online.onlineSetClientListeners(listeners);
+  if (networkMode === "online")
+    return online.onlineSetClientListeners(listeners);
   clientListeners = listeners || {};
 }
 
@@ -239,16 +261,18 @@ export function connectToHost(ip, callbacks) {
   });
 
   // BUG-6: buffer the incoming byte stream and parse only complete lines (see the
-  // matching note on the server side). One buffer per connection.
+  // matching note on the server side). One buffer per connection, bounded the
+  // same way — a malicious or broken host can't flood us either.
   let buffer = "";
   clientSocket.on("data", (data) => {
-    buffer += data.toString();
-    let idx;
-    while ((idx = buffer.indexOf("\n")) !== -1) {
-      const line = buffer.slice(0, idx);
-      buffer = buffer.slice(idx + 1);
-      if (!line.trim()) continue;
-
+    const framed = feedLines(buffer, data.toString());
+    buffer = framed.buffer;
+    if (framed.overflow) {
+      log("[GameNetwork] host exceeded max line length — dropping connection");
+      clientSocket?.destroy();
+      return;
+    }
+    for (const line of framed.lines) {
       // As on the server (NB-3): swallow only the parse of a partial/garbage
       // line; run the message handler outside the catch (with its own logged
       // guard) so a real handler bug surfaces instead of being silently eaten.

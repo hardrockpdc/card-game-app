@@ -24,6 +24,7 @@ import { checkAndClaim } from "../game/achievements";
 import ProfileAvatar from "../components/ProfileAvatar";
 import DailyBonusModal from "../components/DailyBonusModal";
 import SuitBackground from "../components/SuitBackground";
+import { highlight, highlightDim } from "../game/colors";
 
 const PROFILE_WELCOME_MESSAGE =
   "Welcome! Set up your profile (you can change anything later)";
@@ -65,7 +66,9 @@ export default function HomeScreen({ navigation }) {
             .map((a) => `${a.icon} ${a.name}  +${a.reward.toLocaleString()} 🪙`)
             .join("\n");
           Alert.alert(
-            newly.length === 1 ? "Achievement Unlocked!" : "Achievements Unlocked!",
+            newly.length === 1
+              ? "Achievement Unlocked!"
+              : "Achievements Unlocked!",
             lines,
           );
         }
@@ -366,7 +369,7 @@ const styles = StyleSheet.create({
   },
   avatarRing: {
     borderWidth: 3,
-    borderColor: "#7c6cff",
+    borderColor: highlight,
     shadowColor: "#000",
     shadowOpacity: 0.35,
     shadowRadius: 8,
@@ -423,24 +426,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 5,
   },
-  singlePlayerButtonDisabled: {
-    backgroundColor: "#2a3340",
-    borderColor: "#3a4456",
-    opacity: 0.85,
-    shadowOpacity: 0,
-    elevation: 0,
-  },
   singlePlayerButtonText: {
     color: "#ffffff",
     fontWeight: "bold",
-  },
-  singlePlayerButtonTextDisabled: {
-    color: "#888",
-  },
-  singlePlayerButtonHint: {
-    color: "#888",
-    fontSize: 12,
-    marginTop: 4,
   },
   primaryButton: {
     backgroundColor: "#e94560",
@@ -465,7 +453,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(106,90,205,0.12)",
     borderRadius: 16,
     borderWidth: 2,
-    borderColor: "#6a5acd",
+    borderColor: highlightDim,
     width: "100%",
     alignItems: "center",
     maxWidth: 420,

@@ -201,21 +201,28 @@ export async function checkAndClaim() {
     const claimed = await getClaimed();
     const claimedSet = new Set(claimed);
 
-    const newlyClaimed = [];
-    for (const a of ACHIEVEMENTS) {
-      if (!claimedSet.has(a.id) && a.check(ctx)) {
-        await addCoins(a.reward);
-        claimedSet.add(a.id);
-        newlyClaimed.push({ id: a.id, name: a.name, icon: a.icon, reward: a.reward });
-      }
-    }
+    const pending = ACHIEVEMENTS.filter(
+      (a) => !claimedSet.has(a.id) && a.check(ctx),
+    );
+    if (pending.length === 0) return [];
 
-    if (newlyClaimed.length > 0) {
-      try {
-        await AsyncStorage.setItem(KEY_CLAIMED, JSON.stringify([...claimedSet]));
-      } catch {
-        // best-effort
-      }
+    // Record the claim BEFORE paying it. The old order paid first and then
+    // persisted inside a swallowing try/catch, so a failed write (or the app
+    // dying in the window) left the player holding the coins with the
+    // achievement still unclaimed — and the next checkAndClaim, which runs on
+    // every Home focus, paid it all over again.
+    //
+    // Deliberately NOT swallowed: if we can't record the claim we must not pay,
+    // and the caller should see why. Failing this direction can at worst cost a
+    // player an award they'll be re-offered on the next check; the reverse
+    // direction mints coins indefinitely.
+    pending.forEach((a) => claimedSet.add(a.id));
+    await AsyncStorage.setItem(KEY_CLAIMED, JSON.stringify([...claimedSet]));
+
+    const newlyClaimed = [];
+    for (const a of pending) {
+      await addCoins(a.reward);
+      newlyClaimed.push({ id: a.id, name: a.name, icon: a.icon, reward: a.reward });
     }
     return newlyClaimed;
   });

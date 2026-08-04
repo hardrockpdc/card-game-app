@@ -3,6 +3,7 @@ import { Modal, View, Text, StyleSheet } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { HapticTouchable as TouchableOpacity } from "./Haptic";
 import { scale, scaleFont } from "../game/responsive";
+import { highlight, highlightDim } from "../game/colors";
 
 const KEY_PREFIX = "@cardnight:tutorial:";
 
@@ -134,7 +135,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#3a3a5c",
   },
   dotActive: {
-    backgroundColor: "#7878ff",
+    backgroundColor: highlight,
   },
   btnRow: {
     flexDirection: "row",
@@ -158,7 +159,7 @@ const styles = StyleSheet.create({
     flex: 2,
     paddingVertical: scale(12),
     borderRadius: scale(10),
-    backgroundColor: "#5555cc",
+    backgroundColor: highlightDim,
     alignItems: "center",
   },
   nextBtnFull: {

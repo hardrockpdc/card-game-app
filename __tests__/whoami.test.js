@@ -259,3 +259,54 @@ describe("purity — mutating functions return new state", () => {
     expect(s).toEqual(before);
   });
 });
+
+// M7 — setSecret and askQuestion accepted any string of any length, straight
+// off the wire (WhoAmIGameScreen passes msg.text through with no check). The
+// text is then broadcast to every player and appended to `history`, which grows
+// without bound across a session. For a Play-Store family-rated title this is
+// the one place arbitrary user text reaches other users' screens.
+describe("M7 — free text is bounded", () => {
+  const MANY = "x".repeat(5000);
+
+  test("a secret is capped in length", () => {
+    const s = setSecret(createGame(PLAYERS), MANY);
+    expect(s.secret.text.length).toBeLessThanOrEqual(60);
+  });
+
+  test("a question is capped in length", () => {
+    let s = setSecret(createGame(PLAYERS), "Cleopatra");
+    s = askQuestion(s, MANY);
+    expect(s.pendingQuestion.question.length).toBeLessThanOrEqual(120);
+  });
+
+  test("non-string input is rejected rather than coerced", () => {
+    const g = createGame(PLAYERS);
+    expect(setSecret(g, { evil: true })).toBe(g);
+    expect(setSecret(g, 12345)).toBe(g);
+    expect(setSecret(g, null)).toBe(g);
+  });
+
+  test("a whitespace-only secret is still rejected", () => {
+    const g = createGame(PLAYERS);
+    expect(setSecret(g, "     ")).toBe(g);
+  });
+
+  test("ordinary play is unaffected", () => {
+    let s = setSecret(createGame(PLAYERS), "  Cleopatra  ");
+    expect(s.secret.text).toBe("Cleopatra");
+    expect(s.phase).toBe("asking");
+    s = askQuestion(s, "Are you real?");
+    expect(s.pendingQuestion.question).toBe("Are you real?");
+  });
+
+  test("history does not grow without bound across a long round", () => {
+    let s = setSecret(createGame(PLAYERS), "Cleopatra");
+    for (let i = 0; i < 200; i++) {
+      s = askQuestion(s, `question ${i}`);
+      s = recordAnswer(s, i % 2 === 0 ? "yes" : "no");
+    }
+    expect(s.history.length).toBeLessThanOrEqual(40);
+    // The most recent exchanges are the ones kept.
+    expect(s.history[s.history.length - 1].question).toBe("question 199");
+  });
+});

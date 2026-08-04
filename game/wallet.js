@@ -64,10 +64,16 @@ export async function subtractCoins(amount) {
 
 // Full reset: balance back to the starting amount AND lifetime earned wiped
 // (so the player's rank resets too). This is a deliberate "start over" action.
+//
+// Queued like every other write. Wallet updates are read-modify-write, so a
+// reset that skipped the queue could be clobbered by an award that had already
+// read the old balance — resurrecting coins the reset was meant to wipe.
 export async function resetCoins() {
-  await AsyncStorage.setItem(KEY_COINS, String(STARTING_BALANCE));
-  await AsyncStorage.setItem(KEY_LIFETIME, "0");
-  return STARTING_BALANCE;
+  return enqueue(async () => {
+    await AsyncStorage.setItem(KEY_COINS, String(STARTING_BALANCE));
+    await AsyncStorage.setItem(KEY_LIFETIME, "0");
+    return STARTING_BALANCE;
+  });
 }
 
 export async function getLifetimeEarned() {

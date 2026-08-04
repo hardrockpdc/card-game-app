@@ -33,23 +33,29 @@ Ask **one focused question at a time** when something is genuinely ambiguous. Do
 ## 2. Hard technical rules (learned the painful way — do not violate)
 
 ### 2.1 Hooks order — the #1 recurring bug
+
 **Every `useState`, `useRef`, `useEffect`, `useMemo`, `useContext` call MUST appear BEFORE every early `return` in a component.** A hook placed after an `if (...) return ...` causes "Rendered more hooks than during the previous render" and crashes the screen.
 
 This has bitten this project at least four times (Poker, Conquián twice, Rummy). Whenever you add or move a hook in a game screen, **verify top-to-bottom that all hooks are above all early returns.** When editing a game screen, proactively scan for this even if it's not what I asked about.
 
 ### 2.2 This is a JavaScript project, not TypeScript
+
 There is no `tsconfig.json` and the project is all `.js`. **Do not run `tsc`** to "verify" — it produces hundreds of fake errors because the project was never set up for TypeScript. Verify by checking that Metro bundles / the app runs, not by type-checking. (The `typescript` dependency was removed on 2026-06-02 — the project remains all-JS with no tsconfig.json. The rule still stands: don't run `tsc`.)
 
 ### 2.3 Don't strip cross-platform code
-Even though distribution is currently **Android-only**, the codebase stays cross-platform (React Native). Do NOT remove `Platform.select` branches, iOS config, or platform abstractions to "simplify." They cost nothing to keep and preserve the option to ship iOS later. Android-only is a *distribution* decision, not a *code* decision.
+
+Even though distribution is currently **Android-only**, the codebase stays cross-platform (React Native). Do NOT remove `Platform.select` branches, iOS config, or platform abstractions to "simplify." They cost nothing to keep and preserve the option to ship iOS later. Android-only is a _distribution_ decision, not a _code_ decision.
 
 ### 2.4 Respect reduced motion in animations
+
 Every animation must check `AccessibilityInfo.isReduceMotionEnabled()` and snap to the final state when enabled. This is an established pattern in `components/Card.js` and `SolitaireGameScreen.js`. Match it.
 
 ### 2.5 Native modules require a dev build
+
 `react-native-gesture-handler`, `react-native-reanimated`, `react-native-worklets`, `expo-screen-orientation`, `expo-haptics`, etc. only work in a compiled dev build, NOT Expo Go. I run a dev build (expo-dev-client). When adding a native module, remind me a rebuild is needed before it'll work.
 
 ### 2.6 Don't install libraries without a concrete plan to use them
+
 Every native dependency adds app size, upgrade-conflict risk, and bug surface. "Might be nice someday" is not sufficient. Only add a dependency when there's a real, near-term use for it.
 
 ---
@@ -57,26 +63,33 @@ Every native dependency adds app size, upgrade-conflict risk, and bug surface. "
 ## 3. Process discipline
 
 ### 3.1 Diagnostic-first on risky cleanups
+
 Before any multi-file deletion, refactor, or "remove all traces of X," **do a read-only diagnostic pass first**: report exactly what exists and where, then propose the surgical change. Do not blind-delete across files. (This has repeatedly saved us from breaking things.)
 
 ### 3.2 Commit after each logical unit of work
+
 End each completed change with a git commit using a clear, conventional message (e.g. `fix(conquian): ...`, `feat: ...`, `cleanup: ...`, `docs: ...`). Show me the commit hash. Keep commits focused — one logical change per commit.
 
 ### 3.3 Always tell me what to test
+
 After implementing, give me a short, concrete list of what to check on my device to confirm it worked — including likely failure modes to watch for.
 
 ### 3.5 Batch native changes before requesting a rebuild
+
 Never prompt for a dev-client rebuild after each individual native-touching change. Collect all native changes for a logical unit of work first, then request a single rebuild. Rebuilds are slow — one per batch, not one per commit.
 
 ### 3.4 Verify before claiming done
+
 Confirm the files compile (Metro/bundler, not tsc), confirm the specific changes landed, and report honestly what changed vs. what was skipped and why.
 
 ### 3.6 Keep docs current — no stale docs
+
 Docs are part of the change, not an afterthought. Whenever a change makes something in `CLAUDE.md`, `PROJECT_NOTES.md`, or a per-game spec inaccurate — a new/removed/renamed file, a changed dependency, a resolved tracker item, a new game/feature — update the doc **in the same unit of work** (ideally the same commit). When marking a tracker item done, fix every place it's referenced, not just the checkbox. If a fix isn't verified yet (e.g. needs a device test), say so in the doc rather than claiming it's fully done. Stale docs have repeatedly caused wasted effort here; treat them as a bug.
 
 ---
 
 ## 4. Child-safety / content note
+
 This is a family-friendly card game. Keep all content, copy, and assets appropriate for all ages.
 
 ---
@@ -90,7 +103,7 @@ This is a family-friendly card game. Keep all content, copy, and assets appropri
   - `App.js` — root; provider nesting; navigation stack
   - `components/Card.js` — the card render + animation engine (flip via `animateReveal`, deal via `animateDeal`+`dealDelay`)
   - `game/conquian.js`, `game/rummy.js`, `game/solitaire.js`, `game/poker.js`, `game/gofish.js`, `game/lastCard.js`, `game/whoami.js`, `game/memory.js`, `game/deck.js` — pure game logic (no React)
-  - `game/GameNetwork.js` — multiplayer transport façade; `setNetworkMode("local"|"online")` delegates to local TCP/UDP or Firebase. `game/onlineTransport.js` (Firebase relay: broadcast/private/toHost channels), `game/onlineRoom.js` (room-code lobby lifecycle), `game/firebase.js` (anonymous auth + RTDB). Online-only data lives under `rooms/*`; see `database.rules.json`.
+  - `game/GameNetwork.js` — multiplayer transport façade; `setNetworkMode("local"|"online")` delegates to local TCP/UDP or Firebase. `game/onlineTransport.js` (Firebase relay: broadcast/toHost under `rooms/*`, plus per-player private state under the SEPARATE top-level `privateNet/*`), `game/onlineRoom.js` (room-code lobby lifecycle), `game/roomRoster.js` (per-game min/max player limits), `game/roomCleanup.js` (own-room TTL sweep), `game/firebase.js` (anonymous auth + RTDB), `game/lineProtocol.js` (bounded newline framing for local TCP). Online data lives under `rooms/*` and `privateNet/*`; see `database.rules.json` + `DATABASE_RULES.md`. **Private state must never move back under `rooms/` — read rules cascade and can't be revoked by a descendant, and `rooms/<code>` is read whole by five call sites.**
   - `game/tableThemes.js` — per-game table colors; `game/tablePalette.js` + per-game wrappers (`rummyTheme.js`, `pokerTheme.js`, `gofishTheme.js`, `lastCardTheme.js`) for switchable felt palettes
   - **Coin economy (all local AsyncStorage — never in Firebase):** `game/wallet.js` (balance + lifetime earned), `game/rewards.js` (tiered per-game/SP-vs-MP win payouts), `game/dailyBonus.js` (7-day streak), `game/ranks.js` (rank ladder off lifetime earned), `game/achievements.js` (15 one-time rewards + event counters), and the cosmetic sinks: card decks (`game/cardTheme.js` `price`/`isThemeUnlocked`), table felts (`game/feltShop.js`), profile frames (`game/frames.js`). Owned items + `activeFrame` persist on the profile (`game/profile.js`). Shop/UI: `screens/CardThemeScreen.js`, `screens/FramesScreen.js`, `components/TableThemePicker.js` (shared felt picker), `components/DailyBonusModal.js`, `screens/AchievementsScreen.js`. `checkAndClaim()` runs on Home focus. See `COIN_ECONOMY.md`.
   - `game/haptics.js` + `components/Haptic.js` — haptic feedback (expo-haptics; native, needs a dev build)
@@ -100,7 +113,7 @@ This is a family-friendly card game. Keep all content, copy, and assets appropri
   - `components/useSolitaireDrag.js`, `components/useConquianMeldDrag.js` — gesture-handler drag hooks
   - `screens/*GameScreen.js` — per-game screens
 - **Standard patterns:**
-  - `hasMountedRef` set true *before* the fresh-deal `applyState` (so deals animate) and *after* the resume `applyState` (so restored games don't animate). Used in `ConquianGameScreen.js` and `RummyGameScreen.js`; Solitaire uses a different approach (`initialGameDispatched` ref).
+  - `hasMountedRef` set true _before_ the fresh-deal `applyState` (so deals animate) and _after_ the resume `applyState` (so restored games don't animate). Used in `ConquianGameScreen.js` and `RummyGameScreen.js`; Solitaire uses a different approach (`initialGameDispatched` ref).
   - Auto-save effects throttled to one write / 3s via a `lastSaveRef`.
   - Accent color `#7fb3ff` blue (error text stays `#e94560` red).
   - Responsive sizing via `scale()` / `scaleFont()` from `game/responsive.js`.
@@ -115,9 +128,110 @@ This is a family-friendly card game. Keep all content, copy, and assets appropri
 
 - I considered switching to native Kotlin and considered a full rewrite. We concluded: **stay on React Native** — a card game is not performance-limited, and my main frustration (drag-and-drop) was caused by setup gaps (no `GestureHandlerRootView`, raw PanResponder instead of gesture-handler), not by RN being incapable. If I bring up rewriting again, make me justify it against this conclusion before helping.
 - Drag-and-drop is **DONE** (2026-06-04): `GestureHandlerRootView` at root + `react-native-gesture-handler`, with immediate touch-and-move activation (tap-to-move kept as a fallback). Shipped for **Solitaire Klondike / FreeCell / Spider in landscape** via the reusable `components/useSolitaireDrag.js` hook + `getLegalTargets` in `game/solitaire.js`. Pyramid/TriPeaks stay tap (match/collect games). Pure JS, no rebuild.
-- Layout direction: **orientation is LOCKED** (changed 2026-06-04). The app is **portrait-locked everywhere except Solitaire** (landscape-locked). This *reverses* the earlier "responsive to aspect ratio, NOT forced orientation / Fold-first" stance — we ship Android phone-first, so Fold/tablet free-rotation was deprioritized. Responsive *sizing* (`useLayoutMode()`) still applies *within* the locked orientation. See `PROJECT_NOTES.md` → "Responsive Layout & Orientation Architecture" → Orientation policy.
+- Layout direction: **orientation is LOCKED** (changed 2026-06-04). The app is **portrait-locked everywhere except Solitaire** (landscape-locked). This _reverses_ the earlier "responsive to aspect ratio, NOT forced orientation / Fold-first" stance — we ship Android phone-first, so Fold/tablet free-rotation was deprioritized. Responsive _sizing_ (`useLayoutMode()`) still applies _within_ the locked orientation. See `PROJECT_NOTES.md` → "Responsive Layout & Orientation Architecture" → Orientation policy.
 
-## 7. Current status & pending items (as of 2026-07-03)
+## 7. Current status & pending items (as of 2026-08-03)
+
+### Last Card multiplayer colour picker — fixed 2026-08-03 (branch `fix/audit-remediation`)
+
+Reported from a live online game. A client who **drew** a wild got the colour
+picker and every colour tap was a no-op — client stuck on the overlay, host
+stuck waiting for `CHOOSE_COLOR`, game dead for the whole table. Three causes:
+
+1. `toPublic()` dropped `awaitingColorChoiceBy` and `pendingWildCard`, so a
+   client had to guess it owed a colour from "I tapped the deck and the top card
+   is a wild" — and never set `pendingWildRef`, which `onColorPick` requires.
+2. `phaseRef` was declared and read by three guards and **never assigned**. All
+   three were dead. Phase changes now go through `changePhase()`.
+3. `doHostDraw` set the host's own picker for _any_ player's draw.
+
+`toPublic` moved into `game/lastCard.js` as `toPublicState()` (pure logic
+belongs there), joined by `owesColorChoice(state, pid)` — one answer both sides
+read. New suite `__tests__/lastCard.colorChoice.test.js`; 543 → 553 tests over
+46 suites. Pure JS, no rebuild. **Not device-verified.**
+
+### Wild +4 restriction — kept, explained 2026-08-03
+
+Reported as "wild cards should always be available" from a screenshot of a
+dimmed Wild +4. **Not a bug, and the rule stays** (Pedro confirmed): plain Wild
+is unrestricted and never dims; Wild +4 is illegal while you hold a card
+matching the active colour — the official rule, and already in `LASTCARD_SPEC`.
+Without it, +4 is a free every-turn attack.
+
+What WAS broken: one generic message for every illegal card. Tapping the dimmed
++4 while holding a Green 5 said _"Can't play that — match Green or a 5."_ —
+naming the card in your hand as the reason you can't play a different one.
+`whyUnplayable()` (in `game/lastCard.js`) now returns a reason code that feeds
+both the tap message and the accessibility label. 553 → 559 tests.
+**Not device-verified.**
+
+### Design audit + critique — remediated 2026-08-03 (branch `fix/audit-remediation`)
+
+A technical audit (12/20) and a UX critique (23/40) over HomeScreen, Onboarding,
+SinglePlayerSetup and LastCard. Test count 515 → 543 across 45 suites.
+**None of this is device-verified yet.** Fixed, in commit order:
+
+- `EndOfRoundModal` — Android Back did nothing (no `onRequestClose`) in every
+  game's results modal; no double-tap guard; unguarded `coins.toLocaleString()`;
+  could overflow the screen at large font scale; zero accessibility props.
+- `privateNet` was deleted AFTER `rooms/<code>`, but its write rule authorises
+  via `rooms/<code>/host` — so once the rules are published that delete is
+  rejected and every player's last hand is orphaned permanently.
+- **Multiplayer wins paid nothing** in Last Card, Go Fish, Conquián and Rummy
+  (`if (!isSinglePlayer) return` above the reward block). Go Fish also needed a
+  per-device winner check; it only ever matched the host.
+- **Onboarding gave away 15,000 coins of card decks** on first run, permanently
+  (`isThemeUnlocked` grandfathers the active deck). Also: no Back on any step,
+  hardware Back quit the app and discarded the typed name, Next was dimmed but
+  not disabled, duplicate Skip/Next pairs, Memory Match missing from the roster.
+- Last Card: unplayable cards were only dimmed on Easy (default is Medium), an
+  illegal tap gave a shake and no words, a dead deck tap gave nothing at all,
+  hand cards had no accessibility labels, and `triggerShake` ignored reduce
+  motion. Wild colours renamed from "OD Green"/"Crimson"/"Turquoise"/"Coral".
+- Backgrounding tore down **local** WiFi multiplayer mid-game (online already
+  had an exception; local, the same-room audience's mode, did not).
+- `game/colors.js` added. `#e94560` was serving as brand CTA, error, neutral
+  badge and positive banner at once; the last two now have their own roles, and
+  the freed red marks the "last card" moment the game is named after.
+- Choose Game: `tag` data existed and was never rendered; removed a
+  "Ready to play?" confirm guarding a swipe the screen cannot perform.
+
+**Still open from the critique:** Poker uses a hardcoded single-player reward
+tier (its MP end-game is the parked item below); Home's primary actions sit
+above the thumb zone; there is no resume-from-Home; the achievement celebration
+is a system `Alert` that can stack over `DailyBonusModal`; and the three exits
+from a game screen still produce three different outcomes.
+
+### Security & robustness audit — remediated 2026-08-02 (branch `fix/audit-remediation`)
+
+A full structural audit produced 12 fixes, each with a red-first regression test.
+Test count went 425 → 515 across 41 suites. **None of this is device-verified yet.**
+
+Fixed: private hands readable by all players (C1); forgeable `sender` allowing a
+client to act as another player (C2); Firebase listeners never detached, which
+both silenced clients and multiplied every broadcast (C3); Go Fish self-ask
+duplicating cards (M1); unbounded TCP read buffer, a LAN memory-exhaustion DoS
+(M2); missing max-player cap (M3); coins paid before the claim was recorded, at
+three sites (M5); unbounded Who Am I? text and history (M7); zero production
+error reporting (M4); per-card accessibility listeners + no memoization (M6);
+orphaned rooms accumulating forever (M8); plus minors m3/m8/m9/m11.
+
+**Blocking follow-ups before the next release:**
+
+1. **Re-publish `database.rules.json` in the Firebase console.** The C1/C2 fixes
+   are inert until then. Keep the file comment-free.
+2. **Set `expo.extra.sentryDsn` in `app.json`** — currently `null`, so crash
+   reporting is a deliberate no-op.
+3. **Add a privacy-policy line covering crash data leaving the device**, required
+   before the next Play submission now that Sentry is wired.
+4. **Rebuild the dev client** — Sentry is native. Batch with any other native work.
+5. **Re-test online MP end-to-end on 2 devices.** This was already outstanding
+   from the 2026-07-04 rules deploy and now matters more: the private-state path
+   changed, so a bad rule deploy breaks hands specifically.
+
+**Known residue (needs a server, not a code fix):** rooms abandoned by a host who
+never reopens the app are never collected. A global TTL needs a Cloud Function —
+listing rooms client-side would require a read grant that leaks every room code.
 
 Session context for picking up where we left off (branch `claude/ecstatic-cannon-vx06pn`):
 
@@ -128,6 +242,7 @@ Session context for picking up where we left off (branch `claude/ecstatic-cannon
 - **Memory Match (new single-player game) — built 2026-07-03.** `game/memory.js` (pure logic, 15 tests) + `screens/MemoryGameScreen.js` + `screens/MemoryDifficultyPickerScreen.js`. Easy 4×3 / Medium 4×4 / Hard 4×6, match identical cards, difficulty-tiered win reward (`getMemoryReward` in `rewards.js`: easy 50 / medium 75 / hard 100), counts toward win/Well-Rounded achievements. Difficulty is chosen on the **picker screen** (`MemoryDifficultyPicker`, reached from the Choose Game tile) — the in-game screen has NO difficulty buttons (they were removed because a stray tap during play restarted the game). The Choose Game grid dropped its "Coming Soon" tile → **8 game tiles**. **How-to-Play entry for Memory still TODO** (that screen has elaborate per-game illustrated rules; Memory not wired in yet). **Device-tested & working (2026-07-03).** NOTE (2026-07-06→21): the AI photo thumbnails were replaced everywhere — **Choose Game** (`SinglePlayerSetupScreen.js`), **How-to-Play** (`HowToPlayScreen.js`), and the **multiplayer game picker** (`MultiplayerGamePickerScreen.js`, done 2026-07-21) — with a **flat card-emblem design** (dark tile, accent colour, suit motif + corner pips). Accents/suits match across all three screens. Who Am I? keeps its 🎭 motif (not a card game, no pips). No more `thumb_*.jpg` usage in app code (only `scripts/convert-thumbnails.js` still names them); those asset files are now unreferenced.
 - **Coin economy: COMPLETE + code-reviewed + device-tested.** Earn (tiered win rewards, daily-bonus streak, 15 achievements) and spend (decks/felts/frames) are all built and wired; ranks show on Profile. A high-effort review pass fixed a streak-counter bug (consecutive days reset every 7) and serialized the daily/achievement claim writes. 407 tests pass. **Device-tested & working (2026-07-03).**
 - **⏸️ MP Poker end-game — PARKED (not a bug to fix casually).** Multiplayer Poker has NO tournament-end handling: `tournamentWinner` is only set in the single-player branch, so in MP the game freezes once players drop below 2 (no winner/results/coins). Wiring it means host detects last-player-standing → broadcasts winner → each device rewards its own player → results screen keyed on `myPid` not the literal `"host"`. Needs 2-device testing. Don't start it unless asked.
-- **Firebase security rules — DEPLOYED 2026-07-04.** Hardened rules (`database.rules.json`, only `rooms/*`; coins/profile/achievements are local) were published in the Firebase console. The file is kept **comment-free** (the console Rules editor rejects any top-level key but `rules`; don't re-add `"//"` comments). Plain-English rule-by-rule explanation in `DATABASE_RULES.md`. **⚠️ Remaining:** re-test online MP end-to-end (2-device host + join + play) to confirm the strict rules don't block any real write — not yet done. Anonymous auth must stay enabled (rules require `auth != null`).
+- **⚠️ Firebase security rules — CHANGED 2026-08-02, NOT YET RE-DEPLOYED.** A security audit found two critical holes, now fixed in `database.rules.json` but **live only once re-published in the console**: (1) per-player private state sat under the world-readable `rooms/<code>` subtree, so every player could read every opponent's hand — it moved to a top-level `privateNet/<code>/<uid>`; (2) `net/toHost/sender` was validated as any string, and the host uses it as the authoritative player identity in every turn check, so a client could act as another player — it's now pinned to `auth.uid`. Re-publish before the next build. Original note follows.
+- **Firebase security rules — first deployed 2026-07-04.** Hardened rules (`database.rules.json`, only `rooms/*`; coins/profile/achievements are local) were published in the Firebase console. The file is kept **comment-free** (the console Rules editor rejects any top-level key but `rules`; don't re-add `"//"` comments). Plain-English rule-by-rule explanation in `DATABASE_RULES.md`. **⚠️ Remaining:** re-test online MP end-to-end (2-device host + join + play) to confirm the strict rules don't block any real write — not yet done. Anonymous auth must stay enabled (rules require `auth != null`).
 - **Known minor gaps:** other players' profile frames aren't transmitted in multiplayer (own frame is local-only); the big Profile-editor photo doesn't show the equipped frame (shows on Home hero + shop).
 - **Play Store:** v8 approved for closed testing. **versionCode bumped to 9 + version "1.1.0" on 2026-07-22** for the next production build (flat-tile redesign + full online reconnect system). Bump `app.json` → android.versionCode before each new EAS build.
