@@ -216,6 +216,10 @@ SinglePlayerSetup and LastCard. Test count 515 → 543 across 45 suites.
 - **Multiplayer wins paid nothing** in Last Card, Go Fish, Conquián and Rummy
   (`if (!isSinglePlayer) return` above the reward block). Go Fish also needed a
   per-device winner check; it only ever matched the host.
+  **✅ Device-verified 2026-08-03 for Last Card online** (coins paid on an online
+  win). Go Fish, Conquián and Rummy are the same one-line fix but are **still
+  unverified**, and Go Fish's per-device winner check needs a win by a CLIENT,
+  not the host — that half was a separate bug.
 - **Onboarding gave away 15,000 coins of card decks** on first run, permanently
   (`isThemeUnlocked` grandfathers the active deck). Also: no Back on any step,
   hardware Back quit the app and discarded the typed name, Next was dimmed but
