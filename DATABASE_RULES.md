@@ -41,7 +41,7 @@ meant **every player could read every opponent's hand** (fixed 2026-08-02).
 - **`rooms/$code`**
   - **`.read: auth != null`** — any signed-in device may read a room. Joiners must
     read it to check status before joining, and clients read `net/broadcast` to
-    receive game state. The 4-char room code is the shared secret; no personal
+    receive game state. The room code is the shared secret; no personal
     data lives here beyond chosen display names, and **no per-player secrets** —
     those are in `privateNet` (see above).
   - **`.write` (the long one)** — governs room-level fields (settings, status,
@@ -72,18 +72,18 @@ meant **every player could read every opponent's hand** (fixed 2026-08-02).
   - **`$uid/$type/payload`** — string ≤500 KB, same as broadcast.
 
 ## Note on the room code
-Reads are gated by `auth != null` **and** knowing the 4-character code. That's the
-intended design (code = shared secret), but 4 chars is low-entropy — 32^4 ≈ 1M
-combinations, generated with `Math.random()` — so someone could brute-force codes
-to read a room's display names + public game state. Per-player secrets are no
-longer exposed this way (see `privateNet` above), which is what made this
-low-risk rather than serious.
+Reads are gated by `auth != null` **and** knowing the code. `CODE_LENGTH` in
+`game/onlineRoom.js` was **lengthened from 4 to 6 chars on 2026-08-12**
+(32^6 ≈ 1.07 billion combinations, vs the old ~1M) specifically so brute-forcing
+every possible code — and reading every open room's display names + public game
+state without ever being told a code — stops being practical. Per-player secrets
+were never exposed this way (see `privateNet` above); this closes the remaining
+"snoop on a live room" gap. Pure JS, no rules change, no rebuild.
 
 Worth knowing: `google-services.json` is committed and contains a public Firebase
 API key. That's normal for an Android Firebase config, but combined with open
-anonymous auth it means the RTDB REST API is reachable without the app at all.
-Lengthening `CODE_LENGTH` in `game/onlineRoom.js` to 6 (32^6 ≈ 1e9) is the cheap
-hardening if you ever want it.
+anonymous auth it means the RTDB REST API is reachable without the app at all —
+the code length is now the actual gate, which is why it needed lengthening.
 
 ## Cleanup
 There is no server component, so there is **no global TTL sweep** — listing rooms

@@ -95,7 +95,7 @@ export default function JoinOnlineScreen({ navigation }) {
       </TouchableOpacity>
 
       <Text style={styles.footnote}>
-        Ask the host for their 4-letter room code
+        Ask the host for their {CODE_LENGTH}-letter room code
       </Text>
     </KeyboardAvoidingView>
   );

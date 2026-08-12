@@ -27,9 +27,16 @@ import { rememberHostedRoom, forgetHostedRoom } from "./roomCleanup";
 import { warn } from "./logger";
 
 // Ambiguous-looking characters removed (no O/0, I/1) so codes are easy to read
-// aloud and type. 4 chars from 32 symbols ≈ 1M combinations — plenty.
+// aloud and type. 6 chars from 32 symbols ≈ 1.07 billion combinations — a
+// 4-char code (~1M combos) is small enough that any authenticated client can
+// script through the whole space and read every open room's public state
+// (the `rooms/$code` read rule is "any signed-in user", not "room members
+// only" — joinRoom has to read a room before its caller is a member of it,
+// so that rule can't be narrowed without breaking joining itself). Lengthening
+// the code is the cheap fix: it doesn't touch database.rules.json or any read
+// call site, just makes brute-force enumeration impractical.
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-const CODE_LENGTH = 4;
+const CODE_LENGTH = 6;
 
 function randomCode() {
   let code = "";
@@ -112,7 +119,7 @@ export async function joinRoom(code, { playerName }) {
 
   const cleanCode = String(code || "").trim().toUpperCase();
   if (cleanCode.length !== CODE_LENGTH) {
-    return { error: "Enter a 4-letter room code." };
+    return { error: `Enter a ${CODE_LENGTH}-letter room code.` };
   }
 
   try {
