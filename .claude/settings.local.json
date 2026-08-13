@@ -54,7 +54,9 @@
       "Bash(git --no-pager diff --stat screens/GameScreen.js)",
       "Bash(git --no-pager diff --stat screens/WildRoundGameScreen.js screens/SolitaireGameScreen.js)",
       "Bash(git --no-pager log --oneline -8)",
-      "Bash(git rm *)"
+      "Bash(git rm *)",
+      "Bash(git config *)",
+      "Bash(git diff *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\hardr\\.claude\\projects\\c--Users-hardr-OneDrive-Documents-Projects-card-game-app"
