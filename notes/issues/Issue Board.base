@@ -1,0 +1,77 @@
+filters:
+  and:
+    - file.folder == "notes/issues"
+    - file.name != "00 Issue Board"
+
+views:
+  - type: table
+    name: Needs attention
+    filters:
+      and:
+        - or:
+            - status == "open"
+            - status == "partial"
+    order:
+      - severity
+      - area
+      - id
+      - status
+      - evidence
+    sort:
+      - property: severity
+        direction: ASC
+
+  - type: table
+    name: Unresolved questions
+    filters:
+      and:
+        - status == "unclear"
+    order:
+      - area
+      - id
+      - opened
+      - evidence
+
+  - type: table
+    name: Verified longest ago
+    filters:
+      and:
+        - status != "fixed"
+        - status != "moot"
+    order:
+      - verified
+      - status
+      - severity
+      - id
+    sort:
+      - property: verified
+        direction: ASC
+
+  - type: table
+    name: Closed
+    filters:
+      and:
+        - or:
+            - status == "fixed"
+            - status == "moot"
+    order:
+      - id
+      - status
+      - verified
+    sort:
+      - property: verified
+        direction: DESC
+
+  - type: table
+    name: All issues
+    order:
+      - id
+      - type
+      - area
+      - status
+      - severity
+      - opened
+      - verified
+    sort:
+      - property: id
+        direction: ASC
