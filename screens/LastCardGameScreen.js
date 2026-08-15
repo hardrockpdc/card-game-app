@@ -65,6 +65,7 @@ import {
   hapticError,
   HapticStyle,
 } from "../game/haptics";
+import { playSound } from "../game/sounds";
 import { LC } from "../game/lastCardImages";
 import ProfileAvatar from "../components/ProfileAvatar";
 import useMultiplayerAvatars from "../components/useMultiplayerAvatars";
@@ -342,8 +343,10 @@ export default function LastCardGameScreen({ navigation, route }) {
     // Win/lose buzz, once per finished game.
     if (phase === "gameOver" && !outcomeBuzzedRef.current) {
       outcomeBuzzedRef.current = true;
-      if (isWon) hapticWin();
-      else hapticLose();
+      if (isWon) {
+        hapticWin();
+        playSound("win");
+      } else hapticLose();
     }
     if (phase !== "gameOver") {
       coinRewardedRef.current = false;
@@ -730,6 +733,7 @@ export default function LastCardGameScreen({ navigation, route }) {
         }
       }
       const next = buildInitialState(initialPlayers);
+      playSound("card_deal");
       applyState(next);
       scheduleTimeout(turnTimerRef, () => handleTurn(next), 300);
     }

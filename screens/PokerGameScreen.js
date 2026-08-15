@@ -15,6 +15,7 @@ import { getWinReward } from "../game/rewards";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import { recordWin } from "../game/profile";
 import { hapticWin, hapticLose } from "../game/haptics";
+import { playSound } from "../game/sounds";
 import Card from "../components/Card";
 import { scale, scaleFont } from "../game/responsive";
 import GameHeader from "../components/GameHeader";
@@ -775,6 +776,7 @@ export default function PokerGameScreen({ navigation, route }) {
         if (handReadyTimerRef.current) clearTimeout(handReadyTimerRef.current);
         handReadyTimerRef.current = setTimeout(() => setHandReady(true), 1400);
       }
+      playSound("card_deal");
       applyState(initDeal(initialPlayers, 0, null, startingChips));
     }
     init();
@@ -900,6 +902,7 @@ export default function PokerGameScreen({ navigation, route }) {
               );
               recordWin("poker");
               hapticWin(); // rising flourish on a tournament win
+              playSound("win");
             } else if (hostIsOut && !coinRewardedRef.current) {
               coinRewardedRef.current = true;
               hapticLose(); // thud when you're knocked out

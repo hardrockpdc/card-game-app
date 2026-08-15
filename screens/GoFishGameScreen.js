@@ -23,6 +23,7 @@ import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import { recordWin } from "../game/profile";
 import { getTableTheme } from "../game/tableThemes";
 import { hapticWin, hapticLose } from "../game/haptics";
+import { playSound } from "../game/sounds";
 import {
   GOFISH_TABLES,
   getGofishTableId,
@@ -259,6 +260,7 @@ export default function GoFishGameScreen({ navigation, route }) {
         if (handReadyTimerRef.current) clearTimeout(handReadyTimerRef.current);
         handReadyTimerRef.current = setTimeout(() => setHandReady(true), 1400);
       }
+      playSound("card_deal");
       applyState(dealGoFish(initialPlayers));
     }
     init();
@@ -366,8 +368,10 @@ export default function GoFishGameScreen({ navigation, route }) {
     // Win/lose buzz, once per finished game.
     if (gameState?.phase === "results" && !outcomeBuzzedRef.current) {
       outcomeBuzzedRef.current = true;
-      if (isWon) hapticWin();
-      else hapticLose();
+      if (isWon) {
+        hapticWin();
+        playSound("win");
+      } else hapticLose();
     }
     if (gameState?.phase !== "results") {
       coinRewardedRef.current = false;

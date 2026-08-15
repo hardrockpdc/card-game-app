@@ -36,6 +36,7 @@ import { recordAchievementEvent } from "../game/achievements";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import { recordWin } from "../game/profile";
 import { hapticWin, hapticLose } from "../game/haptics";
+import { playSound } from "../game/sounds";
 import {
   broadcastToClients,
   sendToClient,
@@ -544,6 +545,7 @@ export default function RummyGameScreen({ navigation, route }) {
         if (handReadyTimerRef.current) clearTimeout(handReadyTimerRef.current);
         handReadyTimerRef.current = setTimeout(() => setHandReady(true), 1400);
       }
+      playSound("card_deal");
       applyState(
         createRummyState({ variantId, players: initialPlayers, difficulty }),
       );
@@ -866,8 +868,10 @@ export default function RummyGameScreen({ navigation, route }) {
       !outcomeBuzzedRef.current
     ) {
       outcomeBuzzedRef.current = true;
-      if (isWon) hapticWin();
-      else hapticLose();
+      if (isWon) {
+        hapticWin();
+        playSound("win");
+      } else hapticLose();
     }
     if (gameState?.winner == null && !gameState?.tie) {
       coinRewardedRef.current = false;

@@ -30,6 +30,7 @@ import GameMenuButton from "../components/GameMenuButton";
 import EndOfRoundModal from "../components/EndOfRoundModal";
 import Confetti from "../components/Confetti";
 import { hapticWin } from "../game/haptics";
+import { playSound } from "../game/sounds";
 import { useLayoutMode } from "../game/useLayoutMode";
 import {
   createSolitaireState,
@@ -572,6 +573,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
         return;
       }
       initialGameDispatched.current = true;
+      playSound("card_deal");
       dispatch(newGameAction(routeVariantId, { spiderMode: routeSpiderMode }));
       coinRewardedRef.current = false;
       setCoinsEarned(0);
@@ -1179,6 +1181,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
       addCoins(reward).then(() => setCoinsEarned(reward));
       recordWin("solitaire");
       hapticWin();
+      playSound("win");
     }
     if (state.status !== "won") {
       coinRewardedRef.current = false;
@@ -1510,6 +1513,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
     setCoinsEarned(0);
     setElapsed(0);
     clearGame(solitaireSaveKey(state.variantId || routeVariantId));
+    playSound("card_deal");
     dispatch(newGameAction(state.variantId, { spiderMode: state.spiderMode }));
   };
 

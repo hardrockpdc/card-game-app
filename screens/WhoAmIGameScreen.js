@@ -39,6 +39,7 @@ import {
 import { scale, scaleFont } from "../game/responsive";
 import { getTableTheme } from "../game/tableThemes";
 import { hapticWin, hapticLose } from "../game/haptics";
+import { playSound } from "../game/sounds";
 import { addCoins } from "../game/wallet";
 import { getWinReward } from "../game/rewards";
 import { recordWin } from "../game/profile";
@@ -185,6 +186,7 @@ export default function WhoAmIGameScreen({ navigation, route }) {
     const iWon = String(gameState.winner?.id) === myPid;
     if (iWon) {
       hapticWin();
+      playSound("win");
       // Who Am I? is multiplayer-only; reward the winning device once.
       if (!coinRewardedRef.current) {
         coinRewardedRef.current = true;

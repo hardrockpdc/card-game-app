@@ -53,6 +53,7 @@ import { recordAchievementEvent } from "../game/achievements";
 import { saveGame, loadGame, clearGame } from "../game/gameSaves";
 import { recordWin } from "../game/profile";
 import { hapticWin, hapticLose } from "../game/haptics";
+import { playSound } from "../game/sounds";
 import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import { getTableTheme } from "../game/tableThemes";
 
@@ -438,6 +439,7 @@ export default function ConquianGameScreen({ navigation, route }) {
         if (handReadyTimerRef.current) clearTimeout(handReadyTimerRef.current);
         handReadyTimerRef.current = setTimeout(() => setHandReady(true), 1400);
       }
+      playSound("card_deal");
       applyState(deal(initialPlayers));
     }
     init();
@@ -1048,8 +1050,10 @@ export default function ConquianGameScreen({ navigation, route }) {
       !outcomeBuzzedRef.current
     ) {
       outcomeBuzzedRef.current = true;
-      if (isWon) hapticWin();
-      else hapticLose();
+      if (isWon) {
+        hapticWin();
+        playSound("win");
+      } else hapticLose();
     }
     if (gameState?.phase !== "results") {
       coinRewardedRef.current = false;
