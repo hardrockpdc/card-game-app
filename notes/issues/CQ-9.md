@@ -2,11 +2,11 @@
 id: CQ-9
 type: quality
 area: ui
-status: partial
+status: fixed
 severity: low
 opened: 2026-05-17
 verified: 2026-08-15
-evidence: "35 total screens today (was 18); 23/35 use SafeAreaView, all correctly from react-native-safe-area-context, zero from the deprecated react-native package; KeyboardAvoidingView now in 4 screens not 2 (JoinScreen, JoinOnlineScreen, WhoAmIGameScreen legitimately need it -- HostSetupScreen.js:88,99 wraps its body in it despite having zero TextInput anywhere, inert but stale)"
+evidence: "35 total screens today (was 18); 23/35 use SafeAreaView, all correctly from react-native-safe-area-context, zero from the deprecated react-native package; KeyboardAvoidingView now in 3 screens (JoinScreen, JoinOnlineScreen, WhoAmIGameScreen -- all legitimately have TextInput); HostSetupScreen.js's two dead KeyboardAvoidingView wrappers removed (was lines 88,99) -- also discovered HostSetupScreen.js itself is unreferenced anywhere in the app (not in App.js's nav stack or any other file), i.e. dead code, unrelated to this ticket and left as-is"
 ---
 
 ## Problem
@@ -47,11 +47,13 @@ Marked `partial`: the correctness claim (import source) is genuinely still true,
 coverage claim (which screens, how many) is stale enough that re-filing this as fully
 `fixed`/`satisfied` without correction would itself become a new stale-doc problem.
 
-## Fix sketch
+## Fixed 2026-08-15
 
-Documentation-accuracy fix, not a code fix: update the figures to 35 total screens, 23
-use `SafeAreaView` (all correctly sourced), 4 use `KeyboardAvoidingView` (3 legitimately,
-1 — `HostSetupScreen` — does not). Optional, low-priority code cleanup: remove the two
-`KeyboardAvoidingView` wrappers in `screens/HostSetupScreen.js:88,99` since the screen has
-no text input and the keyboard can never appear there — pure dead-weight removal, zero
-behavior change.
+Removed both dead `KeyboardAvoidingView` wrappers in `screens/HostSetupScreen.js` (now
+plain `View`); dropped the now-unused `KeyboardAvoidingView`/`Platform` imports. Zero
+behavior change — the screen has no `TextInput`, so the keyboard could never open there.
+
+While verifying importers before editing, found `HostSetupScreen.js` is not referenced
+anywhere in the app (not in `App.js`'s navigation stack, not anywhere else) — the whole
+159-line file is dead code, orphaned independent of this ticket. Not acted on here; flagged
+for Pedro to decide whether to delete it or wire it back in.

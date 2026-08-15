@@ -1,12 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-} from "react-native";
+import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
 import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import * as Network from "expo-network";
 import * as Clipboard from "expo-clipboard";
@@ -85,21 +78,15 @@ export default function HostSetupScreen({ navigation }) {
 
   if (isLoadingProfile) {
     return (
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
+      <View style={styles.container}>
         <ActivityIndicator color="#7fb3ff" size="large" />
         <Text style={styles.loadingText}>Loading your profile…</Text>
-      </KeyboardAvoidingView>
+      </View>
     );
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
+    <View style={styles.container}>
       <Text style={styles.title}>Host a Game</Text>
       <View style={styles.suitRow}>
         <Text style={[styles.suit, styles.suitRed]}>♥</Text>
@@ -154,7 +141,7 @@ export default function HostSetupScreen({ navigation }) {
       <Text style={styles.footnote}>
         Everyone must be on the same WiFi or hotspot
       </Text>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
