@@ -117,7 +117,7 @@ pattern — no remaining instances. `GameNetwork.js` is the only file in the rep
 
 **Residual gap, not closed by this fix:** the report's ask for two-device verification in a
 live Poker/Conquián game has no record of ever happening — not in `CLAUDE.md`, not in
-`RECONNECT_PLAN.md`, not in the archived tracker itself. `CLAUDE.md` separately notes MP
+`notes/ops/Reconnect Plan.md`, not in the archived tracker itself. `CLAUDE.md` separately notes MP
 Poker's end-game is still "parked" (doesn't reach a normal end state), so a full
 multi-action Poker soak test under real LAN fragmentation hasn't occurred. The code-level
 fix is solid and test-covered; field verification under real fragmentation conditions is

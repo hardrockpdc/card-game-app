@@ -6,7 +6,7 @@ status: moot
 severity: low
 opened: 2026-05-17
 verified: 2026-08-14
-evidence: "Wild Round entirely removed from the app — commit 473daad (2026-07-01, \"feat: remove Wild Round to keep Card Night family-friendly\") deleted screens/WildRoundGameScreen.js, game/wildround.js, game/wildroundCards.json, __tests__/wildround.test.js and stripped every reference from App.js/screens/components/game; zero live references remain today; CLAUDE.md:101 documents it; WILDROUND_SPEC.md kept on disk for a possible future standalone app"
+evidence: "Wild Round entirely removed from the app — commit 473daad (2026-07-01, \"feat: remove Wild Round to keep Card Night family-friendly\") deleted screens/WildRoundGameScreen.js, game/wildround.js, game/wildroundCards.json, __tests__/wildround.test.js and stripped every reference from App.js/screens/components/game; zero live references remain today; CLAUDE.md:101 documents it; notes/specs/Wild Round.md kept on disk for a possible future standalone app"
 ---
 
 ## Problem
@@ -30,7 +30,7 @@ The original closure note only captures the first half of the story. Full timeli
    test file were deleted (~5,200 lines removed net), and every reference was stripped
    from `App.js`, both lobby screens, the multiplayer game picker, How To Play, About,
    `GameHeader.js`, and `tableThemes.js`. Code is intentionally preserved in git history
-   (`473daad^`), and `WILDROUND_SPEC.md` (328 lines) was deliberately kept on disk for a
+   (`473daad^`), and `notes/specs/Wild Round.md` (328 lines) was deliberately kept on disk for a
    possible future standalone adults-only app — both confirmed present today.
 3. **Today**: zero live references to Wild Round remain anywhere in `App.js`, `screens/`,
    `components/`, or `game/`. `CLAUDE.md:101` accurately documents the removal and reason

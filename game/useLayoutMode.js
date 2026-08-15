@@ -1,6 +1,6 @@
 import { useWindowDimensions } from "react-native";
 
-// Aspect-ratio-aware layout hook (see PROJECT_NOTES.md → Responsive Layout & Orientation).
+// Aspect-ratio-aware layout hook (see notes/architecture/Responsive Layout and Orientation.md).
 // Returns the live width/height plus a coarse `mode`:
 //   - "wide"     : clearly landscape-ish (ratio > 1.2)
 //   - "tall"     : clearly portrait-ish (ratio < 0.85)

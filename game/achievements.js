@@ -7,7 +7,7 @@ import { THEMES_LIST, getThemePrice } from "./cardTheme";
 // One-time achievements — the last earn-side system. Cosmetic-economy friendly:
 // participation / cumulative / solo-skill milestones, avoiding outcome-based ones
 // that can be farmed against weak AI or via multiplayer collusion (see
-// COIN_ECONOMY.md). Each pays coins ONCE, the first time its condition is met.
+// notes/product/Coin Economy.md). Each pays coins ONCE, the first time its condition is met.
 //
 // Most conditions are derived from data we already persist (profile stats, the
 // login streak, cosmetic unlocks). A few need a small event counter that the

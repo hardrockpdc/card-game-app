@@ -6,7 +6,7 @@ status: open
 severity: high
 opened: 2026-08-15
 verified: 2026-08-15
-evidence: "app.json:36 versionCode 9 / 1.1.0, staged 2026-07-22 but never built (POST_LAUNCH_CHECKLIST.md:3 shows only versionCode 8 was ever submitted, 2026-07-01); CLAUDE.md:312 states Firebase security rules changed 2026-08-02 and are NOT YET RE-DEPLOYED; POST_LAUNCH_CHECKLIST.md:80-101 lists 5 unchecked blocking items; app.json:57 expo.extra.sentryDsn is still null"
+evidence: "app.json:36 versionCode 9 / 1.1.0, staged 2026-07-22 but never built (notes/product/Post-Launch Checklist.md:3 shows only versionCode 8 was ever submitted, 2026-07-01); CLAUDE.md:312 states Firebase security rules changed 2026-08-02 and are NOT YET RE-DEPLOYED; notes/product/Post-Launch Checklist.md:80-101 lists 5 unchecked blocking items; app.json:57 expo.extra.sentryDsn is still null"
 ---
 
 ## Problem
@@ -25,7 +25,7 @@ security-exposure stakes instead of a permission-description crash.
 Specifically:
 
 - Only **versionCode 8** was ever actually submitted anywhere — Closed testing (Alpha),
-  2026-07-01 (`POST_LAUNCH_CHECKLIST.md:3`).
+  2026-07-01 (`notes/product/Post-Launch Checklist.md:3`).
 - `app.json`'s `android.versionCode` was bumped to **9** (`version: "1.1.0"`) on
   2026-07-22, explicitly staged for "the next production build" — but this is a
   version-number change committed to source, not evidence a build was actually run. No
@@ -38,7 +38,7 @@ Specifically:
   YET RE-DEPLOYED."** The client-side code for both fixes is inert until
   `database.rules.json` is republished in the Firebase console — a manual step,
   currently unchecked.
-- `POST_LAUNCH_CHECKLIST.md`'s "Security audit remediation — BLOCKING" section lists 5
+- `notes/product/Post-Launch Checklist.md`'s "Security audit remediation — BLOCKING" section lists 5
   unchecked items, starting with that rules republish.
 - `expo.extra.sentryDsn` is still `null` in `app.json:57`, so crash reporting remains a
   deliberate no-op even though Sentry is wired into the code.
@@ -51,11 +51,11 @@ running against the pre-fix rules, which is the actual live exposure — not a h
 ## Fix sketch
 
 1. Re-publish `database.rules.json` in the Firebase console (Realtime Database → Rules →
-   Publish) — blocking, per `POST_LAUNCH_CHECKLIST.md:86-90`.
+   Publish) — blocking, per `notes/product/Post-Launch Checklist.md:86-90`.
 2. Re-test online multiplayer end-to-end on 2 devices against the new rules
-   (`POST_LAUNCH_CHECKLIST.md:91-94`).
+   (`notes/product/Post-Launch Checklist.md:91-94`).
 3. Set `expo.extra.sentryDsn` in `app.json` so crash reporting isn't a no-op, and add the
    privacy-policy line covering crash data leaving the device (see [[LAUNCH-1]]'s
-   adjacent-gap note; `POST_LAUNCH_CHECKLIST.md:95-99`).
+   adjacent-gap note; `notes/product/Post-Launch Checklist.md:95-99`).
 4. Run `eas build --profile production --platform android` for versionCode 9 / 1.1.0
-   (recipe at `POST_LAUNCH_CHECKLIST.md:70-78`), then submit to Play Console.
+   (recipe at `notes/product/Post-Launch Checklist.md:70-78`), then submit to Play Console.

@@ -98,7 +98,7 @@ export function canExtendMeld(meld, card) {
 // on the table (no borrowing), they cannot pass it — it is auto-added and they
 // must immediately discard. Clockwise priority order is unchanged; this only
 // removes the *pass* option for whoever the card lands on. Applies to a card
-// offered in the chain AND to the player's own draw. See CONQUIAN_SPEC.md.
+// offered in the chain AND to the player's own draw. See notes/specs/Conquian.md.
 
 // Index of the first own meld the active card directly extends, or -1.
 export function forcedExtendIndex(state, playerPid) {

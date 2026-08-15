@@ -6,7 +6,7 @@ status: moot
 severity: low
 opened: 2026-05-17
 verified: 2026-08-15
-evidence: "no ios/ native folder or GoogleService-Info.plist anywhere in the repo; IOS_SETUP.md Phase 0 (Apple Developer enrollment) never checked off; CLAUDE.md:47/100 confirms Android-only distribution, decided 2026-06-01 (31328e9), about 2 weeks after this ticket was filed -- no iOS binary, dev or production, has ever existed for this app"
+evidence: "no ios/ native folder or GoogleService-Info.plist anywhere in the repo; notes/ops/iOS Setup.md Phase 0 (Apple Developer enrollment) never checked off; CLAUDE.md:47/100 confirms Android-only distribution, decided 2026-06-01 (31328e9), about 2 weeks after this ticket was filed -- no iOS binary, dev or production, has ever existed for this app"
 ---
 
 ## Problem
@@ -42,7 +42,7 @@ Per PROJECT_NOTES.md, this is already on your "Still to do before EAS production
 
 **The literal ticket is moot, and went moot almost immediately.** LAUNCH-2 was written
 2026-05-17. The Android-only distribution decision first appears in `CLAUDE.md` on
-2026-06-01 (`31328e9`) — about two weeks later. `IOS_SETUP.md` shows Phase 0 ("Enroll in
+2026-06-01 (`31328e9`) — about two weeks later. `notes/ops/iOS Setup.md` shows Phase 0 ("Enroll in
 Apple Developer Program") was never checked off, and there is no `ios/` native folder or
 `GoogleService-Info.plist` anywhere in the repo — no iOS build, dev or production, has
 ever been produced for this app. The ticket's entire premise (an iOS user hitting a stale

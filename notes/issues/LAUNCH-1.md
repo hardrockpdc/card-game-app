@@ -20,7 +20,7 @@ evidence: "gh api repos/hardrockpdc/card-game-app/pages returns status: built, s
 
 ### What was happening
 
-Back in DEEP_REVIEW v2 we set the URL `https://hardrockpdc.github.io/card-game-app/privacy.html` in `screens/AboutScreen.js` and `APP_STORE_REVIEW_NOTES.md`. The URL was wired in code, but the file didn't exist. Now resolved — see `docs/privacy.html`.
+Back in DEEP_REVIEW v2 we set the URL `https://hardrockpdc.github.io/card-game-app/privacy.html` in `screens/AboutScreen.js` and `notes/ops/App Store Review Notes.md`. The URL was wired in code, but the file didn't exist. Now resolved — see `docs/privacy.html`.
 
 When the App Store reviewer taps "Privacy Policy" in your app, the browser opens that URL and gets a "Page Not Found." That's an automatic rejection.
 
@@ -46,7 +46,7 @@ The ticket's Apple/App-Store framing is stale — distribution is Android-only/G
 now (per `CLAUDE.md`) — but the underlying requirement (the wired URL must resolve, not
 404) is what actually mattered, and it holds regardless of which store.
 
-**Adjacent, genuinely separate gap found while checking `POST_LAUNCH_CHECKLIST.md`:** an
+**Adjacent, genuinely separate gap found while checking `notes/product/Post-Launch Checklist.md`:** an
 open item there (line 97) calls for adding a privacy-policy line covering crash data
 leaving the device, required for the next Play submission now that Sentry is wired. This
 arose after LAUNCH-1 was written and was never part of its scope — not folded into this

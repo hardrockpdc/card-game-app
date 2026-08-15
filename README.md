@@ -2,7 +2,7 @@
 
 A mobile card game app for playing with friends and family over local WiFi. No internet required — phones connect directly on the same network. Each player uses their own phone with a private hand.
 
-**8 games included:** Blackjack, Go Fish, Texas Hold'em Poker, Conquián, Rummy (4 variants), Wild Round, Last Card, Solitaire (5 variants)
+**9 games included:** Blackjack, Go Fish, Texas Hold'em Poker, Conquián, Rummy (4 variants), Last Card, Solitaire (5 variants), Who Am I?, Memory Match
 
 ---
 
@@ -45,14 +45,17 @@ Builds are handled via EAS. See `eas.json` for build profiles.
 # Development build (for testing)
 eas build --profile development --platform android
 
-# Production build
-eas build --profile production --platform all
+# Production build (Android only — distribution is Google Play only, see CLAUDE.md §5)
+eas build --profile production --platform android
 ```
 
 ---
 
 ## Project Docs
 
-- [PROJECT_NOTES.md](PROJECT_NOTES.md) — full project state, architecture, roadmap, and coding patterns
-- [CONQUIAN_SPEC.md](CONQUIAN_SPEC.md) — Conquián game rules and implementation spec
-- [WILDROUND_SPEC.md](WILDROUND_SPEC.md) — Wild Round game rules and implementation spec
+- [CLAUDE.md](CLAUDE.md) — working agreement, hard technical rules, process discipline
+- [notes/00 Index.md](notes/00%20Index.md) — the docs vault: architecture, product,
+  design, ops, per-game specs, and the full issue tracker (open in Obsidian for live
+  views via `notes/issues/00 Issue Board.md`)
+- `archive/PROJECT_NOTES.md` — frozen historical tracker, kept as a reference baseline,
+  no longer updated
