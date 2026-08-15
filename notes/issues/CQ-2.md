@@ -2,11 +2,11 @@
 id: CQ-2
 type: quality
 area: ui
-status: open
+status: partial
 severity: medium
 opened: 2026-05-17
 verified: 2026-08-15
-evidence: "5 parallel game lists today (LobbyScreen.js:36-91, MultiplayerGamePickerScreen.js:19-26, game/roomRoster.js:13-20, HowToPlayScreen.js:17-25, SinglePlayerSetupScreen.js:15-72), up from 3; GoFishGameScreen.js:405 passes gameId:\"gofish\" (lowercase) against HowToPlayScreen.js:19's id:\"goFish\" (camelCase) -- confirmed live content-mismatch bug, not just theoretical risk"
+evidence: "GoFishGameScreen.js:405 now passes gameId:\"goFish\" (fixed, matches HowToPlayScreen.js:19's id:\"goFish\") -- the confirmed content-mismatch bug is closed; 5 parallel game lists still exist (LobbyScreen.js:36-91, MultiplayerGamePickerScreen.js:19-26, game/roomRoster.js:13-20, HowToPlayScreen.js:17-25, SinglePlayerSetupScreen.js:15-72), and HowToPlayScreen.js's GAMES roster still lacks whoami/memory entries -- fix sketch item 2 not done, full centralization still deliberately deferred"
 ---
 
 ## Problem
@@ -73,11 +73,16 @@ The deferral decision on full centralization still stands — the fields really 
 per screen's needs, and a naive merge is still risky. But this should not be re-filed as
 "deferred, low value" without at least fixing the concrete Go Fish bug.
 
-## Fix sketch
+## Fixed 2026-08-15
 
-1. `screens/GoFishGameScreen.js:405` — change `gameId: "gofish"` to `gameId: "goFish"`.
-   One-line fix, closes the confirmed bug.
-2. Add `whoami` and `memory` entries to `HowToPlayScreen.js`'s `GAMES` (plus goal/steps
+`screens/GoFishGameScreen.js:405` changed `gameId: "gofish"` to `gameId: "goFish"`.
+Go Fish's in-game "How to Play" now correctly resolves to `HowToPlayScreen.js`'s
+`goFish` entry instead of silently falling back to Blackjack's header with Last
+Card's rules text.
+
+## Fix sketch (remaining)
+
+1. Add `whoami` and `memory` entries to `HowToPlayScreen.js`'s `GAMES` (plus goal/steps
    content and `howto` menu items on `WhoAmIGameScreen.js`/`MemoryGameScreen.js`) so all
    9 games have a working How-to-Play entry.
 

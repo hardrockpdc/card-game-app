@@ -402,7 +402,7 @@ export default function GoFishGameScreen({ navigation, route }) {
     ...(isSinglePlayer
       ? [{ type: "saveexit", onSaveExit: handleSaveAndExit }]
       : []),
-    { type: "howto", gameId: "gofish" },
+    { type: "howto", gameId: "goFish" },
     { type: "theme" },
     {
       icon: "🎨",
