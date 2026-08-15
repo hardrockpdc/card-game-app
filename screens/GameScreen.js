@@ -112,9 +112,15 @@ export default function GameScreen({ navigation, route }) {
     });
 
     async function checkResume() {
-      if (!route?.params?.resumeFromSave) return;
+      if (!route?.params?.resumeFromSave) {
+        hasMountedRef.current = true;
+        return;
+      }
       const saved = await loadGame(SAVE_KEY);
-      if (!saved) return;
+      if (!saved) {
+        hasMountedRef.current = true;
+        return;
+      }
       const bet = saved.currentBet ?? 0;
       currentBetRef.current = bet;
       setCurrentBet(bet);
@@ -129,6 +135,11 @@ export default function GameScreen({ navigation, route }) {
       setSplitResult(saved.splitResult ?? "");
       setCoinsDelta(saved.coinsDelta ?? 0);
       setScreenPhase(saved.screenPhase ?? "playing");
+      // Restored hand shouldn't replay the deal animation; enable it on the
+      // next tick so later actions (hit/stand/new hand) animate normally.
+      setTimeout(() => {
+        hasMountedRef.current = true;
+      }, 0);
     }
     checkResume();
   }, []);
@@ -159,15 +170,6 @@ export default function GameScreen({ navigation, route }) {
     splitResult,
     coinsDelta,
   ]);
-
-  useEffect(() => {
-    // After the first render completes, flag mount-complete so future deals animate.
-    // We use a microtask so this fires AFTER the initial render, before the next state update.
-    const timer = setTimeout(() => {
-      hasMountedRef.current = true;
-    }, 50);
-    return () => clearTimeout(timer);
-  }, []);
 
   // UX-5: Android hardware back confirmation
   useEffect(() => {

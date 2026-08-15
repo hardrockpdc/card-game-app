@@ -21,7 +21,7 @@ verified: 2026-08-15
   - `components/useSolitaireDrag.js`, `components/useConquianMeldDrag.js` — gesture-handler drag hooks
   - `screens/*GameScreen.js` — per-game screens
 - **Standard patterns:**
-  - `hasMountedRef` set true _before_ the fresh-deal `applyState` (so deals animate) and _after_ the resume `applyState` (so restored games don't animate). Used in `ConquianGameScreen.js` and `RummyGameScreen.js`; Solitaire uses a different approach (`initialGameDispatched` ref). Blackjack still uses the older blanket-50ms-timer version of this pattern, unlike the other four game screens — see [[UX-4]].
+  - `hasMountedRef` set true _before_ the fresh-deal `applyState` (so deals animate) and _after_ the resume `applyState` (so restored games don't animate). Used in `ConquianGameScreen.js`, `RummyGameScreen.js`, `GoFishGameScreen.js`, `PokerGameScreen.js`, and (as of the [[UX-4]] cleanup, 2026-08-15) `GameScreen.js` (Blackjack) — no screen uses the older blanket-50ms-timer version anymore. Solitaire uses a different approach (`initialGameDispatched` ref).
   - Auto-save effects throttled to one write / 3s via a `lastSaveRef`, present in all games with save/resume except Memory Match, which has no persistence at all — see [[BUG-4]].
   - Accent color `#7fb3ff` blue (error text stays `#e94560` red); `game/colors.js` holds the fuller semantic token set added 2026-08-02.
   - Responsive sizing via `scale()` / `scaleFont()` from `game/responsive.js`.

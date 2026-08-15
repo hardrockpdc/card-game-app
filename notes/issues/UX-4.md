@@ -2,11 +2,11 @@
 id: UX-4
 type: ux
 area: animation
-status: partial
+status: fixed
 severity: low
 opened: 2026-05-17
 verified: 2026-08-15
-evidence: "GameScreen.js:163-170 still gates on a blanket 50ms setTimeout with no fade (Card.js:236-263 confirms no opacity treatment when animateDeal is false); ConquianGameScreen.js:432, RummyGameScreen.js:538, GoFishGameScreen.js:227, PokerGameScreen.js:743 now set hasMountedRef synchronously in init() with no timer window at all, as a side effect of the UX-3 fix, not a deliberate fix of this ticket"
+evidence: "GameScreen.js's blanket 50ms setTimeout mount effect removed; hasMountedRef is now set synchronously in the fresh-game branch of checkResume() and via a 0ms setTimeout after applying restored state on resume, matching the pattern ConquianGameScreen.js:432/427, RummyGameScreen.js:538, GoFishGameScreen.js:227, PokerGameScreen.js:743 already use"
 ---
 
 ## Problem
@@ -59,9 +59,13 @@ implied-universal sense (stale for 4 of 5 affected screens). `partial` captures 
 honestly. Severity stays `low` — matches the original filer's own assessment ("almost never
 visible... listed for completeness"), nothing here changes that risk profile.
 
-**No fix warranted**, consistent with the original "Skip" call. If Blackjack's gap is ever
-worth closing to match the other four screens (which would incidentally resolve this
-ticket everywhere), the fix isn't the opacity-0 treatment the ticket speculates about — it's
-simpler: replace Blackjack's blanket `setTimeout(..., 50)` mount effect with the same
-synchronous-assignment pattern the other four screens now use. That's a "make Blackjack
-consistent" cleanup, not a UX-4-specific fix, and should be scoped separately if ever wanted.
+## Fixed 2026-08-15
+
+Applied the cleanup this note sketched: `GameScreen.js`'s blanket `setTimeout(..., 50)` mount
+effect is gone. `hasMountedRef` is now set synchronously in `checkResume()`'s fresh-game
+branch (no resume, or no save found), and via a `0ms` `setTimeout` after applying restored
+state on the resume path — same shape as Conquián/Rummy/Go Fish/Poker's `init()`. This also
+closes a latent race the blanket timer had: if `loadGame()` ever took longer than 50ms,
+`hasMountedRef` could flip true before the restored hand was applied, replaying the deal
+animation on a resumed game. Blackjack is single-player only, so this is a pure client-side
+timing fix with no multiplayer/online surface.
