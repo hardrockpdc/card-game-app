@@ -161,10 +161,16 @@ Use these as defaults unless a recipe overrides them:
 - Source hand removes the card at start or arrival (choose one rule and keep it consistent).
   **Default duration:** 300–450ms.
 
-**Repo mapping (current):**
+**Repo mapping (current, updated 2026-08-15 — see [[IMP-8]]):**
 
 - Blackjack: hit/stand logic appends/removes cards instantly.
-- Solitaire: stack/ownership changes instantly; overlap uses negative margins.
+- Solitaire **tap-to-move** (`SolitaireGameScreen.js`'s `onCardTap` → `flipMove`, built
+  2026-07-05): real FLIP-style fly animation — measures each moving card's old screen rect,
+  applies the move, animates a ghost card sliding to its new position.
+- Solitaire **drag-and-drop** (`useSolitaireDrag.js:214-219`) and Conquián meld-drag
+  (`useConquianMeldDrag.js:184-203`) still snap instantly on a legal drop (only spring back
+  on an invalid one) — not yet extended to the same FLIP technique. Deliberately deferred;
+  see [[IMP-8]].
 
 ---
 

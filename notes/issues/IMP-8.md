@@ -6,7 +6,7 @@ status: partial
 severity: low
 opened: 2026-05-17
 verified: 2026-08-15
-evidence: "screens/SolitaireGameScreen.js:1034-1053 (flipMove/onCardTap) is a real measured FLIP fly animation for Solitaire's tap-to-move path, built 2026-07-05 (433e165, 4549516); components/useSolitaireDrag.js:214-219 and components/useConquianMeldDrag.js:184-203 both snap instantly on a legal drop, only springing back on an invalid one; Animations.md:151-168 never updated, still describes Solitaire as fully instant"
+evidence: "screens/SolitaireGameScreen.js:1034-1053 (flipMove/onCardTap) is a real measured FLIP fly animation for Solitaire's tap-to-move path, built 2026-07-05 (433e165, 4549516); components/useSolitaireDrag.js:214-219 and components/useConquianMeldDrag.js:184-203 both still snap instantly on a legal drop, only springing back on an invalid one -- deliberately not extended, per this ticket's own 'if players ask for it' guidance; Animations.md's recipe #3 mapping updated 2026-08-15 to reflect the tap-to-move/drag-and-drop split"
 ---
 
 ## Problem
@@ -53,14 +53,17 @@ instantaneous state changes") still describe Solitaire moves as fully instant, w
 update reflecting the 2026-07-05 tap-move work. Exactly the kind of doc drift CLAUDE.md
 §3.6 exists to prevent.
 
-## Fix sketch
+## Fixed 2026-08-15 (doc hygiene only)
 
-Two independent, non-urgent follow-ups:
-1. Doc hygiene: update `Animations.md`'s recipe #3 mapping to note tap-to-move in
-   Solitaire now flies (cite `flipMove` in `SolitaireGameScreen.js`), while drag-and-drop
-   still snaps instantly.
-2. If full coverage is ever wanted: extend the same FLIP technique to the drag-and-drop
-   success path (`useSolitaireDrag.js`/`useConquianMeldDrag.js` — call the same
-   measure/ghost logic instead of dispatching immediately on a legal drop). Optional
-   polish per the original ticket's own "if players ask for it" guidance — no evidence
-   anyone has asked for the drag-and-drop half specifically.
+`Animations.md`'s recipe #3 mapping now notes tap-to-move in Solitaire flies (cites
+`flipMove` in `SolitaireGameScreen.js`), while drag-and-drop (`useSolitaireDrag.js`) and
+Conquián meld-drag (`useConquianMeldDrag.js`) still snap instantly.
+
+## Fix sketch (remaining, deliberately not done)
+
+If full coverage is ever wanted: extend the same FLIP technique to the drag-and-drop
+success path (`useSolitaireDrag.js`/`useConquianMeldDrag.js` — call the same
+measure/ghost logic instead of dispatching immediately on a legal drop). This is a
+4-6 hour feature build, not a bug — the original ticket's own guidance ("after v1 ships
+and you have user feedback... if players ask for it, do it") still applies. Not attempted
+here; no evidence anyone has asked for the drag-and-drop half specifically.
