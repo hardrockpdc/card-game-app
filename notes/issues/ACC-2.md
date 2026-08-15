@@ -6,7 +6,7 @@ status: partial
 severity: low
 opened: 2026-05-17
 verified: 2026-08-15
-evidence: "RummyGameScreen.js:250/238/542-546/1286-1287 and ConquianGameScreen.js:127/114/436-440/1888-1889 implement a real handReady state flag (fail-safe true, 1400ms guaranteed re-reveal, reduce-motion aware) per commit 80e2850 (2026-06-23); no TalkBack/VoiceOver device pass recorded anywhere since; PokerGameScreen.js:1178-1182 and GoFishGameScreen.js:598-603 have the identical staggered-deal pattern with zero equivalent gating, but were never claimed in scope by the original fix"
+evidence: "RummyGameScreen.js, ConquianGameScreen.js, PokerGameScreen.js, and GoFishGameScreen.js all now implement the same handReady state flag (fail-safe true, 1400ms guaranteed re-reveal, reduce-motion aware); no TalkBack/VoiceOver device pass recorded anywhere since 80e2850 (2026-06-23) -- device-test gap is why this stays partial, not fixed"
 ---
 
 ## Problem
@@ -68,22 +68,18 @@ is real assistive-tech behavior — how `accessibilityElementsHidden`/`important
 actually interacts with a real screen reader is exactly what unit tests can't validate. That
 higher-stakes gap is why this stays `partial` rather than "fixed, gap noted."
 
-**Scope gap, not a broken promise but worth tracking:** `PokerGameScreen.js:1178-1182`
-(`dealDelay={index * 100}` on the initial 2-card deal) and `GoFishGameScreen.js:598-603`
-(same pattern, up to 7 cards) both stagger-mount cards carrying `accessibilityLabel`
-(`components/Card.js:161,251`) — the identical mechanism this bug worried about for Rummy —
-with zero `handReady`-equivalent gating anywhere in either file. This isn't a failure of
-this fix: the original bug text only ever named Rummy's 10-card deal, and the resolution
-note is explicit it covers "Rummy + Conquián" only. But the general "staggered deal vs.
-screen reader" concern is only partially addressed app-wide. LastCard and Solitaire don't
-have the same shape of problem (LastCard deals one card at a time; Solitaire's deal
-animation is a tableau layout, a different accessibility surface).
+## Fixed 2026-08-15 (scope expansion)
 
-## Fix sketch
+Applied the same `handReady` gating to `PokerGameScreen.js` (`styles.yourCardsRow`) and
+`GoFishGameScreen.js` (the hand `ScrollView`) — identical shape to Rummy/Conquián:
+`useState(true)` fail-safe default, flipped `false` only in the fresh-deal branch of
+`init()` (guarded by `!reduceMotionRef.current`), a `1400ms` guaranteed re-reveal timer
+cleared on unmount, `accessibilityElementsHidden`/`importantForAccessibility` on the hand
+container. All four staggered-deal game screens now have equivalent gating.
 
-1. Get an actual TalkBack pass on a real Android device (this app is Android-only): confirm
-   the hand region is genuinely silent during the ~1.25s deal on both Rummy and Conquián,
-   and becomes navigable within the 1400ms window.
-2. If scope should expand, apply the same `handReady`-style gating to
-   `PokerGameScreen.js`'s hand row and `GoFishGameScreen.js`'s hand list — as a new,
-   separately-scoped issue, not folded into this one's closure.
+## Fix sketch (remaining)
+
+Get an actual TalkBack pass on a real Android device (this app is Android-only): confirm
+the hand region is genuinely silent during the staggered deal on all four screens, and
+becomes navigable within the 1400ms window. This is the one gap code alone can't close —
+see the device-test discussion above.

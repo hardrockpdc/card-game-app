@@ -5,6 +5,7 @@ import {
   StyleSheet,
   Alert,
   BackHandler,
+  AccessibilityInfo,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
@@ -649,6 +650,31 @@ export default function PokerGameScreen({ navigation, route }) {
   const aiTimerRef = useRef(null);
   const hasMountedRef = useRef(false);
   const lastSaveRef = useRef(0); // BUG-4: auto-save throttle (once / 3s)
+  const handReadyTimerRef = useRef(null); // ACC-2: guaranteed hand re-reveal timer
+  const reduceMotionRef = useRef(false);
+  // ACC-2: hide the hand from screen readers ONLY during the fresh-deal
+  // animation, then re-reveal. Defaults to true (always accessible) so a
+  // missed re-reveal can never permanently hide the hand — fail-safe.
+  const [handReady, setHandReady] = useState(true);
+
+  // Cache the reduced-motion preference so the ACC-2 hand-hide is skipped
+  // when there's no deal animation to wait for (CLAUDE.md §2.4).
+  useEffect(() => {
+    let mounted = true;
+    AccessibilityInfo.isReduceMotionEnabled().then((v) => {
+      if (mounted) reduceMotionRef.current = v;
+    });
+    const sub = AccessibilityInfo.addEventListener(
+      "reduceMotionChanged",
+      (v) => {
+        reduceMotionRef.current = v;
+      },
+    );
+    return () => {
+      mounted = false;
+      sub?.remove?.();
+    };
+  }, []);
 
   // Keep the table palette in sync (loaded at app start; may change via the
   // in-game Table Theme picker).
@@ -741,6 +767,14 @@ export default function PokerGameScreen({ navigation, route }) {
         }
       }
       hasMountedRef.current = true;
+      // ACC-2: hide the hand from screen readers while the staggered deal
+      // animates in, then guarantee a re-reveal.
+      // Skip entirely when reduce-motion is on — no animation means no wait.
+      if (!reduceMotionRef.current) {
+        setHandReady(false);
+        if (handReadyTimerRef.current) clearTimeout(handReadyTimerRef.current);
+        handReadyTimerRef.current = setTimeout(() => setHandReady(true), 1400);
+      }
       applyState(initDeal(initialPlayers, 0, null, startingChips));
     }
     init();
@@ -786,6 +820,10 @@ export default function PokerGameScreen({ navigation, route }) {
         },
       });
     }
+
+    return () => {
+      if (handReadyTimerRef.current) clearTimeout(handReadyTimerRef.current);
+    };
   }, []);
 
   useEffect(() => {
@@ -1171,7 +1209,11 @@ export default function PokerGameScreen({ navigation, route }) {
             </Text>
           </View>
 
-          <View style={styles.yourCardsRow}>
+          <View
+            style={styles.yourCardsRow}
+            accessibilityElementsHidden={!handReady}
+            importantForAccessibility={handReady ? "auto" : "no-hide-descendants"}
+          >
             {myHand.map((c, index) => (
               <Card
                 key={c.id}

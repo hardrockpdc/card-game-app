@@ -6,6 +6,7 @@ import {
   ScrollView,
   Alert,
   BackHandler,
+  AccessibilityInfo,
 } from "react-native";
 import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import {
@@ -84,6 +85,31 @@ export default function GoFishGameScreen({ navigation, route }) {
   const aiTimerRef = useRef(null);
   const hasMountedRef = useRef(false);
   const lastSaveRef = useRef(0); // BUG-4: auto-save throttle (once / 3s)
+  const handReadyTimerRef = useRef(null); // ACC-2: guaranteed hand re-reveal timer
+  const reduceMotionRef = useRef(false);
+  // ACC-2: hide the hand from screen readers ONLY during the fresh-deal
+  // animation, then re-reveal. Defaults to true (always accessible) so a
+  // missed re-reveal can never permanently hide the hand — fail-safe.
+  const [handReady, setHandReady] = useState(true);
+
+  // Cache the reduced-motion preference so the ACC-2 hand-hide is skipped
+  // when there's no deal animation to wait for (CLAUDE.md §2.4).
+  useEffect(() => {
+    let mounted = true;
+    AccessibilityInfo.isReduceMotionEnabled().then((v) => {
+      if (mounted) reduceMotionRef.current = v;
+    });
+    const sub = AccessibilityInfo.addEventListener(
+      "reduceMotionChanged",
+      (v) => {
+        reduceMotionRef.current = v;
+      },
+    );
+    return () => {
+      mounted = false;
+      sub?.remove?.();
+    };
+  }, []);
 
   // Mid-game disconnect: when a player drops, the host pauses everyone with a
   // countdown overlay. `pause` = { name, deadline } while paused (null otherwise);
@@ -225,6 +251,14 @@ export default function GoFishGameScreen({ navigation, route }) {
         }
       }
       hasMountedRef.current = true;
+      // ACC-2: hide the hand from screen readers while the staggered deal
+      // animates in, then guarantee a re-reveal.
+      // Skip entirely when reduce-motion is on — no animation means no wait.
+      if (!reduceMotionRef.current) {
+        setHandReady(false);
+        if (handReadyTimerRef.current) clearTimeout(handReadyTimerRef.current);
+        handReadyTimerRef.current = setTimeout(() => setHandReady(true), 1400);
+      }
       applyState(dealGoFish(initialPlayers));
     }
     init();
@@ -255,6 +289,10 @@ export default function GoFishGameScreen({ navigation, route }) {
         },
       });
     }
+
+    return () => {
+      if (handReadyTimerRef.current) clearTimeout(handReadyTimerRef.current);
+    };
   }, []);
 
   useEffect(() => {
@@ -576,6 +614,8 @@ export default function GoFishGameScreen({ navigation, route }) {
             showsVerticalScrollIndicator={false}
             style={styles.handScroll}
             contentContainerStyle={styles.handGrid}
+            accessibilityElementsHidden={!handReady}
+            importantForAccessibility={handReady ? "auto" : "no-hide-descendants"}
           >
             {displayHand.map((card, index) => {
               const isSelected = card.rank === selectedRank;
