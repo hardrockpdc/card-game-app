@@ -17,7 +17,7 @@ verified: 2026-08-15
   - `game/sounds.js` — gameplay audio (`expo-audio`); wired into every game screen with a menu now (`card_deal` on fresh deal, `win` on victory, plus Rummy's error toast) — all 4 WAV files are still the same byte-identical placeholder beep, and Memory Match still has no menu at all — see [[CQ-15]]
   - `game/avatarTransmit.js` + `components/useMultiplayerAvatars.js` — exchange profile pics across multiplayer at game start
   - `components/ProfileAvatar.js` — unified avatar render (photo/emoji/initial) + active profile frame ring
-  - `components/ReconnectOverlay.js` + `components/useOnlineReconnect.js` — mid-game drop pause/countdown + host-drop grace period + quit-vs-drop distinction + rejoin-on-reconnect. Wired into **Last Card only** and device-verified there (2026-07-21, 2026-08-03). Go Fish still runs its original, unmigrated pilot version with no real reconnect capability — see [[BUG-7]]. Not yet adopted in Conquián/Rummy/Poker/Who Am I? at all.
+  - `components/ReconnectOverlay.js` + `components/useOnlineReconnect.js` — mid-game drop pause/countdown + host-drop grace period + quit-vs-drop distinction + rejoin-on-reconnect. Wired into **Last Card** (device-verified 2026-07-21, 2026-08-03) and, as of the [[BUG-7]] migration (2026-08-15, not yet device-tested), **Go Fish** — keeps Go Fish's original always-end-on-departure behavior, no remove-and-continue. Not yet adopted in Conquián/Rummy/Poker/Who Am I? at all.
   - `components/useSolitaireDrag.js`, `components/useConquianMeldDrag.js` — gesture-handler drag hooks
   - `screens/*GameScreen.js` — per-game screens
 - **Standard patterns:**

@@ -6,7 +6,7 @@ status: partial
 severity: medium
 opened: 2026-08-15
 verified: 2026-08-15
-evidence: "screens/GoFishGameScreen.js:100-134,233-283 is still the original 2026-06-19 pilot (commit 6c31952), never migrated to components/useOnlineReconnect.js; no onClientJoined handler registered (:233-256), host never broadcasts RESUME, so :269's client-side RESUME handler is dead code; CLAUDE.md's own reconnect bullet lists Go Fish first on its still-undone 'Next: adopt the hook' list despite being the original pilot game"
+evidence: "screens/GoFishGameScreen.js migrated off its bespoke Phase-1 pilot logic (startPause/endForDisconnect/pausedRef) onto components/useOnlineReconnect.js, the same hook LastCardGameScreen.js uses -- onClientJoined/onClientLeft/LEAVE routing wired, reconnect.overlay replaces the direct ReconnectOverlay render, EndOfRoundModal gated on !reconnect.overlayVisible; deliberately kept Go Fish's original always-end-on-departure behavior (no remove-and-continue at 4+ players) rather than expanding scope; not yet 2-device tested"
 ---
 
 ## Problem
@@ -64,16 +64,39 @@ Android's two-stacked-Modal input trap (fixed for Last Card in `8db39d5`). Likel
 low-probability today since `onClientLeft` only pauses during `state.phase === "playing"`
 and the round modal only shows during `results` — but unguarded either way.
 
-## Fix sketch
+## Fixed 2026-08-15 (code migration; device test still needed)
 
-Migrate `screens/GoFishGameScreen.js` off its bespoke pilot logic onto
-`useOnlineReconnect`, the same way `LastCardGameScreen.js` does: wire `role`,
-`getPlayerName`, `isRealPlayer`, `broadcast`, `resendState`, `onPlayerGone`, `onEndGame`
-through the hook; replace the inline `onClientLeft` handler with
-`reconnect.hostHandleClientLeft(id)` and add `onClientJoined: ({id}) =>
-reconnect.hostHandleClientJoined(id)`; route a `LEAVE` message to
-`hostHandleClientQuit`; replace the direct `<ReconnectOverlay>` render with
-`{reconnect.overlay}`; gate `EndOfRoundModal`'s `visible` on `showRoundModal &&
-!reconnect.overlayVisible`. This is exactly what `CLAUDE.md` already flags as "Next" —
-not new scope, just confirming it's still undone. Needs a 2-device test afterward per the
-project's stated verification bar.
+Migrated `screens/GoFishGameScreen.js` off its bespoke pilot logic onto
+`useOnlineReconnect`, exactly as the fix sketch specced: `role`/`getPlayerName`/
+`isRealPlayer`/`broadcast`/`resendState`/`onPlayerGone`/`onEndGame`/`onHostEnded`/
+`onSelfLeave` wired through the hook; `onClientLeft`/`onClientJoined` now call
+`reconnect.hostHandleClientLeft`/`hostHandleClientJoined`; a client `LEAVE` message
+routes to `hostHandleClientQuit`; a new `leaveMultiplayer()` (mirroring Last Card's)
+sends `LEAVE` on client quit and announces `GAME_OVER_DISCONNECT`/`host_left` before
+`stopServer()` on host quit — used by both `handleQuit` and the Android back-handler;
+the direct `<ReconnectOverlay>` render is now `{reconnect.overlay}`; `EndOfRoundModal`
+is gated on `!reconnect.overlayVisible`. Go Fish now gets everything Last Card has for
+free: real Phase-2 host-drop detection, the self-connection-loss overlay with
+Rejoin/Leave, `AppState` foreground rejoin, and — the actual point of this ticket — a
+player who reconnects within the 60s grace window now actually resumes instead of the
+game always ending regardless.
+
+**Deliberately not added:** remove-and-continue at ≥4 players. Go Fish keeps its
+original always-end-on-departure behavior — adding remove-and-continue would mean
+touching `game/gofish.js`'s player-removal semantics, which is real new scope beyond
+"migrate onto the existing hook," and wasn't asked for.
+
+**Not device-verified.** This is networking/reconnect behavior — the same category as
+[[ACC-2]]'s device-test gap, not [[BUG-6]]'s: the whole point of the fix is real
+two-device drop/reconnect/backgrounding behavior, which unit tests can't cover. Verified
+only by reading the code against Last Card's proven, already-device-tested pattern
+(2026-07-21, 2026-08-03) and a Babel parse check. Stays `partial`, not `fixed`, until an
+actual 2-device pass happens — same bar the original pilot itself was held to.
+
+## Fix sketch (remaining)
+
+Get a real 2-device test: drop a client mid-game, confirm the pause/countdown shows,
+reconnect within 60s and confirm the game resumes (not just ends); separately test a
+host backgrounding and returning, and a client's own network blipping (self-lost
+overlay + Rejoin). Also confirms the minor secondary risk this ticket originally noted
+(the modal-stacking guard) actually holds in practice.
