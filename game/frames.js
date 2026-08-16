@@ -1,84 +1,20 @@
-import { gold, positive, highlight, highlightDim } from "./colors";
-
 // Profile frames — decorative rings drawn AROUND the existing profile avatar
-// (photo, emoji, or initial alike). Pure CSS (border + optional glow/pulse), no
-// image assets, so they're cheap and render anywhere ProfileAvatar does.
-// Cosmetic-only and coin-unlocked, mirroring decks (cardTheme.js) and felts
-// (feltShop.js).
+// (photo, emoji, or initial alike). Pure CSS (border + optional glow), no image
+// assets, so they're cheap and render anywhere ProfileAvatar does. Cosmetic-only
+// and coin-unlocked, mirroring decks (cardTheme.js) and felts (feltShop.js).
 //
-// `none` is the free default. Each other frame has a color, a `style` (how the
-// ring is drawn), an optional glow, and an optional pulse animation. Price
-// scales with visual complexity: plain solid/dashed rings are cheapest, a glow
-// or a second visual trick (pips, a second ring color) costs more, animated
-// (`pulse`) frames are the top tier. Unlocks are stored on the profile as
-// `unlockedFrames`; the chosen one is `activeFrame`.
-//
-// Colors are grounded in `game/colors.js` where a token actually fits, rather
-// than invented separately: Gold Ring reuses the app's real `gold` (coin)
-// token instead of a near-miss shade, Royal reclaims `highlight`/
-// `highlightDim` — that pair's own comment in colors.js says it started as
-// "the avatar ring" purple before being folded into the general token — and
-// Emerald reuses `positive` (the "your turn"/success green) instead of an
-// unrelated green. Neon and Rose are deliberately NOT tied to any chrome
-// token: cosmetics are the one place allowed to introduce color the rest of
-// the UI doesn't use, so the shop reads as a reward, not more app chrome.
-//
-// `style` values, each handled by ProfileAvatar:
-//   "solid"  — a single-color ring (the original look)
-//   "dashed" — a single-color dashed ring
-//   "double" — two concentric rings, `color` outer + `innerColor` inner
-//   "pips"   — a solid ring plus two small `pipGlyph` corner badges. Kept
-//              exclusive to Ruby — one signature flourish, not spread across
-//              every frame, so it stays a flourish instead of decoration.
+// `none` is the free default. Each other frame has a color, a border-width ratio
+// (of the avatar size), and an optional glow. Unlocks are stored on the profile
+// as `unlockedFrames`; the chosen one is `activeFrame`.
 
 const FRAMES = {
   none: { name: "None", price: 0, color: null },
-  gold: {
-    name: "Gold Ring",
-    price: 1000,
-    color: gold,
-    style: "solid",
-    glow: false,
-  },
-  rose: {
-    name: "Rose",
-    price: 1000,
-    color: "#ffb3a0",
-    style: "dashed",
-    glow: false,
-  },
-  emerald: {
-    name: "Emerald",
-    price: 1500,
-    color: positive,
-    style: "solid",
-    glow: true,
-  },
-  ruby: {
-    name: "Ruby",
-    price: 1500,
-    color: "#e94560",
-    style: "pips",
-    pipGlyph: "♥",
-    glow: true,
-  },
-  neon: {
-    name: "Neon Glow",
-    price: 2000,
-    color: "#5ad1e6",
-    style: "solid",
-    glow: true,
-    pulse: true,
-  },
-  royal: {
-    name: "Royal",
-    price: 2500,
-    color: highlight,
-    innerColor: highlightDim,
-    style: "double",
-    glow: true,
-    pulse: true,
-  },
+  gold: { name: "Gold Ring", price: 1000, color: "#ffd479", glow: false },
+  neon: { name: "Neon Glow", price: 1000, color: "#5ad1e6", glow: true },
+  ruby: { name: "Ruby", price: 1000, color: "#e94560", glow: true },
+  emerald: { name: "Emerald", price: 1000, color: "#3fbf6d", glow: true },
+  royal: { name: "Royal", price: 1000, color: "#c9a6ff", glow: true },
+  rose: { name: "Rose", price: 1000, color: "#ffb3a0", glow: false },
 };
 
 export const FRAMES_LIST = Object.entries(FRAMES);
@@ -103,59 +39,16 @@ export function isFrameUnlocked(id, unlockedFrames, activeId) {
 
 // Ring style for an avatar of pixel `size`. Returns null for "none" (no frame),
 // so ProfileAvatar can skip the wrapper entirely and behave exactly as before.
-//
-// Always includes `style` (solid/dashed/double/pips) and `pulse` so
-// ProfileAvatar can branch on them. `innerRing` (double) and `pipGlyph`/
-// `pipColor` (pips) are only present for those styles.
 export function getFrameRingStyle(id, size) {
   const frame = getFrame(id);
   if (!frame.color) return null;
-  const style = frame.style || "solid";
-  // 0.11 (was 0.07): at shop-preview size (~64px) the old ratio drew a 4px
-  // ring — read as a hairline, not a purchasable frame. Bumped so the ring
-  // itself is legible at a glance, not just on close inspection.
-  const borderWidth = Math.max(3, Math.round(size * 0.11));
-
-  // "double" wraps the avatar in an inner ring, leaves a visible transparent
-  // GAP (shows whatever is behind the avatar), then the outer ring wraps
-  // that — so the two colors read as two distinct bands with a rim between
-  // them, not one ring that happens to have two widths touching.
-  let innerRing = null;
-  let wrappedSize = size;
-  if (style === "double" && frame.innerColor) {
-    const innerBorderWidth = Math.max(2, Math.round(borderWidth * 0.6));
-    const gap = Math.max(2, Math.round(borderWidth * 0.4));
-    wrappedSize = size + innerBorderWidth * 2 + gap * 2;
-    innerRing = {
-      borderWidth: innerBorderWidth,
-      borderColor: frame.innerColor,
-      borderRadius: (size + innerBorderWidth * 2) / 2,
-      padding: innerBorderWidth + gap,
-    };
-  }
-
+  const borderWidth = Math.max(2, Math.round(size * 0.07));
   const ring = {
-    style,
-    pulse: Boolean(frame.pulse),
     borderWidth,
     borderColor: frame.color,
-    borderRadius: (wrappedSize + borderWidth * 2) / 2,
+    borderRadius: (size + borderWidth * 2) / 2,
     padding: borderWidth,
   };
-  if (style === "dashed") {
-    ring.borderStyle = "dashed";
-  }
-  if (innerRing) {
-    ring.innerRing = innerRing;
-  }
-  if (style === "pips" && frame.pipGlyph) {
-    ring.pipGlyph = frame.pipGlyph;
-    ring.pipColor = frame.color;
-    // Fixed-size pips read as a stray emoji at large avatar sizes and
-    // disappear at small ones. Scale with the avatar so they stay a
-    // deliberate corner ornament either way.
-    ring.pipSize = Math.max(16, Math.round(size * 0.28));
-  }
   if (frame.glow) {
     ring.shadowColor = frame.color;
     ring.shadowOpacity = 0.9;

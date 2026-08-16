@@ -18,8 +18,7 @@ import {
   hasProfileName,
   subscribeProfile,
 } from "../game/profile";
-import { getCoins, getLifetimeEarned } from "../game/wallet";
-import { getRank } from "../game/ranks";
+import { getCoins } from "../game/wallet";
 import { getDailyStatus } from "../game/dailyBonus";
 import { checkAndClaim } from "../game/achievements";
 import ProfileAvatar from "../components/ProfileAvatar";
@@ -47,7 +46,6 @@ export default function HomeScreen({ navigation }) {
   const [profileHasName, setProfileHasName] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [coins, setCoins] = useState(null);
-  const [lifetimeEarned, setLifetimeEarned] = useState(0);
   const [profile, setProfile] = useState(null);
   const [dailyClaimDay, setDailyClaimDay] = useState(null);
   const [showDailyBonus, setShowDailyBonus] = useState(false);
@@ -63,8 +61,6 @@ export default function HomeScreen({ navigation }) {
         if (!active) return;
         const c = await getCoins();
         if (active) setCoins(c);
-        const lifetime = await getLifetimeEarned();
-        if (active) setLifetimeEarned(lifetime);
         if (active && newly.length > 0) {
           const lines = newly
             .map((a) => `${a.icon} ${a.name}  +${a.reward.toLocaleString()} 🪙`)
@@ -183,7 +179,6 @@ export default function HomeScreen({ navigation }) {
                 name={profileName}
                 size={84}
                 style={styles.avatarRing}
-                rank={getRank(lifetimeEarned)}
               />
             </TouchableOpacity>
           )}

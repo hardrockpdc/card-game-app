@@ -7,14 +7,10 @@ import {
 } from "../game/frames";
 
 describe("frames", () => {
-  test("None is free; others scale with visual complexity", () => {
+  test("None is free; others cost 1000", () => {
     expect(getFramePrice("none")).toBe(0);
     expect(getFramePrice("gold")).toBe(1000);
-    expect(getFramePrice("rose")).toBe(1000);
-    expect(getFramePrice("emerald")).toBe(1500);
-    expect(getFramePrice("ruby")).toBe(1500);
-    expect(getFramePrice("neon")).toBe(2000);
-    expect(getFramePrice("royal")).toBe(2500);
+    expect(getFramePrice("neon")).toBe(1000);
   });
 
   test("unknown id falls back to none", () => {
@@ -35,39 +31,13 @@ describe("frames", () => {
   test("None yields no ring style; a color frame yields a border", () => {
     expect(getFrameRingStyle("none", 64)).toBeNull();
     const ring = getFrameRingStyle("gold", 64);
-    expect(ring.borderColor).toBe("#ffd700");
+    expect(ring.borderColor).toBe("#ffd479");
     expect(ring.borderWidth).toBeGreaterThan(0);
   });
 
   test("glow frames add a shadow", () => {
     expect(getFrameRingStyle("neon", 64).shadowColor).toBe("#5ad1e6");
     expect(getFrameRingStyle("gold", 64).shadowColor).toBeUndefined();
-  });
-
-  test("dashed frames set borderStyle", () => {
-    expect(getFrameRingStyle("rose", 64).borderStyle).toBe("dashed");
-    expect(getFrameRingStyle("gold", 64).borderStyle).toBeUndefined();
-  });
-
-  test("double frames include a nested inner ring", () => {
-    const ring = getFrameRingStyle("royal", 64);
-    expect(ring.innerRing).toBeTruthy();
-    expect(ring.innerRing.borderColor).toBe("#5b4fc7");
-    expect(getFrameRingStyle("gold", 64).innerRing).toBeUndefined();
-  });
-
-  test("pips frames expose a glyph, color, and size", () => {
-    const ring = getFrameRingStyle("ruby", 64);
-    expect(ring.pipGlyph).toBe("♥");
-    expect(ring.pipColor).toBe("#e94560");
-    expect(ring.pipSize).toBeGreaterThan(0);
-    expect(getFrameRingStyle("gold", 64).pipGlyph).toBeUndefined();
-  });
-
-  test("pulse flag reflects the frame's data", () => {
-    expect(getFrameRingStyle("neon", 64).pulse).toBe(true);
-    expect(getFrameRingStyle("royal", 64).pulse).toBe(true);
-    expect(getFrameRingStyle("gold", 64).pulse).toBe(false);
   });
 
   test("every frame has a name and numeric price", () => {
