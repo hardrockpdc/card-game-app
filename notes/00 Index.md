@@ -1,5 +1,5 @@
 ---
-verified: 2026-08-15
+verified: 2026-08-16
 ---
 
 # Notes index
@@ -40,8 +40,12 @@ Documentation rules).
 
 ## Specs
 
-[[specs/Conquian]] · [[specs/Last Card]] · [[specs/Wild Round]] · [[specs/Who Am I]] ·
+[[specs/Conquian]] · [[specs/Last Card]] · [[specs/Who Am I]] ·
 [[specs/Database Rules]]
+
+Wild Round was removed from the app (see `product/Product.md`'s principles); its
+old spec is frozen at `archive/Wild Round Spec.md`, not linked here since it no
+longer describes shipped code.
 
 ## Decisions
 
@@ -51,10 +55,16 @@ Documentation rules).
 ## Archive
 
 `archive/PROJECT_NOTES.md` is the frozen original tracker — never edit it, it's the
-diff baseline if a migration ever drops something. Phase 3 of the restructure
-(regenerating the structure/dependency sections, migrating the rest with a
-`verified:` date, and moving every loose root doc into `notes/`) completed
-2026-08-15 — root now keeps only `README.md` and `CLAUDE.md`.
+diff baseline if a migration ever drops something. Also frozen there:
+`archive/Restructure plan.md` (the completed migration plan itself) and
+`archive/Wild Round Spec.md` (spec for a removed game, kept for history).
+
+Phase 3 of the restructure (regenerating the structure/dependency sections,
+migrating the rest with a `verified:` date, and moving every loose root doc into
+`notes/`) is now actually complete as of 2026-08-16 — root keeps only
+`README.md` and `CLAUDE.md`. (The 2026-08-15 claim of this was premature: three
+untracked files — `Restructure plan.md`, `Untitled.canvas`, `Card Night/` — were
+still sitting at root uncommitted.)
 
 ## Sessions
 

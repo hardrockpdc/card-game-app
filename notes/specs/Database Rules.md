@@ -1,3 +1,7 @@
+---
+verified: 2026-08-16
+---
+
 # Realtime Database security rules — explained
 
 The rules live in [`database.rules.json`](database.rules.json). That file is

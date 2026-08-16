@@ -1,3 +1,7 @@
+---
+verified: 2026-08-16
+---
+
 # Coin Economy Plan (cosmetic-only)
 
 Give the earned coins a purpose. **Cosmetic-only, earned-only** — no real-money

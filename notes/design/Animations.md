@@ -1,3 +1,7 @@
+---
+verified: 2026-08-16
+---
+
 # Animations.md — Card Game Animation Spec (Readable + Repo-Aware)
 
 ## Goal

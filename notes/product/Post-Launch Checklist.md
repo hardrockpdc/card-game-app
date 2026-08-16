@@ -1,3 +1,7 @@
+---
+verified: 2026-08-16
+---
+
 # Post-Launch Checklist
 
 Status as of first submission: **v8 (versionCode 8) submitted to Closed testing
@@ -28,8 +32,12 @@ actual installed-from-Play build:
 ---
 
 ## Known open items (do BEFORE a public production launch)
-- [x] **Firebase security rules — DEPLOYED 2026-07-04** (published in the console).
-      Hardened rules at `database.rules.json` (only stores `rooms/*`;
+- [ ] **Firebase security rules — deployed 2026-07-04, but superseded.** The
+      2026-07-04 rules were published, but two security fixes landed on
+      2026-08-02 (`ab6e47e`, `9c1c09b`) that require a fresh `database.rules.json`
+      publish that has NOT happened yet — tracked as [[LAUNCH-3]], the current
+      source of truth for this item. Do not check this box again until LAUNCH-3
+      is `fixed`. Hardened rules at `database.rules.json` (only stores `rooms/*`;
       coins/profile/achievements are local, never in Firebase).
       **Still to confirm:** re-test online MP end-to-end (host + join + play) so a
       rule mistake would surface as a failed join/move. Original deploy steps kept

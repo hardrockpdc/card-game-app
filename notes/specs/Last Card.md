@@ -1,3 +1,7 @@
+---
+verified: 2026-08-16
+---
+
 # 🎴 Last Card — Complete Game Spec
 
 ## Overview

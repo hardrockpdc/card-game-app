@@ -1,3 +1,7 @@
+---
+verified: 2026-08-16
+---
+
 # WHO AM I? — game spec
 
 A multiplayer party game (no cards). Each round one player is the **judge**: they

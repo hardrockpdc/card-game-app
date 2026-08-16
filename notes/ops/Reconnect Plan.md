@@ -1,3 +1,7 @@
+---
+verified: 2026-08-16
+---
+
 # Online Reconnect Plan — surviving app backgrounding
 
 **Status:** Phase 1 + Phase 2 BUILT and **device-verified** for Last Card

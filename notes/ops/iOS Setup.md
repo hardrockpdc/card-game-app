@@ -1,3 +1,7 @@
+---
+verified: 2026-08-16
+---
+
 # iOS / App Store Setup Checklist
 
 Card Night is React Native and has been kept cross-platform, so shipping iOS is

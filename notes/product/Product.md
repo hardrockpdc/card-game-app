@@ -1,3 +1,7 @@
+---
+verified: 2026-08-16
+---
+
 # Product
 
 <!-- impeccable:product-schema 1 -->
@@ -125,12 +129,13 @@ and deliberately kept separate from the coin economy. Not built, not committed.
 - 515 unit tests across 41 suites (`npm test`, Jest, pure game logic only).
 - Card art sets in `assets/` (classic, girly, gothic, pirate, wizards, cowboy,
   lastcard) backing the purchasable deck themes.
-- Extensive in-repo documentation: `PROJECT_NOTES.md` (canonical),
-  `COIN_ECONOMY.md`, `Animations.md`, `DATABASE_RULES.md`, per-game specs.
+- Extensive in-repo documentation: [[00 Index]] is the entry point; [[product/Coin Economy]],
+  [[design/Animations]], [[specs/Database Rules]], and per-game specs under `notes/specs/`.
+  `archive/PROJECT_NOTES.md` is the frozen original tracker, kept as a diff baseline.
 - **No testimonials, no user counts, no reviews, no press.** None exist. Future
   work must not fabricate any.
 - **`README.md` is stale** — it claims 8 games including Wild Round (removed) and
-  omits online play. `CLAUDE.md` and `PROJECT_NOTES.md` are the accurate sources.
+  omits online play. `CLAUDE.md` and [[00 Index]] are the accurate sources.
 
 ## Product Principles
 

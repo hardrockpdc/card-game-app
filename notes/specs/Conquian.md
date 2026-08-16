@@ -1,3 +1,7 @@
+---
+verified: 2026-08-16
+---
+
 # 📋 Conquián — Complete Build Spec
 
 ## ✅ Status: Shipped

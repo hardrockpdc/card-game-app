@@ -1,3 +1,7 @@
+---
+verified: 2026-08-16
+---
+
 # App Store Review Notes — Card Night
 
 > Paste the text in each section into the corresponding field in App Store Connect
@@ -44,7 +48,7 @@ NO DATA COLLECTION:
 - Privacy policy: https://hardrockpdc.github.io/card-game-app/privacy.html
 
 CONTENT:
-All card games use standard playing card rules. Wild Round (the party game
+All card games use standard playing card rules. Who Am I? (the non-card party
 mode) uses original, family-appropriate creative prompts — no licensed content,
 no NSFW material.
 ```

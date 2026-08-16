@@ -5,7 +5,7 @@ verified: 2026-08-15
 # Project facts
 
 - **Stack:** React Native 0.81.5, Expo SDK 54, React 19.1.0. JavaScript. Dev build via expo-dev-client.
-- **Distribution:** Android-only (Google Play). Privacy policy must be hosted for Play submission (see [[Privacy Policy]] — live, [[LAUNCH-1]]). Cross-platform code stays intact regardless.
+- **Distribution:** Android-only (Google Play). Privacy policy must be hosted for Play submission — live at `https://hardrockpdc.github.io/card-game-app/privacy.html`, see [[LAUNCH-1]] for the deploy evidence. Cross-platform code stays intact regardless.
 - **9 games across 9 game screens**: Blackjack (single-player; the separate multiplayer Blackjack screen was removed 2026-06-18), Solitaire (Klondike/Spider/etc.), Conquián, Rummy, Go Fish, Poker, Last Card, Who Am I? (multiplayer party game, no cards — added 2026-06-18→20, still awaiting a real 3-device test, see [[CQ-16]]), Memory Match (single-player concentration game — flip cards to find identical pairs; Easy/Medium/Hard boards — added 2026-07-03). (Wild Round — a Cards-Against-Humanity-style party game — was removed 2026-07-01 to keep Card Night family-friendly; its Mature deck forced an adults-only content rating. Code preserved in git history for a possible standalone adults-only app; `WILDROUND_SPEC.md` retained.)
 - **Key files:**
   - `App.js` — root; provider nesting; navigation stack
