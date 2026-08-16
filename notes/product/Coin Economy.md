@@ -52,7 +52,8 @@ every board is winnable, so unlike the AI-gated games above it has no natural
 pacing floor — instant "Play Again," guaranteed win, flat payout. The original
 50/75/100 curve paid Easy (~30s/round) far more per minute than Hard
 (~3min/round) — backwards — and beat every AI game's coins/minute by 2-3x,
-making it the fastest way to farm the full 27,000-coin cosmetic catalog
+making it the fastest way to farm the full cosmetic catalog (27,000 coins at
+the time — see the frames table below for the current, larger total)
 (theoretical ~4-6 hours of continuous play). Rescaled to 25/50/100 (1x/2x/4x
 by difficulty) so its per-minute rate now sits in the same ~30-50/min range as
 the AI games, declining with difficulty like they do. Normal (non-farming)
@@ -116,11 +117,23 @@ yet) and the **login-streak counter** (the daily-bonus system creates it anyway)
 
 ### Costs — other cosmetics
 - **Table felts:** 2,000 each (flat).
-- **Profile frames (later):** ~1,000 each. Decorative borders (gold ring, neon
-  glow, suit-themed, etc.) rendered around the existing `ProfileAvatar` — works
-  the same whether the player uses a photo, an emoji avatar, or their initial.
-  Some frames can be **rank-exclusive** (earned by rank, not buyable) for extra
-  prestige — see Player Ranks.
+- **Profile frames:** price scales with visual complexity, not flat anymore
+  (2026-08-16). Decorative borders rendered around the existing `ProfileAvatar`
+  — works the same whether the player uses a photo, an emoji avatar, or their
+  initial.
+
+  | Frame | Style | Price |
+  |-------|-------|-------|
+  | Gold Ring | solid | 1,000 |
+  | Rose | dashed | 1,000 |
+  | Emerald | solid + glow | 1,500 |
+  | Ruby | corner pips + glow | 1,500 |
+  | Neon Glow | solid + glow + pulse | 2,000 |
+  | Royal | double ring + glow + pulse | 2,500 |
+
+  Own-all-frames total: 9,500 (was a flat 6,000). `game/frames.js` also
+  supports an optional rank-icon badge (`ProfileAvatar`'s `rank` prop, wired on
+  the Home hero avatar) — not rank-exclusive frames, that idea is still parked.
 
 ### Pacing sanity
 - **Day one (solo player):** starts with 2 free decks (Classic, Neon). 1,000
@@ -264,17 +277,28 @@ decks. Table felts and profile frames follow the same pattern once decks are pro
   lifetime earned, so achievements also raise your rank. Tests in
   `__tests__/achievements.test.js`. (Also added a Jest asset-mock so modules that
   require card art are testable — `__mocks__/fileMock.js` + jest moduleNameMapper.)
-- ✅ **Profile frames** — the last cosmetic sink. `game/frames.js` (CSS-only
-  rings, no image assets: `getFrame`/`getFramePrice`/`isFrameUnlocked`/
-  `getFrameRingStyle`). Free "None" + 6 frames (Gold / Neon / Ruby / Emerald /
-  Royal / Rose) at 1,000 each. `ProfileAvatar` draws the active ring around any
-  avatar type (photo/emoji/initial); `profile.activeFrame` + `unlockedFrames`
-  persist it. New `screens/FramesScreen.js` (grid shop previewing frames on your
-  own avatar), linked from Profile. Shows on the Home hero avatar + shop preview.
-  Frame unlocks also count toward the "Fresh Look" achievement. Tests in
-  `__tests__/frames.test.js`. Note: the large photo in the Profile *editor* does
-  not show the frame (it's the edit control); rank-exclusive frames were left as a
-  future option. Other players' frames aren't transmitted in multiplayer yet.
+- ✅ **Profile frames** — the last cosmetic sink. `game/frames.js` (CSS-only,
+  no image assets: `getFrame`/`getFramePrice`/`isFrameUnlocked`/
+  `getFrameRingStyle`). Free "None" + 6 frames, priced 1,000-2,500 by visual
+  complexity (see the frames table above). `ProfileAvatar` draws the active
+  frame around any avatar type (photo/emoji/initial); `profile.activeFrame` +
+  `unlockedFrames` persist it. New `screens/FramesScreen.js` (grid shop
+  previewing frames on your own avatar), linked from Profile. Shows on the
+  Home hero avatar + shop preview. Frame unlocks also count toward the "Fresh
+  Look" achievement. Tests in `__tests__/frames.test.js`. Note: the large
+  photo in the Profile *editor* does not show the frame (it's the edit
+  control); rank-exclusive frames were left as a future option. Other
+  players' frames aren't transmitted in multiplayer yet.
+- ✅ **Frame variety + pulse + rank badge** (2026-08-16) — 4 ring `style`s
+  (solid/dashed/double/pips) instead of one, plus an optional `pulse`
+  animation on the top two frames (Neon Glow, Royal) using RN's `Animated`
+  (no new dependency), respecting reduce-motion the same way `Card.js` does.
+  `ProfileAvatar` also takes an optional `rank` prop (`{icon, threshold}` from
+  `game/ranks.js`) that draws a small rank-icon badge at the frame's corner
+  once the player is past Rookie; wired on the Home hero avatar only (not the
+  Frames shop grid, not multiplayer opponent avatars — callers that don't pass
+  `rank` render exactly as before). No dependency added: still `expo-linear-
+  gradient`-free; a true color-fade border remains a future option if wanted.
 
 **Coin economy is now feature-complete on the earn+spend loop.** Remaining
 non-economy follow-ups: MP Poker end-game (see the poker note above), and the
