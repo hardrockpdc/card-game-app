@@ -1,6 +1,6 @@
 # Card Night
 
-A mobile card game app for playing with friends and family over local WiFi. No internet required — phones connect directly on the same network. Each player uses their own phone with a private hand.
+A mobile card game app for playing with friends and family — same room over local WiFi (no internet required, phones connect directly), or apart over an online room code. Each player uses their own phone with a private hand.
 
 **9 games included:** Blackjack, Go Fish, Texas Hold'em Poker, Conquián, Rummy (4 variants), Last Card, Solitaire (5 variants), Who Am I?, Memory Match
 
@@ -31,9 +31,15 @@ Scan the QR code from the Card Night dev build app on your phone. Both your PC a
 
 ## Multiplayer
 
+**Local (same room, no internet):**
 - Open the app on two phones on the same WiFi
 - One phone taps **Host Local** — the other taps **Join Local**
 - Games are discovered automatically (no IP typing needed)
+
+**Online (different locations, requires internet):**
+- One phone hosts and shares a short room code
+- Other players type the code in to join
+- Backed by Firebase; requires anonymous sign-in, handled automatically
 
 ---
 

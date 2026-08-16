@@ -134,8 +134,9 @@ and deliberately kept separate from the coin economy. Not built, not committed.
   `archive/PROJECT_NOTES.md` is the frozen original tracker, kept as a diff baseline.
 - **No testimonials, no user counts, no reviews, no press.** None exist. Future
   work must not fabricate any.
-- **`README.md` is stale** — it claims 8 games including Wild Round (removed) and
-  omits online play. `CLAUDE.md` and [[00 Index]] are the accurate sources.
+- **`README.md`** lists the correct 9 shipped games (fixed in the phase-3
+  restructure, 2026-08-15) and now covers online play too (2026-08-16). `CLAUDE.md`
+  and [[00 Index]] remain the deepest sources.
 
 ## Product Principles
 
