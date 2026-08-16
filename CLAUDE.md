@@ -88,6 +88,17 @@ Confirm the files compile (Metro/bundler, not tsc), confirm the specific changes
 
 Docs are part of the change, not an afterthought. Whenever a change makes something in `CLAUDE.md`, a `notes/` file, or a per-game spec inaccurate — a new/removed/renamed file, a changed dependency, a resolved tracker item, a new game/feature — update the doc **in the same unit of work** (ideally the same commit). When marking an issue fixed, fix every place it's referenced, not just its frontmatter. If a fix isn't verified yet (e.g. needs a device test), say so in the issue note rather than claiming it's fully done. Stale docs have repeatedly caused wasted effort here; treat them as a bug. `archive/PROJECT_NOTES.md` is frozen — never edit it.
 
+### 3.7 Skills to reach for
+
+Invoke these proactively when the trigger fits, don't wait to be asked:
+
+- Chasing a bug with an unclear cause → `superpowers:systematic-debugging`
+- RN/Expo-specific implementation question → `ecc:react-native-patterns`
+- Accessibility work (screen reader, focus order) → `ecc:frontend-a11y` / `ecc:accessibility`
+- Anything touching animation/motion → `ecc:motion-foundations` (still follow §2.4 too)
+- Before claiming a UI change works (§3.5) → `run` to launch + screenshot instead of just asserting
+- Before a production build/release, or touching Firebase rules → `ecc:security-review`
+
 ---
 
 ## 4. Child-safety / content note
