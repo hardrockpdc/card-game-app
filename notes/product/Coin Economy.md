@@ -116,11 +116,30 @@ yet) and the **login-streak counter** (the daily-bonus system creates it anyway)
 
 ### Costs — other cosmetics
 - **Table felts:** 2,000 each (flat).
-- **Profile frames (later):** ~1,000 each. Decorative borders (gold ring, neon
-  glow, suit-themed, etc.) rendered around the existing `ProfileAvatar` — works
-  the same whether the player uses a photo, an emoji avatar, or their initial.
-  Some frames can be **rank-exclusive** (earned by rank, not buyable) for extra
-  prestige — see Player Ranks.
+- **Profile frames:** two families, 12 paid frames total (2026-08-16).
+  Decorative borders rendered around the existing `ProfileAvatar` — works the
+  same whether the player uses a photo, an emoji avatar, or their initial.
+  Some frames can be **rank-exclusive** (earned by rank, not buyable) for
+  extra prestige — see Player Ranks. This is still an open idea, not built.
+
+  **Rings** (flat color border, optional glow) — 1,000 each, 6,000 total:
+  Gold Ring, Neon Glow, Ruby, Emerald, Royal, Rose.
+
+  **Poker chips** (colored body + 8 edge-spot stripes around the rim, the
+  classic casino-chip pattern) — priced by real chip color-value convention,
+  so the ladder tells its own story instead of arbitrary gem names:
+
+  | Chip | Price | Glow |
+  |------|-------|------|
+  | White ($1) | 1,000 | no |
+  | Red ($5) | 1,000 | no |
+  | Blue ($10) | 1,500 | yes |
+  | Green ($25) | 1,500 | yes |
+  | Black ($100) | 2,000 | yes |
+  | Purple ($500) | 2,500 | yes + pulse |
+
+  Chip total: 9,500. Combined frame sink: 15,500 (was 6,000). Full cosmetic
+  catalog (decks 15,000 + felts 6,000 + frames 15,500): 36,500.
 
 ### Pacing sanity
 - **Day one (solo player):** starts with 2 free decks (Classic, Neon). 1,000
@@ -275,6 +294,19 @@ decks. Table felts and profile frames follow the same pattern once decks are pro
   `__tests__/frames.test.js`. Note: the large photo in the Profile *editor* does
   not show the frame (it's the edit control); rank-exclusive frames were left as a
   future option. Other players' frames aren't transmitted in multiplayer yet.
+- ✅ **Poker-chip frame family** (2026-08-16) — a first design pass (thicker
+  ring + pips + pulse) was rejected as "still just a ring" and reverted; this
+  is the redo, a structurally different second family. `getChipStyle(id,
+  size)` in `game/frames.js` computes a colored chip body plus 8 edge-spot
+  rectangles positioned around the rim by plain trig (`Math.cos`/`sin`, no
+  SVG, no new dependency) — the classic casino-chip stripe pattern, no rim
+  text (kept graphical-only per Pedro's call). `ProfileAvatar` tries
+  `getFrameRingStyle` first, falls back to `getChipStyle`; the two families
+  are mutually exclusive per frame id. 6 chips priced by real chip
+  color-value convention (White $1 through Purple $500) rather than
+  arbitrary names, so the price ladder is self-explanatory. Purple pulses
+  (same `Animated` pattern, reduce-motion respected). Existing 6 rings
+  untouched — this adds a second family, doesn't replace the first.
 
 **Coin economy is now feature-complete on the earn+spend loop.** Remaining
 non-economy follow-ups: MP Poker end-game (see the poker note above), and the

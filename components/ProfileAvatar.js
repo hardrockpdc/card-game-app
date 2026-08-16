@@ -1,7 +1,8 @@
-import React from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useRef } from "react";
+import { Animated, Image, StyleSheet, Text, View } from "react-native";
 import { getAvatarChoice } from "../game/avatars";
-import { getFrameRingStyle } from "../game/frames";
+import { getFrameRingStyle, getChipStyle } from "../game/frames";
+import { useReduceMotion } from "../game/reduceMotion";
 
 // Renders a player's profile picture consistently anywhere in the app:
 //  - photoType "custom"  → the chosen/cropped image
@@ -9,9 +10,10 @@ import { getFrameRingStyle } from "../game/frames";
 //  - otherwise           → the first letter of their name on a neutral circle
 //
 // Pass `profile` (with photoType/photoValue/name) and a pixel `size`. An unlocked
-// profile `frame` (a decorative ring) is drawn around it — taken from
-// `profile.activeFrame` unless a `frame` prop overrides it (used by the shop
-// preview). "none"/unset renders exactly as before (no wrapper).
+// profile `frame` — a ring (getFrameRingStyle) or a poker chip (getChipStyle)
+// — is drawn around it, taken from `profile.activeFrame` unless a `frame`
+// prop overrides it (used by the shop preview). "none"/unset renders exactly
+// as before (no wrapper).
 export default function ProfileAvatar({ profile, size = 40, name, style, frame }) {
   const dim = {
     width: size,
@@ -51,10 +53,87 @@ export default function ProfileAvatar({ profile, size = 40, name, style, frame }
   }
 
   const frameId = frame ?? profile?.activeFrame ?? "none";
-  const ring = getFrameRingStyle(frameId, size);
-  if (!ring) return inner;
 
-  return <View style={[styles.ring, ring]}>{inner}</View>;
+  const ring = getFrameRingStyle(frameId, size);
+  if (ring) {
+    return <View style={[styles.ring, ring]}>{inner}</View>;
+  }
+
+  const chip = getChipStyle(frameId, size);
+  if (chip) {
+    const body = (
+      <View
+        style={[
+          styles.chipBody,
+          {
+            width: chip.chipSize,
+            height: chip.chipSize,
+            borderRadius: chip.chipSize / 2,
+            backgroundColor: chip.color,
+            shadowColor: chip.shadowColor,
+            shadowOpacity: chip.shadowOpacity,
+            shadowRadius: chip.shadowRadius,
+            shadowOffset: chip.shadowOffset,
+            elevation: chip.elevation,
+          },
+        ]}
+      >
+        {chip.spots.map((spot, i) => (
+          <View
+            key={i}
+            style={[
+              styles.chipSpot,
+              {
+                left: spot.left,
+                top: spot.top,
+                width: spot.width,
+                height: spot.height,
+                backgroundColor: chip.spotColor,
+                transform: [{ rotate: spot.rotate }],
+              },
+            ]}
+          />
+        ))}
+        {inner}
+      </View>
+    );
+    return chip.pulse ? <PulseWrap>{body}</PulseWrap> : body;
+  }
+
+  return inner;
+}
+
+// Breathing scale for the top-tier chip (Purple). Snaps to the resting frame
+// (no animation) when reduce-motion is on, matching Card.js's pattern.
+function PulseWrap({ children }) {
+  const reduceMotion = useReduceMotion();
+  const pulse = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (reduceMotion) {
+      pulse.setValue(0);
+      return;
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulse, {
+          toValue: 0,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [reduceMotion, pulse]);
+
+  const scale = pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.08] });
+  return <Animated.View style={{ transform: [{ scale }] }}>{children}</Animated.View>;
 }
 
 const styles = StyleSheet.create({
@@ -69,5 +148,13 @@ const styles = StyleSheet.create({
   ring: {
     alignItems: "center",
     justifyContent: "center",
+  },
+  chipBody: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  chipSpot: {
+    position: "absolute",
+    borderRadius: 1,
   },
 });
