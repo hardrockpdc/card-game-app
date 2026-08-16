@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { hasSave } from "./gameSaves";
+import { warn } from "./logger";
 
 // Reactively report whether a valid save exists for `saveKey`. Re-checks when
 // the key changes (e.g. the user picks a different variant) and whenever the
@@ -12,6 +13,7 @@ export function useHasSave(saveKey) {
     useCallback(() => {
       let active = true;
       hasSave(saveKey).then((v) => {
+        warn(`[useHasSave] hasSave(${saveKey}) -> ${v}`);
         if (active) setExists(v);
       });
       return () => {

@@ -32,6 +32,9 @@ export async function saveGame(gameKey, state) {
   if (clearedAt) {
     if (Date.now() - clearedAt < CLEAR_GUARD_MS) {
       // A clear just happened for this key — drop this stray save.
+      warn(
+        `[gameSaves] saveGame(${gameKey}) dropped by clear-guard (${Date.now() - clearedAt}ms since clear)`,
+      );
       return;
     }
     // Guard has expired; it can only produce noise from here on.
@@ -42,6 +45,7 @@ export async function saveGame(gameKey, state) {
       gameKey,
       JSON.stringify({ __v: SAVE_VERSION, data: state }),
     );
+    warn(`[gameSaves] saveGame(${gameKey}) wrote OK`);
   } catch (err) {
     warn("[gameSaves] save failed:", err);
   }
