@@ -18,6 +18,7 @@ import {
 } from "../game/GameNetwork";
 import { loadProfile, getDisplayName } from "../game/profile";
 import { scale, scaleFont } from "../game/responsive";
+import { TITLE_FONT } from "../game/typography";
 
 const STALE_MS = 6000;
 const CONNECT_TIMEOUT_MS = 8000;
@@ -277,7 +278,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: scaleFont(28),
     color: "#ffffff",
-    fontWeight: "bold",
+    fontFamily: TITLE_FONT,
     marginBottom: scale(20),
   },
   label: {

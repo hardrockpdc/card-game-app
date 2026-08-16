@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { TITLE_FONT } from "../game/typography";
 
 export default function SettingsScreen() {
   return (
@@ -28,7 +29,7 @@ const styles = StyleSheet.create({
   title: {
     color: "#ffffff",
     fontSize: 28,
-    fontWeight: "bold",
+    fontFamily: TITLE_FONT,
     textAlign: "center",
     marginBottom: 16,
   },

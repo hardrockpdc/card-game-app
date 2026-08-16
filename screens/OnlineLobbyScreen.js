@@ -11,6 +11,7 @@ import {
 import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import * as Clipboard from "expo-clipboard";
 import { scale, scaleFont } from "../game/responsive";
+import { TITLE_FONT } from "../game/typography";
 import { getUid } from "../game/firebase";
 import {
   subscribeToRoom,
@@ -300,7 +301,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: scaleFont(26),
     color: "#ffffff",
-    fontWeight: "900",
+    fontFamily: TITLE_FONT,
     textAlign: "center",
     letterSpacing: 0.5,
     textShadowColor: "rgba(233,69,96,0.35)",

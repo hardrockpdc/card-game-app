@@ -28,6 +28,7 @@ import {
   subscribeRummyTable,
 } from "../game/rummyTheme";
 import { scale, scaleFont } from "../game/responsive";
+import { TITLE_FONT } from "../game/typography";
 import ProfileAvatar from "../components/ProfileAvatar";
 import useMultiplayerAvatars from "../components/useMultiplayerAvatars";
 import { addCoins } from "../game/wallet";
@@ -1605,7 +1606,7 @@ const styles = StyleSheet.create({
   title: {
     color: "#F4F7FB",
     fontSize: 30,
-    fontWeight: "900",
+    fontFamily: TITLE_FONT,
   },
   subtitle: {
     color: "#A7B3C9",

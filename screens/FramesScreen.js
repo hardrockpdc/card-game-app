@@ -4,6 +4,7 @@ import { View, Text, StyleSheet, ScrollView, Alert } from "react-native";
 import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import ProfileAvatar from "../components/ProfileAvatar";
 import { scale, scaleFont } from "../game/responsive";
+import { TITLE_FONT } from "../game/typography";
 import { FRAMES_LIST, getFramePrice, isFrameUnlocked } from "../game/frames";
 import { getCoins } from "../game/wallet";
 import { purchaseCosmetic } from "../game/shop";
@@ -56,31 +57,35 @@ export default function FramesScreen({ navigation }) {
       );
       return;
     }
-    Alert.alert("Unlock frame?", `Unlock this frame for ${price.toLocaleString()} coins?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Unlock",
-        onPress: async () => {
-          const next = [...unlockedFrames, id];
-          const result = await purchaseCosmetic({
-            price,
-            apply: () => updateProfile({ unlockedFrames: next }),
-          });
-          setCoins(result.balance);
-          if (!result.ok) {
-            Alert.alert(
-              "Unlock failed",
-              result.reason === "insufficient"
-                ? "You don't have enough coins for that."
-                : "Something went wrong saving your unlock. Your coins have been returned.",
-            );
-            return;
-          }
-          setUnlockedFrames(next);
-          applyFrame(id); // unlock + wear in one step
+    Alert.alert(
+      "Unlock frame?",
+      `Unlock this frame for ${price.toLocaleString()} coins?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Unlock",
+          onPress: async () => {
+            const next = [...unlockedFrames, id];
+            const result = await purchaseCosmetic({
+              price,
+              apply: () => updateProfile({ unlockedFrames: next }),
+            });
+            setCoins(result.balance);
+            if (!result.ok) {
+              Alert.alert(
+                "Unlock failed",
+                result.reason === "insufficient"
+                  ? "You don't have enough coins for that."
+                  : "Something went wrong saving your unlock. Your coins have been returned.",
+              );
+              return;
+            }
+            setUnlockedFrames(next);
+            applyFrame(id); // unlock + wear in one step
+          },
         },
-      },
-    ]);
+      ],
+    );
   }
 
   return (
@@ -90,7 +95,9 @@ export default function FramesScreen({ navigation }) {
           <Text style={styles.coinText}>🪙 {coins.toLocaleString()}</Text>
         </View>
         <Text style={styles.title}>Profile Frames</Text>
-        <Text style={styles.subtitle}>A decorative ring around your avatar</Text>
+        <Text style={styles.subtitle}>
+          A decorative ring around your avatar
+        </Text>
 
         <View style={styles.grid}>
           {FRAMES_LIST.map(([id, frame]) => {
@@ -106,14 +113,21 @@ export default function FramesScreen({ navigation }) {
                 accessibilityLabel={`${frame.name}${unlocked ? "" : ` (locked, ${price} coins)`}`}
                 accessibilityState={{ selected: active }}
               >
-                <ProfileAvatar profile={profile} name={profile?.name} size={scale(64)} frame={id} />
+                <ProfileAvatar
+                  profile={profile}
+                  name={profile?.name}
+                  size={scale(64)}
+                  frame={id}
+                />
                 <Text style={styles.frameName}>{frame.name}</Text>
                 {active ? (
                   <Text style={styles.activeTag}>✓ Active</Text>
                 ) : unlocked ? (
                   <Text style={styles.useTag}>Wear</Text>
                 ) : (
-                  <Text style={styles.priceTag}>🔒 {price.toLocaleString()} 🪙</Text>
+                  <Text style={styles.priceTag}>
+                    🔒 {price.toLocaleString()} 🪙
+                  </Text>
                 )}
               </TouchableOpacity>
             );
@@ -154,7 +168,7 @@ const styles = StyleSheet.create({
   title: {
     color: "#ffffff",
     fontSize: scaleFont(26),
-    fontWeight: "bold",
+    fontFamily: TITLE_FONT,
     marginTop: scale(4),
   },
   subtitle: {

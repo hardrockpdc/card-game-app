@@ -12,6 +12,7 @@ import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import { loadProfile, getDisplayName } from "../game/profile";
 import { joinRoom, CODE_LENGTH } from "../game/onlineRoom";
 import { scale, scaleFont } from "../game/responsive";
+import { TITLE_FONT } from "../game/typography";
 
 export default function JoinOnlineScreen({ navigation }) {
   const [code, setCode] = useState("");
@@ -112,7 +113,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: scaleFont(28),
     color: "#ffffff",
-    fontWeight: "900",
+    fontFamily: TITLE_FONT,
     letterSpacing: 0.5,
     textShadowColor: "rgba(233,69,96,0.35)",
     textShadowOffset: { width: 0, height: 2 },

@@ -31,6 +31,7 @@ import {
 import { getRank, getRankProgress } from "../game/ranks";
 import { warn } from "../game/logger";
 import { scale, scaleFont } from "../game/responsive";
+import { TITLE_FONT } from "../game/typography";
 import { AVATAR_CHOICES, getAvatarChoice } from "../game/avatars";
 
 async function cropImageToSquareAsync(uri, width, height) {
@@ -613,7 +614,7 @@ const styles = StyleSheet.create({
   title: {
     color: "#ffffff",
     fontSize: scaleFont(30),
-    fontWeight: "bold",
+    fontFamily: TITLE_FONT,
     textAlign: "center",
     marginBottom: scale(10),
   },

@@ -25,6 +25,7 @@ import ProfileAvatar from "../components/ProfileAvatar";
 import DailyBonusModal from "../components/DailyBonusModal";
 import SuitBackground from "../components/SuitBackground";
 import { highlight, highlightDim } from "../game/colors";
+import { TITLE_FONT } from "../game/typography";
 
 const PROFILE_WELCOME_MESSAGE =
   "Welcome! Set up your profile (you can change anything later)";
@@ -333,7 +334,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   title: {
-    fontWeight: "900",
+    fontFamily: TITLE_FONT,
     color: "#ffffff",
     textAlign: "center",
     marginBottom: 8,

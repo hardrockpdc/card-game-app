@@ -10,6 +10,7 @@ import {
 } from "../game/GameNetwork";
 import { loadProfile, getDisplayName } from "../game/profile";
 import { scale, scaleFont } from "../game/responsive";
+import { TITLE_FONT } from "../game/typography";
 
 export default function HostSetupScreen({ navigation }) {
   const [hostName, setHostName] = useState("Player");
@@ -161,7 +162,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: scaleFont(28),
     color: "#ffffff",
-    fontWeight: "900",
+    fontFamily: TITLE_FONT,
     letterSpacing: 0.5,
     textShadowColor: "rgba(233,69,96,0.35)",
     textShadowOffset: { width: 0, height: 2 },

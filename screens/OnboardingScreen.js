@@ -30,6 +30,7 @@ import {
 import { updateProfile } from "../game/profile";
 import { AVATAR_CHOICES } from "../game/avatars";
 import { scale, scaleFont } from "../game/responsive";
+import { TITLE_FONT } from "../game/typography";
 import SuitBackground from "../components/SuitBackground";
 
 async function cropToSquare(uri, width, height) {
@@ -677,7 +678,7 @@ const styles = StyleSheet.create({
   title: {
     color: "#ffffff",
     fontSize: scaleFont(28),
-    fontWeight: "800",
+    fontFamily: TITLE_FONT,
     marginBottom: scale(8),
   },
   subtitle: {

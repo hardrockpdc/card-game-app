@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import { scale, scaleFont } from "../game/responsive";
+import { TITLE_FONT } from "../game/typography";
 import * as Network from "expo-network";
 import * as Clipboard from "expo-clipboard";
 import {
@@ -695,7 +696,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: scaleFont(28),
     color: "#ffffff",
-    fontWeight: "900",
+    fontFamily: TITLE_FONT,
     textAlign: "center",
     letterSpacing: 0.5,
     textShadowColor: "rgba(233,69,96,0.35)",

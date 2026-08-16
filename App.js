@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { AppState } from "react-native";
+import {
+  useFonts,
+  Poppins_700Bold,
+} from "@expo-google-fonts/poppins";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { NavigationContainer } from "@react-navigation/native";
@@ -97,6 +101,10 @@ const Stack = createNativeStackNavigator();
 
 export default function App() {
   const [initialRoute, setInitialRoute] = useState(null); // null = loading
+  // fontError is deliberately NOT treated as a blocker below — an unloaded
+  // custom font name just falls back to the system font silently in RN, so
+  // failing here should never hang the app on a blank screen.
+  const [fontsLoaded, fontError] = useFonts({ Poppins_700Bold });
 
   useEffect(() => {
     loadProfile()
@@ -182,8 +190,10 @@ export default function App() {
     return () => sub.remove();
   }, []);
 
-  // Wait until we've checked whether the user needs onboarding
-  if (!initialRoute) return null;
+  // Wait for the profile check AND for the title font to either load or
+  // fail — never for "loading forever": fontError resolves this the same as
+  // fontsLoaded does, so a font-load failure still lets the app start.
+  if (!initialRoute || (!fontsLoaded && !fontError)) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

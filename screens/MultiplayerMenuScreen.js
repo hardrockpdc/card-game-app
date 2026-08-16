@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import { scale, scaleFont } from "../game/responsive";
+import { TITLE_FONT } from "../game/typography";
 
 export default function MultiplayerMenuScreen({ navigation }) {
   const { width } = useWindowDimensions();
@@ -154,7 +155,7 @@ const styles = StyleSheet.create({
   },
   title: {
     color: "#ffffff",
-    fontWeight: "900",
+    fontFamily: TITLE_FONT,
     textAlign: "center",
     marginBottom: scale(8),
     letterSpacing: 0.5,

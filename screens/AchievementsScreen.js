@@ -4,6 +4,7 @@ import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import { useFocusEffect } from "@react-navigation/native";
 import { scale, scaleFont } from "../game/responsive";
+import { TITLE_FONT } from "../game/typography";
 import { listAchievements, checkAndClaim } from "../game/achievements";
 
 // Trophy room. On focus it runs checkAndClaim() first (awards coins for anything
@@ -130,7 +131,7 @@ const styles = StyleSheet.create({
   title: {
     color: "#ffffff",
     fontSize: scaleFont(28),
-    fontWeight: "bold",
+    fontFamily: TITLE_FONT,
     marginBottom: scale(20),
   },
   loading: {

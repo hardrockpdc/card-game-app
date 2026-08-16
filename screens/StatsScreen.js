@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import { scale, scaleFont } from "../game/responsive";
+import { TITLE_FONT } from "../game/typography";
 import { loadProfile } from "../game/profile";
 import { getLifetimeEarned } from "../game/wallet";
 
@@ -123,7 +124,7 @@ const styles = StyleSheet.create({
   title: {
     color: "#ffffff",
     fontSize: scaleFont(28),
-    fontWeight: "bold",
+    fontFamily: TITLE_FONT,
     marginBottom: scale(24),
   },
   loading: {
