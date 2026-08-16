@@ -72,6 +72,8 @@ Before any multi-file deletion, refactor, or "remove all traces of X," **do a re
 
 End each completed change with a git commit using a clear, conventional message (e.g. `fix(conquian): ...`, `feat: ...`, `cleanup: ...`, `docs: ...`). Show me the commit hash. Keep commits focused — one logical change per commit.
 
+**Push after every commit.** Once a commit lands, `git push origin main` right after it — don't batch commits up and wait to be told to push.
+
 ### 3.3 Always tell me what to test
 
 After implementing, give me a short, concrete list of what to check on my device to confirm it worked — including likely failure modes to watch for.
