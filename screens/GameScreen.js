@@ -30,6 +30,8 @@ import {
   HapticStyle,
 } from "../game/haptics";
 import { getTableTheme } from "../game/tableThemes";
+import BettingChip from "../components/BettingChip";
+import { accent, brandRed, gold, positive, highlight } from "../game/colors";
 const BG = getTableTheme("blackjack").table;
 const ACCENT = getTableTheme("blackjack").accent;
 
@@ -58,13 +60,15 @@ const MIN_BET = 10;
 // (Hands still wrap to a second row in the rare case of many cards.)
 const CARD_SIZE_SCALE = 1.3;
 
-// Casino-chip palette per denomination: { bg, edge (dashed ring), ring (inner) }.
+// Casino-chip palette per denomination — same base colors and value-tier
+// convention as the profile-frame poker chips (game/frames.js: Red/Green/
+// Blue/Black/Purple), so a chip means the same thing everywhere in the app.
 const CHIP_COLORS = {
-  10: { bg: "#b3242b", edge: "#e35a61", ring: "#f2c9cb" },
-  25: { bg: "#1c7a43", edge: "#46c47e", ring: "#c9efd8" },
-  50: { bg: "#1f5fa8", edge: "#5b9bdc", ring: "#cfe2f7" },
-  100: { bg: "#2b3340", edge: "#616b7a", ring: "#c7cdd6" },
-  250: { bg: "#6e2da6", edge: "#a866dc", ring: "#e2ccf6" },
+  10: { color: brandRed, spotColor: "#ffffff" },
+  25: { color: positive, spotColor: "#16213e" },
+  50: { color: accent, spotColor: gold },
+  100: { color: "#1c1c26", spotColor: gold },
+  250: { color: highlight, spotColor: gold },
 };
 const SAVE_KEY = "@cardnight:save:blackjack";
 
@@ -652,12 +656,6 @@ export default function GameScreen({ navigation, route }) {
                 <TouchableOpacity
                   key={amount}
                   activeOpacity={0.85}
-                  style={[
-                    styles.chip,
-                    { backgroundColor: c.bg, borderColor: c.edge },
-                    isSelected && styles.chipSelected,
-                    !canAfford && styles.chipDisabled,
-                  ]}
                   onPress={() => {
                     if (canAfford) setSelectedBet(amount);
                   }}
@@ -669,9 +667,14 @@ export default function GameScreen({ navigation, route }) {
                     selected: isSelected,
                   }}
                 >
-                  <View style={[styles.chipRing, { borderColor: c.ring }]}>
-                    <Text style={styles.chipAmount}>{amount}</Text>
-                  </View>
+                  <BettingChip
+                    amount={amount}
+                    color={c.color}
+                    spotColor={c.spotColor}
+                    size={scale(50)}
+                    selected={isSelected}
+                    disabled={!canAfford}
+                  />
                 </TouchableOpacity>
               );
             })}
@@ -971,45 +974,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: scale(12),
     width: "100%",
-  },
-  chip: {
-    width: scale(66),
-    height: scale(66),
-    borderRadius: scale(33),
-    borderWidth: 3,
-    borderStyle: "dashed",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  chipRing: {
-    width: scale(48),
-    height: scale(48),
-    borderRadius: scale(24),
-    borderWidth: 2,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.12)",
-  },
-  chipAmount: {
-    color: "#ffffff",
-    fontSize: scaleFont(15),
-    fontWeight: "900",
-    textShadowColor: "rgba(0,0,0,0.45)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-  chipSelected: {
-    borderColor: "#ffd700",
-    borderStyle: "solid",
-    transform: [{ translateY: -scale(6) }, { scale: 1.06 }],
-    shadowColor: "#ffd700",
-    shadowOpacity: 0.7,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 10,
-  },
-  chipDisabled: {
-    opacity: 0.3,
   },
   dealButton: {
     alignSelf: "stretch",
