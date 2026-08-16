@@ -42,9 +42,22 @@ easy coin-farming vs the AI.
 | Solitaire (solo only) | 150 | — |
 | Blackjack (solo only) | bet-based (keep existing 2× / 2.5×) | — |
 | Who Am I? (multiplayer only) | — | 300 |
+| Memory Match (solo only, by board) | Easy 25 / Medium 50 / Hard 100 | — |
 
 *(Current code pays a flat 500 for Go Fish / Last Card / Conquián / Poker — those
 get replaced by the values above.)*
+
+**Memory Match pacing note (2026-08-16):** Memory has no AI-turn delay and
+every board is winnable, so unlike the AI-gated games above it has no natural
+pacing floor — instant "Play Again," guaranteed win, flat payout. The original
+50/75/100 curve paid Easy (~30s/round) far more per minute than Hard
+(~3min/round) — backwards — and beat every AI game's coins/minute by 2-3x,
+making it the fastest way to farm the full 27,000-coin cosmetic catalog
+(theoretical ~4-6 hours of continuous play). Rescaled to 25/50/100 (1x/2x/4x
+by difficulty) so its per-minute rate now sits in the same ~30-50/min range as
+the AI games, declining with difficulty like they do. Normal (non-farming)
+play was already pacing at 3-5 weeks to the full catalog, matching this doc's
+own "Pacing sanity" target below — that path is untouched by this change.
 
 ### Earn — daily bonus (7-day streak, resets if a day is missed)
 | Day | 1 | 2 | 3 | 4 | 5 | 6 | 7 |

@@ -25,8 +25,8 @@ describe("getWinReward", () => {
 
 describe("getMemoryReward", () => {
   test("pays more for harder boards", () => {
-    expect(getMemoryReward("easy")).toBe(50);
-    expect(getMemoryReward("medium")).toBe(75);
+    expect(getMemoryReward("easy")).toBe(25);
+    expect(getMemoryReward("medium")).toBe(50);
     expect(getMemoryReward("hard")).toBe(100);
   });
 
