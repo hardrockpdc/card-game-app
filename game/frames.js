@@ -126,28 +126,59 @@ export function getFrameRingStyle(id, size) {
   return ring;
 }
 
+// Lightens (positive percent) or darkens (negative) a 6-digit hex color by
+// blending toward white/black. Used to derive a chip's bevel gradient stops
+// from its single base color, so each chip only has to define one color.
+function shadeColor(hex, percent) {
+  const num = parseInt(hex.replace("#", ""), 16);
+  let r = (num >> 16) & 0xff;
+  let g = (num >> 8) & 0xff;
+  let b = num & 0xff;
+  if (percent >= 0) {
+    r += (255 - r) * percent;
+    g += (255 - g) * percent;
+    b += (255 - b) * percent;
+  } else {
+    r *= 1 + percent;
+    g *= 1 + percent;
+    b *= 1 + percent;
+  }
+  const clamp = (v) => Math.round(Math.min(255, Math.max(0, v)));
+  return `#${[clamp(r), clamp(g), clamp(b)]
+    .map((v) => v.toString(16).padStart(2, "0"))
+    .join("")}`;
+}
+
 // Poker-chip geometry for an avatar of pixel `size`. Returns null unless the
-// frame's style is "chip". The chip body is a colored ring thick enough to
-// read as an object (not a hairline), plus `spotCount` small rectangles
-// evenly spaced around the outer rim — the classic casino-chip edge-spot
-// pattern — each rotated to sit radially, computed with plain trig (no SVG,
-// no new dependency).
+// frame's style is "chip". A real chip has three concentric zones — a
+// spotted outer rim, a plain inlay ring, and the center face — so this
+// builds two nested rings around the avatar instead of one:
+//   outer ring (rimWidth)   — spotted, diagonal bevel gradient (bodyGradient)
+//   inner ring (inlayWidth) — plain, a lighter tint (inlayColor), no spots
+//   avatar                  — the "face", unchanged
+// Both `chipSize` (outer diameter) and `inlaySize` (the boundary between the
+// two rings) are returned so ProfileAvatar can nest them; the 8 edge spots
+// are positioned (by plain trig, no SVG/new dependency) on the OUTER ring's
+// midline only, not spanning the whole body.
 const SPOT_COUNT = 8;
 
 export function getChipStyle(id, size) {
   const frame = getFrame(id);
   if (frame.style !== "chip") return null;
 
-  const bodyWidth = Math.max(4, Math.round(size * 0.16));
+  const rimWidth = Math.max(3, Math.round(size * 0.1));
+  const inlayWidth = Math.max(2, Math.round(size * 0.06));
+  const bodyWidth = rimWidth + inlayWidth;
   const chipSize = size + bodyWidth * 2;
   const chipRadius = chipSize / 2;
+  const inlaySize = size + inlayWidth * 2;
 
   const spotWidth = Math.max(2, Math.round(size * 0.045));
-  const spotLength = Math.round(bodyWidth * 0.9);
-  // Spots sit centered on the rim's midline (halfway through the body's
-  // thickness), so half hangs over the outer edge and half over the inner —
-  // reads as notches cut INTO the rim rather than dashes floating outside it.
-  const spotDistance = chipRadius - bodyWidth / 2;
+  const spotLength = Math.round(rimWidth * 0.85);
+  // Spots sit centered on the OUTER ring's midline only — half hangs over
+  // the outer edge, half over the rim/inlay boundary — reads as notches cut
+  // into the rim, not the whole chip body.
+  const spotDistance = chipRadius - rimWidth / 2;
 
   const spots = [];
   for (let i = 0; i < SPOT_COUNT; i++) {
@@ -166,16 +197,26 @@ export function getChipStyle(id, size) {
 
   const chip = {
     chipSize,
-    bodyWidth,
+    inlaySize,
     color: frame.color,
     spotColor: frame.spotColor,
     spots,
     pulse: Boolean(frame.pulse),
+    // Diagonal bevel for the outer ring: lightened corner -> base -> darkened.
+    bodyGradient: [
+      shadeColor(frame.color, 0.3),
+      frame.color,
+      shadeColor(frame.color, -0.35),
+    ],
+    // The inlay ring is a flat, slightly darker tint — reads as a distinct
+    // inner band, not just more of the same bevel.
+    inlayColor: shadeColor(frame.color, -0.15),
+    edgeColor: shadeColor(frame.color, -0.55),
   };
   if (frame.glow) {
     chip.shadowColor = frame.color;
     chip.shadowOpacity = 0.9;
-    chip.shadowRadius = bodyWidth * 1.2;
+    chip.shadowRadius = rimWidth * 1.4;
     chip.shadowOffset = { width: 0, height: 0 };
     chip.elevation = 8;
   }

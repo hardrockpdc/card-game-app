@@ -72,13 +72,28 @@ describe("frames", () => {
   });
 
   test("glow chips add a shadow; non-glow chips don't", () => {
-    expect(getChipStyle("chipBlue", 64).shadowColor).toBe(getFrame("chipBlue").color);
+    expect(getChipStyle("chipBlue", 64).shadowColor).toBe(
+      getFrame("chipBlue").color,
+    );
     expect(getChipStyle("chipWhite", 64).shadowColor).toBeUndefined();
   });
 
   test("pulse flag reflects the chip's data", () => {
     expect(getChipStyle("chipPurple", 64).pulse).toBe(true);
     expect(getChipStyle("chipRed", 64).pulse).toBe(false);
+  });
+
+  test("a chip derives a rim bevel gradient, an inlay color, and an edge color from its base color", () => {
+    const chip = getChipStyle("chipBlue", 64);
+    expect(chip.bodyGradient).toHaveLength(3);
+    expect(chip.bodyGradient[1]).toBe(chip.color);
+    expect(chip.bodyGradient[0]).not.toBe(chip.color);
+    expect(chip.bodyGradient[2]).not.toBe(chip.color);
+    expect(chip.inlayColor).toMatch(/^#[0-9a-f]{6}$/);
+    expect(chip.inlayColor).not.toBe(chip.color);
+    expect(chip.edgeColor).toMatch(/^#[0-9a-f]{6}$/);
+    expect(chip.inlaySize).toBeLessThan(chip.chipSize);
+    expect(chip.inlaySize).toBeGreaterThan(64);
   });
 
   test("chip prices scale with tier, matching the ring price range", () => {

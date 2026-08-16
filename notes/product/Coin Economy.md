@@ -307,6 +307,21 @@ decks. Table felts and profile frames follow the same pattern once decks are pro
   arbitrary names, so the price ladder is self-explanatory. Purple pulses
   (same `Animated` pattern, reduce-motion respected). Existing 6 rings
   untouched — this adds a second family, doesn't replace the first.
+- ✅ **Chip realism pass — real gradients** (2026-08-16, same day) — Pedro
+  wanted the chips to look more like physical objects. Added
+  **`expo-linear-gradient`** (needs a dev-client rebuild) and restructured
+  the chip into the three zones a real chip has: a spotted outer rim
+  (diagonal bevel gradient: lightened corner → base color → darkened
+  corner, derived from the frame's single base color via a `shadeColor()`
+  helper — no per-chip gradient authored by hand), a plain inlay ring
+  (flat, darker tint, the boundary the 8 edge spots now sit ON rather than
+  spanning the whole body), and a glossy highlight overlay (a fixed
+  white-to-transparent diagonal streak, independent of chip color, clipped
+  to the circle). `getChipStyle()` now returns `bodyGradient`/`inlayColor`/
+  `edgeColor`/`inlaySize` alongside the existing spot geometry. Not
+  rendered on-device yet — the gradient is real, but the tuning (spot
+  size/position, bevel angle, gloss opacity) is only checked by the math,
+  not a screenshot.
 
 **Coin economy is now feature-complete on the earn+spend loop.** Remaining
 non-economy follow-ups: MP Poker end-game (see the poker note above), and the
