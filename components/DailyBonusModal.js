@@ -23,33 +23,26 @@ export default function DailyBonusModal({
   onClaimed,
 }) {
   const [claiming, setClaiming] = useState(false);
-  const [done, setDone] = useState(false);
-  const [awarded, setAwarded] = useState(0);
 
   async function handleClaim() {
-    if (claiming || done) return;
+    if (claiming) return;
     setClaiming(true);
     const result = await claimDailyBonus();
     setClaiming(false);
     if (result.claimed) {
-      setAwarded(result.amount);
-      setDone(true);
       onClaimed && onClaimed(result);
-    } else {
-      // Already claimed elsewhere — just close.
-      onClose && onClose();
     }
+    // Claimed or already-claimed-elsewhere — either way, close.
+    onClose && onClose();
   }
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={done ? onClose : undefined}>
+      <Pressable style={styles.backdrop}>
         <Pressable style={styles.panel} onPress={() => {}}>
           <Text style={styles.title}>Daily Bonus</Text>
           <Text style={styles.subtitle}>
-            {done
-              ? "Nice — see you tomorrow!"
-              : "Log in every day to keep your streak going"}
+            Log in every day to keep your streak going
           </Text>
 
           <View style={styles.daysRow}>
@@ -82,35 +75,29 @@ export default function DailyBonusModal({
             })}
           </View>
 
-          {done ? (
-            <View style={styles.claimedBox}>
-              <Text style={styles.claimedText}>+{awarded.toLocaleString()} 🪙</Text>
-            </View>
-          ) : (
-            <TouchableOpacity
-              style={styles.claimBtn}
-              onPress={handleClaim}
-              disabled={claiming}
-              accessibilityRole="button"
-              accessibilityLabel="Claim daily bonus"
-            >
-              {claiming ? (
-                <ActivityIndicator color="#08111f" />
-              ) : (
-                <Text style={styles.claimBtnText}>
-                  Claim {DAILY_REWARDS[(claimDay || 1) - 1]?.toLocaleString()} 🪙
-                </Text>
-              )}
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity
+            style={styles.claimBtn}
+            onPress={handleClaim}
+            disabled={claiming}
+            accessibilityRole="button"
+            accessibilityLabel="Claim daily bonus"
+          >
+            {claiming ? (
+              <ActivityIndicator color="#08111f" />
+            ) : (
+              <Text style={styles.claimBtnText}>
+                Claim {DAILY_REWARDS[(claimDay || 1) - 1]?.toLocaleString()} 🪙
+              </Text>
+            )}
+          </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.laterBtn}
             onPress={onClose}
             accessibilityRole="button"
-            accessibilityLabel={done ? "Close" : "Claim later"}
+            accessibilityLabel="Claim later"
           >
-            <Text style={styles.laterText}>{done ? "Close" : "Later"}</Text>
+            <Text style={styles.laterText}>Later</Text>
           </TouchableOpacity>
         </Pressable>
       </Pressable>
@@ -200,19 +187,6 @@ const styles = StyleSheet.create({
   claimBtnText: {
     color: "#08111f",
     fontSize: scaleFont(17),
-    fontWeight: "900",
-  },
-  claimedBox: {
-    backgroundColor: "#1a3a24",
-    borderWidth: 1.5,
-    borderColor: "#4caf50",
-    borderRadius: scale(12),
-    paddingVertical: scale(14),
-    alignItems: "center",
-  },
-  claimedText: {
-    color: "#7dff9e",
-    fontSize: scaleFont(20),
     fontWeight: "900",
   },
   laterBtn: {
