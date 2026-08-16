@@ -1,5 +1,6 @@
 import { createAudioPlayer, setAudioModeAsync } from "expo-audio";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { warn } from "./logger";
 
 const FILES = {
   card_flip: require("../assets/sounds/card_flip.wav"),
@@ -22,16 +23,16 @@ export async function initSounds() {
   // Create players as early as possible so playSound works immediately.
   try {
     await setAudioModeAsync({ playsInSilentModeIOS: true });
-  } catch {
-    // degrade silently
+  } catch (err) {
+    warn("initSounds: setAudioModeAsync failed:", err);
   }
 
   try {
     for (const [key, source] of Object.entries(FILES)) {
       pool[key] = createAudioPlayer(source);
     }
-  } catch {
-    // degrade silently
+  } catch (err) {
+    warn("initSounds: createAudioPlayer failed:", err);
   }
 
   // Then load persisted mute preference (affects subsequent playback).
@@ -60,10 +61,13 @@ export function playSound(name) {
     if (_muted) return;
 
     const player = pool[name];
-    if (!player) return;
+    if (!player) {
+      warn(`playSound: no player in pool for "${name}"`);
+      return;
+    }
     player.seekTo(0);
     player.play();
-  } catch {
-    // ignore playback errors
+  } catch (err) {
+    warn(`playSound: playback failed for "${name}":`, err);
   }
 }
