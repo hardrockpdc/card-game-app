@@ -56,8 +56,11 @@ longer describes shipped code.
 
 `archive/PROJECT_NOTES.md` is the frozen original tracker — never edit it, it's the
 diff baseline if a migration ever drops something. Also frozen there:
-`archive/Restructure plan.md` (the completed migration plan itself) and
-`archive/Wild Round Spec.md` (spec for a removed game, kept for history).
+`archive/Restructure plan.md` (the completed migration plan itself),
+`archive/Wild Round Spec.md` (spec for a removed game, kept for history), and
+`archive/Design Critique 2026-08-03.md` (one-off "impeccable" tool report,
+score 23/40 — its unaddressed findings aren't yet in `notes/issues/`, so treat
+that score as pre-restructure and unverified against current code).
 
 Phase 3 of the restructure (regenerating the structure/dependency sections,
 migrating the rest with a `verified:` date, and moving every loose root doc into
