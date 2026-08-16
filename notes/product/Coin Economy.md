@@ -307,6 +307,18 @@ decks. Table felts and profile frames follow the same pattern once decks are pro
   Neon and Rose stay off-palette on purpose (cosmetics are the one place
   allowed to diverge from app chrome). Applied via the `frontend-design`
   skill, now in `CLAUDE.md` §3.7 for future cosmetic/visual work.
+- ✅ **Frame legibility pass** (2026-08-16, same day) — Pedro reported the
+  frame differences were barely visible on the Frames shop screen. Root cause
+  was magnitude, not correctness: ring width was 0.07× avatar size (~4px at
+  the shop preview's 64px), the double ring's two bands touched with no gap
+  (read as one ring), pips were a fixed 14px regardless of avatar size, and
+  the pulse scale swing was only 6%. Fixed: ring width now 0.11× (min 3px),
+  double ring has a real transparent gap between bands (a visible "coin rim"
+  instead of one thick edge), pips scale with avatar size and sit on a solid
+  dark backing badge instead of a bare glyph, pulse swing is now 15% over a
+  faster 700ms half-cycle. Sized against the actual 104px shop-grid cell to
+  avoid overflow (worst case, Royal's double ring at pulse peak, is ~106px —
+  checked by hand, not on-device).
 
 **Coin economy is now feature-complete on the earn+spend loop.** Remaining
 non-economy follow-ups: MP Poker end-game (see the poker note above), and the

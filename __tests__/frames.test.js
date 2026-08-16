@@ -56,10 +56,11 @@ describe("frames", () => {
     expect(getFrameRingStyle("gold", 64).innerRing).toBeUndefined();
   });
 
-  test("pips frames expose a glyph and color", () => {
+  test("pips frames expose a glyph, color, and size", () => {
     const ring = getFrameRingStyle("ruby", 64);
     expect(ring.pipGlyph).toBe("♥");
     expect(ring.pipColor).toBe("#e94560");
+    expect(ring.pipSize).toBeGreaterThan(0);
     expect(getFrameRingStyle("gold", 64).pipGlyph).toBeUndefined();
   });
 

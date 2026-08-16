@@ -111,21 +111,26 @@ export function getFrameRingStyle(id, size) {
   const frame = getFrame(id);
   if (!frame.color) return null;
   const style = frame.style || "solid";
-  const borderWidth = Math.max(2, Math.round(size * 0.07));
+  // 0.11 (was 0.07): at shop-preview size (~64px) the old ratio drew a 4px
+  // ring — read as a hairline, not a purchasable frame. Bumped so the ring
+  // itself is legible at a glance, not just on close inspection.
+  const borderWidth = Math.max(3, Math.round(size * 0.11));
 
-  // "double" wraps the avatar in a thin inner ring first, then the outer ring
-  // sizes itself around THAT (not the raw avatar), so the two rings nest
-  // instead of overlapping.
+  // "double" wraps the avatar in an inner ring, leaves a visible transparent
+  // GAP (shows whatever is behind the avatar), then the outer ring wraps
+  // that — so the two colors read as two distinct bands with a rim between
+  // them, not one ring that happens to have two widths touching.
   let innerRing = null;
   let wrappedSize = size;
   if (style === "double" && frame.innerColor) {
-    const innerBorderWidth = Math.max(1, Math.round(borderWidth * 0.45));
-    wrappedSize = size + innerBorderWidth * 2;
+    const innerBorderWidth = Math.max(2, Math.round(borderWidth * 0.6));
+    const gap = Math.max(2, Math.round(borderWidth * 0.4));
+    wrappedSize = size + innerBorderWidth * 2 + gap * 2;
     innerRing = {
       borderWidth: innerBorderWidth,
       borderColor: frame.innerColor,
-      borderRadius: wrappedSize / 2,
-      padding: innerBorderWidth,
+      borderRadius: (size + innerBorderWidth * 2) / 2,
+      padding: innerBorderWidth + gap,
     };
   }
 
@@ -146,6 +151,10 @@ export function getFrameRingStyle(id, size) {
   if (style === "pips" && frame.pipGlyph) {
     ring.pipGlyph = frame.pipGlyph;
     ring.pipColor = frame.color;
+    // Fixed-size pips read as a stray emoji at large avatar sizes and
+    // disappear at small ones. Scale with the avatar so they stay a
+    // deliberate corner ornament either way.
+    ring.pipSize = Math.max(16, Math.round(size * 0.28));
   }
   if (frame.glow) {
     ring.shadowColor = frame.color;

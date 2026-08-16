@@ -35,7 +35,10 @@ export default function ProfileAvatar({
   let inner;
   if (profile?.photoType === "custom" && profile.photoValue) {
     inner = (
-      <Image source={{ uri: profile.photoValue }} style={[styles.base, dim, style]} />
+      <Image
+        source={{ uri: profile.photoValue }}
+        style={[styles.base, dim, style]}
+      />
     );
   } else {
     const avatar =
@@ -44,7 +47,9 @@ export default function ProfileAvatar({
         : null;
     if (avatar) {
       inner = (
-        <View style={[styles.base, dim, { backgroundColor: avatar.color }, style]}>
+        <View
+          style={[styles.base, dim, { backgroundColor: avatar.color }, style]}
+        >
           <Text style={{ fontSize: size * 0.55 }}>{avatar.emoji}</Text>
         </View>
       );
@@ -54,7 +59,11 @@ export default function ProfileAvatar({
       inner = (
         <View style={[styles.base, dim, styles.fallback, style]}>
           <Text
-            style={{ color: "#ffffff", fontSize: size * 0.42, fontWeight: "bold" }}
+            style={{
+              color: "#ffffff",
+              fontSize: size * 0.42,
+              fontWeight: "bold",
+            }}
           >
             {initial}
           </Text>
@@ -70,7 +79,15 @@ export default function ProfileAvatar({
   if (ring) {
     // Only View-style props go on the ring itself; style/pulse/innerRing/
     // pipGlyph/pipColor are metadata for this component, not RN style keys.
-    const { style: ringKind, pulse, innerRing, pipGlyph, pipColor, ...ringStyle } = ring;
+    const {
+      style: ringKind,
+      pulse,
+      innerRing,
+      pipGlyph,
+      pipColor,
+      pipSize,
+      ...ringStyle
+    } = ring;
 
     let framed = <View style={[styles.ring, ringStyle]}>{inner}</View>;
 
@@ -87,15 +104,29 @@ export default function ProfileAvatar({
     }
 
     if (pipGlyph) {
+      const badgeSize = Math.round(pipSize * 1.3);
+      const pipBadgeStyle = [
+        styles.pipBadge,
+        {
+          width: badgeSize,
+          height: badgeSize,
+          borderRadius: badgeSize / 2,
+          borderColor: pipColor,
+        },
+      ];
       framed = (
         <View style={styles.pipHost}>
           {framed}
-          <Text style={[styles.pip, styles.pipTL, { color: pipColor }]}>
-            {pipGlyph}
-          </Text>
-          <Text style={[styles.pip, styles.pipBR, { color: pipColor }]}>
-            {pipGlyph}
-          </Text>
+          <View style={[pipBadgeStyle, styles.pipTL]}>
+            <Text style={{ fontSize: pipSize, color: pipColor }}>
+              {pipGlyph}
+            </Text>
+          </View>
+          <View style={[pipBadgeStyle, styles.pipBR]}>
+            <Text style={{ fontSize: pipSize, color: pipColor }}>
+              {pipGlyph}
+            </Text>
+          </View>
         </View>
       );
     }
@@ -118,8 +149,11 @@ export default function ProfileAvatar({
   );
 }
 
-// Subtle breathing glow/scale for premium frames. Snaps to the resting frame
-// (no animation) when reduce-motion is on, matching Card.js's pattern.
+// Breathing glow/scale for premium frames. Snaps to the resting frame (no
+// animation) when reduce-motion is on, matching Card.js's pattern. The scale
+// swing is deliberately large (1 → 1.15) — a subtle few-percent pulse reads
+// as nothing at avatar sizes; this needs to be obvious at a glance, not just
+// on close inspection.
 function PulseWrap({ children }) {
   const reduceMotion = useReduceMotion();
   const pulse = useRef(new Animated.Value(0)).current;
@@ -133,12 +167,12 @@ function PulseWrap({ children }) {
       Animated.sequence([
         Animated.timing(pulse, {
           toValue: 1,
-          duration: 900,
+          duration: 700,
           useNativeDriver: true,
         }),
         Animated.timing(pulse, {
           toValue: 0,
-          duration: 900,
+          duration: 700,
           useNativeDriver: true,
         }),
       ]),
@@ -147,8 +181,13 @@ function PulseWrap({ children }) {
     return () => loop.stop();
   }, [reduceMotion, pulse]);
 
-  const scale = pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.06] });
-  return <Animated.View style={{ transform: [{ scale }] }}>{children}</Animated.View>;
+  const scale = pulse.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.15],
+  });
+  return (
+    <Animated.View style={{ transform: [{ scale }] }}>{children}</Animated.View>
+  );
 }
 
 // Small rank-icon badge at the frame's bottom-right corner.
@@ -187,20 +226,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  pip: {
+  pipBadge: {
     position: "absolute",
-    fontSize: 14,
-    textShadowColor: "#0a0f18",
-    textShadowRadius: 3,
-    textShadowOffset: { width: 0, height: 1 },
+    backgroundColor: "#0F1B2D",
+    borderWidth: 1.5,
+    alignItems: "center",
+    justifyContent: "center",
   },
   pipTL: {
-    top: -2,
-    left: -2,
+    top: -3,
+    left: -3,
   },
   pipBR: {
-    bottom: -2,
-    right: -2,
+    bottom: -3,
+    right: -3,
   },
   badgeHost: {
     alignItems: "center",
