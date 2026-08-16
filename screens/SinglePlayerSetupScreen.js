@@ -336,7 +336,7 @@ export default function SinglePlayerSetupScreen({ navigation }) {
                             identical tiles was accent colour. */}
                       <Text
                         style={styles.flatTileTag}
-                        numberOfLines={1}
+                        numberOfLines={2}
                         adjustsFontSizeToFit
                         minimumFontScale={0.7}
                       >
