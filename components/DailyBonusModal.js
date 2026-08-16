@@ -7,6 +7,7 @@ import {
   Pressable,
   ActivityIndicator,
 } from "react-native";
+import { BlurView } from "expo-blur";
 import { HapticTouchable as TouchableOpacity } from "./Haptic";
 import { scale, scaleFont } from "../game/responsive";
 import { DAILY_REWARDS, claimDailyBonus } from "../game/dailyBonus";
@@ -37,8 +38,13 @@ export default function DailyBonusModal({
   }
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <BlurView intensity={45} tint="dark" style={styles.backdrop}>
         <Pressable style={styles.panel} onPress={() => {}}>
           <Text style={styles.title}>Daily Bonus</Text>
           <Text style={styles.subtitle}>
@@ -100,7 +106,7 @@ export default function DailyBonusModal({
             <Text style={styles.laterText}>Later</Text>
           </TouchableOpacity>
         </Pressable>
-      </Pressable>
+      </BlurView>
     </Modal>
   );
 }
@@ -110,7 +116,9 @@ const GOLD = "#ffd479";
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.78)",
+    // BlurView provides the frosted depth; this tint just keeps enough
+    // contrast for the white panel text against a bright background photo.
+    backgroundColor: "rgba(0,0,0,0.35)",
     alignItems: "center",
     justifyContent: "center",
     padding: scale(20),
