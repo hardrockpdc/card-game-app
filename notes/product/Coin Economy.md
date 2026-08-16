@@ -299,6 +299,14 @@ decks. Table felts and profile frames follow the same pattern once decks are pro
   Frames shop grid, not multiplayer opponent avatars — callers that don't pass
   `rank` render exactly as before). No dependency added: still `expo-linear-
   gradient`-free; a true color-fade border remains a future option if wanted.
+- ✅ **Frame colors grounded in `game/colors.js`** (2026-08-16, same day) —
+  Gold Ring, Emerald, and Royal previously used one-off hexes disconnected
+  from the app's real token file. Switched to importing `gold`/`positive`/
+  `highlight`+`highlightDim` — Royal in particular reclaims `highlight`, whose
+  own comment in `colors.js` says it started as "the avatar ring" purple.
+  Neon and Rose stay off-palette on purpose (cosmetics are the one place
+  allowed to diverge from app chrome). Applied via the `frontend-design`
+  skill, now in `CLAUDE.md` §3.7 for future cosmetic/visual work.
 
 **Coin economy is now feature-complete on the earn+spend loop.** Remaining
 non-economy follow-ups: MP Poker end-game (see the poker note above), and the

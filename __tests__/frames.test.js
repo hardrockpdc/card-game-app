@@ -35,7 +35,7 @@ describe("frames", () => {
   test("None yields no ring style; a color frame yields a border", () => {
     expect(getFrameRingStyle("none", 64)).toBeNull();
     const ring = getFrameRingStyle("gold", 64);
-    expect(ring.borderColor).toBe("#ffd479");
+    expect(ring.borderColor).toBe("#ffd700");
     expect(ring.borderWidth).toBeGreaterThan(0);
   });
 
@@ -52,7 +52,7 @@ describe("frames", () => {
   test("double frames include a nested inner ring", () => {
     const ring = getFrameRingStyle("royal", 64);
     expect(ring.innerRing).toBeTruthy();
-    expect(ring.innerRing.borderColor).toBe("#7a5fc7");
+    expect(ring.innerRing.borderColor).toBe("#5b4fc7");
     expect(getFrameRingStyle("gold", 64).innerRing).toBeUndefined();
   });
 

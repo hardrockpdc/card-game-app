@@ -1,3 +1,5 @@
+import { gold, positive, highlight, highlightDim } from "./colors";
+
 // Profile frames — decorative rings drawn AROUND the existing profile avatar
 // (photo, emoji, or initial alike). Pure CSS (border + optional glow/pulse), no
 // image assets, so they're cheap and render anywhere ProfileAvatar does.
@@ -11,18 +13,30 @@
 // (`pulse`) frames are the top tier. Unlocks are stored on the profile as
 // `unlockedFrames`; the chosen one is `activeFrame`.
 //
+// Colors are grounded in `game/colors.js` where a token actually fits, rather
+// than invented separately: Gold Ring reuses the app's real `gold` (coin)
+// token instead of a near-miss shade, Royal reclaims `highlight`/
+// `highlightDim` — that pair's own comment in colors.js says it started as
+// "the avatar ring" purple before being folded into the general token — and
+// Emerald reuses `positive` (the "your turn"/success green) instead of an
+// unrelated green. Neon and Rose are deliberately NOT tied to any chrome
+// token: cosmetics are the one place allowed to introduce color the rest of
+// the UI doesn't use, so the shop reads as a reward, not more app chrome.
+//
 // `style` values, each handled by ProfileAvatar:
 //   "solid"  — a single-color ring (the original look)
 //   "dashed" — a single-color dashed ring
 //   "double" — two concentric rings, `color` outer + `innerColor` inner
-//   "pips"   — a solid ring plus two small `pipGlyph` corner badges
+//   "pips"   — a solid ring plus two small `pipGlyph` corner badges. Kept
+//              exclusive to Ruby — one signature flourish, not spread across
+//              every frame, so it stays a flourish instead of decoration.
 
 const FRAMES = {
   none: { name: "None", price: 0, color: null },
   gold: {
     name: "Gold Ring",
     price: 1000,
-    color: "#ffd479",
+    color: gold,
     style: "solid",
     glow: false,
   },
@@ -36,7 +50,7 @@ const FRAMES = {
   emerald: {
     name: "Emerald",
     price: 1500,
-    color: "#3fbf6d",
+    color: positive,
     style: "solid",
     glow: true,
   },
@@ -59,8 +73,8 @@ const FRAMES = {
   royal: {
     name: "Royal",
     price: 2500,
-    color: "#c9a6ff",
-    innerColor: "#7a5fc7",
+    color: highlight,
+    innerColor: highlightDim,
     style: "double",
     glow: true,
     pulse: true,
