@@ -98,6 +98,7 @@ Invoke these proactively when the trigger fits, don't wait to be asked:
 - RN/Expo-specific implementation question → `ecc:react-native-patterns`
 - Accessibility work (screen reader, focus order) → `ecc:frontend-a11y` / `ecc:accessibility`
 - Anything touching animation/motion → `ecc:motion-foundations` (still follow §2.4 too)
+- Cosmetic/visual work — shop screens, tiles, frames, any "make it look better" request → `frontend-design:frontend-design`. Principles (hierarchy, spacing, restraint, color) transfer to RN styling even though the skill's examples assume CSS/web.
 - Before claiming a UI change works (§3.5) → `run` to launch + screenshot instead of just asserting
 - Before a production build/release, or touching Firebase rules → `ecc:security-review`
 
