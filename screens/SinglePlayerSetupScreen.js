@@ -5,6 +5,7 @@ import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import { useHasSave } from "../game/useResumePrompt";
 import { clearGame } from "../game/gameSaves";
 import { confirmStartNew } from "../components/GameSetupLayout";
+import SuitIcon from "../components/SuitIcon";
 import { scale, scaleFont } from "../game/responsive";
 
 // ─── Game data ────────────────────────────────────────────────────────────────
@@ -18,56 +19,56 @@ const GAMES = [
     label: "Blackjack",
     tag: "Classic",
     accent: "#3ea662",
-    suit: "♠",
+    suit: "spade",
   },
   {
     id: "solitaire",
     label: "Solitaire",
     tag: "5 modes",
     accent: "#5b9bd5",
-    suit: "♦",
+    suit: "diamond",
   },
   {
     id: "rummy",
     label: "Rummy",
     tag: "3 variants",
     accent: "#e05068",
-    suit: "♥",
+    suit: "heart",
   },
   {
     id: "conquian",
     label: "Conquián",
     tag: "Mexican",
     accent: "#d3a24a",
-    suit: "♣",
+    suit: "club",
   },
   {
     id: "goFish",
     label: "Go Fish",
     tag: "Family",
     accent: "#2aa6bf",
-    suit: "♥",
+    suit: "heart",
   },
   {
     id: "poker",
     label: "Poker",
     tag: "3 variants",
     accent: "#9a5cd0",
-    suit: "♠",
+    suit: "spade",
   },
   {
     id: "lastCard",
     label: "Last Card",
     tag: "Color match",
     accent: "#e8833a",
-    suit: "♦",
+    suit: "diamond",
   },
   {
     id: "memory",
     label: "Memory Match",
     tag: "Find pairs",
     accent: "#8a7bff",
-    suit: "♣",
+    suit: "club",
   },
 ];
 
@@ -285,42 +286,34 @@ export default function SinglePlayerSetupScreen({ navigation }) {
                         },
                       ]}
                     />
-                    <Text
-                      style={[
-                        styles.flatTileSuit,
-                        {
-                          color: game.accent,
-                          fontSize: Math.max(44, Math.round(tileH * 0.5)),
-                        },
-                      ]}
-                    >
-                      {game.suit}
-                    </Text>
+                    <View style={styles.flatTileSuit} pointerEvents="none">
+                      <SuitIcon
+                        suit={game.suit}
+                        color={game.accent}
+                        size={Math.max(44, Math.round(tileH * 0.5))}
+                      />
+                    </View>
                     {/* Corner pips, like a real playing card */}
-                    <Text
-                      style={[
-                        styles.tilePip,
-                        styles.tilePipTL,
-                        {
-                          color: game.accent,
-                          fontSize: Math.max(13, Math.round(tileH * 0.1)),
-                        },
-                      ]}
+                    <View
+                      style={[styles.tilePip, styles.tilePipTL]}
+                      pointerEvents="none"
                     >
-                      {game.suit}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.tilePip,
-                        styles.tilePipBR,
-                        {
-                          color: game.accent,
-                          fontSize: Math.max(13, Math.round(tileH * 0.1)),
-                        },
-                      ]}
+                      <SuitIcon
+                        suit={game.suit}
+                        color={game.accent}
+                        size={Math.max(13, Math.round(tileH * 0.1))}
+                      />
+                    </View>
+                    <View
+                      style={[styles.tilePip, styles.tilePipBR]}
+                      pointerEvents="none"
                     >
-                      {game.suit}
-                    </Text>
+                      <SuitIcon
+                        suit={game.suit}
+                        color={game.accent}
+                        size={Math.max(13, Math.round(tileH * 0.1))}
+                      />
+                    </View>
                     <View style={styles.flatTileContent}>
                       <Text
                         style={styles.flatTileName}
@@ -419,9 +412,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    textAlign: "center",
-    textAlignVertical: "center",
-    fontWeight: "900",
+    alignItems: "center",
+    justifyContent: "center",
     opacity: 0.2,
   },
   // Soft accent halo at the top of a tile (absolute circle, clipped by the
@@ -434,7 +426,6 @@ const styles = StyleSheet.create({
   // Corner pips, like the rank corners of a real playing card.
   tilePip: {
     position: "absolute",
-    fontWeight: "900",
   },
   tilePipTL: {
     top: scale(8),
