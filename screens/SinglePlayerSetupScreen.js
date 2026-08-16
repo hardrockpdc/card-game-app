@@ -334,7 +334,12 @@ export default function SinglePlayerSetupScreen({ navigation }) {
                             tell you Solitaire has 5 modes or Poker 3 variants,
                             and the only thing distinguishing eight otherwise
                             identical tiles was accent colour. */}
-                      <Text style={styles.flatTileTag} numberOfLines={1}>
+                      <Text
+                        style={styles.flatTileTag}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.7}
+                      >
                         {game.tag}
                       </Text>
                     </View>
