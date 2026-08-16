@@ -23,7 +23,8 @@
         "NSPhotoLibraryUsageDescription": "Card Night uses your photo library only when you choose to pick a profile photo. Photos are stored on your device.",
         "NSBonjourServices": [
           "_cardnight._tcp"
-        ]
+        ],
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -39,7 +40,8 @@
         "android.permission.ACCESS_NETWORK_STATE",
         "android.permission.ACCESS_WIFI_STATE",
         "android.permission.INTERNET",
-        "android.permission.CAMERA"
+        "android.permission.CAMERA",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
       ],
       "blockedPermissions": [
         "android.permission.READ_MEDIA_IMAGES",
@@ -58,12 +60,19 @@
     },
     "owner": "hardrockpdc",
     "plugins": [
-      "expo-audio",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
       "expo-image-picker",
       "react-native-edge-to-edge",
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
-      "./plugins/withoutMediaPermissions"
+      "./plugins/withoutMediaPermissions",
+      "expo-font"
     ],
     "runtimeVersion": {
       "policy": "appVersion"
