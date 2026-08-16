@@ -23,7 +23,12 @@ import TutorialOverlay, { hasSeen } from "../components/TutorialOverlay";
 import EndOfRoundModal from "../components/EndOfRoundModal";
 import StatsStrip from "../components/StatsStrip";
 import Confetti from "../components/Confetti";
-import { hapticImpact, hapticWin, hapticLose, HapticStyle } from "../game/haptics";
+import {
+  hapticImpact,
+  hapticWin,
+  hapticLose,
+  HapticStyle,
+} from "../game/haptics";
 import { getTableTheme } from "../game/tableThemes";
 const BG = getTableTheme("blackjack").table;
 const ACCENT = getTableTheme("blackjack").accent;
@@ -283,7 +288,10 @@ export default function GameScreen({ navigation, route }) {
     currentBetRef.current = bet;
     payoutDoneRef.current = false;
     setCurrentBet(bet);
-    clearGame(SAVE_KEY);
+    // No clearGame() here: the state set below fires the auto-save effect
+    // within the same tick, which fully overwrites the old save anyway.
+    // Clearing first only armed the clear-guard and made that same write
+    // get dropped as a "stray" — see BUG-8.
 
     // Deal cards synchronously before the async wallet call so the
     // UI transitions immediately without a blank flash.
@@ -656,7 +664,10 @@ export default function GameScreen({ navigation, route }) {
                   disabled={!canAfford}
                   accessibilityRole="button"
                   accessibilityLabel={`Bet ${amount}`}
-                  accessibilityState={{ disabled: !canAfford, selected: isSelected }}
+                  accessibilityState={{
+                    disabled: !canAfford,
+                    selected: isSelected,
+                  }}
                 >
                   <View style={[styles.chipRing, { borderColor: c.ring }]}>
                     <Text style={styles.chipAmount}>{amount}</Text>

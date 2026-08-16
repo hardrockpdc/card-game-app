@@ -45,7 +45,6 @@ export async function saveGame(gameKey, state) {
       gameKey,
       JSON.stringify({ __v: SAVE_VERSION, data: state }),
     );
-    warn(`[gameSaves] saveGame(${gameKey}) wrote OK`);
   } catch (err) {
     warn("[gameSaves] save failed:", err);
   }

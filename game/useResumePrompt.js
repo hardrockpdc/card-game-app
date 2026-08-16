@@ -13,7 +13,6 @@ export function useHasSave(saveKey) {
     useCallback(() => {
       let active = true;
       hasSave(saveKey).then((v) => {
-        warn(`[useHasSave] hasSave(${saveKey}) -> ${v}`);
         if (active) setExists(v);
       });
       return () => {

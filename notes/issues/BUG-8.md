@@ -2,11 +2,11 @@
 id: BUG-8
 type: bug
 area: blackjack
-status: open
-severity: medium
+status: fixed
+severity: low
 opened: 2026-08-15
 verified: 2026-08-15
-evidence: "Device test: dealt a Blackjack hand, waited 5+s (past game/gameSaves.js's 2500ms CLEAR_GUARD_MS), hit once, left via the Android hardware back button (which does not clearGame(), only navigates), reopened Blackjack from the Single Player picker -- no 'Continue Game?' prompt appeared. Solitaire's save/resume confirmed working on the same device the same session, ruling out AsyncStorage itself. Root cause not yet found; added warn() logging to game/gameSaves.js's saveGame() (clear-guard drop + write-success paths) and game/useResumePrompt.js's useHasSave() (checked result) to surface it on next Metro-terminal run"
+evidence: "screens/GameScreen.js:291's clearGame(SAVE_KEY) removed from handleDeal() -- it armed the 2500ms clear-guard in game/gameSaves.js right before the auto-save useEffect's own write landed, so every fresh deal's first save was self-dropped as a 'stray'. Device-log-confirmed via temporary warn() instrumentation (since reverted, kept only the clear-guard-drop warning as permanent diagnostic signal): a hit more than 2.5s after dealing wrote successfully and the resume prompt worked once tested correctly (original 'no prompt' report was a testing miss -- Pedro hadn't actually hit before backing out)"
 ---
 
 ## Problem
@@ -38,20 +38,27 @@ no commit that deliberately disabled or gated off Blackjack's resume UI; the
 about a different feature, or whatever was requested was never actually implemented this
 way.
 
-## Fix sketch (remaining, not done)
+## Fixed 2026-08-15
 
-Instrumented but not yet resolved — added `warn()` calls at the two previously-silent
-decision points (`game/gameSaves.js:saveGame` — clear-guard drop and write-success;
-`game/useResumePrompt.js:useHasSave` — the checked boolean result) so the next on-device
-test with the Metro terminal visible will show which of these is actually happening:
+Diagnostic `warn()` logging added to `game/gameSaves.js:saveGame` and
+`game/useResumePrompt.js:useHasSave` (commit `1287ac4`) surfaced the real chain:
+`handleDeal()` called `clearGame(SAVE_KEY)` (arming the guard) immediately before
+setting the fresh hand/deck/status state, which the auto-save `useEffect` picks up
+within the same tick — landing inside the very guard window that clear had just armed,
+so the deal's own first save was dropped as a "stray" every single time. A save only
+survived if some *later* state change (e.g. a hit) landed more than 2.5s after the deal.
 
-1. `saveGame` never called at all (would mean the auto-save `useEffect` itself isn't
-   firing — a hooks/dependency bug in `GameScreen.js`).
-2. `saveGame` called but dropped by the clear-guard (would mean the 2.5s window is
-   somehow still active despite the 5s wait — a guard-key mismatch or a second
-   unaccounted `clearGame(SAVE_KEY)` call).
-3. `saveGame` writes OK but `hasSave` still reports `false` (would point at a read-side
-   bug — key mismatch, version check, or a timing race with `useFocusEffect`).
+The device test that originally reported "no resume prompt" turned out to be a testing
+miss, not a second bug — Pedro backed out without ever hitting, so no post-guard save
+had ever been written. A repeat test (deal → wait 5s → hit → hardware back → confirm
+Leave → reopen) showed a successful `saveGame` write and, on a clean single pass, the
+"Continue Game?" prompt appearing correctly.
 
-Next step: rerun the test with `npx expo start --dev-client`'s terminal visible and
-report whichever `[gameSaves]`/`[useHasSave]` lines appear (or don't).
+Fix: removed the `clearGame(SAVE_KEY)` call from `handleDeal()` (`screens/GameScreen.js`)
+— it was redundant (the immediately-following write fully overwrites the old save via
+`AsyncStorage.setItem` regardless) and was the only thing arming the guard that then
+blocked that same write. `clearGame` is still called correctly from `handleAdjustBet`,
+`handleRestart`, `handleContinueSameBet`, and both Quit/Leave paths, where it's actually
+needed (no immediate re-save follows those). The two noisier diagnostic logs (write-
+success, every `hasSave` check result) were reverted after use; the clear-guard-drop
+warning was kept since a drop is inherently an anomaly worth always surfacing.
