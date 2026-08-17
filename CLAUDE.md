@@ -72,7 +72,7 @@ Before any multi-file deletion, refactor, or "remove all traces of X," **do a re
 
 End each completed change with a git commit using a clear, conventional message (e.g. `fix(conquian): ...`, `feat: ...`, `cleanup: ...`, `docs: ...`). Show me the commit hash. Keep commits focused — one logical change per commit.
 
-**Push after every commit.** Once a commit lands, `git push origin main` right after it — don't batch commits up and wait to be told to push.
+**Push after every commit.** Once a commit lands, `git push origin main` right after it — don't batch commits up and wait to be told to push. If the commit touched game logic covered by `__tests__/` (Conquián, deck, achievements, dailyBonus, databaseRules, etc.), run `npm test` first and only push if it's green.
 
 ### 3.3 Always tell me what to test
 
@@ -84,7 +84,7 @@ Never prompt for a dev-client rebuild after each individual native-touching chan
 
 ### 3.5 Verify before claiming done
 
-Confirm the files compile (Metro/bundler, not tsc), confirm the specific changes landed, and report honestly what changed vs. what was skipped and why.
+Confirm the files compile (Metro/bundler, not tsc), confirm the specific changes landed, and report honestly what changed vs. what was skipped and why. If the change touched tested game logic, run `npm test` and report the result — don't just assert it works.
 
 ### 3.6 Keep docs current — no stale docs
 
