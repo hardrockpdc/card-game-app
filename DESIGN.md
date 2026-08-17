@@ -163,7 +163,7 @@ Everything is rounded, bordered, and rectangular — no sharp corners, no circle
 - **Shape:** 16px radius, 1px border in a lighter tint of the fill color (e.g. red fill with a lighter red border).
 - **Primary (multiplayer/hub CTA):** Casino Red fill (`#e94560`), white bold text, Ambient Lift shadow.
 - **Go (single-player CTA):** Go Green fill (`#2e9e54`), white bold text, Ambient Lift shadow.
-- **Ghost (Profile entry):** translucent violet wash background, 2px `highlight-purple-dim` border, no shadow — visually quieter than the two filled CTAs above it.
+- **Ghost (Profile entry):** `highlight-purple-dim` at ~12% alpha as a translucent wash background, 2px `highlight-purple-dim` border, no shadow — visually quieter than the two filled CTAs above it.
 - **States:** no distinct pressed/hover treatment observed beyond the platform's default touch feedback plus haptic feedback (`HapticTouchable`/`HapticPressable` wrap most interactive elements).
 
 ### Pills / Chips

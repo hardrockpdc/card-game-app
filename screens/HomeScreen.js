@@ -451,7 +451,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   profileButton: {
-    backgroundColor: "rgba(106,90,205,0.12)",
+    backgroundColor: `${highlightDim}1f`, // highlightDim @ ~12% alpha
     borderRadius: 16,
     borderWidth: 2,
     borderColor: highlightDim,
