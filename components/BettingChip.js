@@ -22,7 +22,10 @@ export default function BettingChip({
     <View
       style={[
         styles.wrap,
-        selected && [styles.selected, { transform: [{ translateY: -size * 0.12 }, { scale: 1.06 }] }],
+        selected && [
+          styles.selected,
+          { transform: [{ translateY: -size * 0.12 }, { scale: 1.06 }] },
+        ],
         disabled && styles.disabled,
       ]}
     >

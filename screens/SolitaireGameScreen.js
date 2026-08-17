@@ -471,8 +471,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
   // Drag-and-drop is wired for the "move cards between piles" variants. Pyramid
   // and TriPeaks are match/collect games and stay tap-only.
   const dragEnabled =
-    isLandscape &&
-    ["klondike", "freecell", "spider"].includes(state.variantId);
+    isLandscape && ["klondike", "freecell", "spider"].includes(state.variantId);
 
   const coinRewardedRef = useRef(false);
   const wonClearedRef = useRef(false);
@@ -624,7 +623,11 @@ export default function SolitaireGameScreen({ navigation, route }) {
   // Auto-finish: once every card is face-up and only foundation moves remain
   // (Klondike/FreeCell), the game completes itself.
   useEffect(() => {
-    if (!autoCompleting && state.status === "playing" && canAutoComplete(state)) {
+    if (
+      !autoCompleting &&
+      state.status === "playing" &&
+      canAutoComplete(state)
+    ) {
       setAutoCompleting(true);
     }
   }, [state, autoCompleting]);
@@ -698,7 +701,11 @@ export default function SolitaireGameScreen({ navigation, route }) {
     const anchor = dealOriginRef.current;
     const sw = stockWrapRef.current;
     const ww = wasteWrapRef.current;
-    if (!anchor?.measureInWindow || !sw?.measureInWindow || !ww?.measureInWindow) {
+    if (
+      !anchor?.measureInWindow ||
+      !sw?.measureInWindow ||
+      !ww?.measureInWindow
+    ) {
       return; // can't measure → skip the animation, no harm
     }
     // The anchor is an absolute (0,0) view in the SAME container as the ghost, so
@@ -996,7 +1003,10 @@ export default function SolitaireGameScreen({ navigation, route }) {
           }}
         >
           <Image
-            source={getCardImage(hintGhost.card.rankLabel, hintGhost.card.symbol)}
+            source={getCardImage(
+              hintGhost.card.rankLabel,
+              hintGhost.card.symbol,
+            )}
             resizeMode="cover"
             style={{
               width: "100%",
@@ -1071,7 +1081,8 @@ export default function SolitaireGameScreen({ navigation, route }) {
   // Falls back to the static highlight only (no ghost) when it can't measure.
   function startHintAnimation(hintMove) {
     stopHintAnimation();
-    if (reduceMotionRef.current || !hintMove?.source || !hintMove?.target) return;
+    if (reduceMotionRef.current || !hintMove?.source || !hintMove?.target)
+      return;
     const { source, target } = hintMove;
 
     let card = null;
@@ -1260,8 +1271,10 @@ export default function SolitaireGameScreen({ navigation, route }) {
             Object.entries(pileCount).sort((a, b) => b[1] - a[1])[0]?.[0] ?? 0,
           );
         }
-        const completionColPos =
-          prevColumnLayouts[completionPileIndex] || { x: 0, y: 0 };
+        const completionColPos = prevColumnLayouts[completionPileIndex] || {
+          x: 0,
+          y: 0,
+        };
 
         const peek = spiderFaceUpPeekRef.current || 16;
         const cardW = spiderTabCardWRef.current || 42;
@@ -1288,7 +1301,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
         const kingY =
           lastRemainingY !== null
             ? (completionColPos.y ?? 0) + lastRemainingY + peek
-            : completionColPos.y ?? 0;
+            : (completionColPos.y ?? 0);
 
         // Sort cards King→Ace (rank 13→1) so they stack top-to-bottom correctly.
         const sortedIds = [...removedIds].sort((a, b) => {
@@ -1566,7 +1579,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
     // While a deal is flying in, keep showing the PREVIOUS top card so the drawn
     // card doesn't pop into the waste before the animation lands.
     const displayWasteTop = dealGhost
-      ? state.waste[state.waste.length - 2] ?? null
+      ? (state.waste[state.waste.length - 2] ?? null)
       : wasteTop;
 
     const stockSlot = (
@@ -1671,7 +1684,9 @@ export default function SolitaireGameScreen({ navigation, route }) {
               />
               <Pressable
                 onPress={() =>
-                  dispatch(autoMoveAction({ type: "tableau", index: pileIndex }))
+                  dispatch(
+                    autoMoveAction({ type: "tableau", index: pileIndex }),
+                  )
                 }
                 style={({ pressed }) => [
                   styles.emptyColumnSlot,
@@ -1773,8 +1788,12 @@ export default function SolitaireGameScreen({ navigation, route }) {
               <GameMenuButton menuItems={menuItems} />
             </View>
             <View style={styles.railSlotRow}>
-              <View ref={wasteWrapRef} collapsable={false}>{wasteSlot}</View>
-              <View ref={stockWrapRef} collapsable={false}>{stockSlot}</View>
+              <View ref={wasteWrapRef} collapsable={false}>
+                {wasteSlot}
+              </View>
+              <View ref={stockWrapRef} collapsable={false}>
+                {stockSlot}
+              </View>
             </View>
             <View style={[styles.railSlotRow, styles.railFoundationsTop]}>
               {foundationSlots[0]}
@@ -1821,7 +1840,11 @@ export default function SolitaireGameScreen({ navigation, route }) {
             width: ghost.w,
             height: ghost.h,
             opacity: anim.opacity,
-            transform: [{ translateX: anim.translateX }, { translateY: anim.translateY }, { scale: anim.scale }],
+            transform: [
+              { translateX: anim.translateX },
+              { translateY: anim.translateY },
+              { scale: anim.scale },
+            ],
             zIndex: 50,
             elevation: 20,
           }}
@@ -2170,7 +2193,9 @@ export default function SolitaireGameScreen({ navigation, route }) {
               />
               <Pressable
                 onPress={() =>
-                  dispatch(autoMoveAction({ type: "tableau", index: pileIndex }))
+                  dispatch(
+                    autoMoveAction({ type: "tableau", index: pileIndex }),
+                  )
                 }
                 style={({ pressed }) => [
                   styles.emptyColumnSlot,
@@ -2314,7 +2339,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
   const renderPyramid = () => {
     const wasteTop = getTopCard(state.waste);
     const displayWasteTop = dealGhost
-      ? state.waste[state.waste.length - 2] ?? null
+      ? (state.waste[state.waste.length - 2] ?? null)
       : wasteTop;
     const cleared = state.pyramidRows
       ? state.pyramidRows.reduce(
@@ -2545,7 +2570,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
   const renderTriPeaks = () => {
     const wasteTop = getTopCard(state.waste);
     const displayWasteTop = dealGhost
-      ? state.waste[state.waste.length - 2] ?? null
+      ? (state.waste[state.waste.length - 2] ?? null)
       : wasteTop;
     const cleared = state.boardRows
       ? state.boardRows.reduce(

@@ -262,7 +262,11 @@ function advanceBettingRound(state) {
   // running total committed to the pot (used for side-pot math at showdown).
   const newPS = {};
   for (const [pid, ps] of Object.entries(state.playerStates))
-    newPS[pid] = { ...ps, bet: 0, committed: (ps.committed || 0) + (ps.bet || 0) };
+    newPS[pid] = {
+      ...ps,
+      bet: 0,
+      committed: (ps.committed || 0) + (ps.bet || 0),
+    };
 
   let nextPhase,
     newDeck = [...state.deck],
@@ -807,8 +811,9 @@ export default function PokerGameScreen({ navigation, route }) {
             // String-compare both sides: local mode assigns numeric client ids,
             // online mode uses string uids. They never mix today, so === works,
             // but this matches the Rummy handler and removes the trap.
-            state.players.findIndex((p) => String(p.id) === String(clientId)) !==
-            state.currentPlayerIndex
+            state.players.findIndex(
+              (p) => String(p.id) === String(clientId),
+            ) !== state.currentPlayerIndex
           )
             return;
           if (state.phase === "showdown") return;
@@ -1046,9 +1051,7 @@ export default function PokerGameScreen({ navigation, route }) {
       ? [{ type: "saveexit", onSaveExit: handleSaveAndExit }]
       : []),
     // Restart re-deals a fresh tournament in place (single-player only).
-    ...(isSinglePlayer
-      ? [{ type: "restart", onRestart: handleRestart }]
-      : []),
+    ...(isSinglePlayer ? [{ type: "restart", onRestart: handleRestart }] : []),
     { type: "howto", gameId: "poker" },
     { type: "theme" },
     {
@@ -1215,7 +1218,9 @@ export default function PokerGameScreen({ navigation, route }) {
           <View
             style={styles.yourCardsRow}
             accessibilityElementsHidden={!handReady}
-            importantForAccessibility={handReady ? "auto" : "no-hide-descendants"}
+            importantForAccessibility={
+              handReady ? "auto" : "no-hide-descendants"
+            }
           >
             {myHand.map((c, index) => (
               <Card

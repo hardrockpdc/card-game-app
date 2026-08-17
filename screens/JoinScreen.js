@@ -211,7 +211,9 @@ export default function JoinScreen({ navigation }) {
         }}
         disabled={isConnecting}
         accessibilityRole="button"
-        accessibilityLabel={showManual ? "Hide manual IP entry" : "Show manual IP entry"}
+        accessibilityLabel={
+          showManual ? "Hide manual IP entry" : "Show manual IP entry"
+        }
       >
         <Text style={styles.manualToggleText}>
           {showManual ? "▲ Hide manual entry" : "▼ Enter IP manually"}

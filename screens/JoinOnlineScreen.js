@@ -70,7 +70,12 @@ export default function JoinOnlineScreen({ navigation }) {
         value={code}
         onChangeText={(t) => {
           setError(null);
-          setCode(t.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, CODE_LENGTH));
+          setCode(
+            t
+              .toUpperCase()
+              .replace(/[^A-Z0-9]/g, "")
+              .slice(0, CODE_LENGTH),
+          );
         }}
         placeholder="XKQP"
         placeholderTextColor="#444"

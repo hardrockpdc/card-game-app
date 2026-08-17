@@ -111,7 +111,6 @@ const WHEEL_OPTIONS = [
     subtitle: v.label,
   })),
 
-
   { value: "lastCard", title: "Last Card" },
 
   { value: "whoami", title: "Who Am I?", subtitle: "Party · type & guess" },
@@ -230,17 +229,26 @@ export default function LobbyScreen({ navigation, route }) {
     let mounted = true;
 
     if (!hostName) {
-      const { loadProfile: lp, getDisplayName: gdn } = require("../game/profile");
-      lp().then((p) => { if (mounted) setResolvedHostName(gdn(p)); });
+      const {
+        loadProfile: lp,
+        getDisplayName: gdn,
+      } = require("../game/profile");
+      lp().then((p) => {
+        if (mounted) setResolvedHostName(gdn(p));
+      });
     }
 
     if (!hostIp) {
-      Network.getIpAddressAsync().then((ip) => { if (mounted) setDisplayIp(ip); });
+      Network.getIpAddressAsync().then((ip) => {
+        if (mounted) setDisplayIp(ip);
+      });
     }
 
     startServer();
 
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [isHost]);
 
   // Start broadcasting once we have an IP (may come from params immediately or
@@ -539,7 +547,9 @@ export default function LobbyScreen({ navigation, route }) {
           accessibilityLabel="Copy IP address"
         >
           <Text style={styles.ipChipLabel}>📡 Your IP: </Text>
-          <Text style={[styles.ipChipValue, ipCopied && styles.ipChipValueCopied]}>
+          <Text
+            style={[styles.ipChipValue, ipCopied && styles.ipChipValueCopied]}
+          >
             {displayIp || "…"}
           </Text>
           {ipCopied && <Text style={styles.ipChipCopiedTag}> ✓ Copied</Text>}
@@ -550,9 +560,13 @@ export default function LobbyScreen({ navigation, route }) {
         <View style={styles.gameSelectorSection}>
           <Text style={styles.sectionLabel}>Game</Text>
           <View style={styles.selectedGameChip}>
-            <Text style={[styles.selectedGameText, { color: wheelAccentColor }]}>
-              {WHEEL_OPTIONS.find((o) => o.value === selectedWheelValue)?.title ?? selectedGameDef?.label}
-              {WHEEL_OPTIONS.find((o) => o.value === selectedWheelValue)?.subtitle
+            <Text
+              style={[styles.selectedGameText, { color: wheelAccentColor }]}
+            >
+              {WHEEL_OPTIONS.find((o) => o.value === selectedWheelValue)
+                ?.title ?? selectedGameDef?.label}
+              {WHEEL_OPTIONS.find((o) => o.value === selectedWheelValue)
+                ?.subtitle
                 ? `  ·  ${WHEEL_OPTIONS.find((o) => o.value === selectedWheelValue).subtitle}`
                 : ""}
             </Text>

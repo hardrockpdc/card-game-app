@@ -116,8 +116,8 @@ export default function GoFishGameScreen({ navigation, route }) {
   const reconnect = useOnlineReconnect({
     role: isSinglePlayer ? undefined : isHost ? "host" : "client",
     getPlayerName: (id) =>
-      fullRef.current?.players.find((p) => String(p.id) === String(id))
-        ?.name ?? "A player",
+      fullRef.current?.players.find((p) => String(p.id) === String(id))?.name ??
+      "A player",
     isRealPlayer: (id) => {
       const p = fullRef.current?.players.find(
         (x) => String(x.id) === String(id),
@@ -626,7 +626,9 @@ export default function GoFishGameScreen({ navigation, route }) {
             style={styles.handScroll}
             contentContainerStyle={styles.handGrid}
             accessibilityElementsHidden={!handReady}
-            importantForAccessibility={handReady ? "auto" : "no-hide-descendants"}
+            importantForAccessibility={
+              handReady ? "auto" : "no-hide-descendants"
+            }
           >
             {displayHand.map((card, index) => {
               const isSelected = card.rank === selectedRank;

@@ -1,11 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-} from "react-native";
+import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import { scale, scaleFont } from "../game/responsive";
 import { TITLE_FONT } from "../game/typography";

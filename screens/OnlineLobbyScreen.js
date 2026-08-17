@@ -13,11 +13,7 @@ import * as Clipboard from "expo-clipboard";
 import { scale, scaleFont } from "../game/responsive";
 import { TITLE_FONT } from "../game/typography";
 import { getUid } from "../game/firebase";
-import {
-  subscribeToRoom,
-  leaveRoom,
-  startRoomGame,
-} from "../game/onlineRoom";
+import { subscribeToRoom, leaveRoom, startRoomGame } from "../game/onlineRoom";
 import { setNetworkMode } from "../game/GameNetwork";
 import { recordAchievementEvent } from "../game/achievements";
 import { getGameInfo, canStartGame } from "../game/roomRoster";

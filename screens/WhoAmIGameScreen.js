@@ -84,8 +84,7 @@ export default function WhoAmIGameScreen({ navigation, route }) {
     const pub = toPublic(newState);
     setGameState(pub);
 
-    const amJudge =
-      String(newState.players[newState.judgeIndex]?.id) === myPid;
+    const amJudge = String(newState.players[newState.judgeIndex]?.id) === myPid;
     setPrivateSecret(amJudge && newState.secret ? newState.secret : null);
 
     broadcastToClients({ type: "GAME_STATE", state: pub });
@@ -93,7 +92,10 @@ export default function WhoAmIGameScreen({ navigation, route }) {
     if (newState.secret) {
       const judgeId = String(newState.players[newState.judgeIndex]?.id);
       if (judgeId !== "host") {
-        sendToClient(judgeId, { type: "PRIVATE_SECRET", secret: newState.secret });
+        sendToClient(judgeId, {
+          type: "PRIVATE_SECRET",
+          secret: newState.secret,
+        });
       }
     }
   }
@@ -226,7 +228,9 @@ export default function WhoAmIGameScreen({ navigation, route }) {
       gameState?.lastWinner
     ) {
       const mine = String(gameState.lastWinner.id) === myPid;
-      setNoticeText(mine ? "You got it!" : `${gameState.lastWinner.name} got it!`);
+      setNoticeText(
+        mine ? "You got it!" : `${gameState.lastWinner.name} got it!`,
+      );
       setNoticeWord(gameState.lastSecret || "");
       setNoticeWinnerId(String(gameState.lastWinner.id));
       setNoticeWinnerName(gameState.lastWinner.name || "");
@@ -349,7 +353,8 @@ export default function WhoAmIGameScreen({ navigation, route }) {
             {/* Scoreboard */}
             <View style={styles.scoreRow}>
               {players.map((p) => {
-                const isJudge = String(p.id) === String(gameState.currentJudgeId);
+                const isJudge =
+                  String(p.id) === String(gameState.currentJudgeId);
                 return (
                   <View
                     key={String(p.id)}
@@ -418,7 +423,9 @@ export default function WhoAmIGameScreen({ navigation, route }) {
                 {pending ? (
                   <>
                     <Text style={styles.prompt}>
-                      <Text style={styles.qaWho}>{pending.askerName} asks: </Text>
+                      <Text style={styles.qaWho}>
+                        {pending.askerName} asks:{" "}
+                      </Text>
                       {pending.question}
                     </Text>
                     <View style={styles.judgeBtns}>
@@ -450,7 +457,9 @@ export default function WhoAmIGameScreen({ navigation, route }) {
               <View style={styles.panel}>
                 {amAsker && !pending ? (
                   <>
-                    <Text style={styles.prompt}>Your turn — ask a yes/no question</Text>
+                    <Text style={styles.prompt}>
+                      Your turn — ask a yes/no question
+                    </Text>
                     <TextInput
                       style={styles.input}
                       value={questionText}
@@ -492,26 +501,26 @@ export default function WhoAmIGameScreen({ navigation, route }) {
                   .reverse()
                   .map(({ h, i }) => (
                     <View key={`h-${i}`} style={styles.qaRow}>
-                    <Text style={styles.qaQ}>
-                      <Text style={styles.qaWho}>{h.askerName}: </Text>
-                      {h.question}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.qaA,
-                        h.answer === "gotit" && { color: "#7CFFB2" },
-                        h.answer === "yes" && { color: "#7CFFB2" },
-                        h.answer === "no" && { color: "#ff6b6b" },
-                      ]}
-                    >
-                      {h.answer === "gotit"
-                        ? "🎉 Got it!"
-                        : h.answer === "yes"
-                          ? "Yes"
-                          : "No"}
-                    </Text>
-                  </View>
-                ))
+                      <Text style={styles.qaQ}>
+                        <Text style={styles.qaWho}>{h.askerName}: </Text>
+                        {h.question}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.qaA,
+                          h.answer === "gotit" && { color: "#7CFFB2" },
+                          h.answer === "yes" && { color: "#7CFFB2" },
+                          h.answer === "no" && { color: "#ff6b6b" },
+                        ]}
+                      >
+                        {h.answer === "gotit"
+                          ? "🎉 Got it!"
+                          : h.answer === "yes"
+                            ? "Yes"
+                            : "No"}
+                      </Text>
+                    </View>
+                  ))
               )}
             </ScrollView>
           </>
@@ -641,7 +650,12 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     gap: scale(10),
   },
-  qaQ: { flex: 1, color: "#e6e6f0", fontSize: scaleFont(14), lineHeight: scaleFont(19) },
+  qaQ: {
+    flex: 1,
+    color: "#e6e6f0",
+    fontSize: scaleFont(14),
+    lineHeight: scaleFont(19),
+  },
   qaWho: { color: ACCENT, fontWeight: "800" },
   qaA: { fontSize: scaleFont(14), fontWeight: "900" },
   panel: {
@@ -681,7 +695,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: scale(14),
   },
-  primaryBtnText: { color: "#0c0c14", fontSize: scaleFont(16), fontWeight: "900" },
+  primaryBtnText: {
+    color: "#0c0c14",
+    fontSize: scaleFont(16),
+    fontWeight: "900",
+  },
   judgeBtns: { flexDirection: "row", gap: scale(10) },
   answerBtn: {
     flex: 1,

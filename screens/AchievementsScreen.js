@@ -67,7 +67,9 @@ export default function AchievementsScreen({ navigation }) {
                 <Text style={[styles.summaryValue, styles.coinValue]}>
                   🪙 {earnedCoins.toLocaleString()}
                 </Text>
-                <Text style={styles.summaryLabel}>Earned from Achievements</Text>
+                <Text style={styles.summaryLabel}>
+                  Earned from Achievements
+                </Text>
               </View>
             </View>
 

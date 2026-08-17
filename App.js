@@ -1,9 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { AppState } from "react-native";
-import {
-  useFonts,
-  Poppins_700Bold,
-} from "@expo-google-fonts/poppins";
+import { useFonts, Poppins_700Bold } from "@expo-google-fonts/poppins";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { NavigationContainer } from "@react-navigation/native";
