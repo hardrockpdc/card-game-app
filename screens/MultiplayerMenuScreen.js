@@ -10,6 +10,7 @@ import {
 import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import { scale, scaleFont } from "../game/responsive";
 import { TITLE_FONT } from "../game/typography";
+import { accent } from "../game/colors";
 
 export default function MultiplayerMenuScreen({ navigation }) {
   const { width } = useWindowDimensions();
@@ -41,87 +42,113 @@ export default function MultiplayerMenuScreen({ navigation }) {
             <Text style={styles.suit}>♣</Text>
           </View>
 
-          <TouchableOpacity
-            style={[
-              styles.primaryButton,
-              {
-                paddingVertical: buttonVertical,
-                paddingHorizontal: buttonHorizontal,
-              },
-            ]}
-            onPress={() =>
-              navigation.navigate("MultiplayerGamePicker", { mode: "online" })
-            }
-            accessibilityRole="button"
-            accessibilityLabel="Host Online"
-            accessibilityHint="Start an online game others can join with a code"
-          >
-            <Text
-              style={[styles.primaryButtonText, { fontSize: buttonTextSize }]}
-            >
-              🌐 Host Online
+          <View style={styles.modeGroup}>
+            <Text style={styles.modeGroupLabel}>
+              ROOM CODE · DIFFERENT LOCATIONS
             </Text>
-          </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[
-              styles.secondaryButton,
-              {
-                paddingVertical: buttonVertical,
-                paddingHorizontal: buttonHorizontal,
-              },
-            ]}
-            onPress={() => navigation.navigate("JoinOnline")}
-            accessibilityRole="button"
-            accessibilityLabel="Join Online"
-            accessibilityHint="Join an online game using a room code"
-          >
-            <Text
-              style={[styles.secondaryButtonText, { fontSize: buttonTextSize }]}
+            <TouchableOpacity
+              style={[
+                styles.primaryButton,
+                {
+                  paddingVertical: buttonVertical,
+                  paddingHorizontal: buttonHorizontal,
+                },
+              ]}
+              onPress={() =>
+                navigation.navigate("MultiplayerGamePicker", {
+                  mode: "online",
+                })
+              }
+              accessibilityRole="button"
+              accessibilityLabel="Host Online"
+              accessibilityHint="Start an online game others can join with a code"
             >
-              🔑 Join Online
-            </Text>
-          </TouchableOpacity>
+              <Text
+                style={[
+                  styles.primaryButtonText,
+                  { fontSize: buttonTextSize },
+                ]}
+              >
+                🌐 Host Online
+              </Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[
-              styles.primaryButton,
-              {
-                paddingVertical: buttonVertical,
-                paddingHorizontal: buttonHorizontal,
-              },
-            ]}
-            onPress={() => navigation.navigate("MultiplayerGamePicker")}
-            accessibilityRole="button"
-            accessibilityLabel="Host Local"
-            accessibilityHint="Start hosting a game on your Wi-Fi network"
-          >
-            <Text
-              style={[styles.primaryButtonText, { fontSize: buttonTextSize }]}
+            <TouchableOpacity
+              style={[
+                styles.secondaryButton,
+                {
+                  paddingVertical: buttonVertical,
+                  paddingHorizontal: buttonHorizontal,
+                },
+              ]}
+              onPress={() => navigation.navigate("JoinOnline")}
+              accessibilityRole="button"
+              accessibilityLabel="Join Online"
+              accessibilityHint="Join an online game using a room code"
             >
-              📡 Host Local
-            </Text>
-          </TouchableOpacity>
+              <Text
+                style={[
+                  styles.secondaryButtonText,
+                  { fontSize: buttonTextSize },
+                ]}
+              >
+                🔑 Join Online
+              </Text>
+            </TouchableOpacity>
+          </View>
 
-          <TouchableOpacity
-            style={[
-              styles.secondaryButton,
-              {
-                paddingVertical: buttonVertical,
-                paddingHorizontal: buttonHorizontal,
-              },
-            ]}
-            onPress={() => navigation.navigate("Join")}
-            accessibilityRole="button"
-            accessibilityLabel="Join Local"
-            accessibilityHint="Look for games being hosted on your Wi-Fi network"
-          >
-            <Text
-              style={[styles.secondaryButtonText, { fontSize: buttonTextSize }]}
-            >
-              🔍 Join Local
+          <View style={styles.modeGroup}>
+            <Text style={[styles.modeGroupLabel, styles.modeGroupLabelLocal]}>
+              SAME WI-FI · NO INTERNET NEEDED
             </Text>
-          </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.localPrimaryButton,
+                {
+                  paddingVertical: buttonVertical,
+                  paddingHorizontal: buttonHorizontal,
+                },
+              ]}
+              onPress={() => navigation.navigate("MultiplayerGamePicker")}
+              accessibilityRole="button"
+              accessibilityLabel="Host Local"
+              accessibilityHint="Start hosting a game on your Wi-Fi network"
+            >
+              <Text
+                style={[
+                  styles.localPrimaryButtonText,
+                  { fontSize: buttonTextSize },
+                ]}
+              >
+                📡 Host Local
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.localSecondaryButton,
+                {
+                  paddingVertical: buttonVertical,
+                  paddingHorizontal: buttonHorizontal,
+                },
+              ]}
+              onPress={() => navigation.navigate("Join")}
+              accessibilityRole="button"
+              accessibilityLabel="Join Local"
+              accessibilityHint="Look for games being hosted on your Wi-Fi network"
+            >
+              <Text
+                style={[
+                  styles.localSecondaryButtonText,
+                  { fontSize: buttonTextSize },
+                ]}
+              >
+                🔍 Join Local
+              </Text>
+            </TouchableOpacity>
+          </View>
 
           <TouchableOpacity
             style={styles.backButton}
@@ -185,6 +212,22 @@ const styles = StyleSheet.create({
     color: "#8b8ba3",
     fontWeight: "bold",
   },
+  modeGroup: {
+    width: "100%",
+    alignItems: "center",
+    marginBottom: scale(10),
+  },
+  modeGroupLabel: {
+    alignSelf: "flex-start",
+    color: "#e94560",
+    fontSize: scaleFont(12),
+    fontWeight: "bold",
+    letterSpacing: 0.8,
+    marginBottom: scale(8),
+  },
+  modeGroupLabelLocal: {
+    color: accent,
+  },
   primaryButton: {
     width: "100%",
     maxWidth: 420,
@@ -217,6 +260,40 @@ const styles = StyleSheet.create({
   },
   secondaryButtonText: {
     color: "#e94560",
+    fontWeight: "bold",
+  },
+  localPrimaryButton: {
+    width: "100%",
+    maxWidth: 420,
+    borderRadius: scale(16),
+    borderWidth: 1,
+    borderColor: "#a8cdff",
+    backgroundColor: accent,
+    marginTop: scale(8),
+    marginBottom: scale(14),
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
+  },
+  localPrimaryButtonText: {
+    color: "#0f1b2d",
+    fontWeight: "bold",
+  },
+  localSecondaryButton: {
+    width: "100%",
+    maxWidth: 420,
+    borderRadius: scale(16),
+    borderWidth: 2,
+    borderColor: accent,
+    backgroundColor: "rgba(127,179,255,0.12)",
+    alignItems: "center",
+    marginBottom: scale(18),
+  },
+  localSecondaryButtonText: {
+    color: accent,
     fontWeight: "bold",
   },
   backButton: {

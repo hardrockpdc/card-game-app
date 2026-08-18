@@ -26,6 +26,7 @@ import {
 } from "../game/profile";
 import { getCoins } from "../game/wallet";
 import { purchaseCosmetic } from "../game/shop";
+import { textFaint } from "../game/colors";
 
 export default function CardThemeScreen() {
   const { width, height } = useWindowDimensions();
@@ -325,7 +326,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   swipeHint: {
-    color: "#444",
+    color: textFaint,
     fontSize: 13,
     marginTop: 32,
   },

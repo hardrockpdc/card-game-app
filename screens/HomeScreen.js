@@ -263,8 +263,8 @@ export default function HomeScreen({ navigation }) {
             ]}
             onPress={goToProfile}
             accessibilityRole="button"
-            accessibilityLabel="Profile"
-            accessibilityHint="Open your profile to edit your name, photo, and card theme"
+            accessibilityLabel="Profile and Shop"
+            accessibilityHint="Open your profile, card themes, frames, stats, and achievements"
           >
             <View style={styles.btnLabel}>
               <Text
@@ -275,7 +275,7 @@ export default function HomeScreen({ navigation }) {
               <Text
                 style={[styles.profileButtonText, { fontSize: buttonTextSize }]}
               >
-                Profile
+                Profile & Shop
               </Text>
             </View>
           </TouchableOpacity>

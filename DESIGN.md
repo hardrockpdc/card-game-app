@@ -96,7 +96,7 @@ Dark and saturated: a near-black navy base, a handful of loud accent colors each
 - **Casino Red** (`#e94560`): the Home hub's primary CTA and overall brand identity color. A deliberate choice — Home should feel like game night starting, not a settings screen. Also reused, separately, as the app-wide error/invalid-input color; the two roles share a hex value today but are treated as distinct tokens (`brand-red` vs `error`) because only one of them is free to change independently.
 
 ### Secondary
-- **Sky Accent** (`#7fb3ff`): links, focus states, and general highlights outside the per-game felt system. Also happens to be Solitaire's table accent.
+- **Sky Accent** (`#7fb3ff`): links, focus states, and general highlights outside the per-game felt system. Also happens to be Solitaire's table accent, and — as of the Local/Online multiplayer split — the fill color for the "Same WiFi" mode group on `MultiplayerMenuScreen.js`, paired against Casino Red for the "Room Code" group.
 - **Coin Gold** (`#ffd700`): coins, prices, and reward moments anywhere in the app.
 
 ### Tertiary
@@ -189,6 +189,28 @@ Rummy, Poker, and Go Fish additionally expose a switchable felt (Indigo/Green/Te
 
 ### Cards (playing cards)
 Rendered as PNG image assets per deck theme (not drawn shapes) with a shared corner radius and a themed card-back image for face-down cards. See card-theme assets for the actual art.
+
+### Solitaire Board Chrome (signature component)
+`SolitaireGameScreen.js`'s landscape board runs its own denser, darker sub-palette — a `BOARD_CHROME` token table at the top of that file — separate from the app-wide neutral tokens above, because the board is full of card art and needs a quieter chrome around it than a menu screen does:
+
+| Token | Value | Role |
+|---|---|---|
+| `board` | `#141a24` | Board card background |
+| `boardBorder` | `#233047` | Board card border |
+| `rail` | `#1b2433` | Right-rail (stock/waste/foundations) background |
+| `railBorder` | `#2a3650` | Rail and stock-slot borders |
+| `pill` | `#101521` | Stat-pill and empty-slot background |
+| `pillBorder` | `#263146` | Stat-pill border |
+| `stockSlot` | `#0f1520` | Stock slot background |
+| `emptySlotBorder` | `#34425f` | Dashed empty-slot border |
+| `textDim` / `textBright` / `textFaint` | `#8799b8` / `#eff4fb` / `#7f8ea8` | Stat-pill label, stat-pill value + stock label, empty-slot text |
+| `hint` | `#FFCC66` | Hint-move amber glow (button, card border, ghost-card outline) |
+| `legalGlow` | `#7CFFB2` | Legal drag-drop-target green glow |
+
+Any new Solitaire board chrome should extend this table rather than adding a new inline hex — that's the whole reason it exists.
+
+### Mode Selection (Local vs. Online)
+`MultiplayerMenuScreen.js` groups its four entry points into two labeled sections rather than one undifferentiated button stack: a "ROOM CODE · DIFFERENT LOCATIONS" group in Casino Red (matching the rest of Home's red CTA identity) and a "SAME WI-FI · NO INTERNET NEEDED" group in Sky Accent blue. The label color and button fill both carry the mode's identity, so the choice reads before the copy is even parsed.
 
 ## Do's and Don'ts
 

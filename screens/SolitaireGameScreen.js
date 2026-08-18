@@ -63,6 +63,27 @@ try {
 
 const BG = getTableTheme("solitaire").table;
 
+// Solitaire's landscape board (stat pills, rail, empty-slot chrome) runs a
+// denser, darker sub-palette than the rest of the app's navy chrome — tuned
+// for a busy board full of card art rather than menu screens. Named here
+// instead of inline hex so it's one place to change and one place DESIGN.md's
+// "Solitaire Board Chrome" section points back to.
+const BOARD_CHROME = {
+  board: "#141a24",
+  boardBorder: "#233047",
+  rail: "#1b2433",
+  railBorder: "#2a3650",
+  pill: "#101521",
+  pillBorder: "#263146",
+  stockSlot: "#0f1520",
+  emptySlotBorder: "#34425f",
+  textDim: "#8799b8",
+  textBright: "#eff4fb",
+  textFaint: "#7f8ea8",
+  hint: "#FFCC66",
+  legalGlow: "#7CFFB2",
+};
+
 function solitaireSaveKey(variantId) {
   return `@cardnight:save:solitaire:${variantId}`;
 }
@@ -1013,7 +1034,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
               height: "100%",
               borderRadius: 14,
               borderWidth: 2.5,
-              borderColor: "#FFCC66",
+              borderColor: BOARD_CHROME.hint,
             }}
           />
         </Animated.View>
@@ -2922,9 +2943,9 @@ const styles = StyleSheet.create({
   rightRail: {
     gap: 5,
     alignItems: "stretch",
-    backgroundColor: "#1b2433", // a touch lighter than the board (#141a24)
+    backgroundColor: BOARD_CHROME.rail, // a touch lighter than the board
     borderWidth: 1,
-    borderColor: "#2a3650",
+    borderColor: BOARD_CHROME.railBorder,
     borderRadius: 14,
     padding: 6,
   },
@@ -2960,28 +2981,28 @@ const styles = StyleSheet.create({
     gap: 6,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#263146",
-    backgroundColor: "#101521",
+    borderColor: BOARD_CHROME.pillBorder,
+    backgroundColor: BOARD_CHROME.pill,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
   metaPillLabel: {
-    color: "#8799b8",
+    color: BOARD_CHROME.textDim,
     fontSize: 11,
     fontWeight: "800",
     textTransform: "uppercase",
     letterSpacing: 0.8,
   },
   metaPillValue: {
-    color: "#eff4fb",
+    color: BOARD_CHROME.textBright,
     fontSize: 12,
     fontWeight: "900",
   },
   boardCard: {
     borderRadius: 22,
     borderWidth: 1,
-    borderColor: "#233047",
-    backgroundColor: "#141a24",
+    borderColor: BOARD_CHROME.boardBorder,
+    backgroundColor: BOARD_CHROME.board,
     padding: 12,
     gap: 14,
   },
@@ -3013,7 +3034,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: "rgba(255, 204, 102, 0.15)",
     borderWidth: 1.5,
-    borderColor: "#FFCC66",
+    borderColor: BOARD_CHROME.hint,
   },
   hintButtonPressed: {
     opacity: 0.7,
@@ -3022,7 +3043,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   hintButtonText: {
-    color: "#FFCC66",
+    color: BOARD_CHROME.hint,
     fontSize: 13,
     fontWeight: "800",
   },
@@ -3031,8 +3052,8 @@ const styles = StyleSheet.create({
     height: 98,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#2a3650",
-    backgroundColor: "#0f1520",
+    borderColor: BOARD_CHROME.railBorder,
+    backgroundColor: BOARD_CHROME.stockSlot,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 6,
@@ -3055,7 +3076,7 @@ const styles = StyleSheet.create({
     height: 0,
   },
   stockLabel: {
-    color: "#d9e3f3",
+    color: BOARD_CHROME.textBright,
     fontSize: 11,
     fontWeight: "800",
     textAlign: "center",
@@ -3091,14 +3112,14 @@ const styles = StyleSheet.create({
   // Drag-and-drop: a legal drop target (foundation slot) glows green. Keeps the
   // base borderWidth (1) and only recolors, so highlighting can't shift layout.
   cardTouchHighlighted: {
-    borderColor: "#7CFFB2",
+    borderColor: BOARD_CHROME.legalGlow,
     backgroundColor: "rgba(124, 255, 178, 0.16)",
   },
   // Hint: an amber glow on the card to move (and its destination). Deliberately
   // a different colour from the green drag target so the two never look alike.
   // Recolor only (keeps borderWidth 1) so highlighting can't shift layout.
   cardTouchHint: {
-    borderColor: "#FFCC66",
+    borderColor: BOARD_CHROME.hint,
     backgroundColor: "rgba(255, 204, 102, 0.18)",
   },
   // A card that's currently lifted in the drag overlay is hidden in place.
@@ -3111,14 +3132,14 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderStyle: "dashed",
-    borderColor: "#34425f",
-    backgroundColor: "#101521",
+    borderColor: BOARD_CHROME.emptySlotBorder,
+    backgroundColor: BOARD_CHROME.pill,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 6,
   },
   emptyCardText: {
-    color: "#7f8ea8",
+    color: BOARD_CHROME.textFaint,
     fontSize: 8,
     textAlign: "center",
     fontWeight: "800",
@@ -3176,8 +3197,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderStyle: "dashed",
-    borderColor: "#34425f",
-    backgroundColor: "#101521",
+    borderColor: BOARD_CHROME.emptySlotBorder,
+    backgroundColor: BOARD_CHROME.pill,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 6,

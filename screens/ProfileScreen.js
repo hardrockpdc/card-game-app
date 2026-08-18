@@ -495,14 +495,16 @@ export default function ProfileScreen({ navigation, route }) {
               <Text style={styles.coinDisplay}>
                 🪙 {coins !== null ? coins.toLocaleString() : "—"}
               </Text>
-              <TouchableOpacity
-                style={styles.resetBtn}
-                onPress={handleResetCoins}
-                accessibilityRole="button"
-                accessibilityLabel="Reset coins to 1000"
-              >
-                <Text style={styles.resetBtnText}>Reset to 1000</Text>
-              </TouchableOpacity>
+              {__DEV__ && (
+                <TouchableOpacity
+                  style={styles.resetBtn}
+                  onPress={handleResetCoins}
+                  accessibilityRole="button"
+                  accessibilityLabel="Reset coins to 1000 (dev only)"
+                >
+                  <Text style={styles.resetBtnText}>Reset to 1000</Text>
+                </TouchableOpacity>
+              )}
             </View>
 
             {lifetimeEarned !== null &&

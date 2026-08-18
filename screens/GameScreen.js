@@ -887,7 +887,7 @@ export default function GameScreen({ navigation, route }) {
         title={showGameOver ? "💸 Out of Coins!" : statusMessage}
         message={
           showGameOver
-            ? "You're out of coins. Visit your Profile to reset your balance."
+            ? "You're out of coins. Win games, claim your daily bonus, and finish achievements to earn more."
             : coinsDeltaLabel
         }
         showContinue={!showGameOver}

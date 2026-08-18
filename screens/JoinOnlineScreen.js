@@ -13,6 +13,7 @@ import { loadProfile, getDisplayName } from "../game/profile";
 import { joinRoom, CODE_LENGTH } from "../game/onlineRoom";
 import { scale, scaleFont } from "../game/responsive";
 import { TITLE_FONT } from "../game/typography";
+import { textFaint } from "../game/colors";
 
 export default function JoinOnlineScreen({ navigation }) {
   const [code, setCode] = useState("");
@@ -78,7 +79,7 @@ export default function JoinOnlineScreen({ navigation }) {
           );
         }}
         placeholder="XKQP"
-        placeholderTextColor="#444"
+        placeholderTextColor={textFaint}
         autoCapitalize="characters"
         autoCorrect={false}
         maxLength={CODE_LENGTH}
