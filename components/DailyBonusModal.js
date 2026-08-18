@@ -92,9 +92,12 @@ export default function DailyBonusModal({
             {claiming ? (
               <ActivityIndicator color="#08111f" />
             ) : (
-              <Text style={styles.claimBtnText}>
-                Claim {DAILY_REWARDS[(claimDay || 1) - 1]?.toLocaleString()} 🪙
-              </Text>
+              <View style={styles.claimBtnRow}>
+                <Text style={styles.claimBtnText}>
+                  Claim {DAILY_REWARDS[(claimDay || 1) - 1]?.toLocaleString()}
+                </Text>
+                <Text style={styles.claimBtnText}>🪙</Text>
+              </View>
             )}
           </TouchableOpacity>
 
@@ -192,6 +195,14 @@ const styles = StyleSheet.create({
     borderRadius: scale(12),
     paddingVertical: scale(14),
     alignItems: "center",
+  },
+  // Icon + label as separate Text nodes (an emoji + text in ONE Text node can
+  // render just the emoji on Android after a re-layout).
+  claimBtnRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
   },
   claimBtnText: {
     color: "#08111f",

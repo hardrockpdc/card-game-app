@@ -16,7 +16,7 @@ import { gold } from "../game/colors";
 // shop's gate + unlock flow; frames apply globally via profile.activeFrame.
 export default function FramesScreen({ navigation }) {
   const [profile, setProfile] = useState(null);
-  const [coins, setCoins] = useState(0);
+  const [coins, setCoins] = useState(null);
   const [unlockedFrames, setUnlockedFrames] = useState([]);
   const [activeFrame, setActiveFrame] = useState("none");
 
@@ -93,7 +93,9 @@ export default function FramesScreen({ navigation }) {
     <SafeAreaView style={styles.root}>
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.coinHeader}>
-          <Text style={styles.coinText}>🪙 {coins.toLocaleString()}</Text>
+          <Text style={styles.coinText}>
+            🪙 {coins === null ? "—" : coins.toLocaleString()}
+          </Text>
         </View>
         <Text style={styles.title}>Profile Frames</Text>
         <Text style={styles.subtitle}>
@@ -122,13 +124,20 @@ export default function FramesScreen({ navigation }) {
                 />
                 <Text style={styles.frameName}>{frame.name}</Text>
                 {active ? (
-                  <Text style={styles.activeTag}>✓ Active</Text>
+                  <View style={styles.tagRow}>
+                    <Text style={styles.activeTag}>✓</Text>
+                    <Text style={styles.activeTag}>Active</Text>
+                  </View>
                 ) : unlocked ? (
                   <Text style={styles.useTag}>Wear</Text>
                 ) : (
-                  <Text style={styles.priceTag}>
-                    🔒 {price.toLocaleString()} 🪙
-                  </Text>
+                  <View style={styles.tagRow}>
+                    <Text style={styles.priceTag}>🔒</Text>
+                    <Text style={styles.priceTag}>
+                      {price.toLocaleString()}
+                    </Text>
+                    <Text style={styles.priceTag}>🪙</Text>
+                  </View>
                 )}
               </TouchableOpacity>
             );
@@ -211,6 +220,13 @@ const styles = StyleSheet.create({
     color: "#7fb3ff",
     fontSize: scaleFont(12),
     fontWeight: "bold",
+  },
+  // Icon + label as separate Text nodes (an emoji + text in ONE Text node can
+  // render just the emoji on Android after a re-layout).
+  tagRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
   priceTag: {
     color: gold,

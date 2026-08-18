@@ -39,7 +39,7 @@ export default function CardThemeScreen() {
     ),
   );
   const [confirmed, setConfirmed] = useState(false);
-  const [coins, setCoins] = useState(0);
+  const [coins, setCoins] = useState(null);
   const [unlockedThemes, setUnlockedThemes] = useState([]);
 
   const flatListRef = useRef(null);
@@ -157,7 +157,9 @@ export default function CardThemeScreen() {
     <SafeAreaView style={styles.safe}>
       {/* Coin balance */}
       <View style={styles.coinHeader}>
-        <Text style={styles.coinText}>🪙 {coins.toLocaleString()}</Text>
+        <Text style={styles.coinText}>
+          🪙 {coins === null ? "—" : coins.toLocaleString()}
+        </Text>
       </View>
 
       {/* Swipeable pages */}
@@ -193,14 +195,21 @@ export default function CardThemeScreen() {
                 />
                 {activeTheme === key && (
                   <View style={styles.activeBadge}>
-                    <Text style={styles.activeBadgeText}>✓ Active</Text>
+                    <View style={styles.badgeRow}>
+                      <Text style={styles.activeBadgeText}>✓</Text>
+                      <Text style={styles.activeBadgeText}>Active</Text>
+                    </View>
                   </View>
                 )}
                 {!unlocked && (
                   <View style={styles.lockBadge}>
-                    <Text style={styles.lockBadgeText}>
-                      🔒 {price.toLocaleString()} 🪙
-                    </Text>
+                    <View style={styles.badgeRow}>
+                      <Text style={styles.lockBadgeText}>🔒</Text>
+                      <Text style={styles.lockBadgeText}>
+                        {price.toLocaleString()}
+                      </Text>
+                      <Text style={styles.lockBadgeText}>🪙</Text>
+                    </View>
                   </View>
                 )}
               </View>
@@ -279,6 +288,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 20,
+  },
+  // Icon + label as separate Text nodes (an emoji + text in ONE Text node can
+  // render just the emoji on Android after a re-layout).
+  badgeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
   lockBadgeText: {
     color: gold,

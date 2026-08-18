@@ -65,9 +65,14 @@ export default function AchievementsScreen({ navigation }) {
                 <Text style={styles.summaryLabel}>Unlocked</Text>
               </View>
               <View style={styles.summaryCard}>
-                <Text style={[styles.summaryValue, styles.coinValue]}>
-                  🪙 {earnedCoins.toLocaleString()}
-                </Text>
+                <View style={styles.coinValueRow}>
+                  <Text style={[styles.summaryValue, styles.coinValue]}>
+                    🪙
+                  </Text>
+                  <Text style={[styles.summaryValue, styles.coinValue]}>
+                    {earnedCoins.toLocaleString()}
+                  </Text>
+                </View>
                 <Text style={styles.summaryLabel}>
                   Earned from Achievements
                 </Text>
@@ -167,6 +172,13 @@ const styles = StyleSheet.create({
   coinValue: {
     fontSize: scaleFont(20),
     color: "#ffd700",
+  },
+  // Icon + value as separate Text nodes (an emoji + text in ONE Text node can
+  // render just the emoji on Android after a re-layout).
+  coinValueRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
   summaryLabel: {
     color: "#888898",

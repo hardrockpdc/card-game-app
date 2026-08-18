@@ -64,14 +64,24 @@ export default function MultiplayerMenuScreen({ navigation }) {
               accessibilityLabel="Host Online"
               accessibilityHint="Start an online game others can join with a code"
             >
-              <Text
-                style={[
-                  styles.primaryButtonText,
-                  { fontSize: buttonTextSize },
-                ]}
-              >
-                🌐 Host Online
-              </Text>
+              <View style={styles.btnLabel}>
+                <Text
+                  style={[
+                    styles.primaryButtonText,
+                    { fontSize: buttonTextSize },
+                  ]}
+                >
+                  🌐
+                </Text>
+                <Text
+                  style={[
+                    styles.primaryButtonText,
+                    { fontSize: buttonTextSize },
+                  ]}
+                >
+                  Host Online
+                </Text>
+              </View>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -87,14 +97,24 @@ export default function MultiplayerMenuScreen({ navigation }) {
               accessibilityLabel="Join Online"
               accessibilityHint="Join an online game using a room code"
             >
-              <Text
-                style={[
-                  styles.secondaryButtonText,
-                  { fontSize: buttonTextSize },
-                ]}
-              >
-                🔑 Join Online
-              </Text>
+              <View style={styles.btnLabel}>
+                <Text
+                  style={[
+                    styles.secondaryButtonText,
+                    { fontSize: buttonTextSize },
+                  ]}
+                >
+                  🔑
+                </Text>
+                <Text
+                  style={[
+                    styles.secondaryButtonText,
+                    { fontSize: buttonTextSize },
+                  ]}
+                >
+                  Join Online
+                </Text>
+              </View>
             </TouchableOpacity>
           </View>
 
@@ -116,14 +136,24 @@ export default function MultiplayerMenuScreen({ navigation }) {
               accessibilityLabel="Host Local"
               accessibilityHint="Start hosting a game on your Wi-Fi network"
             >
-              <Text
-                style={[
-                  styles.localPrimaryButtonText,
-                  { fontSize: buttonTextSize },
-                ]}
-              >
-                📡 Host Local
-              </Text>
+              <View style={styles.btnLabel}>
+                <Text
+                  style={[
+                    styles.localPrimaryButtonText,
+                    { fontSize: buttonTextSize },
+                  ]}
+                >
+                  📡
+                </Text>
+                <Text
+                  style={[
+                    styles.localPrimaryButtonText,
+                    { fontSize: buttonTextSize },
+                  ]}
+                >
+                  Host Local
+                </Text>
+              </View>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -139,14 +169,24 @@ export default function MultiplayerMenuScreen({ navigation }) {
               accessibilityLabel="Join Local"
               accessibilityHint="Look for games being hosted on your Wi-Fi network"
             >
-              <Text
-                style={[
-                  styles.localSecondaryButtonText,
-                  { fontSize: buttonTextSize },
-                ]}
-              >
-                🔍 Join Local
-              </Text>
+              <View style={styles.btnLabel}>
+                <Text
+                  style={[
+                    styles.localSecondaryButtonText,
+                    { fontSize: buttonTextSize },
+                  ]}
+                >
+                  🔍
+                </Text>
+                <Text
+                  style={[
+                    styles.localSecondaryButtonText,
+                    { fontSize: buttonTextSize },
+                  ]}
+                >
+                  Join Local
+                </Text>
+              </View>
             </TouchableOpacity>
           </View>
 
@@ -227,6 +267,14 @@ const styles = StyleSheet.create({
   },
   modeGroupLabelLocal: {
     color: accent,
+  },
+  // Icon + label as separate Text nodes (an emoji + text in ONE Text node can
+  // render just the emoji on Android after a re-layout).
+  btnLabel: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
   },
   primaryButton: {
     width: "100%",

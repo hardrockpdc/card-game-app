@@ -287,7 +287,10 @@ export default function HomeScreen({ navigation }) {
               accessibilityRole="button"
               accessibilityLabel="How to Play"
             >
-              <Text style={styles.linkText}>📖 How to Play</Text>
+              <View style={styles.btnLabel}>
+                <Text style={styles.linkText}>📖</Text>
+                <Text style={styles.linkText}>How to Play</Text>
+              </View>
             </TouchableOpacity>
             {Platform.OS === "android" && (
               <TouchableOpacity
@@ -296,7 +299,10 @@ export default function HomeScreen({ navigation }) {
                 accessibilityRole="button"
                 accessibilityLabel="Quit Card Night"
               >
-                <Text style={styles.quitPillText}>✕ Quit</Text>
+                <View style={styles.btnLabel}>
+                  <Text style={styles.quitPillText}>✕</Text>
+                  <Text style={styles.quitPillText}>Quit</Text>
+                </View>
               </TouchableOpacity>
             )}
           </View>

@@ -141,6 +141,10 @@ export default function LobbyScreen({ navigation, route }) {
   const [resolvedHostName, setResolvedHostName] = useState(hostName || null);
   const [displayIp, setDisplayIp] = useState(hostIp || null);
   const [ipCopied, setIpCopied] = useState(false);
+  // Auto-discovery is the primary path (matches Join's own hidden-by-default
+  // manual IP entry) — the IP chip is a fallback for when it fails, not a
+  // required step, so it stays collapsed until asked for.
+  const [showIpHelp, setShowIpHelp] = useState(false);
   const ipCopyTimerRef = useRef(null);
 
   const myName = isHost
@@ -537,23 +541,52 @@ export default function LobbyScreen({ navigation, route }) {
         <Text style={styles.suit}>♣</Text>
       </View>
 
-      {/* IP chip — shown only to the host so others can connect */}
+      {/* IP fallback — auto-discovery is how players actually find this game;
+          the IP chip is a collapsed disclosure for when that fails, not a
+          required step (mirrors JoinScreen's own hidden-by-default manual
+          entry). */}
       {isHost && (
-        <TouchableOpacity
-          style={[styles.ipChip, ipCopied && styles.ipChipCopied]}
-          onPress={handleCopyIp}
-          activeOpacity={0.75}
-          accessibilityRole="button"
-          accessibilityLabel="Copy IP address"
-        >
-          <Text style={styles.ipChipLabel}>📡 Your IP: </Text>
-          <Text
-            style={[styles.ipChipValue, ipCopied && styles.ipChipValueCopied]}
+        <>
+          <TouchableOpacity
+            style={styles.ipHelpToggle}
+            onPress={() => setShowIpHelp((v) => !v)}
+            accessibilityRole="button"
+            accessibilityLabel={
+              showIpHelp
+                ? "Hide connection troubleshooting"
+                : "Having trouble connecting?"
+            }
           >
-            {displayIp || "…"}
-          </Text>
-          {ipCopied && <Text style={styles.ipChipCopiedTag}> ✓ Copied</Text>}
-        </TouchableOpacity>
+            <Text style={styles.ipHelpToggleText}>
+              {showIpHelp
+                ? "▲ Hide troubleshooting"
+                : "▼ Having trouble connecting?"}
+            </Text>
+          </TouchableOpacity>
+
+          {showIpHelp && (
+            <TouchableOpacity
+              style={[styles.ipChip, ipCopied && styles.ipChipCopied]}
+              onPress={handleCopyIp}
+              activeOpacity={0.75}
+              accessibilityRole="button"
+              accessibilityLabel="Copy IP address"
+            >
+              <Text style={styles.ipChipLabel}>📡 Your IP: </Text>
+              <Text
+                style={[
+                  styles.ipChipValue,
+                  ipCopied && styles.ipChipValueCopied,
+                ]}
+              >
+                {displayIp || "…"}
+              </Text>
+              {ipCopied && (
+                <Text style={styles.ipChipCopiedTag}> ✓ Copied</Text>
+              )}
+            </TouchableOpacity>
+          )}
+        </>
       )}
 
       {isHost && (
@@ -644,6 +677,14 @@ export default function LobbyScreen({ navigation, route }) {
                 styles.startButtonDimmed,
             ]}
             onPress={handleStartGame}
+            disabled={
+              players.length < minPlayers || players.length > maxPlayers
+            }
+            accessibilityRole="button"
+            accessibilityLabel="Start game"
+            accessibilityState={{
+              disabled: players.length < minPlayers || players.length > maxPlayers,
+            }}
           >
             <Text style={styles.startButtonText}>Start Game</Text>
           </TouchableOpacity>
@@ -673,6 +714,15 @@ const styles = StyleSheet.create({
     backgroundColor: "#1a1a2e",
     padding: scale(20),
     paddingTop: scale(12),
+  },
+  ipHelpToggle: {
+    alignSelf: "center",
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  ipHelpToggleText: {
+    color: "#9090a8",
+    fontSize: 13,
   },
   ipChip: {
     flexDirection: "row",
