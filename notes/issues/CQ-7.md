@@ -5,8 +5,8 @@ area: multiplayer
 status: open
 severity: low
 opened: 2026-05-17
-verified: 2026-08-15
-evidence: "LobbyScreen.js:255-313 HOST setup effect has empty deps at :313, closures over myName (from resolvedHostName state) never see later updates; same closure class the file already ref-patched for aiPlayersRef (comment at :220); but HostSetupScreen.js:78-97 and MultiplayerGamePickerScreen.js:84-85 both gate hostName before mount, so the risky path is currently unreachable"
+verified: 2026-08-17
+evidence: "LobbyScreen.js:255-313 HOST setup effect has empty deps at :313, closures over myName (from resolvedHostName state) never see later updates; same closure class the file already ref-patched for aiPlayersRef (comment at :220); MultiplayerGamePickerScreen.js:84-85 gates hostName before mount, so the risky path is currently unreachable (HostSetupScreen.js, the other cited gate, was deleted 2026-08-17 as dead code -- see CQ-9 -- it was never actually a live call site)"
 ---
 
 ## Problem
@@ -44,6 +44,11 @@ no-ops until the profile load finishes. So in the live app today, `hostName` is 
 empty when `LobbyScreen` mounts as host — the async branch that would trigger the stale
 closure is effectively dead code via current navigation, and `resolvedHostName` never
 actually changes after mount in practice.
+
+**Update 2026-08-17:** `HostSetupScreen.js` was deleted (see [[CQ-9]]) — it was itself
+unreferenced dead code, never an actual navigable call site. `MultiplayerGamePickerScreen.js`
+was always the one real, live gate; the conclusion above (`hostName` never empty at mount
+in the live app today) still holds on that gate alone.
 
 ## Fix sketch
 

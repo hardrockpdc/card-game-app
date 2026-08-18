@@ -1,5 +1,5 @@
 ---
-verified: 2026-08-15
+verified: 2026-08-17
 ---
 
 # Current project structure
@@ -10,7 +10,7 @@ listed). Root config/build files omitted below; see the repo root directly for t
 (`app.json`, `package.json`, `eas.json`, `firebase.json`, `database.rules.json`, etc.).
 
 ```
-screens/               (35 files — every navigable screen)
+screens/               (34 files — every navigable screen)
   AboutScreen.js
   AchievementsScreen.js
   CardThemeScreen.js
@@ -22,7 +22,6 @@ screens/               (35 files — every navigable screen)
   GoFishGameScreen.js
   GoFishPickerScreen.js
   HomeScreen.js
-  HostSetupScreen.js
   HowToPlayScreen.js
   JoinOnlineScreen.js
   JoinScreen.js

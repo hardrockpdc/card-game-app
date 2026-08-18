@@ -19,6 +19,7 @@ import {
 import { loadProfile, getDisplayName } from "../game/profile";
 import { scale, scaleFont } from "../game/responsive";
 import { TITLE_FONT } from "../game/typography";
+import { textFaint } from "../game/colors";
 
 const STALE_MS = 6000;
 const CONNECT_TIMEOUT_MS = 8000;
@@ -227,7 +228,7 @@ export default function JoinScreen({ navigation }) {
             value={manualIp}
             onChangeText={setManualIp}
             placeholder="192.168.x.x"
-            placeholderTextColor="#555570"
+            placeholderTextColor={textFaint}
             keyboardType="decimal-pad"
             returnKeyType="go"
             onSubmitEditing={() => handleJoin(manualIp)}
@@ -322,7 +323,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   emptyHint: {
-    color: "#555570",
+    color: textFaint,
     fontSize: scaleFont(13),
     textAlign: "center",
   },
@@ -393,7 +394,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   hint: {
-    color: "#555570",
+    color: textFaint,
     fontSize: scaleFont(13),
     textAlign: "center",
     marginTop: scale(8),

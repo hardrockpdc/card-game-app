@@ -5,8 +5,8 @@ area: ui
 status: fixed
 severity: low
 opened: 2026-05-17
-verified: 2026-08-15
-evidence: "35 total screens today (was 18); 23/35 use SafeAreaView, all correctly from react-native-safe-area-context, zero from the deprecated react-native package; KeyboardAvoidingView now in 3 screens (JoinScreen, JoinOnlineScreen, WhoAmIGameScreen -- all legitimately have TextInput); HostSetupScreen.js's two dead KeyboardAvoidingView wrappers removed (was lines 88,99) -- also discovered HostSetupScreen.js itself is unreferenced anywhere in the app (not in App.js's nav stack or any other file), i.e. dead code, unrelated to this ticket and left as-is"
+verified: 2026-08-17
+evidence: "34 total screens today (was 35 as of 2026-08-15, now minus HostSetupScreen.js, deleted 2026-08-17); 23/34 use SafeAreaView, all correctly from react-native-safe-area-context, zero from the deprecated react-native package; KeyboardAvoidingView now in exactly 3 screens (JoinScreen, JoinOnlineScreen, WhoAmIGameScreen), all legitimately have TextInput -- the dead-weight HostSetupScreen.js instance is gone along with the file itself"
 ---
 
 ## Problem
@@ -57,3 +57,12 @@ While verifying importers before editing, found `HostSetupScreen.js` is not refe
 anywhere in the app (not in `App.js`'s navigation stack, not anywhere else) — the whole
 159-line file is dead code, orphaned independent of this ticket. Not acted on here; flagged
 for Pedro to decide whether to delete it or wire it back in.
+
+## Deleted 2026-08-17
+
+Pedro confirmed: delete it. `screens/HostSetupScreen.js` removed (re-confirmed still
+unreferenced at deletion time — zero hits for `HostSetupScreen` anywhere in `App.js` or
+any other file). The `KeyboardAvoidingView` coverage note above (4 screens, one of them
+dead weight) now drops to 3 legitimate text-input screens (`JoinScreen`,
+`JoinOnlineScreen`, `WhoAmIGameScreen`); the 35-screen count elsewhere in this file's
+evidence is now 34.

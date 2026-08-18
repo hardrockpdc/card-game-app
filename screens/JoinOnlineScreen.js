@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   footnote: {
-    color: "#555570",
+    color: textFaint,
     fontSize: scaleFont(12),
     textAlign: "center",
   },

@@ -33,7 +33,7 @@ import { warn } from "../game/logger";
 import { scale, scaleFont } from "../game/responsive";
 import { TITLE_FONT } from "../game/typography";
 import { AVATAR_CHOICES, getAvatarChoice } from "../game/avatars";
-import { gold } from "../game/colors";
+import { gold, textFaint } from "../game/colors";
 
 async function cropImageToSquareAsync(uri, width, height) {
   const side = Math.min(width || 0, height || 0);
@@ -434,7 +434,7 @@ export default function ProfileScreen({ navigation, route }) {
               value={nameDraft}
               onChangeText={setNameDraft}
               placeholder="Enter your name"
-              placeholderTextColor="#555570"
+              placeholderTextColor={textFaint}
               maxLength={20}
               returnKeyType="done"
               onSubmitEditing={handleSaveName}
