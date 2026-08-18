@@ -1089,8 +1089,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  // Matches dealButton's red rather than Home's brandRed (#e94560) — Blackjack's
+  // action buttons shouldn't collide with the hub's exact identity color.
   hitButton: {
-    backgroundColor: "#e94560",
+    backgroundColor: "#cc2222",
   },
   standButton: {
     backgroundColor: "#2980b9",
@@ -1103,7 +1105,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "#ffffff",
-    fontSize: scaleFont(12),
+    fontSize: scaleFont(16),
     fontWeight: "bold",
   },
 });

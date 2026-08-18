@@ -11,6 +11,7 @@ import { BlurView } from "expo-blur";
 import { HapticTouchable as TouchableOpacity } from "./Haptic";
 import { scale, scaleFont } from "../game/responsive";
 import { DAILY_REWARDS, claimDailyBonus } from "../game/dailyBonus";
+import { gold } from "../game/colors";
 
 // Daily-bonus popup: shows the 7-day streak, highlights the day about to be
 // claimed, and pays out on tap. Days 1–6 total 1,000; Day 7 is a 1,000 jackpot
@@ -111,7 +112,7 @@ export default function DailyBonusModal({
   );
 }
 
-const GOLD = "#ffd479";
+const GOLD = gold;
 
 const styles = StyleSheet.create({
   backdrop: {

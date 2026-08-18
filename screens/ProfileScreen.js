@@ -33,6 +33,7 @@ import { warn } from "../game/logger";
 import { scale, scaleFont } from "../game/responsive";
 import { TITLE_FONT } from "../game/typography";
 import { AVATAR_CHOICES, getAvatarChoice } from "../game/avatars";
+import { gold } from "../game/colors";
 
 async function cropImageToSquareAsync(uri, width, height) {
   const side = Math.min(width || 0, height || 0);
@@ -841,7 +842,7 @@ const styles = StyleSheet.create({
     marginBottom: scale(8),
   },
   rankName: {
-    color: "#ffd479",
+    color: gold,
     fontSize: scaleFont(17),
     fontWeight: "bold",
   },

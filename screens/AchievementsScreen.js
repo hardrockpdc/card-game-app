@@ -6,6 +6,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { scale, scaleFont } from "../game/responsive";
 import { TITLE_FONT } from "../game/typography";
 import { listAchievements, checkAndClaim } from "../game/achievements";
+import { gold } from "../game/colors";
 
 // Trophy room. On focus it runs checkAndClaim() first (awards coins for anything
 // newly earned since last visit), then lists every achievement grouped by
@@ -227,7 +228,7 @@ const styles = StyleSheet.create({
     fontSize: scaleFont(12),
   },
   reward: {
-    color: "#ffd479",
+    color: gold,
     fontSize: scaleFont(14),
     fontWeight: "bold",
     minWidth: scale(50),

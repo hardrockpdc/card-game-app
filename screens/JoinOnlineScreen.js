@@ -87,12 +87,19 @@ export default function JoinOnlineScreen({ navigation }) {
         onSubmitEditing={() => canJoin && handleJoin()}
       />
 
-      {error && <Text style={styles.error}>{error}</Text>}
+      {error && (
+        <Text style={styles.error} accessibilityLiveRegion="polite">
+          {error}
+        </Text>
+      )}
 
       <TouchableOpacity
         style={[styles.button, !canJoin && styles.buttonDimmed]}
         onPress={handleJoin}
         disabled={!canJoin}
+        accessibilityRole="button"
+        accessibilityLabel="Join game"
+        accessibilityState={{ disabled: !canJoin, busy: joining }}
       >
         {joining ? (
           <ActivityIndicator color="#ffffff" />

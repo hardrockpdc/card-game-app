@@ -9,6 +9,7 @@ import { FRAMES_LIST, getFramePrice, isFrameUnlocked } from "../game/frames";
 import { getCoins } from "../game/wallet";
 import { purchaseCosmetic } from "../game/shop";
 import { loadProfile, updateProfile, subscribeProfile } from "../game/profile";
+import { gold } from "../game/colors";
 
 // Profile-frame shop: a grid of decorative rings previewed on the player's own
 // avatar. Free "None" plus coin-unlocked frames (1,000 each). Mirrors the deck
@@ -161,7 +162,7 @@ const styles = StyleSheet.create({
     alignSelf: "flex-end",
   },
   coinText: {
-    color: "#ffd479",
+    color: gold,
     fontSize: scaleFont(17),
     fontWeight: "bold",
   },
@@ -212,7 +213,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   priceTag: {
-    color: "#ffd479",
+    color: gold,
     fontSize: scaleFont(12),
     fontWeight: "bold",
   },

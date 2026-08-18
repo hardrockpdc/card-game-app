@@ -26,7 +26,7 @@ import {
 } from "../game/profile";
 import { getCoins } from "../game/wallet";
 import { purchaseCosmetic } from "../game/shop";
-import { textFaint } from "../game/colors";
+import { textFaint, gold } from "../game/colors";
 
 export default function CardThemeScreen() {
   const { width, height } = useWindowDimensions();
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   coinText: {
-    color: "#ffd479",
+    color: gold,
     fontSize: 17,
     fontWeight: "bold",
   },
@@ -275,18 +275,18 @@ const styles = StyleSheet.create({
     top: -14,
     backgroundColor: "#2a2a3d",
     borderWidth: 1.5,
-    borderColor: "#ffd479",
+    borderColor: gold,
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 20,
   },
   lockBadgeText: {
-    color: "#ffd479",
+    color: gold,
     fontSize: 14,
     fontWeight: "bold",
   },
   unlockBtn: {
-    backgroundColor: "#ffd479",
+    backgroundColor: gold,
   },
   page: {
     flex: 1,

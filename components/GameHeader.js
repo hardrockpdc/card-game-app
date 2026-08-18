@@ -102,6 +102,9 @@ export default function GameHeader({
               pressed && styles.hamburgerBtnPressed,
               open && styles.hamburgerBtnOpen,
             ]}
+            // Compact (landscape) stays visually 38dp to save vertical space,
+            // but hitSlop pads the tappable area out to the 48dp Android minimum.
+            hitSlop={compact ? 5 : 0}
             accessibilityRole="button"
             accessibilityLabel={open ? "Close game menu" : "Open game menu"}
           >
@@ -220,8 +223,8 @@ const styles = StyleSheet.create({
   },
 
   hamburgerBtn: {
-    width: scale(44),
-    height: scale(44),
+    width: scale(48),
+    height: scale(48),
     borderRadius: scale(14),
     backgroundColor: "rgba(20, 30, 55, 0.85)",
     borderWidth: 1,

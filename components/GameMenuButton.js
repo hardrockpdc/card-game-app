@@ -33,6 +33,9 @@ export default function GameMenuButton({ menuItems, style }) {
           pressed && styles.btnPressed,
           open && styles.btnOpen,
         ]}
+        // Stays visually 38dp (landscape/Solitaire is short on space), but
+        // hitSlop pads the tappable area out to the 48dp Android minimum.
+        hitSlop={5}
         accessibilityRole="button"
         accessibilityLabel="Open game menu"
       >
