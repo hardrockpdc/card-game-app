@@ -1,7 +1,7 @@
 // game/conquian.js — Pure Conquián game logic, Phase A
 // No Priority Chain, no borrowing. Single-player vs AI only.
 
-import { shuffleDeck } from "./deck";
+import { shuffleDeck, SUITS } from "./deck";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -17,7 +17,6 @@ export const CONQUIAN_RANKS = [
   "Q",
   "K",
 ];
-const SUITS = ["♠", "♥", "♦", "♣"];
 
 // Internal sequence values: J=8, Q=9, K=10 so 7→J is consecutive
 export const RANK_VAL = {
@@ -139,10 +138,20 @@ function applyAutoTake(state) {
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
+// Hand size and melds-to-win, keyed by player count. Anything above the
+// largest key falls back to CONFIG_DEFAULT.
+const CONFIG_BY_PLAYER_COUNT = {
+  2: { handSize: 10, winTarget: 11 },
+  3: { handSize: 8, winTarget: 9 },
+};
+const CONFIG_DEFAULT = { handSize: 7, winTarget: 8 };
+
 export function getConfig(playerCount) {
-  if (playerCount <= 2) return { handSize: 10, winTarget: 11 };
-  if (playerCount === 3) return { handSize: 8, winTarget: 9 };
-  return { handSize: 7, winTarget: 8 };
+  const config =
+    playerCount <= 2
+      ? CONFIG_BY_PLAYER_COUNT[2]
+      : (CONFIG_BY_PLAYER_COUNT[playerCount] ?? CONFIG_DEFAULT);
+  return { ...config };
 }
 
 // ─── State helpers ────────────────────────────────────────────────────────────

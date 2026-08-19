@@ -1,10 +1,11 @@
 // This file handles creating and shuffling a deck of cards.
 
-// The 4 suits in a standard deck
-const SUITS = ["♠", "♥", "♦", "♣"];
+// The 4 suits in a standard deck. Exported so other game modules share this
+// one definition instead of each keeping its own copy.
+export const SUITS = ["♠", "♥", "♦", "♣"];
 
 // The 13 ranks in a standard deck
-const RANKS = [
+export const RANKS = [
   "A",
   "2",
   "3",
@@ -19,6 +20,14 @@ const RANKS = [
   "Q",
   "K",
 ];
+
+// Blackjack scoring rules, named so the arithmetic below reads as rules
+// rather than as bare numbers.
+const FACE_RANKS = ["J", "Q", "K"];
+const FACE_CARD_VALUE = 10;
+const ACE_HIGH_VALUE = 11;
+const ACE_LOW_VALUE = 1;
+const BLACKJACK_TARGET = 21;
 
 // Creates a fresh 52-card deck
 // Each card is an object like { rank: 'A', suit: '♠', id: 'A♠' }
@@ -55,17 +64,17 @@ export function calculateHandValue(hand) {
   for (const card of hand) {
     if (card.rank === "A") {
       aces++;
-      total += 11;
-    } else if (["J", "Q", "K"].includes(card.rank)) {
-      total += 10;
+      total += ACE_HIGH_VALUE;
+    } else if (FACE_RANKS.includes(card.rank)) {
+      total += FACE_CARD_VALUE;
     } else {
       total += parseInt(card.rank);
     }
   }
 
   // If we busted but have aces, convert them from 11 to 1 one at a time
-  while (total > 21 && aces > 0) {
-    total -= 10;
+  while (total > BLACKJACK_TARGET && aces > 0) {
+    total -= ACE_HIGH_VALUE - ACE_LOW_VALUE;
     aces--;
   }
 

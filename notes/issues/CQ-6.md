@@ -2,11 +2,11 @@
 id: CQ-6
 type: quality
 area: theming
-status: open
+status: moot
 severity: low
 opened: 2026-05-17
-verified: 2026-08-15
-evidence: "game/cardTheme.js is still one file, 510 lines, 7 themes, 386 require() calls; file's own header comment (lines 2-3) states RN require() paths must be static literals, the exact constraint the deferral reasoning rests on"
+verified: 2026-08-19
+evidence: "game/cardTheme.js is still one file, 510 lines, 7 themes, 386 require() calls; file's own header comment (lines 2-3) states RN require() paths must be static literals, the exact constraint the deferral reasoning rests on; closed moot 2026-08-19 -- the split was re-examined and rejected again, so the file is intentionally monolithic rather than pending"
 ---
 
 ## Problem
@@ -41,3 +41,23 @@ Marked `open` rather than `moot`/`fixed` because this was a deferral decision, n
 — the code was never expected to change, and it hasn't. This verification confirms the
 deferral's reasoning is still valid today, not that anything was resolved. No fix
 sketch — the original judgment call stands.
+
+## Closed moot 2026-08-19
+
+Re-examined and closed without changing the code. Nothing new was found — the 2026-08-15
+reasoning holds in full: Metro requires static string literals, so a 7-way split
+relocates the same ~55 requires per theme without reducing them, unlocks no lazy-loading
+(a mobile bundle has no route-based chunking to exploit), adds an index module that
+re-imports all 7, and introduces the one real failure mode here — a mistyped relative
+path silently breaking a theme.
+
+Reclassified from `open` to `moot` because `open` was misleading: it read as pending work
+in the issue board's "Needs attention" view, when the actual decision has been "don't do
+this" twice over. Verifying a split would also require eyeballing all 7 themes on a
+device, so leaving it nominally open was quietly parking a device-test cost against a
+change with no benefit.
+
+If `cardTheme.js` is ever revisited, the trigger should be a measured problem (cold-start
+or memory profiled on a real low-end device — see [[PERF-1]], also moot), not the file's
+line count.
+

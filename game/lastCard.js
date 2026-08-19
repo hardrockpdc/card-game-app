@@ -20,6 +20,14 @@
 
 export const COLORS = ["od_green", "crimson", "turquoise", "coral"];
 
+// Deck composition, per colour: one 0, two each of 1-9, and two each of the
+// three action cards. Wilds are colourless: four of each wild type in total.
+const HIGHEST_NUMBER_CARD = 9;
+const COPIES_PER_NUMBER_CARD = 2;
+const COPIES_PER_ACTION_CARD = 2;
+const COPIES_PER_WILD_TYPE = 4;
+const DEFAULT_HAND_SIZE = 7;
+
 function shuffle(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -35,18 +43,19 @@ export function createDeck() {
 
   for (const color of COLORS) {
     cards.push({ id: id++, color, type: "number", value: 0 });
-    for (let v = 1; v <= 9; v++) {
-      cards.push({ id: id++, color, type: "number", value: v });
-      cards.push({ id: id++, color, type: "number", value: v });
+    for (let v = 1; v <= HIGHEST_NUMBER_CARD; v++) {
+      for (let i = 0; i < COPIES_PER_NUMBER_CARD; i++) {
+        cards.push({ id: id++, color, type: "number", value: v });
+      }
     }
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < COPIES_PER_ACTION_CARD; i++) {
       cards.push({ id: id++, color, type: "skip", value: null });
       cards.push({ id: id++, color, type: "reverse", value: null });
       cards.push({ id: id++, color, type: "draw2", value: null });
     }
   }
 
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < COPIES_PER_WILD_TYPE; i++) {
     cards.push({ id: id++, color: null, type: "wild", value: null });
     cards.push({ id: id++, color: null, type: "wild_draw4", value: null });
   }
@@ -54,7 +63,7 @@ export function createDeck() {
   return shuffle(cards);
 }
 
-export function dealHands(deck, playerCount, handSize = 7) {
+export function dealHands(deck, playerCount, handSize = DEFAULT_HAND_SIZE) {
   const deckCopy = [...deck];
   const hands = {};
 

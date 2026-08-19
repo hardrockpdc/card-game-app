@@ -50,3 +50,7 @@ Verdict is `moot`, not `fixed` — no code changed to address memory/cold-start 
 the described mechanism doesn't exist. If cold-start or memory *is* ever a real measured
 problem on a low-end device, it needs fresh on-device profiling (TTI, actual memory), not
 a `require()`-count argument — this ticket's theory doesn't predict a real cost.
+
+*Update 2026-08-19: the "combined with CQ-6" effort estimate in the Problem block above
+no longer points at live work — [[CQ-6]] was itself closed `moot` on 2026-08-19.*
+

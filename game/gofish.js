@@ -1,10 +1,18 @@
 // game/gofish.js — pure Go Fish game logic (extracted from the screen so it
 // can be unit-tested and matches the other games' game/<name>.js layout).
-import { createDeck, shuffleDeck } from "./deck";
+import { createDeck, shuffleDeck, RANKS } from "./deck";
+
+// Rules constants. Heads-up Go Fish deals a bigger hand than a 3+ player game;
+// a book is all four cards of one rank, so the deck holds one book per rank.
+const HAND_SIZE_TWO_PLAYER = 7;
+const HAND_SIZE_MULTIPLAYER = 5;
+const CARDS_PER_BOOK = 4;
+const TOTAL_BOOKS = RANKS.length;
 
 export function dealGoFish(playerList) {
   let deck = shuffleDeck(createDeck());
-  const perPlayer = playerList.length === 2 ? 7 : 5;
+  const perPlayer =
+    playerList.length === 2 ? HAND_SIZE_TWO_PLAYER : HAND_SIZE_MULTIPLAYER;
   const hands = {};
   let i = 0;
   for (const p of playerList) {
@@ -34,7 +42,7 @@ export function checkBooks(state, pid) {
   let newHand = [...hand];
   let newBooks = [...(state.books[pid] || [])];
   for (const [rank, n] of Object.entries(counts)) {
-    if (n === 4) {
+    if (n === CARDS_PER_BOOK) {
       newHand = newHand.filter((c) => c.rank !== rank);
       newBooks.push(rank);
     }
@@ -52,7 +60,7 @@ export function checkWin(state) {
     0,
   );
   const allEmpty = Object.values(state.hands).every((h) => h.length === 0);
-  if (totalBooks === 13 || (allEmpty && state.ocean.length === 0)) {
+  if (totalBooks === TOTAL_BOOKS || (allEmpty && state.ocean.length === 0)) {
     const maxBooks = Math.max(
       ...Object.values(state.books).map((b) => b.length),
       0,
