@@ -31,7 +31,7 @@ verified: 2026-08-15
   Fish, Last Card, Conquián, Rummy, Who Am I?, Poker. MP Poker's tournament end-game is
   still unimplemented — parked, not a bug, see [[Multiplayer Screen Pattern]].
 - **Coin Economy (2026-07-01→03):** full earn+spend loop, cosmetic-only, no real-money
-  purchases. See `COIN_ECONOMY.md` (not yet migrated into notes).
+  purchases. See [[Coin Economy]].
 - **9th and 10th games:** Who Am I? (2026-06-18→20, still awaiting a real
   multiplayer device test — [[CQ-16]]) and Memory Match (2026-07-03, the only game
   with no save/resume — [[BUG-4]])

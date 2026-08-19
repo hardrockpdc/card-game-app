@@ -1,5 +1,5 @@
 ---
-verified: 2026-08-15
+verified: 2026-08-18
 ---
 
 # Build & release status
@@ -12,11 +12,14 @@ Alpha, 2026-07-01). `app.json`'s `android.versionCode` was bumped to **9** (vers
 has actually been run since. See [[LAUNCH-3]] for the full picture, including why this
 now matters more than a routine version bump: the 2026-08-02 Firebase security fixes
 and the Sentry crash-reporting wiring are both sitting in code, unreflected in any
-shipped build, and the Firebase rules those fixes depend on aren't even republished in
-the console yet.
+shipped build. The server-side rules those fixes depend on were republished in the
+Firebase console on 2026-08-18 (reported by Pedro, unconfirmable from the repo), so the
+gap is now the client half — every store install still runs pre-fix code.
 
-Blocking items before the next production build, per `POST_LAUNCH_CHECKLIST.md`:
-1. Re-publish `database.rules.json` in the Firebase console.
+Blocking items before the next production build, per
+`notes/product/Post-Launch Checklist.md`:
+1. ~~Re-publish `database.rules.json` in the Firebase console.~~ Reported done
+   2026-08-18; confirmed only by item 2.
 2. Re-test online multiplayer end-to-end on 2 devices against the new rules.
 3. Set `expo.extra.sentryDsn` in `app.json` (currently `null` — crash reporting is a
    deliberate no-op until this is set).

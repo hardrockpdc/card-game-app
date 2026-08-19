@@ -32,12 +32,15 @@ actual installed-from-Play build:
 ---
 
 ## Known open items (do BEFORE a public production launch)
-- [ ] **Firebase security rules — deployed 2026-07-04, but superseded.** The
-      2026-07-04 rules were published, but two security fixes landed on
-      2026-08-02 (`ab6e47e`, `9c1c09b`) that require a fresh `database.rules.json`
-      publish that has NOT happened yet — tracked as [[LAUNCH-3]], the current
-      source of truth for this item. Do not check this box again until LAUNCH-3
-      is `fixed`. Hardened rules at `database.rules.json` (only stores `rooms/*`;
+- [ ] **Firebase security rules — republished 2026-08-18, not yet functionally
+      confirmed.** The 2026-07-04 rules were superseded by two security fixes on
+      2026-08-02 (`ab6e47e`, `9c1c09b`), and Pedro reports republishing
+      `database.rules.json` in the Firebase console on 2026-08-18. The console is
+      the only witness to that publish — nothing in this repo can confirm what the
+      live rules say, so the deploy stays unconfirmed until the 2-device retest
+      below passes. Tracked as [[LAUNCH-3]], the current source of truth for this
+      item. Do not check this box until that retest is done. Hardened rules at
+      `database.rules.json` (stores `rooms/*` plus per-player `privateNet/*`;
       coins/profile/achievements are local, never in Firebase).
       **Still to confirm:** re-test online MP end-to-end (host + join + play) so a
       rule mistake would surface as a failed join/move. Original deploy steps kept
@@ -54,15 +57,15 @@ actual installed-from-Play build:
       anything but a single `rules` key. Do NOT re-add `"//"` comment keys.
       Also confirm **Anonymous** sign-in is enabled (Authentication → Sign-in
       method) — the rules require `auth != null`, so nothing works without it.
-      Full rule-by-rule explanation lives in `DATABASE_RULES.md`.
+      Full rule-by-rule explanation lives in [[Database Rules]].
 - [ ] **Each upload needs a higher versionCode** — next build is 9, then 10, etc.
       (bump `app.json` → android.versionCode before every `eas build`).
 
 ## Future work (whenever you're ready)
-- [ ] **iOS / App Store** — see `IOS_SETUP.md` (Apple Developer account + iOS
+- [ ] **iOS / App Store** — see [[iOS Setup]] (Apple Developer account + iOS
       Firebase `GoogleService-Info.plist`, then Claude wires the repo side).
       Payoff: iPhone friends can play online with Android friends (cross-platform).
-- [ ] **Game expansion** — see `GAME_ROADMAP.md` (top pick: Hearts, fills the
+- [ ] **Game expansion** — see [[Roadmap]] (top pick: Hearts, fills the
       trick-taking gap; plus dice + party games).
 - [ ] **Freemium unlock** — gate online multiplayer behind a one-time in-app
       purchase. Requires a merchant account + `react-native-iap` + a rebuild.
@@ -91,13 +94,18 @@ From the structural audit on branch `fix/audit-remediation`. The first item is
 the one that matters most: two critical fixes are code-complete but **inert**
 until the rules are re-published.
 
-- [ ] **Re-publish `database.rules.json`** in the Firebase console (Realtime
-      Database → Rules → paste → Publish). Until this happens, per-player hands
-      are still readable by every player in the room, and a client can still
-      forge `sender` to act as another player. Keep the file comment-free — the
-      console rejects any top-level key but `rules`.
+- [x] **Re-publish `database.rules.json`** in the Firebase console (Realtime
+      Database → Rules → paste → Publish). Reported done 2026-08-18 by Pedro.
+      Before that, per-player hands were readable by every player in the room and
+      a client could forge `sender` to act as another player. The committed file
+      was checked the same day and is paste-clean (single top-level `rules` key,
+      no comment keys), so the console had no reason to reject it — but the publish
+      itself is unverifiable from the repo. Treat the fixes as live only once the
+      2-device retest below passes. Keep the file comment-free — the console
+      rejects any top-level key but `rules`.
 - [ ] **Re-test online multiplayer end-to-end on 2 devices.** Already outstanding
-      from the 2026-07-04 deploy. Now higher-stakes: private hands moved to a new
+      from the 2026-07-04 deploy, and now the only thing that can confirm the
+      2026-08-18 republish actually took. Private hands moved to a new
       `privateNet/*` path, so a bad rules deploy breaks hands specifically. Check
       a poker hand deals to the right player and nobody else's is visible.
 - [ ] **Set `expo.extra.sentryDsn`** in `app.json` (currently `null`, so crash

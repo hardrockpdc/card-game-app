@@ -124,7 +124,7 @@ This is a family-friendly card game. Keep all content, copy, and assets appropri
 
 - All notes: @notes/00 Index.md
 - Open issues: @notes/issues/00 Issue Board.md
-- Recent work: newest file in @notes/sessions/
+- Recent work: newest file in `notes/sessions/` (one dated entry per session, appended by `/log`)
 
 ## Documentation rules
 

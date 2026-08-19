@@ -6,7 +6,7 @@ status: moot
 severity: low
 opened: 2026-05-17
 verified: 2026-08-15
-evidence: "no ios/ native folder or GoogleService-Info.plist anywhere in the repo; notes/ops/iOS Setup.md Phase 0 (Apple Developer enrollment) never checked off; CLAUDE.md:47/100 confirms Android-only distribution, decided 2026-06-01 (31328e9), about 2 weeks after this ticket was filed -- no iOS binary, dev or production, has ever existed for this app"
+evidence: "no ios/ native folder or GoogleService-Info.plist anywhere in the repo; notes/ops/iOS Setup.md Phase 0 (Apple Developer enrollment) never checked off; CLAUDE.md §2.3 and notes/architecture/Project Facts.md confirm Android-only distribution, decided 2026-06-01 (31328e9), about 2 weeks after this ticket was filed -- no iOS binary, dev or production, has ever existed for this app"
 ---
 
 ## Problem
@@ -58,6 +58,7 @@ separately as [[LAUNCH-3]] rather than folded into this closed ticket.** Only ve
 bumped to 9 / version 1.1.0 on 2026-07-22, explicitly staged for the next production
 build — but that's a version-number bump in source, not a build event, and nothing in the
 repo shows `eas build` was ever actually run for it. 49 more commits have landed since,
-including the 2026-08-02 security fixes, and `CLAUDE.md:312` states outright that the
-Firebase security rules those fixes depend on were "CHANGED 2026-08-02, NOT YET
-RE-DEPLOYED." See [[LAUNCH-3]] for the live risk this represents.
+including the 2026-08-02 security fixes. The Firebase security rules those fixes depend
+on were finally republished on 2026-08-18 (reported, unconfirmed until a 2-device retest —
+see [[LAUNCH-3]]), but no build reflecting the fixed client code has shipped. See
+[[LAUNCH-3]] for the live risk this represents.

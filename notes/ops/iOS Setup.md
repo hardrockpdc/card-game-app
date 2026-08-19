@@ -119,14 +119,15 @@ currently unchecked in the repo — none of this config exists yet.
 - **`useFrameworks: static`** (Firebase) can make iOS builds slower and
   occasionally conflicts with other pods — this is the most common iOS+Firebase
   Expo build failure. If a build breaks, this is the first place to look.
-- **Firebase security rules: the file is hardened, the live console copy is not
-  confirmed.** `database.rules.json` is no longer test-mode — it is auth-gated,
-  pins room writes to the host, pins `net/toHost/sender` to `auth.uid`, and
-  keeps private hands under `privateNet/*`. But the repo file is not what
-  Firebase enforces; the console copy is, and it has not been republished since
-  the 2026-08-02 security fixes (`ab6e47e`, `9c1c09b`). Until someone publishes
-  it, those two fixes are inert and private hands remain readable by everyone in
-  the room. Tracked as [[LAUNCH-3]] — blocking for a public launch on **either**
-  platform, not an iOS-specific item.
+- **Firebase security rules: the file is hardened, the live console copy is
+  reported published but unconfirmed.** `database.rules.json` is no longer
+  test-mode — it is auth-gated, pins room writes to the host, pins
+  `net/toHost/sender` to `auth.uid`, and keeps private hands under
+  `privateNet/*`. The repo file is not what Firebase enforces; the console copy
+  is, and Pedro reports republishing it on 2026-08-18 after the 2026-08-02
+  security fixes (`ab6e47e`, `9c1c09b`). Nothing in the repo can verify that, so
+  the 2-device online retest is what confirms the two fixes are actually live.
+  Tracked as [[LAUNCH-3]] — blocking for a public launch on **either** platform,
+  not an iOS-specific item.
 - Distribution is expanding from Android-only to **Android + iOS**; keep the
   cross-platform code intact (already a project rule).

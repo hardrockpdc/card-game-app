@@ -1,5 +1,5 @@
 ---
-verified: 2026-08-16
+verified: 2026-08-18
 ---
 
 # Notes index
@@ -71,4 +71,5 @@ still sitting at root uncommitted.)
 
 ## Sessions
 
-`notes/sessions/` doesn't exist yet — created by `/log` (Phase 4, not yet set up).
+`notes/sessions/` holds one dated entry per working session, appended by `/log`. Started
+2026-08-18; the newest file there is the project's live "what just happened" record.

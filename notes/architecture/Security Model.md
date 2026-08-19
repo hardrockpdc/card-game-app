@@ -1,5 +1,5 @@
 ---
-verified: 2026-08-15
+verified: 2026-08-18
 ---
 
 # Security model
@@ -52,8 +52,8 @@ Two transports exist today, picked by `game/GameNetwork.js`'s `setNetworkMode`:
   anonymous (`game/firebase.js`). Two top-level paths: `rooms/*` (public lobby state,
   readable by any signed-in device — the room code is the actual secret) and
   `privateNet/*` (per-player private state, e.g. hole cards — readable only by
-  `$uid === auth.uid`). Full rule-by-rule breakdown in `DATABASE_RULES.md`
-  (not yet migrated into notes, see [[00 Index]]).
+  `$uid === auth.uid`). Full rule-by-rule breakdown in [[Database Rules]]
+  (`notes/specs/Database Rules.md`).
   - A 2026-08-02 audit found and fixed two critical holes: private hands were
     readable by every player in a room (moved from under `rooms/<code>` to the
     separate `privateNet/<code>/<uid>` — read rules cascade downward and can't be
@@ -61,9 +61,16 @@ Two transports exist today, picked by `game/GameNetwork.js`'s `setNetworkMode`:
     cosmetic), and `net/toHost/sender` was validated as any string, letting a
     client impersonate another player in every turn check (now pinned to
     `auth.uid`).
-  - **These fixes are still not republished in the Firebase console as of
-    2026-08-15** — see [[LAUNCH-3]], currently the single highest-priority open
-    item in the tracker. The client-side code is correct; the live rules are not.
+  - **Republished in the Firebase console on 2026-08-18 (reported by Pedro),
+    not yet functionally confirmed.** The console is the only witness to what the
+    live rules say — nothing in this repo can read them back — so treat these two
+    fixes as live only once the 2-device online retest passes (deal a poker hand,
+    confirm it reaches the right player and nobody else's is visible; a bad deploy
+    breaks hands specifically now that they live under `privateNet/*`). The
+    committed file was checked on 2026-08-18 and is paste-clean for the console
+    (single top-level `rules` key, no comment keys). See [[LAUNCH-3]], still the
+    single highest-priority open item — now because the shipped build is stale,
+    not because the rules are unpublished.
   - Room codes were lengthened from 4 to 6 characters (2026-08-12) specifically to
     stop brute-forcing every possible code and snooping on live rooms without ever
     being told a code.

@@ -6,7 +6,7 @@ status: moot
 severity: low
 opened: 2026-05-17
 verified: 2026-08-14
-evidence: "Wild Round entirely removed from the app — commit 473daad (2026-07-01, \"feat: remove Wild Round to keep Card Night family-friendly\") deleted screens/WildRoundGameScreen.js, game/wildround.js, game/wildroundCards.json, __tests__/wildround.test.js and stripped every reference from App.js/screens/components/game; zero live references remain today; CLAUDE.md:101 documents it; notes/specs/Wild Round.md kept on disk for a possible future standalone app"
+evidence: "Wild Round entirely removed from the app — commit 473daad (2026-07-01, \"feat: remove Wild Round to keep Card Night family-friendly\") deleted screens/WildRoundGameScreen.js, game/wildround.js, game/wildroundCards.json, __tests__/wildround.test.js and stripped every reference from App.js/screens/components/game; zero live references remain today; notes/architecture/Project Facts.md (games bullet) documents it; notes/specs/Wild Round.md kept on disk for a possible future standalone app"
 ---
 
 ## Problem
@@ -33,7 +33,8 @@ The original closure note only captures the first half of the story. Full timeli
    (`473daad^`), and `notes/specs/Wild Round.md` (328 lines) was deliberately kept on disk for a
    possible future standalone adults-only app — both confirmed present today.
 3. **Today**: zero live references to Wild Round remain anywhere in `App.js`, `screens/`,
-   `components/`, or `game/`. `CLAUDE.md:101` accurately documents the removal and reason
+   `components/`, or `game/`. `notes/architecture/Project Facts.md`'s games bullet
+   accurately documents the removal and reason
    — independently verified against the actual repo state, not taken on faith.
 
 So the original "no save/resume" question is doubly moot: first because the feature went
