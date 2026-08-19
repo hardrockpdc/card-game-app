@@ -25,7 +25,7 @@ const FRAMES = {
   none: { name: "None", price: 0, color: null },
 
   // ── Rings ──────────────────────────────────────────────────────────────
-  gold: { name: "Gold Ring", price: 1000, color: "#ffd479", glow: false },
+  gold: { name: "Gold Ring", price: 1000, color: gold, glow: false },
   neon: { name: "Neon Glow", price: 1000, color: "#5ad1e6", glow: true },
   ruby: { name: "Ruby", price: 1000, color: "#e94560", glow: true },
   emerald: { name: "Emerald", price: 1000, color: "#3fbf6d", glow: true },

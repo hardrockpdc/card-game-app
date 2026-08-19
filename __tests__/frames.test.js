@@ -32,7 +32,7 @@ describe("frames", () => {
   test("None yields no ring style; a color frame yields a border", () => {
     expect(getFrameRingStyle("none", 64)).toBeNull();
     const ring = getFrameRingStyle("gold", 64);
-    expect(ring.borderColor).toBe("#ffd479");
+    expect(ring.borderColor).toBe("#ffd700");
     expect(ring.borderWidth).toBeGreaterThan(0);
   });
 

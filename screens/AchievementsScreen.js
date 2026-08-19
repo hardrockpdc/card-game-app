@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
   },
   coinValue: {
     fontSize: scaleFont(20),
-    color: "#ffd700",
+    color: gold,
   },
   // Icon + value as separate Text nodes (an emoji + text in ONE Text node can
   // render just the emoji on Android after a re-layout).

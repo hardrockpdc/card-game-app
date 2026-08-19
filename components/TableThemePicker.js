@@ -5,6 +5,7 @@ import { getFeltPrice, isFeltUnlocked } from "../game/feltShop";
 import { getCoins } from "../game/wallet";
 import { purchaseCosmetic } from "../game/shop";
 import { loadProfile, subscribeProfile, updateProfile } from "../game/profile";
+import { gold } from "../game/colors";
 
 // Reusable full-screen "Table Theme" picker overlay, shared by every game with
 // switchable table palettes (Go Fish / Poker / Rummy / Last Card). Free felts
@@ -219,7 +220,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   price: {
-    color: "#ffd479",
+    color: gold,
     fontSize: 13,
     fontWeight: "800",
   },
