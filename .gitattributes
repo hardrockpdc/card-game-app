@@ -1,0 +1,17 @@
+# Line endings
+# This repo's .js source uses CRLF by established convention (see git history:
+# "style: format code with Prettier, restore CRLF line endings"). This file
+# makes that explicit and enforced by git itself, instead of relying on each
+# editor/tool to agree on its own. See notes/issues/ for the incident this
+# was added to prevent.
+*.js text eol=crlf
+
+# Everything else stays LF (the git/tooling default) unless stated otherwise.
+*.md text eol=lf
+*.json text eol=lf
+
+# Binary assets — never text-normalize these.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.wav binary

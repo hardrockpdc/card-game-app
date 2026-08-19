@@ -90,6 +90,8 @@ Confirm the files compile (Metro/bundler, not tsc), confirm the specific changes
 
 Docs are part of the change, not an afterthought. Whenever a change makes something in `CLAUDE.md`, a `notes/` file, or a per-game spec inaccurate — a new/removed/renamed file, a changed dependency, a resolved tracker item, a new game/feature — update the doc **in the same unit of work** (ideally the same commit). When marking an issue fixed, fix every place it's referenced, not just its frontmatter. If a fix isn't verified yet (e.g. needs a device test), say so in the issue note rather than claiming it's fully done. Stale docs have repeatedly caused wasted effort here; treat them as a bug. `archive/PROJECT_NOTES.md` is frozen — never edit it.
 
+**Impeccable findings specifically:** `.impeccable/critique/*.md` and any other Impeccable-tool output live outside `notes/issues/` entirely and are point-in-time snapshots — nothing regenerates or syncs them automatically. When acting on a critique/audit finding (fixing it, confirming it's stale, or deciding not to fix it), create or update the matching `notes/issues/` entry in the same commit batch, not "next commit if needed." The pre-commit stale-docs hook will warn on this and stays a warning on purpose (blocking would also stop legitimate WIP commits) — but a warning only works if it's actually acted on, so don't commit past it without checking whether this rule applies.
+
 ### 3.7 Skills to reach for
 
 Invoke these proactively when the trigger fits, don't wait to be asked:
