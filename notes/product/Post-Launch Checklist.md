@@ -1,5 +1,5 @@
 ---
-verified: 2026-08-16
+verified: 2026-08-18
 ---
 
 # Post-Launch Checklist
@@ -102,9 +102,20 @@ until the rules are re-published.
       a poker hand deals to the right player and nobody else's is visible.
 - [ ] **Set `expo.extra.sentryDsn`** in `app.json` (currently `null`, so crash
       reporting is a no-op) and rebuild the dev client — Sentry is a native module.
-- [ ] **Add a privacy-policy line covering crash data leaving the device.**
-      Required for the next Play submission now that Sentry is wired. This is a
-      family-rated title, so it needs to be explicit, not implied.
+- [x] **Add a privacy-policy line covering crash data leaving the device.**
+      Done 2026-08-18 in `4f47d36`. `docs/privacy.html` now has a "Crash
+      reporting" section stating that Sentry is bundled but switched off and
+      sends nothing today, and naming what it would send if a DSN is ever set
+      (error, screen, app version, device model — never name, photo, or
+      gameplay data). The same commit corrected a much larger problem in that
+      file: it had claimed the app transmits nothing off-device at all, which
+      was false for Firebase online multiplayer *and* for custom profile
+      photos (`game/avatarTransmit.js` downscales and base64-encodes them for
+      transmission). See `notes/ops/App Store Review Notes.md` for the
+      verified data-flow breakdown and the store privacy-label answers.
+      **Paired with the item above:** if `expo.extra.sentryDsn` is ever set,
+      the policy's crash-reporting section and the Diagnostics → Crash Data
+      label must both be updated in that same change.
 - [ ] Device-verify the Card memoization actually improves the Solitaire deal —
       the tests prove the listener count dropped, not the frame timing.
 
