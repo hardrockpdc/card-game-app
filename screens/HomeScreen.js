@@ -195,8 +195,9 @@ export default function HomeScreen({ navigation }) {
               )}
               {coins !== null && (
                 <View style={styles.coinPill}>
+                  <Text style={styles.coinPillText}>🪙</Text>
                   <Text style={styles.coinPillText}>
-                    🪙 {coins.toLocaleString()}
+                    {coins.toLocaleString()}
                   </Text>
                 </View>
               )}
@@ -406,6 +407,9 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   coinPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
     backgroundColor: "#16213e",
     borderWidth: 1.5,
     borderColor: "#b8860b",

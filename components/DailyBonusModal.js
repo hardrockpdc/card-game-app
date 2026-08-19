@@ -74,7 +74,13 @@ export default function DailyBonusModal({
                     ]}
                   >
                     {isJackpot ? "🎁" : "🪙"}
-                    {"\n"}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.dayAmount,
+                      isJackpot && styles.dayAmountJackpot,
+                    ]}
+                  >
                     {amount}
                   </Text>
                 </View>

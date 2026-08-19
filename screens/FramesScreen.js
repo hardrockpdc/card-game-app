@@ -93,9 +93,12 @@ export default function FramesScreen({ navigation }) {
     <SafeAreaView style={styles.root}>
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.coinHeader}>
-          <Text style={styles.coinText}>
-            🪙 {coins === null ? "—" : coins.toLocaleString()}
-          </Text>
+          <View style={styles.tagRow}>
+            <Text style={styles.coinText}>🪙</Text>
+            <Text style={styles.coinText}>
+              {coins === null ? "—" : coins.toLocaleString()}
+            </Text>
+          </View>
         </View>
         <Text style={styles.title}>Profile Frames</Text>
         <Text style={styles.subtitle}>

@@ -148,7 +148,6 @@ export default function CardThemeScreen() {
 
   function buttonLabel() {
     if (confirmed) return "Deck applied! ✓";
-    if (!currentUnlocked) return `🔒 Unlock — ${currentPrice.toLocaleString()} 🪙`;
     if (isCurrentActive) return "Active Deck";
     return "Use This Deck";
   }
@@ -157,9 +156,12 @@ export default function CardThemeScreen() {
     <SafeAreaView style={styles.safe}>
       {/* Coin balance */}
       <View style={styles.coinHeader}>
-        <Text style={styles.coinText}>
-          🪙 {coins === null ? "—" : coins.toLocaleString()}
-        </Text>
+        <View style={styles.badgeRow}>
+          <Text style={styles.coinText}>🪙</Text>
+          <Text style={styles.coinText}>
+            {coins === null ? "—" : coins.toLocaleString()}
+          </Text>
+        </View>
       </View>
 
       {/* Swipeable pages */}
@@ -245,16 +247,26 @@ export default function CardThemeScreen() {
           onPress={currentUnlocked ? handleApply : handleUnlock}
           disabled={currentUnlocked && isCurrentActive && !confirmed}
         >
-          <Text
-            style={[
-              styles.applyBtnText,
-              // Blue button uses dark text; the dimmed/confirmed states have
-              // dark/green backgrounds and keep light text for contrast.
-              (isCurrentActive || confirmed) && styles.applyBtnTextLight,
-            ]}
-          >
-            {buttonLabel()}
-          </Text>
+          {currentUnlocked ? (
+            <Text
+              style={[
+                styles.applyBtnText,
+                // Blue button uses dark text; the dimmed/confirmed states have
+                // dark/green backgrounds and keep light text for contrast.
+                (isCurrentActive || confirmed) && styles.applyBtnTextLight,
+              ]}
+            >
+              {buttonLabel()}
+            </Text>
+          ) : (
+            <View style={styles.badgeRow}>
+              <Text style={styles.applyBtnText}>🔒</Text>
+              <Text style={styles.applyBtnText}>
+                Unlock — {currentPrice.toLocaleString()}
+              </Text>
+              <Text style={styles.applyBtnText}>🪙</Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
