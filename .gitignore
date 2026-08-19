@@ -49,3 +49,14 @@ assets/_card_originals_backup/
 # review screenshots — temporary holding area; keep the folder + README, ignore the images
 review-screenshots/*
 !review-screenshots/README.md
+
+# Obsidian vault — this repo is also the vault (see notes/00 Index.md).
+# Shared config is tracked so a fresh clone opens with the same plugins and
+# theme; per-machine UI state is not.
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/graph.json
+.obsidian/hotkeys.json
+.obsidian/plugins/*/data.json
+.obsidian/workspaces.json
+.obsidian/cache
