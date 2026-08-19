@@ -33,7 +33,13 @@ import { getTableTheme } from "../game/tableThemes";
 import BettingChip from "../components/BettingChip";
 import { accent, brandRed, gold, positive, highlight } from "../game/colors";
 const BG = getTableTheme("blackjack").table;
-const ACCENT = getTableTheme("blackjack").accent;
+
+// Blackjack's action-button colors aren't derived from getTableTheme (which
+// only has `table`/`accent`, and no other multi-button game screen derives
+// action colors from it either) — named here instead of scattered raw hex.
+const BJ_DEAL_RED = "#cc2222";
+const BJ_STAND_BLUE = "#2980b9";
+const BJ_SPLIT_PURPLE = "#8e44ad";
 
 const BLACKJACK_SLIDES = [
   {
@@ -979,7 +985,7 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
     minHeight: scale(96),
     borderRadius: scale(14),
-    backgroundColor: "#cc2222",
+    backgroundColor: BJ_DEAL_RED,
     alignItems: "center",
     justifyContent: "center",
     marginTop: scale(4),
@@ -1091,14 +1097,15 @@ const styles = StyleSheet.create({
   },
   // Matches dealButton's red rather than Home's brandRed (#e94560) — Blackjack's
   // action buttons shouldn't collide with the hub's exact identity color.
+  // Named constants (BJ_DEAL_RED etc., top of file) instead of raw hex.
   hitButton: {
-    backgroundColor: "#cc2222",
+    backgroundColor: BJ_DEAL_RED,
   },
   standButton: {
-    backgroundColor: "#2980b9",
+    backgroundColor: BJ_STAND_BLUE,
   },
   splitButton: {
-    backgroundColor: "#8e44ad",
+    backgroundColor: BJ_SPLIT_PURPLE,
   },
   disabled: {
     opacity: 0.4,
