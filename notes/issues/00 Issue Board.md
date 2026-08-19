@@ -1,5 +1,5 @@
 ---
-verified: 2026-08-15
+verified: 2026-08-19
 ---
 
 # Issue Board
@@ -16,8 +16,9 @@ updating a note updates the board automatically.
 ## Needs attention
 
 Everything currently `open` or `partial`. Sorted by `severity`, but note that's a plain
-alphabetical sort (critical, high, low, medium) — not true priority order. With ~14
-rows here as of 2026-08-15 that's small enough to eyeball; click the `severity` column
+alphabetical sort (critical, high, low, medium) — not true priority order. With 10
+rows here as of 2026-08-19 (4 `open` + 6 `partial`; CQ-3 and CQ-6 left this view on
+2026-08-19) that's small enough to eyeball; click the `severity` column
 header in Obsidian to re-sort, or scan for `critical`/`high` first.
 
 ![[Issue Board.base#Needs attention]]
