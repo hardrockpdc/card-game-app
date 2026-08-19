@@ -8,32 +8,65 @@
     body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; color: #222; }
     h1 { color: #1a1a2e; }
     h2 { color: #2c3e50; margin-top: 2rem; }
+    ul { padding-left: 1.25rem; }
+    .summary { background: #f4f6f8; border-left: 4px solid #2c3e50; padding: 0.75rem 1rem; margin: 1.5rem 0; }
   </style>
 </head>
 <body>
   <h1>Card Night — Privacy Policy</h1>
-  <p><strong>Last updated:</strong> June 23, 2026</p>
+  <p><strong>Last updated:</strong> August 18, 2026</p>
 
-  <h2>What we collect</h2>
-  <p>Card Night does not collect, store, or transmit any personal data to any server.</p>
+  <div class="summary">
+    <p><strong>Short version:</strong> Card Night has no accounts, no ads, no analytics, and no tracking. Single-player games are fully offline and nothing leaves your device. If you play <em>online</em> multiplayer, your display name, your profile picture, and the state of the game in progress pass through Google Firebase so the other players in your room can see them. That is the only time anything leaves your device.</p>
+  </div>
 
-  <h2>What's stored on your device</h2>
-  <p>All gameplay data — your profile name, photo, coin balance, game statistics, and saved games — is stored only on your device using your device's local storage. None of this data leaves your device.</p>
+  <h2>What we do not do</h2>
+  <ul>
+    <li>No user accounts, sign-up, email addresses, or passwords.</li>
+    <li>No advertising, no ad networks, no ad identifiers (IDFA/AAID).</li>
+    <li>No analytics or usage-tracking SDKs.</li>
+    <li>No selling or sharing of data with third parties for marketing.</li>
+    <li>No location data, no contacts, no microphone recording.</li>
+  </ul>
+
+  <h2>What is stored only on your device</h2>
+  <p>Your coin balance, game statistics, achievements, unlocked card themes and frames, saved games, app settings, and your saved profile (name and picture) are stored in your device's local storage. This data is never uploaded to us or anyone else, and it is deleted when you uninstall the app.</p>
+
+  <h2>Online multiplayer</h2>
+  <p>Online multiplayer is optional. It is used only when you choose to host or join an online room with a room code. It is powered by <strong>Google Firebase</strong> (Firebase Authentication and Firebase Realtime Database). When you use it, the following is sent to Firebase servers so the other players in your room can play with you:</p>
+  <ul>
+    <li><strong>An anonymous player ID.</strong> Firebase assigns your installation a random ID so the game can tell players apart. It is not linked to your name, email, phone number, or any account, because the app never asks for those.</li>
+    <li><strong>Your display name</strong> — the name you set in your profile (up to 24 characters).</li>
+    <li><strong>Your profile picture.</strong> If you picked one of the built-in cartoon avatars, only a short avatar ID is sent. If you set a custom photo from your camera or photo library, that photo is shrunk to a small 120-pixel-wide image and sent once when the game starts, so the other players can see it next to your name.</li>
+    <li><strong>Game data</strong> — the room code, which game you are playing, and the state of the hand in progress (cards, turns, and scores).</li>
+  </ul>
+  <p>This data exists only for the life of the room. When the host leaves or closes the room, the room and its contents are deleted. We do not build profiles, keep history, or analyze this data — it is transient plumbing that lets two phones show the same card table.</p>
+  <p><strong>Please note:</strong> your display name and profile picture are visible to the other people in your room. Only share a room code with people you know, and consider using a nickname rather than your full real name.</p>
+
+  <h2>Local Wi-Fi multiplayer</h2>
+  <p>Card Night can also play over your local Wi-Fi network, phone-to-phone, with no internet server involved. In this mode the app opens a direct connection between the devices on your network (TCP port 7777 and UDP port 7778) and exchanges the same display name, profile picture, and game state directly between the devices. Nothing is sent to us or to Google in this mode.</p>
 
   <h2>Camera and photo library</h2>
-  <p>If you choose to set a profile photo, Card Night uses your camera or photo library only at the moment you tap that option. The photo is stored only on your device.</p>
+  <p>Card Night asks for camera or photo library access only at the moment you choose to set a profile picture, and only for that purpose. The original photo stays on your device. As described above, a small copy is shared with other players if — and only if — you play multiplayer. You can use the entire app without ever granting these permissions; your profile simply shows a cartoon avatar or your initial instead.</p>
 
-  <h2>Local network</h2>
-  <p>Card Night uses your local Wi-Fi network only for direct device-to-device multiplayer. No third-party servers are involved. No data is logged or shared.</p>
-
-  <h2>Third parties</h2>
-  <p>Card Night contains no third-party analytics, advertising networks, or tracking SDKs.</p>
+  <h2>Crash reporting</h2>
+  <p>The app includes crash-reporting software (Sentry) that is currently switched off and sends nothing. If a future update turns it on, it would send anonymous technical crash information — such as the error, the screen it happened on, the app version, and the device model — so that bugs can be fixed. It would never send your name, your photo, or your gameplay data. This policy will be updated before that change ships.</p>
 
   <h2>Children</h2>
-  <p>Card Night does not collect data from any user, including children under 13.</p>
+  <p>Card Night is designed to be suitable for all ages and contains no ads, no purchases, and no chat feature. We do not knowingly collect personal information from children. As explained above, the app never asks any user for a real name, email address, phone number, or location. Parents should be aware that in multiplayer the display name and profile picture a child sets are visible to the other players in their room, and should choose those accordingly.</p>
+
+  <h2>Purchases</h2>
+  <p>Card Night contains no in-app purchases and no real-money gambling. Coins and chips in the app are play money with no cash value and cannot be bought, sold, or cashed out.</p>
+
+  <h2>Your choices</h2>
+  <ul>
+    <li>Play single-player only, and nothing ever leaves your device.</li>
+    <li>Play local Wi-Fi multiplayer, and data stays on your own network.</li>
+    <li>Clear your profile and saved data at any time by uninstalling the app.</li>
+  </ul>
 
   <h2>Changes to this policy</h2>
-  <p>If this policy changes, the updated version will be posted at this URL.</p>
+  <p>If this policy changes, the updated version will be posted at this URL with a new "Last updated" date.</p>
 
   <h2>Contact</h2>
   <p>Questions? Open an issue at <a href="https://github.com/hardrockpdc/card-game-app/issues">github.com/hardrockpdc/card-game-app/issues</a>.</p>
