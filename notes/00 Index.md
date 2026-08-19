@@ -71,5 +71,7 @@ still sitting at root uncommitted.)
 
 ## Sessions
 
-`notes/sessions/` holds one dated entry per working session, appended by `/log`. Started
-2026-08-18; the newest file there is the project's live "what just happened" record.
+`notes/sessions/` holds one dated entry per working session, appended by `/log`. The
+newest file there is the project's live "what just happened" record.
+
+- [[sessions/2026-08-18]] — Firebase rules republish recorded; stale doc citations repaired
