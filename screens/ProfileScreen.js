@@ -577,9 +577,7 @@ export default function ProfileScreen({ navigation, route }) {
             accessibilityRole="button"
             accessibilityLabel="Go back"
           >
-            <Text style={styles.backBtnText}>
-              {hasName ? "Back to Home" : "Stay here until your name is saved"}
-            </Text>
+            <Text style={styles.backBtnText}>Back to Home</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
