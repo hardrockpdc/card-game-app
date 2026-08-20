@@ -8,5 +8,17 @@
     "skill-creator@claude-plugins-official": true,
     "chrome-devtools-mcp@claude-plugins-official": true,
     "github@claude-plugins-official": true
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"CLAUDE.md section 0 requires the caveman and i-have-adhd skills for every chat response this session. Invoke both with the Skill tool NOW, before answering anything - including trivial questions. Imitating the style without loading the skills does not satisfy this. Skip only if the user says stop caveman or normal mode.\"}}'"
+          }
+        ]
+      }
+    ]
   }
 }
