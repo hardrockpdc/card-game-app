@@ -10,6 +10,11 @@
 *.md text eol=lf
 *.json text eol=lf
 
+# CLAUDE.md freezes archive/PROJECT_NOTES.md — never edit it. Unsetting `text` stops git
+# normalizing its line endings too, so the file stays byte-identical instead of showing
+# permanently modified. Must stay below the *.md rule above: last match wins per attribute.
+archive/PROJECT_NOTES.md -text
+
 # Binary assets — never text-normalize these.
 *.png binary
 *.jpg binary
