@@ -5,8 +5,8 @@ area: build
 status: open
 severity: high
 opened: 2026-08-15
-verified: 2026-08-18
-evidence: "app.json:37 versionCode 9 / 1.1.0 (app.json:5), staged 2026-07-22 but still never built (notes/product/Post-Launch Checklist.md shows only versionCode 8 was ever submitted, 2026-07-01); the 2026-08-02 rules fixes were reported republished in the Firebase console by Pedro on 2026-08-18 -- unconfirmable from the repo, and the committed database.rules.json was checked the same day as paste-clean (single top-level rules key, no comment keys); the checklist's BLOCKING section now has 3 unchecked items (2-device retest, sentryDsn, Solitaire memoization device-check); app.json:59 expo.extra.sentryDsn is still null"
+verified: 2026-09-09
+evidence: "app.json:37 versionCode 9 / 1.1.0 (app.json:5), staged 2026-07-22 but still never built (notes/product/Post-Launch Checklist.md shows only versionCode 8 was ever submitted, 2026-07-01); the 2026-08-02 rules fixes were reported republished in the Firebase console by Pedro on 2026-08-18 -- unconfirmable from the repo, and the committed database.rules.json was checked the same day as paste-clean (single top-level rules key, no comment keys); as of 2026-09-09 the checklist's BLOCKING section has 2 unchecked items (sentryDsn, Solitaire memoization device-check) — the 2-device retest passed 2026-09-09; app.json:59 expo.extra.sentryDsn is still null"
 ---
 
 ## Problem
@@ -85,3 +85,46 @@ build is still running pre-fix client code regardless of what the server rules n
 
 Remaining, in order: 2-device retest → set `sentryDsn` (native module, needs a dev-client
 rebuild) → `eas build` versionCode 9 → submit.
+
+
+## Update 2026-09-09 — 2-device retest passed; the build gap has widened
+
+**The retest is done and it passed.** An online poker room hosted on one client and
+joined from a second, played to showdown: host held A♣ J♠, client held 5♠ 6♦, and each
+client saw **only its own hole cards** — the opponent's seat rendered no cards at all
+until showdown, while every shared value (pot, stacks, board, turn order) matched on both
+devices. At showdown both hands revealed and scored correctly against a board of
+7♦ Q♥ 6♣ 4♦ Q♥: client Two Pair (queens and sixes) over host One Pair, 40 pot paid to the
+right player.
+
+That closes the item this ticket has been waiting on since 2026-07-04. It confirms the
+2026-08-18 rules republish actually took, and that private hands under `privateNet/*` are
+scoped to their owner — a bad rules deploy would have broken hands specifically, and did
+not.
+
+Two honest limits on that evidence:
+
+- The clients were **Android emulators on one machine**, not two physical handsets. The
+  property that matters for a rules check is that they are separate installs with
+  separate app data authenticating independently, which they are. It is not a substitute
+  for a physical-device pass if one is wanted before shipping.
+- It confirms the rules **as published today**. Nothing in the repo can read the console
+  back, so this is evidence of correct behaviour, not a transcript of the rules text.
+
+**The build half has moved backwards.** When this ticket was written, 49 commits had
+landed since the version bump. As of 2026-09-09 it is **136**, and `app.json` is still
+versionCode 9 / 1.1.0 — the staged number never moved because no build was ever run. The
+2026-09-08 session alone added 13 commits, several of them behavioural rather than
+cosmetic: three of four Poker variants went from non-functional to actually dealing and
+scoring by their own rules ([[BUG-11]]), the hardware Back button stopped being captured
+after leaving any game ([[BUG-21]]), Blackjack gained Double Down ([[BUG-22]]), and the
+test suite went from silently running zero tests to 595 passing ([[BUG-13]]).
+
+So the store build is now further from the code than when this was filed, and the gap is
+no longer only a security one — a player on versionCode 8 is playing materially different
+games.
+
+`expo.extra.sentryDsn` is still `null` (`app.json:59`).
+
+Remaining, in order: set `sentryDsn` (native module, needs a dev-client rebuild) →
+`eas build` versionCode 9 → submit.

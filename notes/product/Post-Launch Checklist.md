@@ -103,11 +103,21 @@ until the rules are re-published.
       itself is unverifiable from the repo. Treat the fixes as live only once the
       2-device retest below passes. Keep the file comment-free — the console
       rejects any top-level key but `rules`.
-- [ ] **Re-test online multiplayer end-to-end on 2 devices.** Already outstanding
-      from the 2026-07-04 deploy, and now the only thing that can confirm the
-      2026-08-18 republish actually took. Private hands moved to a new
-      `privateNet/*` path, so a bad rules deploy breaks hands specifically. Check
-      a poker hand deals to the right player and nobody else's is visible.
+- [x] **Re-test online multiplayer end-to-end on 2 devices.** Done 2026-09-09.
+      A hosted online poker room was joined by a second client and a full
+      Texas Hold'em hand played to showdown. Host held A♣ J♠ and the client
+      5♠ 6♦; **each client saw only its own hole cards**, the opponent's seat
+      showed no cards at all until showdown, and both devices agreed on every
+      shared value (pot, stacks, board, turn order). At showdown both hands
+      revealed and scored correctly against a two-Queen board — client Two Pair
+      (queens and sixes) beat host One Pair — and the 40 pot paid to the right
+      player. That is the confirmation this item existed for: the 2026-08-18
+      rules republish took, and `privateNet/*` is scoped correctly.
+      **Caveat worth knowing:** the two clients were Android emulators on one
+      machine, not two physical handsets. What matters for the rules check is
+      that they are separate installs with separate app data authenticating
+      independently, which they are — but if you want a physical-device
+      confirmation before shipping, this does not replace it.
 - [ ] **Set `expo.extra.sentryDsn`** in `app.json` (currently `null`, so crash
       reporting is a no-op) and rebuild the dev client — Sentry is a native module.
 - [x] **Add a privacy-policy line covering crash data leaving the device.**
