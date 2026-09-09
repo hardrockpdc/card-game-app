@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import {
   AccessibilityInfo,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
 import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import GameHeader from "../components/GameHeader";
 import EndOfRoundModal from "../components/EndOfRoundModal";
@@ -293,7 +294,12 @@ export default function WhoAmIGameScreen({ navigation, route }) {
   function handleQuit() {
     if (isHost) stopServer();
     else disconnectFromHost();
-    navigation.navigate("Home");
+    // reset, not navigate. The lobby reaches this screen via navigation.replace,
+    // and navigate("Home") was pushing a fresh Home on top of this screen rather
+    // than popping back to it — leaving the finished game mounted underneath, so
+    // Back from Home walked the player straight back into the room they just
+    // quit. Resetting to a single Home route drops the game screen for good.
+    navigation.reset({ index: 0, routes: [{ name: "Home" }] });
   }
 
   function handlePlayAgain() {
@@ -304,17 +310,24 @@ export default function WhoAmIGameScreen({ navigation, route }) {
     applyState(s);
   }
 
-  useEffect(() => {
-    const onBack = () => {
-      Alert.alert("Leave game?", "You'll leave this game.", [
-        { text: "Stay", style: "cancel" },
-        { text: "Leave", style: "destructive", onPress: handleQuit },
-      ]);
-      return true;
-    };
-    const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
-    return () => sub.remove();
-  }, []);
+  // Focus-scoped on purpose. A plain useEffect keeps this handler registered for
+  // as long as the screen stays mounted, and quitting an online game navigates to
+  // Home without unwinding the stack — so the screen lingers underneath and its
+  // handler (which returns true) swallows every hardware Back press app-wide,
+  // stranding the user on Home. useFocusEffect unregisters it on blur.
+  useFocusEffect(
+    useCallback(() => {
+      const onBack = () => {
+        Alert.alert("Leave game?", "You'll leave this game.", [
+          { text: "Stay", style: "cancel" },
+          { text: "Leave", style: "destructive", onPress: handleQuit },
+        ]);
+        return true;
+      };
+      const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
+      return () => sub.remove();
+    }, []),
+  );
 
   const menuItems = [{ type: "quit", onQuit: handleQuit }];
 
