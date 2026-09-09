@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   BackHandler,
   ActivityIndicator,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import * as Clipboard from "expo-clipboard";
 import { scale, scaleFont } from "../game/responsive";
@@ -73,7 +74,11 @@ export default function OnlineLobbyScreen({ navigation, route }) {
         if (!leftRef.current && !isHost) {
           leftRef.current = true;
           Alert.alert("Room Closed", "The host ended the room.", [
-            { text: "OK", onPress: () => navigation.navigate("Home") },
+            {
+              text: "OK",
+              onPress: () =>
+                navigation.reset({ index: 0, routes: [{ name: "Home" }] }),
+            },
           ]);
         }
         return;
@@ -109,31 +114,33 @@ export default function OnlineLobbyScreen({ navigation, route }) {
   }, [code]);
 
   // Leave the room when the user backs out (hardware back).
-  useEffect(() => {
-    const onBack = () => {
-      Alert.alert(
-        "Leave Room?",
-        isHost
-          ? "You'll close the room and disconnect everyone."
-          : "You'll leave this room.",
-        [
-          { text: "Stay", style: "cancel" },
-          {
-            text: "Leave",
-            style: "destructive",
-            onPress: () => {
-              leftRef.current = true;
-              leaveRoom(code, { isHost });
-              navigation.navigate("Home");
+  useFocusEffect(
+    useCallback(() => {
+      const onBack = () => {
+        Alert.alert(
+          "Leave Room?",
+          isHost
+            ? "You'll close the room and disconnect everyone."
+            : "You'll leave this room.",
+          [
+            { text: "Stay", style: "cancel" },
+            {
+              text: "Leave",
+              style: "destructive",
+              onPress: () => {
+                leftRef.current = true;
+                leaveRoom(code, { isHost });
+                navigation.reset({ index: 0, routes: [{ name: "Home" }] });
+              },
             },
-          },
-        ],
-      );
-      return true;
-    };
-    const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
-    return () => sub.remove();
-  }, [code, isHost, navigation]);
+          ],
+        );
+        return true;
+      };
+      const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
+      return () => sub.remove();
+    }, [code, isHost, navigation]),
+  );
 
   useEffect(() => {
     return () => {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   AccessibilityInfo,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
 import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import { createDeck, shuffleDeck } from "../game/deck";
 import { addCoins } from "../game/wallet";
@@ -337,8 +338,7 @@ function doShowdown(state) {
     let best = null;
     for (const pid of pot.eligible) {
       const s = scores[pid];
-      if (s && (!best || comparePokerScores(s.score, best.score) > 0))
-        best = s;
+      if (s && (!best || comparePokerScores(s.score, best.score) > 0)) best = s;
     }
     if (!best) {
       // No eligible (non-folded) winner for this layer — these are uncalled
@@ -910,41 +910,48 @@ export default function PokerGameScreen({ navigation, route }) {
       },
       onDisconnected: () =>
         Alert.alert("Disconnected", "Lost connection.", [
-          { text: "OK", onPress: () => navigation.navigate("Home") },
+          {
+            text: "OK",
+            onPress: () =>
+              navigation.reset({ index: 0, routes: [{ name: "Home" }] }),
+          },
         ]),
     });
   }, []);
 
   // UX-5: Android hardware back confirmation — must be before early returns
-  useEffect(() => {
-    const onBack = () => {
-      const message = isSinglePlayer
-        ? "Your progress will be saved."
-        : isHost
-          ? "You'll end the game for everyone."
-          : "You'll disconnect from the host.";
-      Alert.alert("Leave Game?", message, [
-        { text: "Stay", style: "cancel" },
-        {
-          text: "Leave",
-          style: isSinglePlayer ? "default" : "destructive",
-          onPress: () => {
-            if (isSinglePlayer) {
-              if (typeof handleSaveAndExit === "function") handleSaveAndExit();
-              else navigation.navigate("Home");
-            } else {
-              if (isHost) stopServer();
-              else disconnectFromHost();
-              navigation.navigate("Home");
-            }
+  useFocusEffect(
+    useCallback(() => {
+      const onBack = () => {
+        const message = isSinglePlayer
+          ? "Your progress will be saved."
+          : isHost
+            ? "You'll end the game for everyone."
+            : "You'll disconnect from the host.";
+        Alert.alert("Leave Game?", message, [
+          { text: "Stay", style: "cancel" },
+          {
+            text: "Leave",
+            style: isSinglePlayer ? "default" : "destructive",
+            onPress: () => {
+              if (isSinglePlayer) {
+                if (typeof handleSaveAndExit === "function")
+                  handleSaveAndExit();
+                else navigation.reset({ index: 0, routes: [{ name: "Home" }] });
+              } else {
+                if (isHost) stopServer();
+                else disconnectFromHost();
+                navigation.reset({ index: 0, routes: [{ name: "Home" }] });
+              }
+            },
           },
-        },
-      ]);
-      return true;
-    };
-    const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
-    return () => sub.remove();
-  }, [navigation, isSinglePlayer, isHost]);
+        ]);
+        return true;
+      };
+      const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
+      return () => sub.remove();
+    }, [navigation, isSinglePlayer, isHost]),
+  );
 
   function act(action) {
     if (isHost) {
@@ -1053,7 +1060,9 @@ export default function PokerGameScreen({ navigation, route }) {
         )}
         <TouchableOpacity
           style={styles.tournamentHomeBtn}
-          onPress={() => navigation.navigate("Home")}
+          onPress={() =>
+            navigation.reset({ index: 0, routes: [{ name: "Home" }] })
+          }
         >
           <Text style={styles.tournamentHomeBtnText}>Go Home</Text>
         </TouchableOpacity>
@@ -1102,7 +1111,7 @@ export default function PokerGameScreen({ navigation, route }) {
     if (isSinglePlayer && saveKey) clearGame(saveKey);
     else if (isHost) stopServer();
     else disconnectFromHost();
-    navigation.navigate("Home");
+    navigation.reset({ index: 0, routes: [{ name: "Home" }] });
   }
 
   // Restart the tournament in place: same opponents/variant/difficulty, everyone
@@ -1120,7 +1129,7 @@ export default function PokerGameScreen({ navigation, route }) {
   function handleSaveAndExit() {
     if (!saveKey || !fullRef.current) return;
     saveGame(saveKey, { fullState: fullRef.current });
-    navigation.navigate("Home");
+    navigation.reset({ index: 0, routes: [{ name: "Home" }] });
   }
 
   const menuItems = [

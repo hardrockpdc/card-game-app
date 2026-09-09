@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   BackHandler,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
 import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import { createDeck, shuffleDeck, calculateHandValue } from "../game/deck";
 import Card from "../components/Card";
@@ -187,20 +188,23 @@ export default function GameScreen({ navigation, route }) {
   ]);
 
   // UX-5: Android hardware back confirmation
-  useEffect(() => {
-    const onBack = () => {
-      Alert.alert("Leave Game?", "Your current hand will be saved.", [
-        { text: "Stay", style: "cancel" },
-        {
-          text: "Leave",
-          onPress: () => navigation.navigate("Home"),
-        },
-      ]);
-      return true;
-    };
-    const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
-    return () => sub.remove();
-  }, [navigation]);
+  useFocusEffect(
+    useCallback(() => {
+      const onBack = () => {
+        Alert.alert("Leave Game?", "Your current hand will be saved.", [
+          { text: "Stay", style: "cancel" },
+          {
+            text: "Leave",
+            onPress: () =>
+              navigation.reset({ index: 0, routes: [{ name: "Home" }] }),
+          },
+        ]);
+        return true;
+      };
+      const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
+      return () => sub.remove();
+    }, [navigation]),
+  );
 
   // Clean up the result-modal delay timer on unmount.
   useEffect(() => {
@@ -545,7 +549,7 @@ export default function GameScreen({ navigation, route }) {
         // Spec: reset streak on quit.
         resetStreak();
 
-        navigation.navigate("Home");
+        navigation.reset({ index: 0, routes: [{ name: "Home" }] });
       },
     },
   ];
@@ -917,7 +921,7 @@ export default function GameScreen({ navigation, route }) {
           // Spec: reset streak on quit/leave.
           resetStreak();
 
-          navigation.navigate("Home");
+          navigation.reset({ index: 0, routes: [{ name: "Home" }] });
         }}
         tableColor={BG}
       />

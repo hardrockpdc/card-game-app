@@ -1490,20 +1490,22 @@ export default function SolitaireGameScreen({ navigation, route }) {
   }, [state.moves, state.status]);
 
   // UX-5: Android hardware back confirmation
-  useEffect(() => {
-    const onBack = () => {
-      Alert.alert("Leave Game?", "Your progress will be saved.", [
-        { text: "Stay", style: "cancel" },
-        {
-          text: "Leave",
-          onPress: handleSaveAndExit,
-        },
-      ]);
-      return true;
-    };
-    const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
-    return () => sub.remove();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      const onBack = () => {
+        Alert.alert("Leave Game?", "Your progress will be saved.", [
+          { text: "Stay", style: "cancel" },
+          {
+            text: "Leave",
+            onPress: handleSaveAndExit,
+          },
+        ]);
+        return true;
+      };
+      const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
+      return () => sub.remove();
+    }, []),
+  );
 
   const variant = useMemo(
     () => getVariantOption(state.variantId),
@@ -1556,7 +1558,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
       state: { ...state, history: undefined },
       elapsed,
     });
-    navigation.navigate("Home");
+    navigation.reset({ index: 0, routes: [{ name: "Home" }] });
   };
 
   const menuItems = [
@@ -1574,7 +1576,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
       type: "quit",
       onQuit: () => {
         clearGame(solitaireSaveKey(state.variantId || routeVariantId));
-        navigation.navigate("Home");
+        navigation.reset({ index: 0, routes: [{ name: "Home" }] });
       },
     },
   ];
@@ -2847,7 +2849,7 @@ export default function SolitaireGameScreen({ navigation, route }) {
       }}
       onLeave={() => {
         clearGame(solitaireSaveKey(state.variantId || routeVariantId));
-        navigation.navigate("Home");
+        navigation.reset({ index: 0, routes: [{ name: "Home" }] });
       }}
       tableColor={BG}
     />

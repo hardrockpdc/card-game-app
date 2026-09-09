@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   BackHandler,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
 import GameHeader from "../components/GameHeader";
 import EndOfRoundModal from "../components/EndOfRoundModal";
 import YourTurnBanner from "../components/YourTurnBanner";
@@ -261,7 +262,11 @@ export default function LastCardGameScreen({ navigation, route }) {
         broadcastToClients({ type: "GAME_OVER_DISCONNECT", name });
         stopServer();
         Alert.alert("Game over", `${name} ${reason}.`, [
-          { text: "OK", onPress: () => navigation.navigate("Home") },
+          {
+            text: "OK",
+            onPress: () =>
+              navigation.reset({ index: 0, routes: [{ name: "Home" }] }),
+          },
         ]);
         return;
       }
@@ -280,7 +285,7 @@ export default function LastCardGameScreen({ navigation, route }) {
     // GAME_OVER_DISCONNECT; just tear down and leave.
     onEndGame: () => {
       stopServer();
-      navigation.navigate("Home");
+      navigation.reset({ index: 0, routes: [{ name: "Home" }] });
     },
     onHostEnded: (name, reason) => {
       // Close the results modal first. An Alert raised over an open RN Modal on
@@ -291,13 +296,19 @@ export default function LastCardGameScreen({ navigation, route }) {
         reason === "host_left"
           ? "The host ended the game."
           : `${name} left and didn't reconnect in time.`,
-        [{ text: "OK", onPress: () => navigation.navigate("Home") }],
+        [
+          {
+            text: "OK",
+            onPress: () =>
+              navigation.reset({ index: 0, routes: [{ name: "Home" }] }),
+          },
+        ],
       );
     },
     // Client tapped "Leave" on the self-disconnect overlay: quit cleanly.
     onSelfLeave: () => {
       leaveMultiplayer();
-      navigation.navigate("Home");
+      navigation.reset({ index: 0, routes: [{ name: "Home" }] });
     },
   });
 
@@ -862,7 +873,11 @@ export default function LastCardGameScreen({ navigation, route }) {
       },
       onDisconnected: () =>
         Alert.alert("Disconnected", "Lost connection to the host.", [
-          { text: "OK", onPress: () => navigation.navigate("Home") },
+          {
+            text: "OK",
+            onPress: () =>
+              navigation.reset({ index: 0, routes: [{ name: "Home" }] }),
+          },
         ]),
     });
   }, []);
@@ -1084,7 +1099,7 @@ export default function LastCardGameScreen({ navigation, route }) {
   function handleQuit() {
     if (isSinglePlayer) clearGame(SAVE_KEY_LASTCARD);
     else leaveMultiplayer();
-    navigation.navigate("Home");
+    navigation.reset({ index: 0, routes: [{ name: "Home" }] });
   }
 
   function handleRestart() {
@@ -1097,38 +1112,41 @@ export default function LastCardGameScreen({ navigation, route }) {
   function handleSaveAndExit() {
     if (!isSinglePlayer || !fullRef.current) return;
     saveGame(SAVE_KEY_LASTCARD, { fullState: fullRef.current });
-    navigation.navigate("Home");
+    navigation.reset({ index: 0, routes: [{ name: "Home" }] });
   }
 
   // UX-5: Android hardware back confirmation
-  useEffect(() => {
-    const onBack = () => {
-      const message = isSinglePlayer
-        ? "Your progress will be saved."
-        : isHost
-          ? "You'll end the game for everyone."
-          : "You'll disconnect from the host.";
-      Alert.alert("Leave Game?", message, [
-        { text: "Stay", style: "cancel" },
-        {
-          text: "Leave",
-          style: isSinglePlayer ? "default" : "destructive",
-          onPress: () => {
-            if (isSinglePlayer) {
-              if (typeof handleSaveAndExit === "function") handleSaveAndExit();
-              else navigation.navigate("Home");
-            } else {
-              leaveMultiplayer();
-              navigation.navigate("Home");
-            }
+  useFocusEffect(
+    useCallback(() => {
+      const onBack = () => {
+        const message = isSinglePlayer
+          ? "Your progress will be saved."
+          : isHost
+            ? "You'll end the game for everyone."
+            : "You'll disconnect from the host.";
+        Alert.alert("Leave Game?", message, [
+          { text: "Stay", style: "cancel" },
+          {
+            text: "Leave",
+            style: isSinglePlayer ? "default" : "destructive",
+            onPress: () => {
+              if (isSinglePlayer) {
+                if (typeof handleSaveAndExit === "function")
+                  handleSaveAndExit();
+                else navigation.reset({ index: 0, routes: [{ name: "Home" }] });
+              } else {
+                leaveMultiplayer();
+                navigation.reset({ index: 0, routes: [{ name: "Home" }] });
+              }
+            },
           },
-        },
-      ]);
-      return true;
-    };
-    const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
-    return () => sub.remove();
-  }, [navigation, isSinglePlayer, isHost]);
+        ]);
+        return true;
+      };
+      const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
+      return () => sub.remove();
+    }, [navigation, isSinglePlayer, isHost]),
+  );
 
   const menuItems = [
     {

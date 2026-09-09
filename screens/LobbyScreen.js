@@ -1,4 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useCallback,
+} from "react";
 import {
   View,
   Text,
@@ -8,6 +14,7 @@ import {
   Alert,
   BackHandler,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { HapticTouchable as TouchableOpacity } from "../components/Haptic";
 import { scale, scaleFont } from "../game/responsive";
 import { TITLE_FONT } from "../game/typography";
@@ -373,7 +380,11 @@ export default function LobbyScreen({ navigation, route }) {
       },
       onDisconnected: () => {
         Alert.alert("Disconnected", "Lost connection to the host.", [
-          { text: "OK", onPress: () => navigation.navigate("Home") },
+          {
+            text: "OK",
+            onPress: () =>
+              navigation.reset({ index: 0, routes: [{ name: "Home" }] }),
+          },
         ]);
       },
     });
@@ -435,35 +446,37 @@ export default function LobbyScreen({ navigation, route }) {
   }
 
   // UX-5: Android hardware back confirmation
-  useEffect(() => {
-    const onBack = () => {
-      Alert.alert(
-        "Leave Lobby?",
-        isHost
-          ? "You'll stop hosting and disconnect everyone."
-          : "You'll be disconnected from the host.",
-        [
-          { text: "Stay", style: "cancel" },
-          {
-            text: "Leave",
-            style: "destructive",
-            onPress: () => {
-              if (isHost) {
-                stopServer();
-                stopBroadcasting();
-              } else {
-                disconnectFromHost();
-              }
-              navigation.navigate("Home");
+  useFocusEffect(
+    useCallback(() => {
+      const onBack = () => {
+        Alert.alert(
+          "Leave Lobby?",
+          isHost
+            ? "You'll stop hosting and disconnect everyone."
+            : "You'll be disconnected from the host.",
+          [
+            { text: "Stay", style: "cancel" },
+            {
+              text: "Leave",
+              style: "destructive",
+              onPress: () => {
+                if (isHost) {
+                  stopServer();
+                  stopBroadcasting();
+                } else {
+                  disconnectFromHost();
+                }
+                navigation.reset({ index: 0, routes: [{ name: "Home" }] });
+              },
             },
-          },
-        ],
-      );
-      return true;
-    };
-    const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
-    return () => sub.remove();
-  }, [navigation, isHost]);
+          ],
+        );
+        return true;
+      };
+      const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
+      return () => sub.remove();
+    }, [navigation, isHost]),
+  );
 
   // ─── Start game ────────────────────────────────────────────────────────────
   function handleStartGame() {
@@ -683,7 +696,8 @@ export default function LobbyScreen({ navigation, route }) {
             accessibilityRole="button"
             accessibilityLabel="Start game"
             accessibilityState={{
-              disabled: players.length < minPlayers || players.length > maxPlayers,
+              disabled:
+                players.length < minPlayers || players.length > maxPlayers,
             }}
           >
             <Text style={styles.startButtonText}>Start Game</Text>

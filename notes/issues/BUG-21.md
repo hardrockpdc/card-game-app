@@ -2,11 +2,11 @@
 id: BUG-21
 type: bug
 area: navigation
-status: open
+status: fixed
 severity: high
 opened: 2026-09-08
 verified: 2026-09-08
-evidence: "Same shape as the reproduced [[BUG-12]]: BackHandler.addEventListener inside a plain useEffect in ConquianGameScreen.js:1098, GameScreen.js:201, GoFishGameScreen.js:441, LastCardGameScreen.js:1129, PokerGameScreen.js:878, RummyGameScreen.js:387, SolitaireGameScreen.js:1504, plus LobbyScreen.js:464 and OnlineLobbyScreen.js:134. Every online game reaches its screen via OnlineLobbyScreen.js:96/:185 navigation.replace(...), and all of them quit via navigation.navigate(\"Home\") (~48 call sites). Not individually reproduced on device — inferred from identical code shape"
+evidence: "Same shape as the reproduced [[BUG-12]]: BackHandler.addEventListener inside a plain useEffect in ConquianGameScreen.js:1098, GameScreen.js:201, GoFishGameScreen.js:441, LastCardGameScreen.js:1129, PokerGameScreen.js:878, RummyGameScreen.js:387, SolitaireGameScreen.js:1504, plus LobbyScreen.js:464 and OnlineLobbyScreen.js:134. Every online game reaches its screen via OnlineLobbyScreen.js:96/:185 navigation.replace(...), and all of them quit via navigation.navigate(\"Home\") (~48 call sites). Reproduced and fixed 2026-09-08. Verified on emulator-5554 with an online Go Fish room joined from emulator-5556: leaving the game lands on Home and Back from Home exits to NexusLauncherActivity, where before the fix Back stayed captured by the game screen. Solo path re-checked the same way via Blackjack. 50 suites / 595 tests green"
 ---
 
 ## Problem
@@ -29,13 +29,14 @@ way. Blackjack (`GameScreen`) and Solitaire are single-player and reached throug
 `SinglePlayerSetup`, where `navigate("Home")` does pop correctly — their handlers are the
 same shape but the stack unwinds, so no trap was observed during the sweep.
 
-## Why this is open rather than fixed
+## Why this was held back at first
 
-Deliberately not changed blind. Eleven screens, a hooks-order rule (CLAUDE.md §2.1) that
-has bitten this project four times, and a navigation change that alters back-stack
-semantics is not something to apply across the board on inference alone. Each online game
-should be reproduced on two devices the way Who Am I was, then fixed with the same two-part
-change, then re-verified.
+Deliberately not changed blind when [[BUG-12]] was fixed. Nine screens, a hooks-order rule
+(CLAUDE.md §2.1) that has bitten this project four times, and a navigation change that
+alters back-stack semantics is not something to apply across the board on inference alone.
+
+It was picked up as its own unit of work immediately afterwards, with the reproduction
+done first.
 
 ## Fix, when it's picked up
 
@@ -52,3 +53,40 @@ back into the game they just left. That was observed directly while fixing [[BUG
 
 Worth considering alongside: a single shared `useGameBackHandler(onQuit)` hook would let
 all of these screens share one correct implementation instead of nine near-copies.
+
+
+## Fixed 2026-09-08
+
+Both halves of the [[BUG-12]] fix applied across all nine screens that register a
+`BackHandler`: `ConquianGameScreen`, `GameScreen`, `GoFishGameScreen`,
+`LastCardGameScreen`, `PokerGameScreen`, `RummyGameScreen`, `SolitaireGameScreen`,
+`LobbyScreen` and `OnlineLobbyScreen`.
+
+- The handler moved from `useEffect` to `useFocusEffect(useCallback(...))` so it stops
+  intercepting while the screen is not focused.
+- All 45 `navigation.navigate("Home")` call sites became
+  `navigation.reset({ index: 0, routes: [{ name: "Home" }] })`, so leaving a game
+  actually unwinds the stack instead of pushing a second Home above the game.
+
+### On the hooks-order rule
+
+The `useEffect` → `useFocusEffect` swap is done **in place**, which is what makes it safe:
+the hook keeps its position, so nothing moves relative to any early return. That was
+verified rather than assumed — each file's hook/return sequence was diffed against `HEAD`,
+and the only differences are the one intended swap plus the added `useCallback`. No hook
+changed position in any of the nine files.
+
+Two earlier heuristic scans flagged `SolitaireGameScreen` as a violation; both were false
+positives (a two-space-indented `if (` inside the `formatTime` helper, and the
+`if (isLandscape) {` layout block). Worth recording because a naive "hook after a
+two-space `if`" check will keep producing those.
+
+### Verified
+
+Online: a Go Fish room hosted on emulator-5554 and joined from emulator-5556. Leaving lands
+on Home, and Back from Home exits to the launcher. Before the fix that same sequence left
+Back permanently captured.
+
+Solo: Blackjack opened, Back showed its save prompt, Leave landed on Home, Back exited.
+Solo games never showed the trap — their stack unwound correctly — so this confirms the
+`reset` change did not break the path that already worked.
