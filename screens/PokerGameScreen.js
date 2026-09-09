@@ -38,6 +38,8 @@ import {
   comparePokerScores,
   getPokerHandLabel,
   getCardValue,
+  drawReplacementCards,
+  chooseFiveCardDrawDiscards,
 } from "../game/poker";
 import { getTableTheme } from "../game/tableThemes";
 import {
@@ -196,6 +198,11 @@ function advanceBettingRound(state) {
   let newCC = [...state.communityCards];
 
   if (nextRound <= 0 || nextRound >= reveals.length) {
+    // Five Card Draw swaps cards between its two betting rounds. drawDone keeps
+    // the second round from looping back into another draw.
+    if (config.usesDrawPhase && !state.drawDone) {
+      return startDrawPhase({ ...state, playerStates: newPS });
+    }
     return doShowdown({ ...state, playerStates: newPS });
   }
 
@@ -472,6 +479,78 @@ function toPublic(state) {
   };
 }
 
+// ─── Five Card Draw ───────────────────────────────────────────────────────────
+
+// Players still in the hand each discard once, in dealer order, and are dealt
+// back up to a full hand. Then a second betting round runs and the hand ends.
+
+function seatsStillPlaying(state) {
+  const n = state.players.length;
+  const seats = [];
+  for (let j = 1; j <= n; j += 1) {
+    const idx = (state.dealerIdx + j) % n;
+    const ps = state.playerStates[String(state.players[idx].id)];
+    if (!ps.folded && !ps.allIn) seats.push(idx);
+  }
+  return seats;
+}
+
+function startDrawPhase(state) {
+  const toAct = seatsStillPlaying(state);
+  if (toAct.length === 0) {
+    return startPostDrawBetting({ ...state, drawDone: true });
+  }
+  return {
+    ...state,
+    phase: "draw",
+    toAct,
+    currentPlayerIndex: toAct[0],
+    lastAction: "Draw round — pick cards to swap",
+  };
+}
+
+function startPostDrawBetting(state) {
+  const toAct = seatsStillPlaying(state);
+  if (toAct.length === 0) return doShowdown(state);
+  // "postdraw" is deliberately not in BETTING_PHASES: when this round ends,
+  // advanceBettingRound finds no next phase and goes straight to showdown.
+  return {
+    ...state,
+    phase: "postdraw",
+    currentBet: 0,
+    minRaise: BIG_BLIND,
+    toAct,
+    currentPlayerIndex: toAct[0],
+  };
+}
+
+function doDraw(state, discardIndexes = []) {
+  const myIdx = state.currentPlayerIndex;
+  const player = state.players[myIdx];
+  const pid = String(player.id);
+  const { hand, deck } = drawReplacementCards(
+    state.hands[pid] || [],
+    discardIndexes,
+    state.deck,
+  );
+  const swapped = discardIndexes.length;
+  const newToAct = removeToAct(state.toAct, myIdx);
+  const next = {
+    ...state,
+    hands: { ...state.hands, [pid]: hand },
+    deck,
+    toAct: newToAct,
+    lastAction:
+      swapped === 0
+        ? `${player.name} stands pat`
+        : `${player.name} draws ${swapped}`,
+  };
+  if (newToAct.length === 0) {
+    return startPostDrawBetting({ ...next, drawDone: true });
+  }
+  return { ...next, currentPlayerIndex: newToAct[0] };
+}
+
 // ─── AI ───────────────────────────────────────────────────────────────────────
 
 function preflopStrength(hole) {
@@ -495,6 +574,9 @@ function preflopStrength(hole) {
 function pokerAIAction(state, pid, difficulty) {
   const ps = state.playerStates[pid];
   const hole = state.hands[pid] || [];
+  if (state.phase === "draw") {
+    return doDraw(state, chooseFiveCardDrawDiscards(hole, difficulty));
+  }
   const community = state.communityCards || [];
   const toCall = state.currentBet - ps.bet;
   // Returns null until there are five cards to read, which is what keeps
@@ -585,6 +667,8 @@ export default function PokerGameScreen({ navigation, route }) {
   const [tournamentCoins, setTournamentCoins] = useState(0);
   const [tableId, setTableId] = useState(getPokerTableId());
   const [showTablePicker, setShowTablePicker] = useState(false);
+  // Indexes of my own cards marked for the Five Card Draw swap.
+  const [discardSel, setDiscardSel] = useState([]);
   const fullRef = useRef(null);
   const dealerRef = useRef(0);
   const chipsRef = useRef(null);
@@ -761,6 +845,7 @@ export default function PokerGameScreen({ navigation, route }) {
           if (msg.action === "check") next = doCheck(state);
           if (msg.action === "call") next = doCall(state);
           if (msg.action === "raise") next = doRaise(state, msg.amount);
+          if (msg.action === "draw") next = doDraw(state, msg.discards || []);
           if (next !== state) applyState(next);
         },
       });
@@ -875,6 +960,7 @@ export default function PokerGameScreen({ navigation, route }) {
       if (action.action === "check") next = doCheck(state);
       if (action.action === "call") next = doCall(state);
       if (action.action === "raise") next = doRaise(state, action.amount);
+      if (action.action === "draw") next = doDraw(state, action.discards || []);
       if (next !== state) applyState(next);
     } else {
       sendToHost({ type: "ACTION", ...action });
@@ -950,6 +1036,9 @@ export default function PokerGameScreen({ navigation, route }) {
   const myPid = String(players[myIndex]?.id ?? "me");
   const myPS = playerStates[myPid] ?? {};
   const isMyTurn = currentPlayerIndex === myIndex && phase !== "showdown";
+  // During the draw it is still "my turn", but the choice is which cards to
+  // swap rather than how much to bet, so the betting row is replaced.
+  const isDrawTurn = isMyTurn && phase === "draw";
   const currentPlayer = players[currentPlayerIndex];
   const canCheck = isMyTurn && myPS.bet >= currentBet;
 
@@ -1183,19 +1272,44 @@ export default function PokerGameScreen({ navigation, route }) {
                 and Stud's seven do not. Seven full-size cards need roughly
                 538dp of row on a ~411dp screen, so they get clipped at both
                 edges unless the size comes down with the count. */}
-            {myHand.map((c, index) => (
-              <Card
-                key={c.id}
-                rank={c.rank}
-                suit={c.suit}
-                small={myHand.length > 4}
-                sizeScale={
-                  myHand.length > 5 ? 1.15 : myHand.length > 4 ? 1.35 : 1
-                }
-                animateDeal={hasMountedRef.current}
-                dealDelay={myHand.length <= 2 ? index * 100 : 0}
-              />
-            ))}
+            {myHand.map((c, index) => {
+              const card = (
+                <Card
+                  key={c.id}
+                  rank={c.rank}
+                  suit={c.suit}
+                  small={myHand.length > 4}
+                  sizeScale={
+                    myHand.length > 5 ? 1.15 : myHand.length > 4 ? 1.35 : 1
+                  }
+                  animateDeal={hasMountedRef.current}
+                  dealDelay={myHand.length <= 2 ? index * 100 : 0}
+                />
+              );
+              if (!isDrawTurn) return card;
+              const selected = discardSel.includes(index);
+              return (
+                <TouchableOpacity
+                  key={c.id}
+                  onPress={() =>
+                    setDiscardSel((prev) =>
+                      prev.includes(index)
+                        ? prev.filter((i) => i !== index)
+                        : [...prev, index],
+                    )
+                  }
+                  style={selected ? styles.cardMarkedForSwap : null}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  accessibilityLabel={`${c.rank} of ${c.suit}`}
+                  accessibilityHint={
+                    selected ? "Tap to keep this card" : "Tap to swap this card"
+                  }
+                >
+                  {card}
+                </TouchableOpacity>
+              );
+            })}
             {phase === "showdown" && handResult?.handDescriptions?.[myPid] ? (
               <Text style={styles.youHandDesc}>
                 {handResult.handDescriptions[myPid]}
@@ -1203,7 +1317,30 @@ export default function PokerGameScreen({ navigation, route }) {
             ) : null}
           </View>
 
-          {isMyTurn ? (
+          {isDrawTurn ? (
+            <View style={styles.actionRow}>
+              <TouchableOpacity
+                style={[styles.actionBtn, styles.callBtn]}
+                onPress={() => {
+                  act({ action: "draw", discards: discardSel });
+                  setDiscardSel([]);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  discardSel.length === 0
+                    ? "Stand pat"
+                    : `Swap ${discardSel.length} cards`
+                }
+                accessibilityHint="Trade the cards you marked for new ones"
+              >
+                <Text style={styles.actionBtnText}>
+                  {discardSel.length === 0
+                    ? "Stand Pat"
+                    : `Swap ${discardSel.length}`}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : isMyTurn ? (
             <>
               <View style={styles.actionRow}>
                 <TouchableOpacity
@@ -1473,6 +1610,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     flexWrap: "wrap",
     gap: scale(6),
+  },
+  cardMarkedForSwap: {
+    opacity: 0.45,
+    borderRadius: scale(8),
+    borderWidth: 2,
+    borderColor: "#ffd700",
   },
   youHandDesc: {
     color: "#ffd700",
