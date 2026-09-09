@@ -133,7 +133,10 @@ export default function HomeScreen({ navigation }) {
 
   function goToProfile() {
     navigation.navigate("Profile", {
-      welcomeMessage: PROFILE_WELCOME_MESSAGE,
+      // Only for someone who hasn't set a name yet — the same condition
+      // goToSinglePlayer uses. Sent unconditionally, it told every returning
+      // player to "set up your profile" every time they opened the screen.
+      welcomeMessage: profileHasName ? undefined : PROFILE_WELCOME_MESSAGE,
     });
   }
 

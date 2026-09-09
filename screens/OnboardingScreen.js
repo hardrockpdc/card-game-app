@@ -442,7 +442,7 @@ export default function OnboardingScreen({ navigation }) {
               controls offering one outcome, which reads as a trap. The label
               now tells the truth about what tapping does. */}
           <TouchableOpacity
-            style={[styles.primaryBtn, styles.navPrimaryBtn]}
+            style={styles.primaryBtn}
             onPress={() => setStep(3)}
             accessibilityRole="button"
             accessibilityLabel={photoType ? "Next" : "Skip adding a photo"}
@@ -703,7 +703,10 @@ const styles = StyleSheet.create({
     paddingVertical: scale(16),
     alignItems: "center",
   },
-  // In the Skip/Next row, the primary button fills the space beside Skip
+  // Row-only. Applies inside styles.navRow, where the button shares a horizontal
+  // row and should fill it. Do NOT put this on a standalone button in the column
+  // layout — flex:1 there makes it swallow all remaining vertical space, which is
+  // what happened to the step 2 "Skip for now" button.
   navPrimaryBtn: {
     flex: 1,
   },

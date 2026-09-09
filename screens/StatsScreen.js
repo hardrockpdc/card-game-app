@@ -16,6 +16,10 @@ const GAME_LABELS = {
   conquian: "Conquián",
   poker: "Poker",
   whoami: "Who Am I?",
+  // Must stay in step with ALL_GAME_IDS in game/achievements.js. Memory was
+  // missing here while MemoryGameScreen recorded wins under "memory", so those
+  // wins were counted for the "Well-Rounded" achievement but never displayed.
+  memory: "Memory Match",
 };
 
 export default function StatsScreen({ navigation }) {

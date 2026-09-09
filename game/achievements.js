@@ -45,7 +45,7 @@ export const ACHIEVEMENTS = [
   { id: "card_master", group: "Winning", icon: "👑", name: "Card Master", desc: "Win 100 games total", reward: 3000, check: (c) => c.totalWins >= 100 },
   { id: "well_rounded", group: "Winning", icon: "🧩", name: "Well-Rounded", desc: "Win every game at least once", reward: 1000, check: (c) => c.allGamesWon },
   // Multiplayer
-  { id: "host_most", group: "Multiplayer", icon: "🖧", name: "Host with the Most", desc: "Host your first online game", reward: 250, check: (c) => c.onlineHosted },
+  { id: "host_most", group: "Multiplayer", icon: "🏠", name: "Host with the Most", desc: "Host your first online game", reward: 250, check: (c) => c.onlineHosted },
   { id: "party_animal", group: "Multiplayer", icon: "🎉", name: "Party Animal", desc: "Win 25 multiplayer games", reward: 1500, check: (c) => c.mpWins >= 25 },
   // Loyalty
   { id: "regular", group: "Loyalty", icon: "📅", name: "Regular", desc: "7-day login streak", reward: 1000, check: (c) => c.bestStreak >= 7 },
