@@ -31,7 +31,14 @@ import {
   stopServer,
   disconnectFromHost,
 } from "../game/GameNetwork";
-import { POKER_VARIANTS } from "../game/poker";
+import {
+  POKER_VARIANTS,
+  getPokerVariantConfig,
+  evaluatePokerVariantHand,
+  comparePokerScores,
+  getPokerHandLabel,
+  getCardValue,
+} from "../game/poker";
 import { getTableTheme } from "../game/tableThemes";
 import {
   POKER_TABLES,
@@ -56,109 +63,10 @@ const POKER_WIN_REWARD = getWinReward("poker", false);
 const SMALL_BLIND = 10;
 const BIG_BLIND = 20;
 
-// ─── Hand evaluation ──────────────────────────────────────────────────────────
-
-const RANK_VAL = {
-  A: 14,
-  K: 13,
-  Q: 12,
-  J: 11,
-  10: 10,
-  9: 9,
-  8: 8,
-  7: 7,
-  6: 6,
-  5: 5,
-  4: 4,
-  3: 3,
-  2: 2,
-};
-
-function evaluate5(cards) {
-  const vals = cards.map((c) => RANK_VAL[c.rank]).sort((a, b) => b - a);
-  const isFlush = new Set(cards.map((c) => c.suit)).size === 1;
-  const allUniq = new Set(vals).size === 5;
-  const isNorm = allUniq && vals[0] - vals[4] === 4;
-  const isWheel =
-    allUniq &&
-    vals[0] === 14 &&
-    vals[1] === 5 &&
-    vals[2] === 4 &&
-    vals[3] === 3 &&
-    vals[4] === 2;
-  const isStraight = isNorm || isWheel;
-  const strHigh = isWheel ? 5 : vals[0];
-  const cnt = {};
-  for (const v of vals) cnt[v] = (cnt[v] || 0) + 1;
-  const groups = Object.entries(cnt)
-    .map(([v, n]) => ({ v: +v, n }))
-    .sort((a, b) => b.n - a.n || b.v - a.v);
-  if (isFlush && isStraight && strHigh === 14)
-    return { rank: 8, name: "Royal Flush", tb: [14] };
-  if (isFlush && isStraight)
-    return { rank: 7, name: "Straight Flush", tb: [strHigh] };
-  if (groups[0].n === 4)
-    return { rank: 6, name: "Four of a Kind", tb: [groups[0].v, groups[1].v] };
-  if (groups[0].n === 3 && groups[1]?.n === 2)
-    return { rank: 5, name: "Full House", tb: [groups[0].v, groups[1].v] };
-  if (isFlush) return { rank: 4, name: "Flush", tb: vals };
-  if (isStraight) return { rank: 3, name: "Straight", tb: [strHigh] };
-  if (groups[0].n === 3)
-    return {
-      rank: 2,
-      name: "Three of a Kind",
-      tb: [groups[0].v, ...vals.filter((v) => v !== groups[0].v)],
-    };
-  if (groups[0].n === 2 && groups[1]?.n === 2)
-    return {
-      rank: 1,
-      name: "Two Pair",
-      tb: [
-        groups[0].v,
-        groups[1].v,
-        vals.find((v) => v !== groups[0].v && v !== groups[1].v),
-      ],
-    };
-  if (groups[0].n === 2)
-    return {
-      rank: 0,
-      name: "One Pair",
-      tb: [groups[0].v, ...vals.filter((v) => v !== groups[0].v)],
-    };
-  return { rank: -1, name: "High Card", tb: vals };
-}
-
-function cmpScore(a, b) {
-  if (a.rank !== b.rank) return a.rank - b.rank;
-  for (let i = 0; i < Math.max(a.tb.length, b.tb.length); i++) {
-    if ((a.tb[i] ?? 0) !== (b.tb[i] ?? 0))
-      return (a.tb[i] ?? 0) - (b.tb[i] ?? 0);
-  }
-  return 0;
-}
-
-function bestHand(holeCards, community) {
-  const all = [...holeCards, ...community];
-  if (all.length <= 5)
-    return evaluate5(
-      all.length === 5 ? all : [...all, ...Array(5 - all.length).fill(all[0])],
-    );
-  let best = null;
-  function choose(start, cur) {
-    if (cur.length === 5) {
-      const s = evaluate5(cur);
-      if (!best || cmpScore(s, best) > 0) best = s;
-      return;
-    }
-    for (let i = start; i <= all.length - (5 - cur.length); i++) {
-      cur.push(all[i]);
-      choose(i + 1, cur);
-      cur.pop();
-    }
-  }
-  choose(0, []);
-  return best;
-}
+// Betting rounds in order. How many of these a variant actually uses is decided
+// by its communityRevealCounts: Hold'em and Omaha reveal [0,3,4,5] and so play
+// all four, while Five Card Draw and Seven Card Stud reveal [0] and play one.
+const BETTING_PHASES = ["preflop", "flop", "turn", "river"];
 
 // ─── Game logic ───────────────────────────────────────────────────────────────
 
@@ -167,13 +75,20 @@ function initDeal(
   dealerIdx,
   prevChips,
   startingChips = STARTING_CHIPS,
+  variant = "texasHoldem",
 ) {
+  // Every variant-specific number comes from POKER_VARIANTS. Hard-coding two
+  // hole cards here is what made Omaha, Five Card Draw and Seven Card Stud all
+  // deal like Hold'em regardless of what the player picked (BUG-11).
+  const config = getPokerVariantConfig(variant);
   const deck = shuffleDeck(createDeck());
   const n = playerList.length;
   const hands = {};
   let di = 0;
   for (const p of playerList) {
-    hands[String(p.id)] = [deck[di++], deck[di++]];
+    const hand = [];
+    for (let k = 0; k < config.holeCardCount; k += 1) hand.push(deck[di++]);
+    hands[String(p.id)] = hand;
   }
 
   const playerStates = {};
@@ -217,6 +132,7 @@ function initDeal(
 
   return {
     phase: "preflop",
+    variant: config.key,
     deck: deck.slice(di),
     communityCards: [],
     hands,
@@ -269,23 +185,25 @@ function advanceBettingRound(state) {
       committed: (ps.committed || 0) + (ps.bet || 0),
     };
 
-  let nextPhase,
-    newDeck = [...state.deck],
-    newCC = [...state.communityCards];
-  if (state.phase === "preflop") {
-    newDeck.shift();
-    newCC = [newDeck.shift(), newDeck.shift(), newDeck.shift()];
-    nextPhase = "flop";
-  } else if (state.phase === "flop") {
-    newDeck.shift();
-    newCC = [...newCC, newDeck.shift()];
-    nextPhase = "turn";
-  } else if (state.phase === "turn") {
-    newDeck.shift();
-    newCC = [...newCC, newDeck.shift()];
-    nextPhase = "river";
-  } else {
+  // The board and the number of rounds are both read from the variant rather
+  // than assumed. A variant with no community cards simply has one round and
+  // falls through to the showdown below.
+  const config = getPokerVariantConfig(state.variant);
+  const reveals = config.communityRevealCounts;
+  const nextRound = BETTING_PHASES.indexOf(state.phase) + 1;
+
+  const newDeck = [...state.deck];
+  let newCC = [...state.communityCards];
+
+  if (nextRound <= 0 || nextRound >= reveals.length) {
     return doShowdown({ ...state, playerStates: newPS });
+  }
+
+  const nextPhase = BETTING_PHASES[nextRound];
+  const boardTarget = reveals[nextRound];
+  if (boardTarget > newCC.length) {
+    newDeck.shift(); // burn card, as at a real table
+    while (newCC.length < boardTarget) newCC = [...newCC, newDeck.shift()];
   }
 
   const n = state.players.length;
@@ -364,8 +282,16 @@ function doShowdown(state) {
   for (const p of state.players) {
     const pid = String(p.id);
     if (state.playerStates[pid].folded) continue;
-    const score = bestHand(state.hands[pid] || [], state.communityCards);
-    handDescriptions[pid] = score.name;
+    // Omaha is the reason this must go through evaluatePokerVariantHand and
+    // not a plain best-five-of-all: it is only allowed to use exactly two hole
+    // cards and exactly three board cards.
+    const score = evaluatePokerVariantHand({
+      variant: state.variant,
+      holeCards: state.hands[pid] || [],
+      communityCards: state.communityCards || [],
+    });
+    if (!score) continue;
+    handDescriptions[pid] = getPokerHandLabel(score);
     scores[pid] = score;
   }
 
@@ -377,7 +303,8 @@ function doShowdown(state) {
     let best = null;
     for (const pid of pot.eligible) {
       const s = scores[pid];
-      if (s && (!best || cmpScore(s, best) > 0)) best = s;
+      if (s && (!best || comparePokerScores(s.score, best.score) > 0))
+        best = s;
     }
     if (!best) {
       // No eligible (non-folded) winner for this layer — these are uncalled
@@ -388,7 +315,8 @@ function doShowdown(state) {
       continue;
     }
     const potWinners = pot.eligible.filter(
-      (pid) => scores[pid] && cmpScore(scores[pid], best) === 0,
+      (pid) =>
+        scores[pid] && comparePokerScores(scores[pid].score, best.score) === 0,
     );
     const share = Math.floor(pot.amount / potWinners.length);
     let remainder = pot.amount - share * potWinners.length;
@@ -549,8 +477,8 @@ function toPublic(state) {
 function preflopStrength(hole) {
   if (!hole || hole.length < 2) return 0.3;
   const [c1, c2] = hole;
-  const v1 = RANK_VAL[c1.rank] ?? 2;
-  const v2 = RANK_VAL[c2.rank] ?? 2;
+  const v1 = getCardValue(c1) || 2;
+  const v2 = getCardValue(c2) || 2;
   if (c1.rank === c2.rank) return v1 >= 10 ? 0.9 : v1 >= 7 ? 0.75 : 0.55;
   const hi = Math.max(v1, v2);
   const lo = Math.min(v1, v2);
@@ -569,10 +497,17 @@ function pokerAIAction(state, pid, difficulty) {
   const hole = state.hands[pid] || [];
   const community = state.communityCards || [];
   const toCall = state.currentBet - ps.bet;
-  const handRank =
-    community.length >= 3 ? bestHand(hole, community).rank : null;
+  // Returns null until there are five cards to read, which is what keeps
+  // Hold'em's preflop on preflopStrength. Draw and Stud have a full hand from
+  // the start and so get a real reading immediately.
+  const evaluated = evaluatePokerVariantHand({
+    variant: state.variant,
+    holeCards: hole,
+    communityCards: community,
+  });
+  const handRank = evaluated ? evaluated.category : null;
   const strength =
-    handRank !== null ? Math.max(0, (handRank + 1) / 9) : preflopStrength(hole);
+    handRank !== null ? Math.max(0, handRank / 8) : preflopStrength(hole);
 
   if (difficulty === "easy") {
     if (toCall <= 0) return doCheck(state);
@@ -634,6 +569,7 @@ export default function PokerGameScreen({ navigation, route }) {
     difficulty = "medium",
     variant,
   } = route.params;
+  const variantConfig = getPokerVariantConfig(variant);
   const isSinglePlayer = role === "singleplayer";
   const isHost = role === "host" || isSinglePlayer;
   const { avatarById, handleHostMessage, handleClientMessage } =
@@ -782,7 +718,7 @@ export default function PokerGameScreen({ navigation, route }) {
         handReadyTimerRef.current = setTimeout(() => setHandReady(true), 1400);
       }
       playSound("card_deal");
-      applyState(initDeal(initialPlayers, 0, null, startingChips));
+      applyState(initDeal(initialPlayers, 0, null, startingChips, variant));
     }
     init();
 
@@ -804,6 +740,7 @@ export default function PokerGameScreen({ navigation, route }) {
                 newDealer,
                 chipsRef.current,
                 startingChips,
+                variant,
               ),
             );
             return;
@@ -918,7 +855,13 @@ export default function PokerGameScreen({ navigation, route }) {
         }
         const newDealer = (dealerRef.current + 1) % activePlayers.length;
         applyState(
-          initDeal(activePlayers, newDealer, chipsRef.current, startingChips),
+          initDeal(
+            activePlayers,
+            newDealer,
+            chipsRef.current,
+            startingChips,
+            variant,
+          ),
         );
         return;
       }
@@ -1038,7 +981,7 @@ export default function PokerGameScreen({ navigation, route }) {
     coinRewardedRef.current = false;
     setTournamentCoins(0);
     setTournamentWinner(null);
-    applyState(initDeal(initialPlayers, 0, null, startingChips));
+    applyState(initDeal(initialPlayers, 0, null, startingChips, variant));
   }
 
   function handleSaveAndExit() {
@@ -1170,22 +1113,32 @@ export default function PokerGameScreen({ navigation, route }) {
             <Text style={styles.potValue}>{pot}</Text>
           </View>
 
-          <View style={styles.communityRow}>
-            {communityCards.map((c) => (
-              <Card
-                key={c.id}
-                rank={c.rank}
-                suit={c.suit}
-                small
-                sizeScale={1.15}
-              />
-            ))}
-            {Array(5 - communityCards.length)
-              .fill(null)
-              .map((_, i) => (
-                <View key={`ph-${i}`} style={styles.cardPlaceholder} />
+          {/* Five Card Draw and Seven Card Stud have no shared board, so the
+              row is dropped entirely rather than drawn as empty slots that
+              never fill. Placeholder count comes from the variant too. */}
+          {variantConfig.usesCommunityCards ? (
+            <View style={styles.communityRow}>
+              {communityCards.map((c) => (
+                <Card
+                  key={c.id}
+                  rank={c.rank}
+                  suit={c.suit}
+                  small
+                  sizeScale={1.15}
+                />
               ))}
-          </View>
+              {Array(
+                Math.max(
+                  0,
+                  variantConfig.communityCardCount - communityCards.length,
+                ),
+              )
+                .fill(null)
+                .map((_, i) => (
+                  <View key={`ph-${i}`} style={styles.cardPlaceholder} />
+                ))}
+            </View>
+          ) : null}
 
           <Text
             style={[styles.statusLine, { color: pal.text }]}
@@ -1226,11 +1179,19 @@ export default function PokerGameScreen({ navigation, route }) {
               handReady ? "auto" : "no-hide-descendants"
             }
           >
+            {/* Hold'em's two cards fit at full size; Omaha's four, Draw's five
+                and Stud's seven do not. Seven full-size cards need roughly
+                538dp of row on a ~411dp screen, so they get clipped at both
+                edges unless the size comes down with the count. */}
             {myHand.map((c, index) => (
               <Card
                 key={c.id}
                 rank={c.rank}
                 suit={c.suit}
+                small={myHand.length > 4}
+                sizeScale={
+                  myHand.length > 5 ? 1.15 : myHand.length > 4 ? 1.35 : 1
+                }
                 animateDeal={hasMountedRef.current}
                 dealDelay={myHand.length <= 2 ? index * 100 : 0}
               />
@@ -1510,7 +1471,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: scale(8),
+    flexWrap: "wrap",
+    gap: scale(6),
   },
   youHandDesc: {
     color: "#ffd700",
