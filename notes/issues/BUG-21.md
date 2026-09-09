@@ -5,7 +5,7 @@ area: navigation
 status: fixed
 severity: high
 opened: 2026-09-08
-verified: 2026-09-08
+verified: 2026-09-09
 evidence: "Same shape as the reproduced [[BUG-12]]: BackHandler.addEventListener inside a plain useEffect in ConquianGameScreen.js:1098, GameScreen.js:201, GoFishGameScreen.js:441, LastCardGameScreen.js:1129, PokerGameScreen.js:878, RummyGameScreen.js:387, SolitaireGameScreen.js:1504, plus LobbyScreen.js:464 and OnlineLobbyScreen.js:134. Every online game reaches its screen via OnlineLobbyScreen.js:96/:185 navigation.replace(...), and all of them quit via navigation.navigate(\"Home\") (~48 call sites). Reproduced and fixed 2026-09-08. Verified on emulator-5554 with an online Go Fish room joined from emulator-5556: leaving the game lands on Home and Back from Home exits to NexusLauncherActivity, where before the fix Back stayed captured by the game screen. Solo path re-checked the same way via Blackjack. 50 suites / 595 tests green"
 ---
 
@@ -86,6 +86,12 @@ two-space `if`" check will keep producing those.
 Online: a Go Fish room hosted on emulator-5554 and joined from emulator-5556. Leaving lands
 on Home, and Back from Home exits to the launcher. Before the fix that same sequence left
 Back permanently captured.
+
+**Extended 2026-09-09.** The same leave-then-Back sequence was run on three more online
+games — Conquián, Rummy and Last Card — each landing on Home and then exiting to the
+launcher. With [[BUG-12]]'s Who Am I that is **five of the six online games confirmed on
+device**. Only online Poker's leave path is un-exercised; it shares the identical change,
+so this is a gap in evidence rather than a known risk.
 
 Solo: Blackjack opened, Back showed its save prompt, Leave landed on Home, Back exited.
 Solo games never showed the trap — their stack unwound correctly — so this confirms the
