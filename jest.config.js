@@ -14,7 +14,11 @@ module.exports = {
   // Defines RN/Metro globals (e.g. __DEV__) that game/logger.js reads at load.
   setupFiles: ["<rootDir>/jest.setup.js"],
   // Only look for tests we wrote; never descend into node_modules or native dirs.
-  testMatch: ["<rootDir>/__tests__/**/*.test.js"],
+  // Deliberately relative, with no <rootDir> prefix: when the project lives on a
+  // UNC path or a mapped network drive, Jest mangles the interpolated <rootDir>
+  // into a malformed glob, matches zero files, and `npm test` silently passes
+  // nothing at all. Relative patterns are resolved against rootDir anyway.
+  testMatch: ["**/__tests__/**/*.test.js"],
   // Static image assets (png/jpg/…) can't be parsed by Jest — map them to a stub
   // so modules that require card art (game/cardTheme.js) are importable in tests.
   moduleNameMapper: {
