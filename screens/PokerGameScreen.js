@@ -40,6 +40,7 @@ import {
   getCardValue,
   drawReplacementCards,
   chooseFiveCardDrawDiscards,
+  redactStudHand,
 } from "../game/poker";
 import { getTableTheme } from "../game/tableThemes";
 import {
@@ -68,7 +69,7 @@ const BIG_BLIND = 20;
 // Betting rounds in order. How many of these a variant actually uses is decided
 // by its communityRevealCounts: Hold'em and Omaha reveal [0,3,4,5] and so play
 // all four, while Five Card Draw and Seven Card Stud reveal [0] and play one.
-const BETTING_PHASES = ["preflop", "flop", "turn", "river"];
+const BETTING_PHASES = ["preflop", "flop", "turn", "river", "fifth"];
 
 // ─── Game logic ───────────────────────────────────────────────────────────────
 
@@ -87,9 +88,14 @@ function initDeal(
   const n = playerList.length;
   const hands = {};
   let di = 0;
+  // Stud deals a street at a time, so the opening deal is only the first of
+  // its studDealCounts. Every other variant gets its whole hand at once.
+  const openingCards = config.studDealCounts
+    ? config.studDealCounts[0]
+    : config.holeCardCount;
   for (const p of playerList) {
     const hand = [];
-    for (let k = 0; k < config.holeCardCount; k += 1) hand.push(deck[di++]);
+    for (let k = 0; k < openingCards; k += 1) hand.push(deck[di++]);
     hands[String(p.id)] = hand;
   }
 
@@ -213,6 +219,25 @@ function advanceBettingRound(state) {
     while (newCC.length < boardTarget) newCC = [...newCC, newDeck.shift()];
   }
 
+  // Stud has no board; its street deals another card to each live player.
+  let newHands = state.hands;
+  if (config.studDealCounts) {
+    const perStreet = config.studDealCounts[nextRound] ?? 0;
+    if (perStreet > 0) {
+      newHands = { ...state.hands };
+      for (const p of state.players) {
+        const pid = String(p.id);
+        if (newPS[pid].folded) continue;
+        const hand = [...(newHands[pid] || [])];
+        for (let k = 0; k < perStreet; k += 1) {
+          if (newDeck.length === 0) break;
+          hand.push(newDeck.shift());
+        }
+        newHands[pid] = hand;
+      }
+    }
+  }
+
   const n = state.players.length;
   const canAct = [];
   for (let j = 1; j <= n; j++) {
@@ -228,6 +253,7 @@ function advanceBettingRound(state) {
       phase: nextPhase,
       deck: newDeck,
       communityCards: newCC,
+      hands: newHands,
       playerStates: newPS,
     };
     while (s.phase !== "showdown") s = advanceBettingRound(s);
@@ -239,6 +265,7 @@ function advanceBettingRound(state) {
     phase: nextPhase,
     deck: newDeck,
     communityCards: newCC,
+    hands: newHands,
     playerStates: newPS,
     currentBet: 0,
     minRaise: BIG_BLIND,
@@ -476,7 +503,24 @@ function toPublic(state) {
     players: state.players,
     winner: state.winner,
     handResult: state.handResult,
+    variant: state.variant,
+    // Stud's up cards are public by the rules of the game, so they are the one
+    // thing published from `hands` before showdown. Down cards are sent as null
+    // rather than omitted, so the table can draw a face-down card in the right
+    // position without ever being told what it is.
+    studUpCards: studUpCardsFor(state),
   };
+}
+
+function studUpCardsFor(state) {
+  const config = getPokerVariantConfig(state.variant);
+  if (!config.usesStudCards || !state.hands) return undefined;
+  return Object.fromEntries(
+    Object.entries(state.hands).map(([pid, hand]) => [
+      pid,
+      redactStudHand(hand || [], state.variant),
+    ]),
+  );
 }
 
 // ─── Five Card Draw ───────────────────────────────────────────────────────────
@@ -1184,6 +1228,21 @@ export default function PokerGameScreen({ navigation, route }) {
                       </Text>
                     ) : null}
                   </>
+                ) : variantConfig.usesStudCards &&
+                  !ps.folded &&
+                  (gameState.studUpCards?.[pid]?.length ?? 0) > 0 ? (
+                  // Stud is played on what you can see. Each opponent's up
+                  // cards show from the moment they are dealt; their down cards
+                  // arrive here as null and are drawn face down.
+                  <View style={styles.seatReveal}>
+                    {gameState.studUpCards[pid].map((c, cardIndex) =>
+                      c ? (
+                        <Card key={c.id} rank={c.rank} suit={c.suit} small />
+                      ) : (
+                        <Card key={`down-${cardIndex}`} faceDown small />
+                      ),
+                    )}
+                  </View>
                 ) : null}
               </View>
             );

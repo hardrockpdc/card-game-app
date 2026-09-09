@@ -61,7 +61,15 @@ export const POKER_VARIANTS = {
     usesCommunityCards: false,
     usesDrawPhase: false,
     usesStudCards: true,
-    communityRevealCounts: [0],
+    // Five betting rounds and no board at any of them. Stud's "reveal" is each
+    // player's own cards arriving a street at a time, not a shared board.
+    communityRevealCounts: [0, 0, 0, 0, 0],
+    // Cards dealt per street: three to start (two down, one up), then one per
+    // street, seven in total. studDownCardIndexes are the ones kept hidden from
+    // opponents — the first two and the last — leaving four up cards, which is
+    // the information the game is actually played on.
+    studDealCounts: [3, 1, 1, 1, 1],
+    studDownCardIndexes: [0, 1, 6],
   },
 };
 
@@ -728,6 +736,19 @@ export function chooseFiveCardDrawDiscards(cards = [], difficulty = "medium") {
   return cards
     .map((_, index) => (keepIndexes.has(index) ? null : index))
     .filter((value) => value !== null);
+}
+
+// What an opponent is allowed to see of a stud hand. Down cards come back as
+// null rather than being dropped, so a table can draw a face-down card in the
+// right position without being told what it is. Anything that is not a stud
+// variant has no public cards before showdown at all.
+export function redactStudHand(hand = [], variant = "sevenCardStud") {
+  const config = getPokerVariantConfig(variant);
+  if (!config.usesStudCards) {
+    return [];
+  }
+  const downIndexes = config.studDownCardIndexes ?? [];
+  return hand.map((card, index) => (downIndexes.includes(index) ? null : card));
 }
 
 export function getPokerHandLabel(result) {
