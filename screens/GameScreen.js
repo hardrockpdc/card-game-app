@@ -41,6 +41,7 @@ const BG = getTableTheme("blackjack").table;
 const BJ_DEAL_RED = "#cc2222";
 const BJ_STAND_BLUE = "#2980b9";
 const BJ_SPLIT_PURPLE = "#8e44ad";
+const BJ_DOUBLE_ORANGE = "#d35400";
 
 const BLACKJACK_SLIDES = [
   {
@@ -103,6 +104,7 @@ export default function GameScreen({ navigation, route }) {
 
   const currentBetRef = useRef(0);
   const payoutDoneRef = useRef(false);
+  const doubledDownRef = useRef(false);
   const modalDelayTimerRef = useRef(null);
   const hasMountedRef = useRef(false);
 
@@ -119,6 +121,10 @@ export default function GameScreen({ navigation, route }) {
   // gameStatus: 'idle' | 'playing' | 'bust' | 'dealerTurn' | 'finished'
   const [result, setResult] = useState("");
   const [splitResult, setSplitResult] = useState("");
+  // Doubling puts a second bet on the main hand: one more card, then the turn
+  // ends. The ref mirrors the state because resolveHandPayout is called from
+  // closures where the state value can be stale — same reason as currentBetRef.
+  const [doubledDown, setDoubledDown] = useState(false);
 
   // ── Load wallet + check for saved game on mount ───────────────────
   useEffect(() => {
@@ -149,6 +155,8 @@ export default function GameScreen({ navigation, route }) {
       setGameStatus(saved.gameStatus ?? "playing");
       setResult(saved.result ?? "");
       setSplitResult(saved.splitResult ?? "");
+      setDoubledDown(saved.doubledDown ?? false);
+      doubledDownRef.current = saved.doubledDown ?? false;
       setCoinsDelta(saved.coinsDelta ?? 0);
       setScreenPhase(saved.screenPhase ?? "playing");
       // Restored hand shouldn't replay the deal animation; enable it on the
@@ -174,6 +182,7 @@ export default function GameScreen({ navigation, route }) {
       gameStatus,
       result,
       splitResult,
+      doubledDown,
       coinsDelta,
     });
   }, [
@@ -184,6 +193,7 @@ export default function GameScreen({ navigation, route }) {
     gameStatus,
     result,
     splitResult,
+    doubledDown,
     coinsDelta,
   ]);
 
@@ -230,9 +240,13 @@ export default function GameScreen({ navigation, route }) {
     payoutDoneRef.current = true;
 
     const bet = currentBetRef.current;
+    // A doubled hand staked twice the bet, so it wins twice as much and pushes
+    // back twice as much. Blackjack is deliberately left on the plain bet: a
+    // natural is two cards, and doubling always makes it three.
+    const mainStake = doubledDownRef.current ? bet * 2 : bet;
     let payout = 0;
-    if (mainResult === "win") payout += bet * 2;
-    else if (mainResult === "push") payout += bet;
+    if (mainResult === "win") payout += mainStake * 2;
+    else if (mainResult === "push") payout += mainStake;
     else if (mainResult === "blackjack") payout += bet + Math.floor(bet * 1.5);
     // 'lose': 0
 
@@ -249,7 +263,12 @@ export default function GameScreen({ navigation, route }) {
     }
     setCoins(newCoins);
 
-    const totalBet = hadSplit ? bet * 2 : bet;
+    // Everything actually staked this hand: the opening bet, a second bet if
+    // the hand was split, and another if it was doubled. Missing the double
+    // here would overstate the win on screen and, worse, make a doubled push
+    // look like a win to the streak rules below.
+    const totalBet =
+      bet + (hadSplit ? bet : 0) + (doubledDownRef.current ? bet : 0);
     const coinsDeltaNet = payout - totalBet;
     setCoinsDelta(coinsDeltaNet);
 
@@ -321,6 +340,8 @@ export default function GameScreen({ navigation, route }) {
     setDealerHand(dealerCards);
     setResult("");
     setSplitResult("");
+    setDoubledDown(false);
+    doubledDownRef.current = false;
     setGameStatus("playing");
     setScreenPhase("playing");
     playSound("card_deal");
@@ -353,6 +374,35 @@ export default function GameScreen({ navigation, route }) {
     setSplitHand([playerHand[1], newCard1]);
     setDeck(deck.slice(2));
     setActiveHand(0);
+  }
+
+  // ── Double down ───────────────────────────────────────────────────
+  // Match the bet, take exactly one card, then the turn is over. Busting on
+  // that card settles immediately, exactly as a bust on a hit does.
+  async function handleDoubleDown() {
+    if (coins === null || coins < currentBetRef.current) return;
+
+    const newCoins = await subtractCoins(currentBetRef.current);
+    setCoins(newCoins);
+    setDoubledDown(true);
+    doubledDownRef.current = true;
+
+    playSound("card_flip");
+    const newCard = deck[0];
+    const remainingDeck = deck.slice(1);
+    const newHand = [...playerHand, newCard];
+    setDeck(remainingDeck);
+    setPlayerHand(newHand);
+
+    if (calculateHandValue(newHand) > 21) {
+      setResult("lose");
+      setGameStatus("bust");
+      resolveHandPayout("lose", "", false);
+      return;
+    }
+
+    setGameStatus("dealerTurn");
+    runDealer(remainingDeck, newHand, splitHand, result, splitResult);
   }
 
   // ── Hit ───────────────────────────────────────────────────────────
@@ -581,6 +631,19 @@ export default function GameScreen({ navigation, route }) {
     splitHand === null &&
     playerHand.length === 2 &&
     playerHand[0]?.rank === playerHand[1]?.rank &&
+    coins !== null &&
+    coins >= currentBetRef.current;
+
+  // Doubling is offered only on an unsplit opening hand. Doubling after a
+  // split is legal at a real table, but it would put a third stake in play and
+  // the payout maths here tracks one stake per hand — so it is deliberately
+  // left out rather than half-supported.
+  const canDouble =
+    canPlay &&
+    splitHand === null &&
+    activeHand === 0 &&
+    playerHand.length === 2 &&
+    !doubledDown &&
     coins !== null &&
     coins >= currentBetRef.current;
 
@@ -888,6 +951,18 @@ export default function GameScreen({ navigation, route }) {
                 <Text style={styles.buttonText}>Split</Text>
               </TouchableOpacity>
             )}
+
+            {canDouble && (
+              <TouchableOpacity
+                style={[styles.button, styles.doubleButton]}
+                onPress={handleDoubleDown}
+                accessibilityRole="button"
+                accessibilityLabel="Double down"
+                accessibilityHint="Double your bet, take one more card, and end your turn"
+              >
+                <Text style={styles.buttonText}>Double</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       ) : null}
@@ -1110,6 +1185,9 @@ const styles = StyleSheet.create({
   },
   splitButton: {
     backgroundColor: BJ_SPLIT_PURPLE,
+  },
+  doubleButton: {
+    backgroundColor: BJ_DOUBLE_ORANGE,
   },
   disabled: {
     opacity: 0.4,
