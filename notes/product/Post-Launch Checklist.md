@@ -120,6 +120,14 @@ until the rules are re-published.
       confirmation before shipping, this does not replace it.
 - [ ] **Set `expo.extra.sentryDsn`** in `app.json` (currently `null`, so crash
       reporting is a no-op) and rebuild the dev client — Sentry is a native module.
+      **Not sufficient on its own — see [[LAUNCH-4]].** The JS wiring is complete
+      (`App.js:89` passes the DSN through), but the `@sentry/react-native` Expo
+      config plugin is missing from `expo.plugins`, so a DSN alone would likely
+      give JS errors with no native crash capture and minified stack traces.
+      Needs the plugin, the DSN, and the Sentry org/project together in one
+      rebuild. Checked separately: the "could not connect to Sentry native SDK"
+      dialog seen on dev builds is `__DEV__`-guarded in the SDK and cannot
+      appear in production.
 - [x] **Add a privacy-policy line covering crash data leaving the device.**
       Done 2026-08-18 in `4f47d36`. `docs/privacy.html` now has a "Crash
       reporting" section stating that Sentry is bundled but switched off and
