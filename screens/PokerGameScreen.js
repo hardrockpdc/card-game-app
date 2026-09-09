@@ -31,6 +31,7 @@ import {
   stopServer,
   disconnectFromHost,
 } from "../game/GameNetwork";
+import { POKER_VARIANTS } from "../game/poker";
 import { getTableTheme } from "../game/tableThemes";
 import {
   POKER_TABLES,
@@ -1071,7 +1072,10 @@ export default function PokerGameScreen({ navigation, route }) {
         leftInfo={
           <View style={styles.headerInfoRow}>
             <Text style={styles.headerVariant}>
-              {variant || "Texas Hold'em"}
+              {/* `variant` is the config key ("texasHoldem"), not something to
+                  show a player — printing it raw put "texasHoldem" in the
+                  header. The sensible-looking fallback hid it in review. */}
+              {POKER_VARIANTS[variant]?.label ?? "Texas Hold'em"}
             </Text>
             <Text style={styles.headerBlinds}>
               Blinds {SMALL_BLIND}/{BIG_BLIND}

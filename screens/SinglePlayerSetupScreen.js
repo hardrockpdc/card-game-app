@@ -31,7 +31,7 @@ const GAMES = [
   {
     id: "rummy",
     label: "Rummy",
-    tag: "3 variants",
+    tag: "4 variants",
     accent: "#e05068",
     suit: "heart",
   },
@@ -52,7 +52,7 @@ const GAMES = [
   {
     id: "poker",
     label: "Poker",
-    tag: "3 variants",
+    tag: "4 variants",
     accent: "#9a5cd0",
     suit: "spade",
   },
@@ -324,7 +324,7 @@ export default function SinglePlayerSetupScreen({ navigation }) {
                       </Text>
                       {/* The tag was in the data and the style existed, but
                             neither was ever rendered — so the grid couldn't
-                            tell you Solitaire has 5 modes or Poker 3 variants,
+                            tell you Solitaire has 5 modes or Poker 4 variants,
                             and the only thing distinguishing eight otherwise
                             identical tiles was accent colour. */}
                       <Text
