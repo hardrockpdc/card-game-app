@@ -47,9 +47,14 @@ the same display name, picture, and game state, device-to-device over TCP 7777 /
 UDP 7778. No server involved.
 
 **Crash reporting:** `@sentry/react-native` is bundled and initialized through
-`game/errorReporter.js`, but `expo.extra.sentryDsn` is `null` in `app.json`, so it
-is a no-op and transmits nothing today. If a DSN is ever set, the Diagnostics
-disclosures below and the privacy policy must both be updated in the same change.
+`game/errorReporter.js`, and **as of 2026-09-09 a DSN is configured**
+(`expo.extra.sentryDsn`), so crash reports are transmitted from any build made from
+this commit onward. It is configured for crash reports only — `tracesSampleRate: 0`,
+`enableAutoSessionTracking: false`, `sendDefaultPii: false` — so no performance
+tracing, no session replay, and no IP address or other personal data. What leaves the
+device is the error and stack, the screen, the app version and the device model.
+Builds already on the store (versionCode 8) predate the DSN and still transmit
+nothing.
 
 **Not present at all:** ads, ad SDKs, ad identifiers (IDFA/AAID), analytics SDKs,
 in-app purchases, real-money gambling, chat, location, contacts, microphone
@@ -94,8 +99,11 @@ DATA COLLECTED:
 - Coins, statistics, achievements and saved games are stored on the device
   only and are never uploaded.
 - No advertising, no ad identifiers, and no analytics SDKs.
-- A crash-reporting SDK (Sentry) is present in the binary but is disabled: no
-  DSN is configured, so it transmits nothing in this build.
+- A crash-reporting SDK (Sentry) is present and enabled as of 2026-09-09. It
+  sends anonymous crash diagnostics only: the error and stack, the screen, the
+  app version and the device model. It is configured with sendDefaultPii off, so
+  no IP address or other personal data is attached, and with tracing and session
+  replay disabled. Declare this as Diagnostics -> Crash Data.
 
 CAMERA AND PHOTO LIBRARY:
 Requested only when the user chooses to set a profile picture. The original

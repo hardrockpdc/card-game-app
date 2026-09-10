@@ -56,7 +56,7 @@
       "eas": {
         "projectId": "ca993ea1-d3bf-4c46-ad57-f51c28c366b4"
       },
-      "sentryDsn": null
+      "sentryDsn": "https://202fc40d133c29c25b302f67b8090135@o4511508544290816.ingest.us.sentry.io/4512059282161664"
     },
     "owner": "hardrockpdc",
     "plugins": [
@@ -72,7 +72,8 @@
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
       "./plugins/withoutMediaPermissions",
-      "expo-font"
+      "expo-font",
+      "@sentry/react-native/expo"
     ],
     "runtimeVersion": {
       "policy": "appVersion"

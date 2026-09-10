@@ -118,16 +118,29 @@ until the rules are re-published.
       that they are separate installs with separate app data authenticating
       independently, which they are — but if you want a physical-device
       confirmation before shipping, this does not replace it.
-- [ ] **Set `expo.extra.sentryDsn`** in `app.json` (currently `null`, so crash
-      reporting is a no-op) and rebuild the dev client — Sentry is a native module.
-      **Not sufficient on its own — see [[LAUNCH-4]].** The JS wiring is complete
-      (`App.js:89` passes the DSN through), but the `@sentry/react-native` Expo
-      config plugin is missing from `expo.plugins`, so a DSN alone would likely
-      give JS errors with no native crash capture and minified stack traces.
-      Needs the plugin, the DSN, and the Sentry org/project together in one
-      rebuild. Checked separately: the "could not connect to Sentry native SDK"
-      dialog seen on dev builds is `__DEV__`-guarded in the SDK and cannot
-      appear in production.
+- [x] **Set `expo.extra.sentryDsn` and add the Sentry Expo config plugin.** Done
+      2026-09-09. `app.json` now carries the DSN and lists
+      `@sentry/react-native/expo` in `expo.plugins`; see [[LAUNCH-4]] for why the
+      DSN alone was not enough. Verified with `npx expo config --type prebuild`,
+      which resolves the whole plugin chain and exits 0 — it warns only that
+      organization/project are absent, which is by design: those and the auth
+      token belong in `SENTRY_ORG` / `SENTRY_PROJECT` / `SENTRY_AUTH_TOKEN`
+      environment variables, never in the committed config. Checked separately:
+      the "could not connect to Sentry native SDK" dialog on dev builds is
+      `__DEV__`-guarded in the SDK and cannot reach players.
+      **Still to do before this is trustworthy:** rebuild the dev client (native
+      module), then throw a deliberate test error and confirm it arrives in the
+      Sentry console with a readable stack trace. A DSN that resolves is not the
+      same as reporting that works.
+- [ ] **Declare Diagnostics → Crash Data in the Play Console Data Safety form.**
+      BLOCKING, and new as of 2026-09-09 because setting the DSN is what created
+      it. The store listing currently declares no crash-data collection, which
+      was true for versionCode 8 and is false for any build made from this commit
+      onward. Shipping crash reporting without the declaration is a labels-do-not-
+      match-behaviour rejection on submission and a takedown trigger after
+      approval. `docs/privacy.html` and `notes/ops/App Store Review Notes.md`
+      were both updated in the same change; the console form is the one part
+      that cannot be done from the repo.
 - [x] **Add a privacy-policy line covering crash data leaving the device.**
       Done 2026-08-18 in `4f47d36`. `docs/privacy.html` now has a "Crash
       reporting" section stating that Sentry is bundled but switched off and
