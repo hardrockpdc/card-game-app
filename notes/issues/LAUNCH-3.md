@@ -5,8 +5,8 @@ area: build
 status: open
 severity: high
 opened: 2026-08-15
-verified: 2026-09-09
-evidence: "app.json:37 versionCode 9 / 1.1.0 (app.json:5), staged 2026-07-22 but still never built (notes/product/Post-Launch Checklist.md shows only versionCode 8 was ever submitted, 2026-07-01); the 2026-08-02 rules fixes were reported republished in the Firebase console by Pedro on 2026-08-18 -- unconfirmable from the repo, and the committed database.rules.json was checked the same day as paste-clean (single top-level rules key, no comment keys); as of 2026-09-09 the checklist's BLOCKING section has 2 unchecked items (sentryDsn, Solitaire memoization device-check) — the 2-device retest passed 2026-09-09; app.json:59 expo.extra.sentryDsn is still null"
+verified: 2026-09-10
+evidence: "app.json:37 versionCode 9 / 1.1.0 (app.json:5), CORRECTED 2026-09-10 — versionCode 9 WAS built and released to the closed track on 2026-07-26, per the Play Console itself; the repo never recorded it and this ticket wrongly said "never built" until now. v8 (1.0.0) sits on the Internal testing track, not Closed; the 2026-08-02 rules fixes were reported republished in the Firebase console by Pedro on 2026-08-18 -- unconfirmable from the repo, and the committed database.rules.json was checked the same day as paste-clean (single top-level rules key, no comment keys); as of 2026-09-09 the checklist's BLOCKING section has 2 unchecked items (sentryDsn, Solitaire memoization device-check) — the 2-device retest passed 2026-09-09; app.json:59 expo.extra.sentryDsn is still null"
 ---
 
 ## Problem
@@ -128,3 +128,40 @@ games.
 
 Remaining, in order: set `sentryDsn` (native module, needs a dev-client rebuild) →
 `eas build` versionCode 9 → submit.
+
+
+## Correction 2026-09-10 — versionCode 9 was built; this ticket said otherwise
+
+A Play Console review on 2026-09-10 contradicts the central factual claim of this
+ticket. **versionCode 9 (1.1.0) was built and released to the closed track on
+2026-07-26.** The repo has no record of it, which is why every version of this note
+said it was staged but never built — and why the 2026-09-09 update made that claim
+more emphatic rather than checking it.
+
+What the console actually shows:
+
+- Closed track ("first initial release"): **versionCode 9 (1.1.0), released 2026-07-26**,
+  active, live in 2 countries.
+- Internal testing track: v8 (1.0.0). So "only versionCode 8 was ever submitted" was
+  wrong on both counts — 9 shipped, and 8 was internal rather than closed.
+
+**The conclusion survives; the reasoning was wrong.** The build date is 2026-07-26 and
+the two security fixes landed 2026-08-02 (`ab6e47e`, `9c1c09b`), so the build on the
+closed track still **predates them**. Testers on that build are running pre-fix client
+code, exactly as this ticket has always argued — just because the build is a week too
+early, not because it never happened.
+
+The correct staleness figure is **commits since the build, not since the version bump**:
+**140 commits** as of 2026-09-10. The "136 since the bump" line above measured the wrong
+thing.
+
+Also worth recording: `app.json` is still on versionCode 9, which is now **already used**
+on the closed track. Any further Android upload must bump it — the console rejects a
+repeat.
+
+## Lesson for this ticket's evidence
+
+Every version of this note reasoned about the store from repo contents alone, and the
+repo cannot see the Play Console. The staleness argument was sound; the build history was
+invented from the absence of a commit saying otherwise. Console state needs to be read,
+not inferred — the same rule this ticket already applies to the Firebase rules.
